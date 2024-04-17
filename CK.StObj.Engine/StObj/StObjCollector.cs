@@ -290,10 +290,10 @@ namespace CK.Setup
             if( _errorEntries.Count != 0 ) Throw.InvalidOperationException( $"There are {_errorEntries.Count} registration errors." );
             try
             {
-                // Systematically registers the EndpointTypeManager and the EndpointUbiquitousInfo: unit tests don't have to do it.
+                // Systematically registers the EndpointTypeManager and the AmbientServiceHub: unit tests don't have to do it.
                 // (Note that the PocoDirectory is registered by the CKTypeCollector.
                 _cc.RegisterClass( monitor, typeof( EndpointTypeManager ) );
-                _cc.RegisterClass( monitor, typeof( EndpointUbiquitousInfo ) );
+                _cc.RegisterClass( monitor, typeof( AmbientServiceHub ) );
 
                 EndpointResult? endpoints = null;
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
@@ -326,9 +326,9 @@ namespace CK.Setup
                                 buildValueCollector = null;
                             }
                         }
-                        if( endpoints != null && endpoints.HasUbiquitousInfoServices )
+                        if( endpoints != null && endpoints.HasAmbientServices )
                         {
-                            if( !endpoints.BuildUbiquitousMappingsAndCheckDefaultProvider( monitor, typeResult.RealObjects.EngineMap.Services ) )
+                            if( !endpoints.BuildAmbientServiceMappingsAndCheckDefaultProvider( monitor, typeResult.RealObjects.EngineMap.Services ) )
                             {
                                 buildValueCollector = null;
                             }

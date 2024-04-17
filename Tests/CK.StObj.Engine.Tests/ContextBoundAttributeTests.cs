@@ -320,7 +320,7 @@ namespace CK.StObj.Engine.Tests
                           // is also registered.
                           .Where( t => !typeof( PocoDirectory ).IsAssignableFrom( t )
                                        && !typeof( EndpointTypeManager ).IsAssignableFrom( t )
-                                       && !typeof( EndpointUbiquitousInfo ).IsAssignableFrom( t ) )
+                                       && !typeof( AmbientServiceHub ).IsAssignableFrom( t ) )
                           .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
             r.EngineMap.AllTypesAttributesCache.Values

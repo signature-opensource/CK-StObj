@@ -5,17 +5,17 @@ using System.Collections.Immutable;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
-    sealed class EndpointUbiquitousInfo_CK : CK.Core.EndpointUbiquitousInfo
+    sealed class AmbientServiceHub_CK : CK.Core.AmbientServiceHub
     {
-        public EndpointUbiquitousInfo_CK( IServiceProvider services ) : base( services )
+        public AmbientServiceHub_CK( IServiceProvider services ) : base( services )
         {
         }
 
         // Descriptors for back endpoints: ubiquitous informations are resolved from the
-        // EndpointUbiquitousInfo scoped instance.
+        // AmbientServiceHub scoped instance.
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;
 
-        static EndpointUbiquitousInfo_CK()
+        static AmbientServiceHub_CK()
         {
             // IFakeTenantInfo is a IAutoService: its specialization chain entries
             // are listed that points to the same Mapper (here the first one).
@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
         }
 
-        protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries )
+        protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries )
         {
             entries = EndpointTypeManager_CK._ubiquitousMappings;
             return new Mapper[] {
@@ -50,9 +50,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         internal object At( int index ) => _mappers[index].Current;
 
-        EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
+        AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
 
-        public override EndpointUbiquitousInfo CleanClone()
+        public override AmbientServiceHub CleanClone()
         {
             var c = (Mapper[])_mappers.Clone();
             for( int i = 0; i < c.Length; i++ )
@@ -60,7 +60,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 ref var m = ref c[i];
                 m.Current = m.Initial;
             }
-            return new EndpointUbiquitousInfo_CK( c );
+            return new AmbientServiceHub_CK( c );
         }
     }
 

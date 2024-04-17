@@ -59,14 +59,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
             // Background execution of a request.
             using( var scoped = services.CreateScope() )
             {
-                var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+                var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 backExecutor.Push( TestHelper.Monitor, ubiq, command: "Background" );
             }
 
             // Background execution of a request with an overridden tenant.
             using( var scoped = services.CreateScope() )
             {
-                var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+                var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 ubiq.Override( new FakeTenantInfo( "AntotherTenant" ) );
                 backExecutor.Push( TestHelper.Monitor, ubiq, command: "Background in another tenant" );
             }
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             using( var scoped = services.CreateScope() )
             {
-                var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+                var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptions>() );
             }
             var history = services.GetRequiredService<SampleCommandMemory>();
@@ -139,7 +139,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             using( var scoped = services.CreateScope() )
             {
-                var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+                var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot>() );
             }
             history.ExecutionTrace.Should().HaveCount( 1 ).And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 3712" );
@@ -148,7 +148,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             using( var scoped = services.CreateScope() )
             {
-                var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+                var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot>() );
             }
             history.ExecutionTrace.Should().HaveCount( 2 )
@@ -192,7 +192,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             config.GetRequiredSection( "Opt" ).GetReloadToken().RegisterChangeCallback( _ => ActivityMonitor.StaticLogger.Info( "Configuration changed!" ), null );
             using( var scoped = services.CreateScope() )
             {
-                var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+                var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 var t = backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsMonitor>() );
                 await Task.Delay( 100 );
                 config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "42" } } );

@@ -109,7 +109,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             RealObjectConfigureServices( in reg );
 
             // Check the ubiquitous services.
-            if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( reg.Monitor, reg.Services, true ) )
+            if( !EndpointHelper.CheckAndNormalizeAmbientServices( reg.Monitor, reg.Services, true ) )
             {
                 return false;
             }
@@ -135,10 +135,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // ServiceDescriptors are created from the EngineStObjMap and added to the global configuration
             // and to the mappings.
             EndpointHelper.FillStObjMappingsWithEndpoints( reg.Monitor, this, reg.Services, mappings );
-            // Our StObjMap is empty, but it should have at least the EndpointUbiquitousInfo => EndpointUbiquitousInfo_CK
-            // since EndpointUbiquitousInfo is a IScopedAutoService that uses code generation.
+            // Our StObjMap is empty, but it should have at least the AmbientServiceHub => AmbientServiceHub_CK
+            // since AmbientServiceHub is a IScopedAutoService that uses code generation.
             // So, this is what FillStObjMappingsWithEndpoints would do:
-            reg.Services.AddScoped<EndpointUbiquitousInfo, EndpointUbiquitousInfo_CK>();
+            reg.Services.AddScoped<AmbientServiceHub, AmbientServiceHub_CK>();
 
             // We can now close the global container. Waiting for .Net 8.
             // (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();

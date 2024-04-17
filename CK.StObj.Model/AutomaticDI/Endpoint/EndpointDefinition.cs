@@ -51,7 +51,7 @@ namespace CK.Core
         /// </summary>
         public class BackScopedData : IScopedData
         {
-            readonly EndpointUbiquitousInfo _ubiquitousInfo;
+            readonly AmbientServiceHub _ubiquitousInfo;
 
             /// <summary>
             /// It is required to provide the endpoint definition instance here so that
@@ -60,11 +60,11 @@ namespace CK.Core
             /// <para>
             /// Extra parameters can be freely defined (typically the <see cref="IActivityMonitor"/> that must be used in the scope),
             /// including ones that are ubiquitous information services: this is the explicit and type safe way to inject ubiquitous
-            /// informations that is both more explicit and efficient than using <see cref="EndpointUbiquitousInfo.Override{T}(T)"/>
+            /// informations that is both more explicit and efficient than using <see cref="AmbientServiceHub.Override{T}(T)"/>
             /// methods.
             /// </para>
             /// </summary>
-            protected BackScopedData( EndpointUbiquitousInfo ubiquitousInfo )
+            protected BackScopedData( AmbientServiceHub ubiquitousInfo )
             {
                 Throw.CheckNotNullArgument( ubiquitousInfo );
                 _ubiquitousInfo = ubiquitousInfo;
@@ -73,7 +73,7 @@ namespace CK.Core
             /// <summary>
             /// Gets the ubiquitous information.
             /// </summary>
-            public EndpointUbiquitousInfo UbiquitousInfo => _ubiquitousInfo;
+            public AmbientServiceHub UbiquitousInfo => _ubiquitousInfo;
         }
 
     }

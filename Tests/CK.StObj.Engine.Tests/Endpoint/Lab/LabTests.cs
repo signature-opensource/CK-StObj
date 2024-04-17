@@ -70,8 +70,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            // From the global, obtains a EndpointUbiquitousInfo.
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+            // From the global, obtains a AmbientServiceHub.
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
 
             using var scopedE = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
@@ -217,7 +217,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
             using var scopedE = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             // Both containers resolves to the same instance.
@@ -317,7 +317,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
             using var scopedE = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             // The container works as usual.
@@ -379,12 +379,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             fromGlobal.CultureInfo.Culture.Should().Be( "fr" );
             fromGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
 
-            // From the global, obtains a EndpointUbiquitousInfo.
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-            // This endpoint transfers the EndpointUbiquitousInfo as-is.
+            // From the global, obtains a AmbientServiceHub.
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
+            // This endpoint transfers the AmbientServiceHub as-is.
             using var scopedNoOverride = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
-            ubiq.IsDirty.Should().BeFalse( "The EndpointUbiquitousInfo has no override." );
-            ubiq.IsLocked.Should().BeTrue( "The EndpointUbiquitousInfo has been locked." );
+            ubiq.IsDirty.Should().BeFalse( "The AmbientServiceHub has no override." );
+            ubiq.IsLocked.Should().BeTrue( "The AmbientServiceHub has been locked." );
             var sameAsGlobal = scopedNoOverride.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
             sameAsGlobal.AuthInfo.UserName.Should().Be( "Bob" );
             sameAsGlobal.CultureInfo.Culture.Should().Be( "fr" );

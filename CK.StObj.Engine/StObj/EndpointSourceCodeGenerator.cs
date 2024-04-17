@@ -128,15 +128,15 @@ namespace CK.Setup
             interface IEndpointTypeInternal : IEndpointType {}
             """;
 
-        const string _checkAndNormalizeUbiquitousInfoServices =
+        const string _checkAndNormalizeAmbientServices =
             """
-            internal static bool CheckAndNormalizeUbiquitousInfoServices( IActivityMonitor monitor, IServiceCollection services, bool isFrontEndpoint )
+            internal static bool CheckAndNormalizeAmbientServices( IActivityMonitor monitor, IServiceCollection services, bool isFrontEndpoint )
             {
                 bool success = true;
                 var firstResolutions = new ServiceDescriptor?[EndpointTypeManager_CK._ubiquitousMappings.Length];
                 foreach( var d in services )
                 {
-                    int idx = EndpointTypeManager_CK._ubiquitousMappings.IndexOf( m => m.UbiquitousType == d.ServiceType );
+                    int idx = EndpointTypeManager_CK._ubiquitousMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
                     if( idx >= 0 )
                     {
                         if( firstResolutions[idx] == null )
@@ -161,7 +161,7 @@ namespace CK.Setup
                         {
                             if( first != null )
                             {
-                                services.AddScoped( EndpointTypeManager_CK._ubiquitousMappings[i].UbiquitousType, first );
+                                services.AddScoped( EndpointTypeManager_CK._ubiquitousMappings[i].AmbientServiceType, first );
                             }
                         }
                         else
@@ -173,7 +173,7 @@ namespace CK.Setup
                                 {
                                     if( firstResolutions[before] == null )
                                     {
-                                        services.AddScoped( EndpointTypeManager_CK._ubiquitousMappings[before].UbiquitousType, first );
+                                        services.AddScoped( EndpointTypeManager_CK._ubiquitousMappings[before].AmbientServiceType, first );
                                     }
                                 }
                             }
@@ -189,7 +189,7 @@ namespace CK.Setup
                 }
                 return true;
 
-                static IEnumerable<(int, EndpointTypeManager.UbiquitousMapping, int)> GetMappingsRange()
+                static IEnumerable<(int, EndpointTypeManager.AmbientServiceMapping, int)> GetMappingsRange()
                 {
                     int len = EndpointTypeManager_CK._ubiquitousMappings.Length;
                     for( int i = 0; i < len; )
@@ -477,7 +477,7 @@ namespace CK.Setup
                     //      - the BackScopedData inheritance is checked at setup time for Back endpoints.
                     // - We can then access the UbiquitousInfo instance that is the code generated class with its At( mappingIndex )
                     //   hidden accessor.
-                    return Unsafe.As<EndpointUbiquitousInfo_CK>( Unsafe.As<EndpointDefinition.BackScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).UbiquitousInfo ).At( index );
+                    return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<EndpointDefinition.BackScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).UbiquitousInfo ).At( index );
                 }
             }
             
@@ -604,7 +604,7 @@ namespace CK.Setup
                     // Calls the user configuration.
                     _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
                     // Normalizes ubiquitous services.
-                    if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( monitor, endpoint, _definition.Kind == EndpointKind.Front ) )
+                    if( !EndpointHelper.CheckAndNormalizeAmbientServices( monitor, endpoint, _definition.Kind == EndpointKind.Front ) )
                     {
                         return false;
                     }
@@ -647,7 +647,7 @@ namespace CK.Setup
                             }
                             else mappings.Add( d.ServiceType, new Mapping( false, null, d ) );
 
-                            bool isUbiquitousInfo = EndpointTypeManager_CK._ubiquitousMappings.Any( uD => uD.UbiquitousType == d.ServiceType );
+                            bool isUbiquitousInfo = EndpointTypeManager_CK._ubiquitousMappings.Any( uD => uD.AmbientServiceType == d.ServiceType );
                             if( !isUbiquitousInfo )
                             {
                                 if( d.Lifetime == ServiceLifetime.Singleton )
@@ -1084,7 +1084,7 @@ namespace CK.Setup
                     .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;" )
                     .NewLine()
                     .Append( _addGlobalServiceMapping )
-                    .Append( _checkAndNormalizeUbiquitousInfoServices )
+                    .Append( _checkAndNormalizeAmbientServices )
                     .CreatePart( out var helperExtension )
                  .CloseBlock()
                  .Append( _scopedDataHolder )

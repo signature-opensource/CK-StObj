@@ -123,7 +123,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             public sealed class Data : BackScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                public Data( AmbientServiceHub ubiquitousInfo )
                     : base( ubiquitousInfo )
                 {
                 }
@@ -135,7 +135,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             public sealed class Data : BackScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                public Data( AmbientServiceHub ubiquitousInfo )
                     : base( ubiquitousInfo )
                 {
                 }
@@ -173,7 +173,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             public sealed class Data : BackScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                public Data( AmbientServiceHub ubiquitousInfo )
                     : base( ubiquitousInfo )
                 {
                 }

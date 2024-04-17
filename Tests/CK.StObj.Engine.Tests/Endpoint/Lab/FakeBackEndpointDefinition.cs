@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             internal readonly IActivityMonitor _monitor;
 
-            public Data( EndpointUbiquitousInfo info, IActivityMonitor monitor )
+            public Data( AmbientServiceHub info, IActivityMonitor monitor )
                 : base( info )
             {
                 _monitor = monitor;

@@ -22,13 +22,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
             _endpoint = endpoint;
         }
 
-        public void Push( IActivityMonitor monitor, EndpointUbiquitousInfo info, object command )
+        public void Push( IActivityMonitor monitor, AmbientServiceHub info, object command )
         {
             var correlationId = monitor.CreateToken();
             _commands.Writer.TryWrite( new RunCommand( correlationId, info, command, null ) );
         }
 
-        public Task RunAsync( IActivityMonitor monitor, EndpointUbiquitousInfo info, object command )
+        public Task RunAsync( IActivityMonitor monitor, AmbientServiceHub info, object command )
         {
             var correlationId = monitor.CreateToken();
             var tcs = new TaskCompletionSource();
@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public Task WaitForTerminationAsync() => _runTask;
 
-        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, EndpointUbiquitousInfo UbiquitousInfo, object Command, TaskCompletionSource? TCS );
+        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, AmbientServiceHub UbiquitousInfo, object Command, TaskCompletionSource? TCS );
 
         async Task RunAsync()
         {

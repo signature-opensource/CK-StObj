@@ -11,8 +11,8 @@ namespace CK.Core
     /// service provider so they can be overridden and marshalled to other <see cref="IEndpointType{TScopeData}"/>
     /// containers through their <see cref="EndpointDefinition.IScopedData"/>.
     /// </summary>
-    [Setup.ContextBoundDelegation( "CK.Setup.EndpointUbiquitousInfoImpl, CK.StObj.Engine" )]
-    public abstract class EndpointUbiquitousInfo : IScopedAutoService
+    [Setup.ContextBoundDelegation( "CK.Setup.AmbientServiceHubImpl, CK.StObj.Engine" )]
+    public abstract class AmbientServiceHub : IScopedAutoService
     {
         /// <summary>
         /// Used by generated code.
@@ -49,14 +49,14 @@ namespace CK.Core
         /// Used by generated code.
         /// </summary>
         protected readonly Mapper[] _mappers;
-        readonly ImmutableArray<EndpointTypeManager.UbiquitousMapping> _entries;
+        readonly ImmutableArray<EndpointTypeManager.AmbientServiceMapping> _entries;
         bool _locked;
 
         /// <summary>
-        /// Initializes a new <see cref="EndpointUbiquitousInfo"/> from a current context.
+        /// Initializes a new <see cref="AmbientServiceHub"/> from a current context.
         /// </summary>
         /// <param name="services">The current service provider (must be a scoped container).</param>
-        public EndpointUbiquitousInfo( IServiceProvider services )
+        public AmbientServiceHub( IServiceProvider services )
         {
             _mappers = Initialize( services, out _entries );
         }
@@ -66,7 +66,7 @@ namespace CK.Core
         /// </summary>
         /// <param name="mappers">Ready to use clean mappers.</param>
         /// <param name="entries">The ubiquitous services mapping.</param>
-        protected EndpointUbiquitousInfo( Mapper[] mappers, ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries )
+        protected AmbientServiceHub( Mapper[] mappers, ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries )
         {
             _mappers = mappers;
             _entries = entries;
@@ -116,7 +116,7 @@ namespace CK.Core
         /// <summary>
         /// Gets an unlocked clone with no overridden values.
         /// </summary>
-        public abstract EndpointUbiquitousInfo CleanClone();
+        public abstract AmbientServiceHub CleanClone();
 
         /// <summary>
         /// Overrides a ubiquitous resolution with an explicit instance.
@@ -154,7 +154,7 @@ namespace CK.Core
         /// <param name="services">The current service provider (must be a scoped container).</param>
         /// <param name="entries">The ubiquitous services mapping.</param>
         /// <returns>The initial mapped values.</returns>
-        protected abstract Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries );
+        protected abstract Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries );
 
         ref Mapper Get( Type t )
         {
@@ -165,7 +165,7 @@ namespace CK.Core
         {
             for( int i = 0; i < _entries.Length; ++i )
             {
-                if( _entries[i].UbiquitousType == t ) return i;
+                if( _entries[i].AmbientServiceType == t ) return i;
             }
             return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ubiquitous service." );
         }
@@ -197,9 +197,9 @@ namespace CK.Core
                 // than the ones we know.
                 if( iImpl != i )
                 {
-                    if( !_entries[iImpl].UbiquitousType.IsAssignableFrom( tInstance ) )
+                    if( !_entries[iImpl].AmbientServiceType.IsAssignableFrom( tInstance ) )
                     {
-                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].UbiquitousType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
+                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].AmbientServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
                     }
                 }
             }

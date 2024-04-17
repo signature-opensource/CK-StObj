@@ -5,7 +5,7 @@ using System;
 namespace CK.StObj.Engine.Tests.Endpoint
 {
     /// <summary>
-    /// This endpoint relies only on the EndpointUbiquitousInfo. Ubiquitous information can be
+    /// This endpoint relies only on the AmbientServiceHub. Ubiquitous information can be
     /// overridden but this endpoint has no way to retrieve any of the existing ubiquitous information.
     /// </summary>
     [EndpointDefinition( EndpointKind.Back )]
@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     {
         public sealed class Data : BackScopedData
         {
-            internal Data( EndpointUbiquitousInfo ubiquitousInfo, IActivityMonitor monitor )
+            internal Data( AmbientServiceHub ubiquitousInfo, IActivityMonitor monitor )
                 : base( ubiquitousInfo )
             {
                 Monitor = monitor;

@@ -21,17 +21,17 @@ namespace CK.Setup
         IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices { get; }
 
         /// <summary>
-        /// Gets whether at least one ubiquitous information service type exists.
+        /// Gets whether at least one ambient information service type exists.
         /// </summary>
-        bool HasUbiquitousInfoServices { get; }
+        bool HasAmbientServices { get; }
 
         /// <summary>
         /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="EndpointTypeManager.UbiquitousMapping"/>. Order matters: consecutive entries with
-        /// the same <see cref="EndpointTypeManager.UbiquitousMapping.MappingIndex"/> belong to the same auto service inheritance
+        /// are expanded. See <see cref="EndpointTypeManager.AmbientServiceMapping"/>. Order matters: consecutive entries with
+        /// the same <see cref="EndpointTypeManager.AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
         /// chain.
         /// </summary>
-        IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings { get; }
+        IReadOnlyList<EndpointTypeManager.AmbientServiceMapping> AmbientServiceMappings { get; }
 
         /// <summary>
         /// Captures the ubiquitous default provider implementation.

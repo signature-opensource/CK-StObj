@@ -256,7 +256,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 var baseO = a.GetValidKind( TestHelper.Monitor, typeof( IOptions<> ) );
                 var specO = a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ) );
                 baseO.ToStringClear( false ).Should().Be( "IsSingleton" );
-                specO.ToStringClear( false ).Should().Be( "IsScopedService" );
+                specO.ToStringClear( false ).Should().Be( "IsScoped" );
             }
         }
 
@@ -288,10 +288,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             success.Should().BeTrue();
 
             a.GetValidKind( TestHelper.Monitor, typeof( IOptions<object> ) ).ToStringClear( false ).Should().Be( "IsSingleton" );
-            a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<object> ) ).ToStringClear( false ).Should().Be( "IsScopedService" );
+            a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<object> ) ).ToStringClear( false ).Should().Be( "IsScoped" );
 
             a.GetValidKind( TestHelper.Monitor, typeof( Opt ) ).ToStringClear( false ).Should().Be( "IsSingleton" );
-            a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).Should().Be( "IsScopedService" );
+            a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).Should().Be( "IsScoped" );
         }
 
     }

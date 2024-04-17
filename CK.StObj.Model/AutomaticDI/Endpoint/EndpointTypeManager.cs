@@ -42,7 +42,7 @@ namespace CK.Core
 
         /// <summary>
         /// A ubiquitous mapping supports auto service unique mappings by associating
-        /// to ubiquitous auto service a single entry: <see cref="EndpointUbiquitousInfo"/> uses this
+        /// to ubiquitous auto service a single entry: <see cref="AmbientServiceHub"/> uses this
         /// when overriding a value to automatically sets all the unique mappings to the same value whatever
         /// the type used as the key.
         /// <para>
@@ -50,23 +50,23 @@ namespace CK.Core
         /// ubiquitous service resolution is not registered by a endpoint.
         /// </para>
         /// </summary>
-        public readonly struct UbiquitousMapping
+        public readonly struct AmbientServiceMapping
         {
             /// <summary>
             /// Initializes a new mapping.
             /// </summary>
-            /// <param name="ubiquitousType">The ubiquitous type.</param>
+            /// <param name="ambientServiceType">The ambient service type.</param>
             /// <param name="mappingIndex">The index.</param>
-            public UbiquitousMapping( Type ubiquitousType, int mappingIndex )
+            public AmbientServiceMapping( Type ambientServiceType, int mappingIndex )
             {
-                UbiquitousType = ubiquitousType;
+                AmbientServiceType = ambientServiceType;
                 MappingIndex = mappingIndex;
             }
 
             /// <summary>
             /// The ubiquitous type.
             /// </summary>
-            public Type UbiquitousType { get; }
+            public Type AmbientServiceType { get; }
 
             /// <summary>
             /// The mapping index. The same index is used for all unique mappings
@@ -78,7 +78,7 @@ namespace CK.Core
             [EditorBrowsable(EditorBrowsableState.Never)]
             public void Deconstruct( out Type t, out int i )
             {
-                t = UbiquitousType;
+                t = AmbientServiceType;
                 i = MappingIndex;
             }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
@@ -86,11 +86,11 @@ namespace CK.Core
 
         /// <summary>
         /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="UbiquitousMapping"/>. Order matters: consecutive entries with
-        /// the same <see cref="UbiquitousMapping.MappingIndex"/> belong to the same auto service inheritance
+        /// are expanded. See <see cref="AmbientServiceMapping"/>. Order matters: consecutive entries with
+        /// the same <see cref="AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
         /// chain.
         /// </summary>
-        public abstract IReadOnlyList<UbiquitousMapping> UbiquitousMappings { get; }
+        public abstract IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings { get; }
 
     }
 

@@ -16,7 +16,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // EndpointDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
         static readonly EndpointDefinition[] _endpoints;
-        internal static readonly ImmutableArray<UbiquitousMapping> _ubiquitousMappings;
+        internal static readonly ImmutableArray<AmbientServiceMapping> _ubiquitousMappings;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;
@@ -37,11 +37,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
             _endpoints = new EndpointDefinition[] { new FakeBackEndpointDefinition_CK() };
             _ubiquitousMappings = ImmutableArray.Create( 
-                new UbiquitousMapping( typeof(IFakeTenantInfo), 0 ),
-                new UbiquitousMapping( typeof(FakeTenantInfo), 0 ),
-                new UbiquitousMapping( typeof(IFakeAuthenticationInfo), 1 ),
-                new UbiquitousMapping( typeof(FakeAuthenticationInfo), 2 ),
-                new UbiquitousMapping( typeof(FakeCultureInfo), 3 )
+                new AmbientServiceMapping( typeof(IFakeTenantInfo), 0 ),
+                new AmbientServiceMapping( typeof(FakeTenantInfo), 0 ),
+                new AmbientServiceMapping( typeof(IFakeAuthenticationInfo), 1 ),
+                new AmbientServiceMapping( typeof(FakeAuthenticationInfo), 2 ),
+                new AmbientServiceMapping( typeof(FakeCultureInfo), 3 )
             );
             Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetUbiquitous( sp, 0 );
             Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetUbiquitous( sp, 1 );
@@ -81,7 +81,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
 
-        public override IReadOnlyList<UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
+        public override IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings => _ubiquitousMappings;
 
         internal ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )
         {

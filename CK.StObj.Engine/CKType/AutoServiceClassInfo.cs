@@ -608,14 +608,14 @@ namespace CK.Setup
             var ctors = ClassType.GetConstructors();
             if( ctors.Length > 1 )
             {
-                if( !collector.KindDetector.UbiquitousInfoServices.Contains( ClassType ) )
+                if( !collector.KindDetector.AmbientServices.Contains( ClassType ) )
                 {
                     m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relay to protected constructors for explicit initialization." );
                     success = false;
                 }
                 else
                 {
-                    // Ubiquitous services are not automatically resolved but explicitly resolved with a factory function (or found in the EndpointUbiquitousInfo
+                    // Ambient services are not automatically resolved but explicitly resolved with a factory function (or found in the AmbientServiceHub
                     // or set to their default value provided by their IEndpointUbiquitousServiceDefault singleton companion).
                     // They can perfectly have multiple constructors (they are selected/used by the explicit factory methods).
                     // When a single constructor is found, we process it like a regular auto service.
@@ -642,7 +642,7 @@ namespace CK.Setup
                         // The class is not abstract and has no public constructor.
                         // Same as above (multiple constructor case): this is allowed for endpoint services since
                         // they are "manually" build by the endpoint code.
-                        if( !collector.KindDetector.UbiquitousInfoServices.Contains( ClassType ) )
+                        if( !collector.KindDetector.AmbientServices.Contains( ClassType ) )
                         {
                             // We can't do anything with it.
                             success = false;

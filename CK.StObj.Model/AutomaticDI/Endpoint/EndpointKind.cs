@@ -11,7 +11,7 @@ namespace CK.Core
         /// is with their default values provided by <see cref="IEndpointUbiquitousServiceDefault{T}"/>
         /// <para>
         /// Back endpoint resolves non explicitly mapped ubiquitous information services
-        /// from the <see cref="EndpointUbiquitousInfo"/> scoped instance.
+        /// from the <see cref="AmbientServiceHub"/> scoped instance.
         /// </para>
         /// </summary>
         Back,
@@ -19,7 +19,7 @@ namespace CK.Core
         /// <summary>
         /// This kind of endpoints are called "out of the blue": no existing DI context exists, they must
         /// resolve all the required services including ubiquitous information services without relying
-        /// on the <see cref="EndpointUbiquitousInfo"/>.
+        /// on the <see cref="AmbientServiceHub"/>.
         /// <para>
         /// Back endpoint resolves non explicitly mapped ubiquitous information services
         /// from the <see cref="IEndpointUbiquitousServiceDefault{T}"/> singleton instances.

@@ -225,7 +225,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
                 interfaces.Should().HaveCount( 1 );
                 var classes = r.CKTypeResult.AutoServices.RootClasses;
-                classes.Select( c => c.ClassType ).Should().BeEquivalentTo( new[] { typeof( ServiceImplBaseBase ), typeof( EndpointTypeManager ), typeof( EndpointUbiquitousInfo ) } );
+                classes.Select( c => c.ClassType ).Should().BeEquivalentTo( new[] { typeof( ServiceImplBaseBase ), typeof( EndpointTypeManager ), typeof( AmbientServiceHub ) } );
                 r.CKTypeResult.AutoServices.ClassAmbiguities.Should().HaveCount( 1 );
                 r.CKTypeResult.AutoServices.ClassAmbiguities[0]
                     .Select( c => c.ClassType )

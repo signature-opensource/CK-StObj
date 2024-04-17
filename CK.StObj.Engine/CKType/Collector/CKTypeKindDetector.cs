@@ -76,7 +76,7 @@ namespace CK.Setup
         /// Gets the ubiquitous types. These are endpoint services that are available from all endpoints
         /// and can be overridden.
         /// </summary>
-        public IReadOnlyList<Type> UbiquitousInfoServices => _ubiquitousInfoServices;
+        public IReadOnlyList<Type> AmbientServices => _ubiquitousInfoServices;
 
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
