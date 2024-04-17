@@ -551,7 +551,7 @@ namespace CK.Setup
                 foreach( Type tI in Interfaces )
                 {
                     var k = collector.KindDetector.GetValidKind( monitor, tI );
-                    if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                    if( (k & CKTypeKind.IsRealObject) != 0 )
                     {
                         if( all == null ) all = new List<Type>();
                         all.Add( tI );

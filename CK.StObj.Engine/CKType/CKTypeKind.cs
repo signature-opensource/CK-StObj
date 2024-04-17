@@ -24,16 +24,20 @@ namespace CK.Setup
         /// </summary>
         IsExcludedType = 1 << 0,
 
+        /// <summary>
+        /// The type is "abstract": it transfers its kind to its specializations.
+        /// </summary>
         IsDefiner = 1 << 1,
 
+        /// <summary>
+        /// The type is "super abstract": its specializations are Definers.
+        /// </summary>
         IsSuperDefiner = 1 << 2,
 
         /// <summary>
         /// A IPoco marked interface.
         /// </summary>
         IsPoco = 1 << 3,
-
-        AutoServiceKindMask = 0b11_1111_1111 << 6,
 
         /// <inheritdoc cref="AutoServiceKind.IsAutoService"/>
         IsAutoService = AutoServiceKind.IsAutoService,
@@ -66,21 +70,9 @@ namespace CK.Setup
         IsMultipleService = 1 << 15,
 
         /// <summary>
-        /// Ubiquitous info is a scoped endpoint service (and optionally a auto service) that must be available in all
-        /// containers. The instance must be directly marshallable (should be immutable or at least thread safe and
-        /// be independent of any other service). See <see cref="EndpointScopedServiceAttribute"/>.
-        /// </summary>
-        AmbientService = IsAmbientService | IsBackgroundService | IsRequiredEndpointService | IsScoped,
-
-        /// <summary>
         /// A real object is a singleton. 
         /// </summary>
         RealObject = IsRealObject | IsSingleton,
-
-        /// <summary>
-        /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
-        /// </summary>
-        LifetimeMask = IsScoped | IsSingleton,
 
         /// <summary>
         /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
@@ -95,13 +87,29 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
+        /// The <see cref="IsAmbientService"/> and its implied flags:
+        /// IsAmbientService | IsBackgroundService | IsRequiredEndpointService | IsScoped
+        /// </summary>
+        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
+
+        /// <summary>
+        /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/> | <see cref="IsPerContextSingleton"/>.
+        /// </summary>
+        public const CKTypeKind LifetimeMask = CKTypeKind.IsScoped | CKTypeKind.IsSingleton | CKTypeKind.IsPerContextSingleton;
+
+        /// <summary>
+        /// Covers the <see cref="AutoServiceKind"/> subset.
+        /// </summary>
+        public const CKTypeKind AutoServiceKindMask = (CKTypeKind)(0b11_1111_1111 << 6);
+
+        /// <summary>
         /// Gets the <see cref="AutoServiceKind"/> (masks the unrelated bits).
         /// </summary>
         /// <param name="this">This type kind.</param>
         /// <returns>The Auto service kind.</returns>
         public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this )
         {
-            return (AutoServiceKind)((int)(@this & CKTypeKind.AutoServiceKindMask));
+            return (AutoServiceKind)((int)(@this & AutoServiceKindMask));
         }
 
         /// <summary>
@@ -129,31 +137,35 @@ namespace CK.Setup
             return @this == CKTypeKind.None || GetCombinationError( @this, isClass ) != null;
         }
 
-        public static bool IsAmbientService( this CKTypeKind @this )
-        {
-            return true;
-        }
+        /// <summary>
+        /// Gets this kind without <see cref="CKTypeKind.IsDefiner"/> and <see cref="CKTypeKind.IsSuperDefiner"/> flags.
+        /// </summary>
+        /// <param name="this">This kind.</param>
+        /// <returns>Same as this without the two definer flags.</returns>
+        public static CKTypeKind WithoutDefiners( this CKTypeKind @this ) => @this & ~(CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner);
+
 
         /// <summary>
         /// Gets the conflicting duplicate status message or null if this CK type kind is valid.
         /// </summary>
-        /// <param name="this">This CK type kind.</param>
+        /// <param name="@this">This kind.</param>
         /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>An error message or null.</returns>
         public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
         {
             Throw.CheckArgument( @this >= 0 && @this <= CKTypeKindDetector.MaskPublicInfo );
+            var k = @this.WithoutDefiners();
             // Pure predicates: checks are made against them.
-            bool isAuto = (@this & CKTypeKind.IsAutoService) != 0;
-            bool isScoped = (@this & CKTypeKind.IsScoped) != 0;
-            bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
-            bool isCtxSingleton = (@this & CKTypeKind.IsPerContextSingleton) != 0;
-            bool isRealObject = (@this & CKTypeKind.IsRealObject) != 0;
-            bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
-            bool isOptEndPoint = (@this & CKTypeKind.IsOptionalEndpointService) != 0;
-            bool isReqEndPoint = (@this & CKTypeKind.IsRequiredEndpointService) != 0;
-            bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
-            bool isAmbient = (@this & CKTypeKind.IsAmbientService) != 0;
+            bool isAuto = (k & CKTypeKind.IsAutoService) != 0;
+            bool isScoped = (k & CKTypeKind.IsScoped) != 0;
+            bool isSingleton = (k & CKTypeKind.IsSingleton) != 0;
+            bool isCtxSingleton = (k & CKTypeKind.IsPerContextSingleton) != 0;
+            bool isRealObject = (k & CKTypeKind.IsRealObject) != 0;
+            bool isPoco = (k & CKTypeKind.IsPoco) != 0;
+            bool isOptEndPoint = (k & CKTypeKind.IsOptionalEndpointService) != 0;
+            bool isReqEndPoint = (k & CKTypeKind.IsRequiredEndpointService) != 0;
+            bool isMultiple = (k & CKTypeKind.IsMultipleService) != 0;
+            bool isAmbient = (k & CKTypeKind.IsAmbientService) != 0;
 
 
             string? conflict = null;
@@ -165,12 +177,12 @@ namespace CK.Setup
 
             if( isPoco )
             {
-                if( @this != CKTypeKind.IsPoco ) AddConflict( "Poco cannot be combined with any other aspect" );
+                if( k != CKTypeKind.IsPoco ) AddConflict( "Poco cannot be combined with any other aspect" );
                 if( isClass ) AddConflict( "a class cannot be a IPoco" );
             }
             else if( isRealObject )
             {
-                if( @this != CKTypeKind.RealObject )
+                if( k != CKTypeKind.RealObject )
                 {
                     if( !isSingleton ) AddConflict( "RealObject must be a Singleton" );
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
@@ -188,7 +200,7 @@ namespace CK.Setup
             }
             if( isAmbient )
             {
-                if( @this != CKTypeKind.AmbientService && @this != (CKTypeKind.AmbientService|CKTypeKind.IsAutoService) )
+                if( k != AmbientServiceFlags && k != (AmbientServiceFlags|CKTypeKind.IsAutoService) )
                 {
                     AddConflict( "an ambient service info can only be a required endpoint and background scoped service (and optionally a IScopedAutoService)." );
                 }
@@ -202,7 +214,7 @@ namespace CK.Setup
             }
             if( isSingleton && isCtxSingleton )
             {
-                AddConflict( "a Singleton cannot be both PerContext and proceswide" );
+                AddConflict( "a Singleton cannot be both a PerContext and a proceswide true singleton" );
             }
             if( isOptEndPoint && isReqEndPoint )
             {
@@ -210,9 +222,9 @@ namespace CK.Setup
             }
             if( isClass )
             {
-                if( (@this & CKTypeKind.IsMultipleService) != 0 ) AddConflict( "a class cannot be marked as a Multiple service: only interfaces can be IsMultiple." );
+                if( (k & CKTypeKind.IsMultipleService) != 0 ) AddConflict( "a class cannot be marked as a Multiple service: only interfaces can be IsMultiple." );
             }
-            return conflict == null ? null : $"Invalid CK type combination '{@this.ToStringFlags()}': {conflict} (type is a{(isClass ? " class" : "n interface")}).";
+            return conflict == null ? null : $"Invalid CK type combination '{k.ToStringFlags()}': {conflict} (type is a{(isClass ? " class" : "n interface")}).";
         }
 
         /// <summary>

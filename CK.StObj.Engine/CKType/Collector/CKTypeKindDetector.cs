@@ -49,7 +49,7 @@ namespace CK.Setup
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
         readonly Dictionary<Type, AutoServiceKind> _endpointServices;
-        readonly List<Type> _ubiquitousInfoServices;
+        readonly List<Type> _ambientServices;
 
         /// <summary>
         /// Initializes a new detector.
@@ -60,7 +60,7 @@ namespace CK.Setup
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
             _endpointServices = new Dictionary<Type, AutoServiceKind>();
             _typeFilter = typeFilter;
-            _ubiquitousInfoServices = new List<Type>();
+            _ambientServices = new List<Type>();
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace CK.Setup
         /// Gets the ubiquitous types. These are endpoint services that are available from all endpoints
         /// and can be overridden.
         /// </summary>
-        public IReadOnlyList<Type> AmbientServices => _ubiquitousInfoServices;
+        public IReadOnlyList<Type> AmbientServices => _ambientServices;
 
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
@@ -131,11 +131,9 @@ namespace CK.Setup
 
         CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
-            Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
-            Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
-
-            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKind.AmbientService) != 0,
-                            "At least, something must be set." );
+            Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", ( kind & (IsDefiner | IsSuperDefiner)) == 0 );
+            Throw.DebugAssert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass )!, ( kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null );
+            Throw.DebugAssert( "At least, something must be set.", ( kind & CKTypeKindExtension.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKindExtension.AmbientServiceFlags) != 0 );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
@@ -157,10 +155,10 @@ namespace CK.Setup
             if( (updated & (CKTypeKind.IsOptionalEndpointService|CKTypeKind.IsRequiredEndpointService)) != 0 )
             {
                 _endpointServices[t] = updated.ToAutoServiceKind();
-                if( (updated & CKTypeKind.AmbientService) == CKTypeKind.AmbientService
-                    && !_ubiquitousInfoServices.Contains( t ) )
+                if( (updated & CKTypeKind.IsAmbientService) != 0
+                    && !_ambientServices.Contains( t ) )
                 {
-                    _ubiquitousInfoServices.Add( t );
+                    _ambientServices.Add( t );
                 }
             }
 
@@ -417,9 +415,9 @@ namespace CK.Setup
                                     && (k & CKTypeKind.IsSingleton) == 0 )
                                 {
                                     _endpointServices.Add( t, k.ToAutoServiceKind() );
-                                    if( (k & CKTypeKind.AmbientService) == CKTypeKind.AmbientService )
+                                    if( (k & CKTypeKind.IsAmbientService) != 0 )
                                     {
-                                        _ubiquitousInfoServices.Add( t );
+                                        _ambientServices.Add( t );
                                     }
                                 }
                             }
