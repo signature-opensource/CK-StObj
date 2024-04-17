@@ -21,13 +21,6 @@ namespace CK.Setup
         /// </summary>
         public const CKTypeKind MaskPublicInfo = (CKTypeKind)(PrivateStart-1);
 
-        const CKTypeKind IsDefiner = (CKTypeKind)PrivateStart;
-
-        const CKTypeKind IsSuperDefiner = (CKTypeKind)(PrivateStart << 1);
-
-        // The lifetime reason is the interface marker (applies to all our marker interfaces).
-        const CKTypeKind IsReasonMarker = (CKTypeKind)(PrivateStart << 2);
-
         // The type is a service that is scoped because its ctor references a scoped service.
         const CKTypeKind IsScopedReasonReference = (CKTypeKind)(PrivateStart << 3);
 
@@ -131,7 +124,7 @@ namespace CK.Setup
 
         CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
-            Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", ( kind & (IsDefiner | IsSuperDefiner)) == 0 );
+            Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", ( kind & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
             Throw.DebugAssert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass )!, ( kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null );
             Throw.DebugAssert( "At least, something must be set.", ( kind & CKTypeKindExtension.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKindExtension.AmbientServiceFlags) != 0 );
 
@@ -139,7 +132,7 @@ namespace CK.Setup
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
             // not be called for an already registered type.)
             var exist = RawGet( m, t );
-            if( (exist & (IsDefiner|IsSuperDefiner)) != 0 )
+            if( (exist & (CKTypeKind.IsDefiner|CKTypeKind.IsSuperDefiner)) != 0 )
             {
                 Throw.Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
@@ -162,7 +155,7 @@ namespace CK.Setup
                 }
             }
 
-            Debug.Assert( (updated & (IsDefiner | IsSuperDefiner)) == 0 );
+            Debug.Assert( (updated & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
             Debug.Assert( CKTypeKindExtension.GetCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
             return updated & MaskPublicInfo;
         }
@@ -179,7 +172,7 @@ namespace CK.Setup
         public CKTypeKind GetRawKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner | IsSuperDefiner)) == 0
+            return (k & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
         }
@@ -197,7 +190,7 @@ namespace CK.Setup
         public CKTypeKind GetValidKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner | IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasError)) == 0
+            return (k & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasError)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
         }
@@ -249,11 +242,11 @@ namespace CK.Setup
                         && allInterfaces.Length <= 1
                         && t.GetMembers().Length == 0 )
                     {
-                        if( t.Name == nameof( IRealObject ) ) k = CKTypeKind.RealObject | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
-                        else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
+                        if( t.Name == nameof( IRealObject ) ) k = CKTypeKindExtension.RealObjectFlags | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | CKTypeKind.IsDefiner;
+                        else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | CKTypeKind.IsDefiner;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.
                     //
@@ -341,13 +334,13 @@ namespace CK.Setup
                             }
                             foreach( var i in allBases  )
                             {
-                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsExcludedType | IsReasonMarker);
-                                if( (k & IsDefiner) == 0 // We are not yet a Definer...
-                                    && (kI & IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
+                                var kI = RawGet( m, i ) & ~(CKTypeKind.IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsExcludedType);
+                                if( (k & CKTypeKind.IsDefiner) == 0 // We are not yet a Definer...
+                                    && (kI & CKTypeKind.IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
                                 {
-                                    kI |= IsDefiner;
+                                    kI |= CKTypeKind.IsDefiner;
                                 }
-                                k |= kI & ~IsSuperDefiner;
+                                k |= kI & ~CKTypeKind.IsSuperDefiner;
                             }
                             // Applying the direct flags. Any inherited combination error is cleared.
                             k &= ~CKTypeKind.HasError;
@@ -355,8 +348,8 @@ namespace CK.Setup
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                             if( hasSingletonService ) k |= CKTypeKind.IsSingleton | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsBackgroundService;
                             if( isEndpointSingleton ) k |= CKTypeKind.IsOptionalEndpointService | CKTypeKind.IsPerContextSingleton;
-                            if( hasSuperDefiner ) k |= IsSuperDefiner;
-                            if( hasDefiner ) k |= IsDefiner;
+                            if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
+                            if( hasDefiner ) k |= CKTypeKind.IsDefiner;
                             if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
                             else if( isEndpointScoped ) k |= CKTypeKind.IsOptionalEndpointService | CKTypeKind.IsScoped;
 
@@ -435,9 +428,8 @@ namespace CK.Setup
         static string ToStringFull( CKTypeKind t )
         {
             var c = (t & MaskPublicInfo).ToStringFlags();
-            if( (t & IsDefiner) != 0 ) c += " [IsDefiner]";
-            if( (t & IsSuperDefiner) != 0 ) c += " [IsSuperDefiner]";
-            if( (t & IsReasonMarker) != 0 ) c += " [IsMarkerInterface]";
+            if( (t & CKTypeKind.IsDefiner) != 0 ) c += " [IsDefiner]";
+            if( (t & CKTypeKind.IsSuperDefiner) != 0 ) c += " [IsSuperDefiner]";
             if( (t & IsLifetimeReasonExternal) != 0 ) c += " [Lifetime:External]";
             if( (t & IsScopedReasonReference) != 0 ) c += " [Lifetime:UsesScoped]";
             if( (t & IsMarshallableReasonMarshaller) != 0 ) c += " [Marshallable:MarshallerExists]";

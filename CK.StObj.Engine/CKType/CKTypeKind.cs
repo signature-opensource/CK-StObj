@@ -46,33 +46,28 @@ namespace CK.Setup
         IsScoped = AutoServiceKind.IsScoped,
 
         /// <inheritdoc cref="AutoServiceKind.IsSingleton"/>
-        IsSingleton = 1 << 8,
+        IsSingleton = AutoServiceKind.IsSingleton,
 
         /// <inheritdoc cref="AutoServiceKind.IsPerContextSingleton"/>
-        IsPerContextSingleton = 1 << 9,
+        IsPerContextSingleton = AutoServiceKind.IsPerContextSingleton,
 
         /// <inheritdoc cref="AutoServiceKind.IsRealObject"/>
-        IsRealObject = 1 << 10,
+        IsRealObject = AutoServiceKind.IsRealObject,
 
         /// <inheritdoc cref="AutoServiceKind.IsOptionalEndpointService"/>
-        IsOptionalEndpointService = 1 << 11,
+        IsOptionalEndpointService = AutoServiceKind.IsOptionalEndpointService,
 
         /// <inheritdoc cref="AutoServiceKind.IsRequiredEndpointService"/>
-        IsRequiredEndpointService = 1 << 12,
+        IsRequiredEndpointService = AutoServiceKind.IsRequiredEndpointService,
 
         /// <inheritdoc cref="AutoServiceKind.IsBackgroundService"/>
-        IsBackgroundService = 1 << 13,
+        IsBackgroundService = AutoServiceKind.IsBackgroundService,
 
         /// <inheritdoc cref="AutoServiceKind.IsAmbientService"/>
-        IsAmbientService = 1 << 14,
+        IsAmbientService = AutoServiceKind.IsAmbientService,
 
         /// <inheritdoc cref="AutoServiceKind.IsMultipleService"/>
-        IsMultipleService = 1 << 15,
-
-        /// <summary>
-        /// A real object is a singleton. 
-        /// </summary>
-        RealObject = IsRealObject | IsSingleton,
+        IsMultipleService = AutoServiceKind.IsMultipleService,
 
         /// <summary>
         /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
@@ -87,7 +82,19 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
-        /// The <see cref="IsAmbientService"/> and its implied flags:
+        /// The <see cref="CKTypeKind.IsSingleton"/> and its implied flags:
+        /// IsBackgroundService | CKTypeKind.IsRequiredEndpointService
+        /// </summary>
+        public const CKTypeKind SingletonFlags = CKTypeKind.IsSingleton | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService;
+
+        /// <summary>
+        /// The <see cref="CKTypeKind.IsRealObject"/> and its implied flags:
+        /// IsSingleton | IsBackgroundService | CKTypeKind.IsRequiredEndpointService
+        /// </summary>
+        public const CKTypeKind RealObjectFlags = CKTypeKind.IsRealObject | SingletonFlags;
+
+        /// <summary>
+        /// The <see cref="CKTypeKind.IsAmbientService"/> and its implied flags:
         /// IsAmbientService | IsBackgroundService | IsRequiredEndpointService | IsScoped
         /// </summary>
         public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
@@ -182,7 +189,7 @@ namespace CK.Setup
             }
             else if( isRealObject )
             {
-                if( k != CKTypeKind.RealObject )
+                if( k != RealObjectFlags )
                 {
                     if( !isSingleton ) AddConflict( "RealObject must be a Singleton" );
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
