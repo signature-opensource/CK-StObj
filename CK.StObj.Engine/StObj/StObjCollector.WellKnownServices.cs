@@ -22,8 +22,8 @@ namespace CK.Setup
             //    services.AddScoped<IActivityMonitor,ActivityMonitor>();
             //    services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             //
-            SetAutoServiceKind( monitor, typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            SetAutoServiceKind( monitor, typeof( IParallelLogger ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            SetAutoServiceKind( monitor, typeof( IActivityMonitor ), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped );
+            SetAutoServiceKind( monitor, typeof( IParallelLogger ), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped );
 
             // The IServiceProvider is both a singleton and a scope: it is the container (whatever it is).
             // By defining it as a singleton, we don't force a totally useless Scoped lifetime.
@@ -62,7 +62,7 @@ namespace CK.Setup
             SetAutoServiceKind( monitor, "Microsoft.AspNetCore.DataProtection.IDataProtectionProvider, Microsoft.AspNetCore.DataProtection.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
             // The CK.AspNet.ScopedHttpContext is only available in the Global DI.
-            SetAutoServiceKind( monitor, "CK.AspNet.ScopedHttpContext, CK.AspNet", AutoServiceKind.IsEndpointService|AutoServiceKind.IsScoped, isOptional: true );
+            SetAutoServiceKind( monitor, "CK.AspNet.ScopedHttpContext, CK.AspNet", AutoServiceKind.IsOptionalEndpointService|AutoServiceKind.IsScoped, isOptional: true );
         }
     }
 }

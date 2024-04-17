@@ -1,5 +1,6 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +13,7 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeKindDetector
     {
-        const int PrivateStart = 4096;
+        const int PrivateStart = 1 << 17;
 
         /// <summary>
         /// Mask for public information defined in the <see cref="CKTypeKind"/> enumeration.
@@ -80,7 +81,7 @@ namespace CK.Setup
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
         /// <para>
-        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits mus be set
+        /// If the <see cref="AutoServiceKind.IsOptionalEndpointService"/> bit set, one of the lifetime bits mus be set
         /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>).
         /// </para>
         /// <para>
@@ -106,7 +107,7 @@ namespace CK.Setup
             }
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
             bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
-            bool hasEndpoint = (kind & AutoServiceKind.IsEndpointService) != 0;
+            bool hasEndpoint = (kind & AutoServiceKind.IsOptionalEndpointService) != 0;
 
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
@@ -133,7 +134,7 @@ namespace CK.Setup
             Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
             Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
 
-            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKind.UbiquitousInfo) != 0,
+            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKind.AmbientService) != 0,
                             "At least, something must be set." );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
@@ -153,10 +154,10 @@ namespace CK.Setup
             }
 
             _cache[t] = updated;
-            if( (updated & CKTypeKind.IsEndpointService) != 0 )
+            if( (updated & (CKTypeKind.IsOptionalEndpointService|CKTypeKind.IsRequiredEndpointService)) != 0 )
             {
                 _endpointServices[t] = updated.ToAutoServiceKind();
-                if( (updated & CKTypeKind.UbiquitousInfo) == CKTypeKind.UbiquitousInfo
+                if( (updated & CKTypeKind.AmbientService) == CKTypeKind.AmbientService
                     && !_ubiquitousInfoServices.Contains( t ) )
                 {
                     _ubiquitousInfoServices.Add( t );
@@ -275,7 +276,7 @@ namespace CK.Setup
                         bool hasSingletonService = false;
                         bool isExcludedType = false;
                         bool isEndpointScoped = false;
-                        bool isUbiquitousServiceInfo = false;
+                        bool isAmbientService = false;
                         bool isEndpointSingleton = false;
 
                         // Now process the attributes of the type. This sets the variables above
@@ -299,7 +300,7 @@ namespace CK.Setup
                                     break;
                                 case "EndpointScopedServiceAttribute":
                                     isEndpointScoped = true;
-                                    isUbiquitousServiceInfo = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
+                                    isAmbientService = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
                                     break;
                                 case "EndpointSingletonServiceAttribute":
                                     isEndpointSingleton = true;
@@ -354,12 +355,12 @@ namespace CK.Setup
                             k &= ~CKTypeKind.HasError;
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
-                            if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
-                            if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
+                            if( hasSingletonService ) k |= CKTypeKind.IsSingleton | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsBackgroundService;
+                            if( isEndpointSingleton ) k |= CKTypeKind.IsOptionalEndpointService | CKTypeKind.IsPerContextSingleton;
                             if( hasSuperDefiner ) k |= IsSuperDefiner;
                             if( hasDefiner ) k |= IsDefiner;
-                            if( isUbiquitousServiceInfo ) k |= CKTypeKind.UbiquitousInfo;
-                            else if( isEndpointScoped ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
+                            if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
+                            else if( isEndpointScoped ) k |= CKTypeKind.IsOptionalEndpointService | CKTypeKind.IsScoped;
 
                             // Final check if the type filter has not excluded the type.
                             // We may be IAutoService or a IPoco or... whatever: any combination error will be detected.
@@ -382,11 +383,11 @@ namespace CK.Setup
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
-                                else if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                else if( (k & CKTypeKind.IsOptionalEndpointService) != 0 )
                                 {
                                     if( !isPublic )
                                     {
-                                        k &= ~CKTypeKind.IsEndpointService;
+                                        k &= ~CKTypeKind.IsOptionalEndpointService;
                                         m.Info( $"Type '{t:N}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
                                     }
                                 }
@@ -411,10 +412,12 @@ namespace CK.Setup
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
-                                if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                // Registers special services: endpoints and ambient: ignores the processwide singleton services.
+                                if( (k & (CKTypeKind.IsOptionalEndpointService|CKTypeKind.IsRequiredEndpointService)) != 0
+                                    && (k & CKTypeKind.IsSingleton) == 0 )
                                 {
                                     _endpointServices.Add( t, k.ToAutoServiceKind() );
-                                    if( (k & CKTypeKind.UbiquitousInfo) == CKTypeKind.UbiquitousInfo )
+                                    if( (k & CKTypeKind.AmbientService) == CKTypeKind.AmbientService )
                                     {
                                         _ubiquitousInfoServices.Add( t );
                                     }

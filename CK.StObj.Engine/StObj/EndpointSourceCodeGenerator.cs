@@ -145,7 +145,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            monitor.Error( $"Ubiquitous service '{d.ServiceType.Name}' is mapped more than once. Ubiquitous service cannot be added more than once is a DI container." );
+                            monitor.Error( $"Ubiquitous service '{d.ServiceType.Name}' is mapped more than once. Ubiquitous service cannot be added more than once in a DI container." );
                             success = false;
                         }
                     }
@@ -181,7 +181,9 @@ namespace CK.Setup
                     }
                     if( first == null )
                     {
-                        var defaults = isFrontEndpoint ? EndpointTypeManager_CK._ubiquitousFrontDescriptors : EndpointTypeManager_CK._ubiquitousBackDescriptors;
+                        var defaults = isFrontEndpoint
+                                        ? EndpointTypeManager_CK._ubiquitousFrontDescriptors
+                                        : EndpointTypeManager_CK._ubiquitousBackDescriptors;
                         services.AddRange( defaults.Skip( idx ).Take( other - idx ) );
                     }
                 }
@@ -234,7 +236,7 @@ namespace CK.Setup
                 {
                     if( s.IsScoped )
                     {
-                        if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
+                        if( (s.AutoServiceKind & AutoServiceKind.IsAmbientService) == 0 )
                         {
                             AddGlobalServiceMapping( global, s, ServiceLifetime.Scoped );
                         }
@@ -349,12 +351,12 @@ namespace CK.Setup
                 // capture the implementation type.
                 foreach( var s in stObjMap.Services.MappingList )
                 {
-                    bool isEndpointService = (s.AutoServiceKind & AutoServiceKind.IsEndpointService) != 0;
+                    bool isEndpointService = (s.AutoServiceKind & (AutoServiceKind.IsOptionalEndpointService|AutoServiceKind.IsRequiredEndpointService)) != 0;
                     if( s.IsScoped )
                     {
                         if( isEndpointService )
                         {
-                            if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
+                            if( (s.AutoServiceKind & AutoServiceKind.IsAmbientService) == 0 )
                             {
                                 AddGlobalServiceMapping( global, s, ServiceLifetime.Scoped );
                             }
@@ -678,7 +680,7 @@ namespace CK.Setup
                                     {
                                         if( autoMap is IStObjServiceClassDescriptor service )
                                         {
-                                            if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
+                                            if( (service.AutoServiceKind & (AutoServiceKind.IsOptionalEndpointService|AutoServiceKind.IsRequiredEndpointService)) == 0 )
                                             {
                                                 monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
                                                 success = false;

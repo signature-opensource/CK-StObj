@@ -27,13 +27,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             _endpointServices = new Dictionary<Type, AutoServiceKind>()
             {
-                { typeof(IActivityMonitor), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IParallelLogger), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(FakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IFakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
-                { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
-                { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IActivityMonitor), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IParallelLogger), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped },
+                { typeof(FakeAuthenticationInfo), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IFakeTenantInfo), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
+                { typeof(FakeTenantInfo), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
+                { typeof(FakeCultureInfo), AutoServiceKind.IsOptionalEndpointService | AutoServiceKind.IsScoped },
             };
             _endpoints = new EndpointDefinition[] { new FakeBackEndpointDefinition_CK() };
             _ubiquitousMappings = ImmutableArray.Create( 

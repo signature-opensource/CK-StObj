@@ -13,58 +13,69 @@ namespace CK.Setup
     public enum CKTypeKind
     {
         /// <summary>
-        /// Not a service we handle or external service for which
-        /// no lifetime nor front binding is known.
+        /// Not a Poco, real object or service we handle. May be an external service
+        /// for which no lifetime nor endpoint/backend adherence is known.
         /// </summary>
         None,
 
         /// <summary>
-        /// Service can be overridden by an endpoint. Whether it is a <see cref="IsProcessService"/> or not is independent.
+        /// Flags set when this type is excluded (by [ExcludeCKType] or type filtering function).
+        /// This is also set when [StObjGen] attribute exists.
         /// </summary>
-        IsEndpointService = 2,
+        IsExcludedType = 1 << 0,
+
+        IsDefiner = 1 << 1,
+
+        IsSuperDefiner = 1 << 2,
 
         /// <summary>
-        /// Singleton flag.
-        /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
+        /// A IPoco marked interface.
         /// </summary>
-        IsSingleton = 8,
+        IsPoco = 1 << 3,
 
-        /// <summary>
-        /// Scoped flag.
-        /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
-        /// </summary>
-        IsScoped = 16,
+        AutoServiceKindMask = 0b11_1111_1111 << 6,
 
-        /// <summary>
-        /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
-        /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
-        /// </summary>
-        /// <remarks>
-        /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
-        /// </remarks>
-        IsMultipleService = 32,
+        /// <inheritdoc cref="AutoServiceKind.IsAutoService"/>
+        IsAutoService = AutoServiceKind.IsAutoService,
 
-        /// <summary>
-        /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
-        /// </summary>
-        IsAutoService = 64,
+        /// <inheritdoc cref="AutoServiceKind.IsScoped"/>
+        IsScoped = AutoServiceKind.IsScoped,
+
+        /// <inheritdoc cref="AutoServiceKind.IsSingleton"/>
+        IsSingleton = 1 << 8,
+
+        /// <inheritdoc cref="AutoServiceKind.IsPerContextSingleton"/>
+        IsPerContextSingleton = 1 << 9,
+
+        /// <inheritdoc cref="AutoServiceKind.IsRealObject"/>
+        IsRealObject = 1 << 10,
+
+        /// <inheritdoc cref="AutoServiceKind.IsOptionalEndpointService"/>
+        IsOptionalEndpointService = 1 << 11,
+
+        /// <inheritdoc cref="AutoServiceKind.IsRequiredEndpointService"/>
+        IsRequiredEndpointService = 1 << 12,
+
+        /// <inheritdoc cref="AutoServiceKind.IsBackgroundService"/>
+        IsBackgroundService = 1 << 13,
+
+        /// <inheritdoc cref="AutoServiceKind.IsAmbientService"/>
+        IsAmbientService = 1 << 14,
+
+        /// <inheritdoc cref="AutoServiceKind.IsMultipleService"/>
+        IsMultipleService = 1 << 15,
 
         /// <summary>
         /// Ubiquitous info is a scoped endpoint service (and optionally a auto service) that must be available in all
         /// containers. The instance must be directly marshallable (should be immutable or at least thread safe and
         /// be independent of any other service). See <see cref="EndpointScopedServiceAttribute"/>.
         /// </summary>
-        UbiquitousInfo = 128 | IsEndpointService | IsScoped,
-
-        /// <summary>
-        /// A IPoco marked interface.
-        /// </summary>
-        IsPoco = 256,
+        AmbientService = IsAmbientService | IsBackgroundService | IsRequiredEndpointService | IsScoped,
 
         /// <summary>
         /// A real object is a singleton. 
         /// </summary>
-        RealObject = IsSingleton | 512,
+        RealObject = IsRealObject | IsSingleton,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
@@ -72,16 +83,10 @@ namespace CK.Setup
         LifetimeMask = IsScoped | IsSingleton,
 
         /// <summary>
-        /// Flags set when this type is excluded (by [ExcludeCKType] or type filtering function).
-        /// This is also set when [StObjGen] attribute exists.
-        /// </summary>
-        IsExcludedType = 1024,
-
-        /// <summary>
         /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
         /// (that has been logged) returned an error or an error occurred in endpoint service handling.
         /// </summary>
-        HasError = 2048
+        HasError = 1 << 16
     }
 
     /// <summary>
@@ -90,11 +95,14 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
-        /// Gets the <see cref="AutoServiceKind"/> (masks the internal bits).
+        /// Gets the <see cref="AutoServiceKind"/> (masks the unrelated bits).
         /// </summary>
         /// <param name="this">This type kind.</param>
         /// <returns>The Auto service kind.</returns>
-        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this ) => (AutoServiceKind)((int)@this & 255);
+        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this )
+        {
+            return (AutoServiceKind)((int)(@this & CKTypeKind.AutoServiceKindMask));
+        }
 
         /// <summary>
         /// Returns a string that correctly handles flags and results to <see cref="GetCombinationError(CKTypeKind,bool)"/>
@@ -121,6 +129,11 @@ namespace CK.Setup
             return @this == CKTypeKind.None || GetCombinationError( @this, isClass ) != null;
         }
 
+        public static bool IsAmbientService( this CKTypeKind @this )
+        {
+            return true;
+        }
+
         /// <summary>
         /// Gets the conflicting duplicate status message or null if this CK type kind is valid.
         /// </summary>
@@ -134,11 +147,13 @@ namespace CK.Setup
             bool isAuto = (@this & CKTypeKind.IsAutoService) != 0;
             bool isScoped = (@this & CKTypeKind.IsScoped) != 0;
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
-            bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
+            bool isCtxSingleton = (@this & CKTypeKind.IsPerContextSingleton) != 0;
+            bool isRealObject = (@this & CKTypeKind.IsRealObject) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
-            bool isEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
+            bool isOptEndPoint = (@this & CKTypeKind.IsOptionalEndpointService) != 0;
+            bool isReqEndPoint = (@this & CKTypeKind.IsRequiredEndpointService) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
-            bool isUbiquitous = (@this & (CKTypeKind.UbiquitousInfo & ~CKTypeKind.IsEndpointService & ~CKTypeKind.IsScoped)) != 0;
+            bool isAmbient = (@this & CKTypeKind.IsAmbientService) != 0;
 
 
             string? conflict = null;
@@ -160,28 +175,38 @@ namespace CK.Setup
                     if( !isSingleton ) AddConflict( "RealObject must be a Singleton" );
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
                     if( isScoped ) AddConflict( "RealObject cannot have a Scoped lifetime" );
-                    if( isEndPoint ) AddConflict( "RealObject cannot be a Endpoint service" );
+                    if( isOptEndPoint ) AddConflict( "RealObject cannot be an optional Endpoint service" );
                     if( isMultiple ) AddConflict( "IRealObject interface cannot be marked as a Multiple service" );
+                    // Allow a class to be RealObject that implements a service (usually the default service) but
+                    // forbids defining an interface that is both.
                     if( isAuto && !isClass ) AddConflict( "IRealObject interface cannot be a IAutoService" );
                 }
             }
-            else if( isScoped && isSingleton )
+            else if( isScoped && (isSingleton || isCtxSingleton) )
             {
                 AddConflict( "an interface or an implementation cannot be both Scoped and Singleton" );
             }
-            if( isUbiquitous )
+            if( isAmbient )
             {
-                if( @this != CKTypeKind.UbiquitousInfo && @this != (CKTypeKind.UbiquitousInfo|CKTypeKind.IsAutoService) )
+                if( @this != CKTypeKind.AmbientService && @this != (CKTypeKind.AmbientService|CKTypeKind.IsAutoService) )
                 {
-                    AddConflict( "an ubiquitous info can only be a endpoint scoped service (and optionally a IScopedAutoService)." );
+                    AddConflict( "an ambient service info can only be a required endpoint and background scoped service (and optionally a IScopedAutoService)." );
                 }
             }
-            else if( isEndPoint )
+            else if( isOptEndPoint || isReqEndPoint )
             {
-                if( !isScoped && !isSingleton )
+                if( !isScoped && !(isSingleton | isCtxSingleton) )
                 {
                     AddConflict( "a Endpoint service must be known to be Scoped or Singleton" );
                 }
+            }
+            if( isSingleton && isCtxSingleton )
+            {
+                AddConflict( "a Singleton cannot be both PerContext and proceswide" );
+            }
+            if( isOptEndPoint && isReqEndPoint )
+            {
+                AddConflict( "a Endpoint service cannot be both optional and required" );
             }
             if( isClass )
             {
@@ -189,18 +214,6 @@ namespace CK.Setup
             }
             return conflict == null ? null : $"Invalid CK type combination '{@this.ToStringFlags()}': {conflict} (type is a{(isClass ? " class" : "n interface")}).";
         }
-
-
-        static readonly string[] flags = new[] { "IsAutoService",
-                                                 "IsScopedService",
-                                                 "IsSingleton",
-                                                 "IsRealObject",
-                                                 "IsPoco",
-                                                 "IsUbiquitous",
-                                                 "IsEndpointService",
-                                                 "IsMultipleService",
-                                                 "IsExcludedType",
-                                                 "HasError"};
 
         /// <summary>
         /// Basic string projection where each bit is expressed, regardless of any checks.
@@ -210,18 +223,11 @@ namespace CK.Setup
         public static string ToStringFlags( this CKTypeKind @this )
         {
             if( @this == CKTypeKind.None ) return "None";
-            bool isUbiquitous = (@this & (CKTypeKind.UbiquitousInfo & ~CKTypeKind.IsEndpointService & ~CKTypeKind.IsScoped)) != 0;
-            var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
-                                             || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)
-                                             || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
-                                             || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
-                                             || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && isUbiquitous)
-                                             || (i == 6 && (@this & CKTypeKind.IsEndpointService) != 0)
-                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
-                                             || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
-                                             || (i == 11 && (@this & CKTypeKind.HasError) != 0) );
-            return String.Join( "|", f );
+            var s = (@this & CKTypeKind.IsPoco) != 0
+                        ? "IsPoco"
+                        : ToAutoServiceKind( @this ).ToString().Replace( ", ", "|" );
+            if( (@this & CKTypeKind.HasError) != 0 ) s += "|HasError";
+            return s;
         }
     }
 }

@@ -45,7 +45,8 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a Endpoint service" );
+                TestHelper.GetFailedResult( collector,
+                    "'IsScoped|IsSingleton|IsRealObject|IsOptionalEndpointService': RealObject cannot have a Scoped lifetime, RealObject cannot be an optional Endpoint service" );
             }
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );

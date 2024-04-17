@@ -17,6 +17,7 @@ namespace CK.Setup
     public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
         HashSet<AutoServiceClassInfo>? _ctorParmetersClosure;
+        AutoServiceKind? _serviceKind;
         // Memorizes the EnsureCtorBinding call state.
         bool? _ctorBinding;
 
@@ -159,9 +160,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final service kind.
         /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
-        /// <see cref="AutoServiceKind.IsProcessService"/> are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
         /// </summary>
-        public AutoServiceKind? FinalTypeKind { get; private set; }
+        public AutoServiceKind? FinalTypeKind  => _serviceKind;
 
         /// <summary>
         /// Gets the multiple interfaces that are marked with <see cref="CKTypeKind.IsMultipleService"/>
@@ -390,7 +390,7 @@ namespace CK.Setup
         internal AutoServiceKind ComputeFinalTypeKind( IActivityMonitor m, IAutoServiceKindComputeFacade kindComputeFacade, Stack<AutoServiceClassInfo> path, ref bool success )
         {
             Debug.Assert( !TypeInfo.IsSpecialized, "This is called only on leaf, most specialized, class." );
-            if( !FinalTypeKind.HasValue )
+            if( !_serviceKind.HasValue )
             {
                 var initial = kindComputeFacade.KindDetector.GetValidKind( m, ClassType ).ToAutoServiceKind();
                 var final = initial;
@@ -419,7 +419,7 @@ namespace CK.Setup
                             }
                             else if( p.IsAutoService )
                             {
-                                Debug.Assert( !p.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
+                                Throw.DebugAssert( "A [IsMultiple] interface cancels its IAutoService trait (if any).", !p.IsEnumerable );
                                 pC = p.FinalServiceClass;
                                 Debug.Assert( pC != null );
                                 kP = pC.ComputeFinalTypeKind( m, kindComputeFacade, path, ref success );
@@ -481,10 +481,10 @@ namespace CK.Setup
                         }
                     }
                     if( final != initial ) m.CloseGroup( $"Final: {final}" );
-                    FinalTypeKind = final;
+                    _serviceKind = final;
                 }
             }
-            return FinalTypeKind.Value;
+            return _serviceKind.Value;
         }
 
         /// <summary>
