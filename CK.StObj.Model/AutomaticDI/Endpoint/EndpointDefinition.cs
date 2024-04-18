@@ -46,34 +46,34 @@ namespace CK.Core
 
         /// <summary>
         /// Required base endpoint scoped data for <see cref="EndpointKind.Back"/> endpoints.
-        /// This enables ubiquitous scoped service informations marshalling from the calling context
+        /// This enables ambient service informations marshalling from the calling context
         /// to the called context.
         /// </summary>
         public class BackScopedData : IScopedData
         {
-            readonly AmbientServiceHub _ubiquitousInfo;
+            readonly AmbientServiceHub _ambientServiceHub;
 
             /// <summary>
             /// It is required to provide the endpoint definition instance here so that
-            /// the ubiquitous marshaller can be configured with the existing ubiquitous
+            /// the ambient services marshaller can be configured with the existing ambient
             /// endpoint services.
             /// <para>
             /// Extra parameters can be freely defined (typically the <see cref="IActivityMonitor"/> that must be used in the scope),
-            /// including ones that are ubiquitous information services: this is the explicit and type safe way to inject ubiquitous
+            /// including ones that are ambient services: this is the explicit and type safe way to inject ambient
             /// informations that is both more explicit and efficient than using <see cref="AmbientServiceHub.Override{T}(T)"/>
             /// methods.
             /// </para>
             /// </summary>
-            protected BackScopedData( AmbientServiceHub ubiquitousInfo )
+            protected BackScopedData( AmbientServiceHub ambientServiceHub )
             {
-                Throw.CheckNotNullArgument( ubiquitousInfo );
-                _ubiquitousInfo = ubiquitousInfo;
+                Throw.CheckNotNullArgument( ambientServiceHub );
+                _ambientServiceHub = ambientServiceHub;
             }
 
             /// <summary>
-            /// Gets the ubiquitous information.
+            /// Gets the AmbientServiceHub.
             /// </summary>
-            public AmbientServiceHub UbiquitousInfo => _ubiquitousInfo;
+            public AmbientServiceHub AmbientServiceHub => _ambientServiceHub;
         }
 
     }

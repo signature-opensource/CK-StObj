@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public Task WaitForTerminationAsync() => _runTask;
 
-        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, AmbientServiceHub UbiquitousInfo, object Command, TaskCompletionSource? TCS );
+        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, AmbientServiceHub AmbientServiceHub, object Command, TaskCompletionSource? TCS );
 
         async Task RunAsync()
         {
@@ -57,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 // We want any command executed by this loop to use the same monitor.
                 using( monitor.StartDependentActivity( cmd.CorrelationId, alwaysOpenGroup: true ) )
                 {
-                    var data = new BackgroundEndpointDefinition.Data( cmd.UbiquitousInfo, monitor );
+                    var data = new BackgroundEndpointDefinition.Data( cmd.AmbientServiceHub, monitor );
                     using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
                     {
                         try

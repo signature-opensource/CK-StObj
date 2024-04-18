@@ -8,7 +8,7 @@ namespace CK.Core
     /// Base class for a endpoint definition.
     /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.
     /// The <typeparamref name="TScopeData"/> is a key as well as the <see cref="EndpointDefinition.Name"/>: all endpoint
-    /// must have different name and different scope data type otherwise a setup error will occur.
+    /// must have different name and different scope data type otherwise a setup error will be raised.
     /// </summary>
     /// <typeparam name="TScopeData">
     /// Type of the scoped data that is injected in <see cref="IEndpointServiceProvider{TScopeData}"/>.

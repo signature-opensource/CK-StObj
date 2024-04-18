@@ -34,9 +34,9 @@ namespace CK.Setup
         IReadOnlyList<EndpointTypeManager.AmbientServiceMapping> AmbientServiceMappings { get; }
 
         /// <summary>
-        /// Captures the ubiquitous default provider implementation.
+        /// Captures the ambient service default provider implementation.
         /// </summary>
-        public readonly struct UbiquitousDefault
+        public readonly struct AmbientServiceDefault
         {
             /// <summary>
             /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> type that the
@@ -54,7 +54,7 @@ namespace CK.Setup
             /// </summary>
             /// <param name="providerType">The <see cref="IEndpointUbiquitousServiceDefault{T}"/> type.</param>
             /// <param name="provider">The service implementation.</param>
-            public UbiquitousDefault( Type providerType, IStObjFinalClass provider )
+            public AmbientServiceDefault( Type providerType, IStObjFinalClass provider )
             {
                 ProviderType = providerType;
                 Provider = provider;
@@ -62,9 +62,9 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ubiquitous
+        /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ambient
         /// service.
         /// </summary>
-        IReadOnlyList<UbiquitousDefault> DefaultUbiquitousValueProviders { get; }
+        IReadOnlyList<AmbientServiceDefault> DefaultAmbientServiceValueProviders { get; }
     }
 }

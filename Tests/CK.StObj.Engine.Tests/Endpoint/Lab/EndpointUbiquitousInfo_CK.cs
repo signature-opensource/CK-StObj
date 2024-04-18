@@ -22,11 +22,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // This is not the case of IFakeAuthenticationInfo/FakeAuthenticationInfo: these are
             // de facto 2 independent services (standard DI behavior).
             _descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
-                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(IFakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
-                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
-                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(IFakeAuthenticationInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 1 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
-                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeAuthenticationInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 2 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
-                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeCultureInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 3 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(IFakeTenantInfo), sp => ScopeDataHolder.GetAmbientService( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeTenantInfo), sp => ScopeDataHolder.GetAmbientService( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(IFakeAuthenticationInfo), sp => ScopeDataHolder.GetAmbientService( sp, 1 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeAuthenticationInfo), sp => ScopeDataHolder.GetAmbientService( sp, 2 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+                new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeCultureInfo), sp => ScopeDataHolder.GetAmbientService( sp, 3 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
             };
         }
 
@@ -44,7 +44,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             {
                 var o = services.GetService( type );
                 if( o != null ) return o;
-                return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type.ToCSharpName()}' not registered! This type must always be resolvable." );
+                return Throw.InvalidOperationException<object>( $"Ambient service '{type.ToCSharpName()}' not registered! This type must always be resolvable." );
             }
         }
 

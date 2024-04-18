@@ -167,7 +167,7 @@ namespace CK.Core
             {
                 if( _entries[i].AmbientServiceType == t ) return i;
             }
-            return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ubiquitous service." );
+            return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ambient service." );
         }
 
         void DoOverride( Type type, object instance )

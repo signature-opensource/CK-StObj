@@ -347,9 +347,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             }
         }
 
-        public class UbiquitousConsumer : IScopedAutoService
+        public class AmbientServiceConsumer : IScopedAutoService
         {
-            public UbiquitousConsumer( IFakeAuthenticationInfo authInfo, IFakeTenantInfo tenantInfo, FakeCultureInfo cultureInfo )
+            public AmbientServiceConsumer( IFakeAuthenticationInfo authInfo, IFakeTenantInfo tenantInfo, FakeCultureInfo cultureInfo )
             {
                 AuthInfo = authInfo;
                 TenantInfo = tenantInfo;
@@ -368,13 +368,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             ServiceCollection global = new ServiceCollection();
             FakeHost.ConfigureGlobal( global );
-            global.AddScoped<UbiquitousConsumer>();
+            global.AddScoped<AmbientServiceConsumer>();
 
             IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            var fromGlobal = scopedG.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var fromGlobal = scopedG.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             fromGlobal.AuthInfo.UserName.Should().Be( "Bob" );
             fromGlobal.CultureInfo.Culture.Should().Be( "fr" );
             fromGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
@@ -385,7 +385,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             using var scopedNoOverride = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
             ubiq.IsDirty.Should().BeFalse( "The AmbientServiceHub has no override." );
             ubiq.IsLocked.Should().BeTrue( "The AmbientServiceHub has been locked." );
-            var sameAsGlobal = scopedNoOverride.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var sameAsGlobal = scopedNoOverride.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             sameAsGlobal.AuthInfo.UserName.Should().Be( "Bob" );
             sameAsGlobal.CultureInfo.Culture.Should().Be( "fr" );
             sameAsGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
@@ -396,7 +396,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             ubiqWithCulture.IsLocked.Should().BeFalse();
             ubiqWithCulture.Override( new FakeCultureInfo( "en" ) );
             using var scopedDiffCulture = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiqWithCulture, TestHelper.Monitor ) );
-            var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withEnCulture.AuthInfo.UserName.Should().Be( "Bob" );
             withEnCulture.CultureInfo.Culture.Should().Be( "en" );
             withEnCulture.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
@@ -407,7 +407,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             ubiqWithAlice.Override( new FakeAuthenticationInfo( "Alice (class)", 3712 ) );
             ubiqWithAlice.Override( typeof(IFakeAuthenticationInfo), new FakeAuthenticationInfo( "Alice (interface)", 3712 ) );
             using var scopedForAlice = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
-            var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withAlice.AuthInfo.UserName.Should().Be( "Alice (interface)" );
             // If the consumer depended on the class, it would have used the other instance!
             scopedForAlice.ServiceProvider.GetRequiredService<FakeAuthenticationInfo>().UserName.Should().Be( "Alice (class)" );
@@ -420,7 +420,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             ubiqWithTenant.IsLocked.Should().BeFalse();
             ubiqWithTenant.Override( new FakeTenantInfo( "AnotherTenant" ) );
             using var scopedDiffTenant = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiqWithTenant, TestHelper.Monitor ) );
-            var withEnTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var withEnTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withEnTenant.AuthInfo.UserName.Should().Be( "Bob" );
             withEnTenant.CultureInfo.Culture.Should().Be( "fr" );
             withEnTenant.TenantInfo.Name.Should().Be( "AnotherTenant" );
@@ -430,7 +430,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             ubiqWithTenantByI.IsLocked.Should().BeFalse();
             ubiqWithTenantByI.Override( typeof(IFakeTenantInfo), new FakeTenantInfo( "AnotherTenant" ) );
             using var scopedDiffTenantByI = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiqWithTenantByI, TestHelper.Monitor ) );
-            var withEnTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var withEnTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withEnTenantByI.AuthInfo.UserName.Should().Be( "Bob" );
             withEnTenantByI.CultureInfo.Culture.Should().Be( "fr" );
             withEnTenantByI.TenantInfo.Name.Should().Be( "AnotherTenant" );

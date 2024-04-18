@@ -43,10 +43,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 new AmbientServiceMapping( typeof(FakeAuthenticationInfo), 2 ),
                 new AmbientServiceMapping( typeof(FakeCultureInfo), 3 )
             );
-            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetUbiquitous( sp, 0 );
-            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetUbiquitous( sp, 1 );
-            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetUbiquitous( sp, 2 );
-            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetUbiquitous( sp, 3 );
+            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetAmbientService( sp, 0 );
+            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
+            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetAmbientService( sp, 2 );
+            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetAmbientService( sp, 3 );
             _ubiquitousBackDescriptors = new ServiceDescriptor[] {
                     new ServiceDescriptor( typeof( IFakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), back0, ServiceLifetime.Scoped ),

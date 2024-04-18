@@ -80,7 +80,7 @@ namespace CK.Setup
                 {
                     oGetter = $"back{e.MappingIndex}";
                     sharedPart.Append( "Func<IServiceProvider,object> " ).Append( (string)oGetter )
-                              .Append( " = sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append( e.MappingIndex ).Append( " );" ).NewLine();
+                              .Append( " = sp => CK.StObj.ScopeDataHolder.GetAmbientService( sp, " ).Append( e.MappingIndex ).Append( " );" ).NewLine();
                     sharedPart.Memory.Add( e.MappingIndex, oGetter );
                 }
                 Debug.Assert( oGetter != null );
@@ -93,7 +93,7 @@ namespace CK.Setup
             scope.Append( "_ubiquitousFrontDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
             foreach( var e in endpointResult.AmbientServiceMappings )
             {
-                var defaultProvider = endpointResult.DefaultUbiquitousValueProviders[e.MappingIndex];
+                var defaultProvider = endpointResult.DefaultAmbientServiceValueProviders[e.MappingIndex];
                 if( !sharedPart.Memory.TryGetValue( defaultProvider.Provider.ClassType, out var oGetter ) )
                 {
                     oGetter = $"front{e.MappingIndex}";

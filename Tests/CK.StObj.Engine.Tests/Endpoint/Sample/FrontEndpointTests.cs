@@ -107,16 +107,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             {
                 const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>'. " +
-                                   "Type 'FakeAuthenticationInfo' is not a valid Ubiquitous information service, " +
-                                   "all ubiquitous service must have a default value provider.";
+                                   "Type 'FakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
                                                          typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) );
                 TestHelper.GetFailedResult( c, msg );
             }
             {
                 const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>'. " +
-                                   "Type 'IFakeAuthenticationInfo' is not a valid Ubiquitous information service, " +
-                                   "all ubiquitous service must have a default value provider.";
+                                   "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
                                                          typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
                 TestHelper.GetFailedResult( c, msg );

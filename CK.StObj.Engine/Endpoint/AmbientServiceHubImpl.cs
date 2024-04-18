@@ -35,7 +35,7 @@ namespace CK.Setup
             {
                 descriptors.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
                            .AppendTypeOf( type )
-                           .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append(index)
+                           .Append( ", sp => CK.StObj.ScopeDataHolder.GetAmbientService( sp, " ).Append(index)
                            .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
 
@@ -58,7 +58,7 @@ namespace CK.Setup
                           {
                               var o = services.GetService( type );
                               if( o != null ) return o;
-                              return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
+                              return Throw.InvalidOperationException<object>( $"Ambient service '{type}' not registered! This type must always be resolvable." );
                           }
                           """ )
                .CloseBlock();

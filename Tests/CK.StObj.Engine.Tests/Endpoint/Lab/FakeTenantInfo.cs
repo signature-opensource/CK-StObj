@@ -1,10 +1,9 @@
-using System.Text.RegularExpressions;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
     /// <inheritdoc cref="IFakeTenantInfo"/>
     /// <remarks>
-    /// Ubiquitous services are NOT automatically resolved:
+    /// Ambient services are NOT automatically resolved:
     /// - Their resolution is explicitly registered via a factory (since they are scoped) by the EndpointDefinition.ConfigureServiceEndpoint method
     /// - OR they are resolved from the AmbientServiceHub scoped data (for backend contexts)
     /// - OR they are resolved to their default value (by their IEndpointUbiquitousServiceDefault singleton companion) for Front endpoint.

@@ -145,7 +145,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            monitor.Error( $"Ubiquitous service '{d.ServiceType.Name}' is mapped more than once. Ubiquitous service cannot be added more than once in a DI container." );
+                            monitor.Error( $"Ambient service '{d.ServiceType.Name}' is mapped more than once. Ambient service cannot be added more than once in a DI container." );
                             success = false;
                         }
                     }
@@ -467,17 +467,17 @@ namespace CK.Setup
                 [AllowNull]
                 internal EndpointDefinition.IScopedData _data;
 
-                internal static object GetUbiquitous( IServiceProvider sp, int index )
+                internal static object GetAmbientService( IServiceProvider sp, int index )
                 {
                     // This looks scary, but:
                     // - first we resolve the ScopeDataHolder type that is necessary a ScopeDataHolder.
                     // - then we know that the _data is necessarily a BackScopedData because:
-                    //      - this method is called only for back endpoints (front endpoints use the IEndpointUbiquitousServiceDefault<>
-                    //        singletons to resolve missing ubiquitous info instead of relying on the scoped Ubiquitous instance.
-                    //      - the BackScopedData inheritance is checked at setup time for Back endpoints.
-                    // - We can then access the UbiquitousInfo instance that is the code generated class with its At( mappingIndex )
+                    //      - this method is called only for backend contexts (front endpoints use the IEndpointUbiquitousServiceDefault<>
+                    //        singletons to resolve missing Ambient services instead of relying on the scoped instance).
+                    //      - the BackScopedData inheritance is checked at setup time for Backend contexts.
+                    // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
                     //   hidden accessor.
-                    return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<EndpointDefinition.BackScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).UbiquitousInfo ).At( index );
+                    return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<EndpointDefinition.BackScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).AmbientServiceHub ).At( index );
                 }
             }
             
@@ -564,7 +564,7 @@ namespace CK.Setup
                     public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
                     {
                         var scope = _serviceProvider.CreateAsyncScope();
-                        if( scopedData is EndpointDefinition.BackScopedData back ) back.UbiquitousInfo.Lock();
+                        if( scopedData is EndpointDefinition.BackScopedData back ) back.AmbientServiceHub.Lock();
                         scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                         return scope;
                     }
@@ -572,7 +572,7 @@ namespace CK.Setup
                     public IServiceScope CreateScope( TScopedData scopedData )
                     {
                         var scope = _serviceProvider.CreateScope();
-                        if( scopedData is EndpointDefinition.BackScopedData back ) back.UbiquitousInfo.Lock();
+                        if( scopedData is EndpointDefinition.BackScopedData back ) back.AmbientServiceHub.Lock();
                         scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                         return scope;
                     }
@@ -647,8 +647,8 @@ namespace CK.Setup
                             }
                             else mappings.Add( d.ServiceType, new Mapping( false, null, d ) );
 
-                            bool isUbiquitousInfo = EndpointTypeManager_CK._ubiquitousMappings.Any( uD => uD.AmbientServiceType == d.ServiceType );
-                            if( !isUbiquitousInfo )
+                            bool isAmbientService = EndpointTypeManager_CK._ubiquitousMappings.Any( uD => uD.AmbientServiceType == d.ServiceType );
+                            if( !isAmbientService )
                             {
                                 if( d.Lifetime == ServiceLifetime.Singleton )
                                 {

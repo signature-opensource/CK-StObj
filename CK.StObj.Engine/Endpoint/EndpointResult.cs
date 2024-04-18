@@ -21,7 +21,7 @@ namespace CK.Setup
         readonly IReadOnlyList<EndpointContext> _contexts;
         readonly IReadOnlyList<Type> _rawAmbientServices;
         readonly List<EndpointTypeManager.AmbientServiceMapping> _ubiquitousMappings;
-        readonly List<IEndpointResult.UbiquitousDefault> _ubiquitousDefaults;
+        readonly List<IEndpointResult.AmbientServiceDefault> _ubiquitousDefaults;
 
         /// <inheritdoc />
         public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
@@ -36,7 +36,7 @@ namespace CK.Setup
         public IReadOnlyList<EndpointTypeManager.AmbientServiceMapping> AmbientServiceMappings => _ubiquitousMappings;
 
         /// <inheritdoc />
-        public IReadOnlyList<IEndpointResult.UbiquitousDefault> DefaultUbiquitousValueProviders => _ubiquitousDefaults;
+        public IReadOnlyList<IEndpointResult.AmbientServiceDefault> DefaultAmbientServiceValueProviders => _ubiquitousDefaults;
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,
                         IReadOnlyDictionary<Type, AutoServiceKind> endpointServices,
@@ -46,7 +46,7 @@ namespace CK.Setup
             _endpointServices = endpointServices;
             _rawAmbientServices = ubiquitousServices;
             _ubiquitousMappings = new List<EndpointTypeManager.AmbientServiceMapping>();
-            _ubiquitousDefaults = new List<IEndpointResult.UbiquitousDefault>();
+            _ubiquitousDefaults = new List<IEndpointResult.AmbientServiceDefault>();
         }
 
         internal static EndpointResult? Create( IActivityMonitor monitor,
@@ -130,7 +130,7 @@ namespace CK.Setup
                 {
                     // We check that if more than one default value provider exists,
                     // they are the same final type.
-                    IEndpointResult.UbiquitousDefault? defaultProvider = null;
+                    IEndpointResult.AmbientServiceDefault? defaultProvider = null;
                     // We (heavily) rely on the fact that the UniqueMappings are ordered
                     // from most abstract to leaf type here.
                     foreach( var m in auto.UniqueMappings )
@@ -175,26 +175,26 @@ namespace CK.Setup
             }
             return success;
 
-            static IEndpointResult.UbiquitousDefault? FindDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services, Type ubiquitousType, bool expected )
+            static IEndpointResult.AmbientServiceDefault? FindDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services, Type ambientServiceType, bool expected )
             {
-                Type defaultProviderType = typeof( IEndpointUbiquitousServiceDefault<> ).MakeGenericType( ubiquitousType );
+                Type defaultProviderType = typeof( IEndpointUbiquitousServiceDefault<> ).MakeGenericType( ambientServiceType );
                 var defaultProvider = services.ToLeaf( defaultProviderType );
                 if( defaultProvider == null )
                 {
                     if( expected )
                     {
                         monitor.Error( $"Unable to find an implementation for '{defaultProviderType:C}'. " +
-                                       $"Type '{ubiquitousType.Name}' is not a valid Ubiquitous information service, all ubiquitous service must have a default value provider." );
+                                       $"Type '{ambientServiceType.Name}' is not a valid Ambient service, all ambient services must have a default value provider." );
                     }
                     return null;
                 }
-                return new IEndpointResult.UbiquitousDefault( defaultProviderType, defaultProvider );
+                return new IEndpointResult.AmbientServiceDefault( defaultProviderType, defaultProvider );
             }
 
             static bool FindSameDefaultProvider( IActivityMonitor monitor,
                                                  IStObjServiceEngineMap services,
                                                  Type t,
-                                                 ref IEndpointResult.UbiquitousDefault? defaultProvider )
+                                                 ref IEndpointResult.AmbientServiceDefault? defaultProvider )
             {
                 var d = FindDefaultProvider( monitor, services, t, false );
                 if( d != null )
