@@ -17,13 +17,13 @@ namespace CK.Setup
     {
         readonly DynamicAssembly _tempAssembly;
         readonly BuildValueCollector? _valueCollector;
-        readonly EndpointResult? _endpointResult;
+        readonly DIContainerAnalysisResult? _endpointResult;
         readonly CKTypeCollectorResult _typeResult;
         readonly IStObjEngineMap? _engineMap;
 
         internal StObjCollectorResult( CKTypeCollectorResult typeResult,
                                        DynamicAssembly tempAssembly,
-                                       EndpointResult? e,
+                                       DIContainerAnalysisResult? e,
                                        BuildValueCollector? valueCollector )
         {
             Throw.DebugAssert( "typeResult.HasFatalError ==> valueCollector == null (i.e. valueCollector != null ==> !typeResult.HasFatalError)",
@@ -56,7 +56,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the endpoint results if no error occurred during analysis, null otherwise.
         /// </summary>
-        public EndpointResult? EndpointResult => _endpointResult;
+        public DIContainerAnalysisResult? EndpointResult => _endpointResult;
 
         /// <summary>
         /// Gets the final <see cref="IStObjEngineMap"/> if <see cref="HasFatalError"/> is false.

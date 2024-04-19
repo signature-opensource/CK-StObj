@@ -35,8 +35,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        [EndpointDefinition( EndpointKind.Front )]
-        public abstract class SomeFrontEndpointDefinition : EndpointDefinition<SomeFrontEndpointDefinition.Data>
+        [DIContainerDefinition( DIContainerKind.Endpoint )]
+        public abstract class SomeFrontDIContainerDefinition : DIContainerDefinition<SomeFrontDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData
             {
@@ -55,9 +55,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task Front_endpoint_default_for_ubiquitous_services_Async()
+        public async Task Front_endpoint_default_for_Ambient_services_Async()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( SomeFrontEndpointDefinition ),
+            var c = TestHelper.CreateStObjCollector( typeof( SomeFrontDIContainerDefinition ),
                                                      typeof( FakeTenantInfo ),
                                                      typeof( DefaultTenantProvider ),
                                                      typeof( FakeCultureInfo ),
@@ -68,11 +68,11 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             await TestHelper.StartHostedServicesAsync( services );
 
-            var someFront = services.GetRequiredService<IEndpointType<SomeFrontEndpointDefinition.Data>>();
+            var someFront = services.GetRequiredService<IDIContainer<SomeFrontDIContainerDefinition.Data>>();
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                using( var scoped = someFront.GetContainer().CreateScope( new SomeFrontEndpointDefinition.Data( TestHelper.Monitor ) ) )
+                using( var scoped = someFront.GetContainer().CreateScope( new SomeFrontDIContainerDefinition.Data( TestHelper.Monitor ) ) )
                 {
                     var tenantI = scoped.ServiceProvider.GetRequiredService<IFakeTenantInfo>();
                     var tenantC = scoped.ServiceProvider.GetRequiredService<FakeTenantInfo>();
@@ -103,7 +103,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
         [Test]
-        public void ubiquitous_services_are_painful_when_they_are_not_AutoService()
+        public void Ambient_services_are_painful_when_they_are_not_AutoService()
         {
             {
                 const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>'. " +

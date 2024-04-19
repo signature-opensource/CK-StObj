@@ -80,13 +80,13 @@ namespace CK.Core
         ///     </list>
         ///     </item>
         ///     <item>
-        ///     If any <see cref="EndpointDefinition"/> exist, a common <see cref="IServiceProvider"/> blueprint for endpoint containers is created.
+        ///     If any <see cref="DIContainerDefinition"/> exist, a common <see cref="IServiceProvider"/> blueprint for endpoint containers is created.
         ///     </item>
         ///     <item>
         ///     The global and the common endpoint service collections are then configured with the real objects and auto services.
         ///     </item>
         ///     <item>
-        ///     Existing endpoints are initialized and build their own container, configured by their <see cref="EndpointDefinition{TScopeData}.ConfigureEndpointServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>.
+        ///     Existing endpoints are initialized and build their own container, configured by their <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>.
         ///     </item>
         /// </list>
         /// </summary>

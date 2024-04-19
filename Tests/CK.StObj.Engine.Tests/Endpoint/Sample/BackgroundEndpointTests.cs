@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task Background_execution_Async( string mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( DefaultCommandProcessor ),
-                                                     typeof( BackgroundEndpointDefinition ),
+                                                     typeof( BackgroundDIContainerDefinition ),
                                                      typeof( BackgroundExecutor ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( TenantResolutionService ),
@@ -86,7 +86,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessorWithOptions ),
                                                      typeof( SampleCommandMemory ),
-                                                     typeof( BackgroundEndpointDefinition ),
+                                                     typeof( BackgroundDIContainerDefinition ),
                                                      typeof( BackgroundExecutor ) );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
@@ -117,7 +117,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessorWithOptionsSnapshot ),
                                                      typeof( SampleCommandMemory ),
-                                                     typeof( BackgroundEndpointDefinition ),
+                                                     typeof( BackgroundDIContainerDefinition ),
                                                      typeof( BackgroundExecutor ) );
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
@@ -162,7 +162,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessorWithOptionsMonitor ),
                                                      typeof( SampleCommandMemory ),
-                                                     typeof( BackgroundEndpointDefinition ),
+                                                     typeof( BackgroundDIContainerDefinition ),
                                                      typeof( BackgroundExecutor ) );
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );

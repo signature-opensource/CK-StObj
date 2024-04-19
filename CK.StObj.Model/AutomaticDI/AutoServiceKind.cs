@@ -6,8 +6,8 @@ namespace CK.Core
     /// Detailed flags that categorizes service types used by the Automatic DI.
     /// This is a subset of a more complex enumeration defined and used by the engine but
     /// due to the hybrid nature of the DI configuration, these flags need to be known by
-    /// the generated code that configures the contexts endpoints containers.
-    /// This is why they are exposed at the Model level.
+    /// the generated code that configures the DI containers: this is why they are exposed
+    /// at the Model level.
     /// </summary>
     [Flags]
     public enum AutoServiceKind
@@ -24,27 +24,21 @@ namespace CK.Core
         IsAutoService = 1 << 6,
 
         /// <summary>
-        /// The type is known to be a scoped DI service. Each Unit of Work is provided a unique instance.
+        /// The service is known to be a scoped service. Each Unit of Work is provided a unique instance.
         /// <list type="bullet">
-        ///     <item><term>Implies</term><description></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsSingleton"/> and <see cref="IsPerContextSingleton"/></description></item>
+        ///     <item><term>Rejects</term><description><see cref="IsSingleton"/></description></item>
         /// </list>
         /// </summary>
         IsScoped = 1 << 7,
 
         /// <summary>
-        /// The type is a processwide singleton (a "true singleton"): all Unit of Works (including concurrent ones) in
-        /// any DI context (endpoints and background) will use the exact same instance.
+        /// The service is known to be a singleton service: all Unit of Works (including concurrent ones) will use the exact same instance.
         /// <list type="bullet">
-        ///     <item><term>Implies</term><description><see cref="IsRequiredEndpointService"/> and <see cref="IsBackgroundService"/></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsScoped"/> and <see cref="IsPerContextSingleton"/></description></item>
+        ///     <item><term>Rejects</term><description><see cref="IsScoped"/></description></item>
         /// </list>
-        /// <para>
-        /// Being a processwide singleton is the default (this reflects the <see cref="ISingletonAutoService"/> interface marker).
-        /// Per-context singletons are less common, see <see cref="IsPerContextSingleton"/>.
-        /// </para>
         /// </summary>
         IsSingleton = 1 << 8,
+
 
         /// <summary>
         /// The type is singleton: all Unit of Works (including concurrent ones) in the DI context will use the same instance
@@ -82,7 +76,7 @@ namespace CK.Core
         ///     <item><term>Rejects</term><description><see cref="IsRequiredEndpointService"/></description></item>
         /// </list>
         /// <para>
-        /// It is up to each <see cref="EndpointDefinition{TScopeData}.ConfigureEndpointServices"/> to register
+        /// It is up to each <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices"/> to register
         /// an implementation or not for this service.
         /// </para>
         /// </summary>
@@ -95,7 +89,7 @@ namespace CK.Core
         ///     <item><term>Rejects</term><description><see cref="IsOptionalEndpointService"/></description></item>
         /// </list>
         /// <para>
-        /// All endpoint <see cref="EndpointDefinition{TScopeData}.ConfigureEndpointServices"/> methods
+        /// All endpoint <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices"/> methods
         /// must be able to register an implementation for it.
         /// </para>
         /// </summary>

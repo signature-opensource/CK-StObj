@@ -9,11 +9,11 @@ using System.Linq;
 namespace CK.Core
 {
     /// <summary>
-    /// Gives access to all the existing <see cref="EndpointDefinition"/>.
-    /// This is a singleton service that is available from all endpoint container.
+    /// Gives access to all the existing <see cref="DIContainerDefinition"/> and <see cref="IDIContainer"/>.
+    /// This is a singleton service that is available in all containers.
     /// </summary>
-    [Setup.ContextBoundDelegation( "CK.Setup.EndpointTypeManagerImpl, CK.StObj.Engine" )]
-    public abstract class EndpointTypeManager : ISingletonAutoService
+    [Setup.ContextBoundDelegation( "CK.Setup.DIContainerHubImpl, CK.StObj.Engine" )]
+    public abstract class DIContainerHub : ISingletonAutoService
     {
         /// <summary>
         /// Used by the generated code.
@@ -26,9 +26,9 @@ namespace CK.Core
         public IServiceProvider GlobalServiceProvider => _global!;
 
         /// <summary>
-        /// Gets all the EndpointDefinition.
+        /// Gets all the container definitions.
         /// </summary>
-        public abstract IReadOnlyList<EndpointDefinition> EndpointDefinitions { get; }
+        public abstract IReadOnlyList<DIContainerDefinition> ContainerDefinitions { get; }
 
         /// <summary>
         /// Gets all the service types that are declared as endpoint services and their kind.
@@ -36,18 +36,26 @@ namespace CK.Core
         public abstract IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices { get; }
 
         /// <summary>
-        /// Gets the available <see cref="IEndpointType"/>.
+        /// Gets all the containers.
         /// </summary>
-        public abstract IReadOnlyList<IEndpointType> EndpointTypes { get; }
+        public abstract IReadOnlyList<IDIContainer> Containers { get; }
 
         /// <summary>
-        /// A ubiquitous mapping supports auto service unique mappings by associating
-        /// to ubiquitous auto service a single entry: <see cref="AmbientServiceHub"/> uses this
+        /// Lists all the ambient service types where <see cref="IAutoService"/> inheritance chains
+        /// are expanded. See <see cref="AmbientServiceMapping"/>. Order matters: consecutive entries with
+        /// the same <see cref="AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
+        /// chain.
+        /// </summary>
+        public abstract IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings { get; }
+
+        /// <summary>
+        /// A AmbientServiceMapping supports auto service unique mappings by associating
+        /// to ambient auto service a single entry: <see cref="AmbientServiceHub"/> uses this
         /// when overriding a value to automatically sets all the unique mappings to the same value whatever
         /// the type used as the key.
         /// <para>
         /// This is also used to map to the <see cref="IEndpointUbiquitousServiceDefault{T}"/> that must be used when a
-        /// ubiquitous service resolution is not registered by a endpoint.
+        /// ambient service resolution is not registered by a endpoint.
         /// </para>
         /// </summary>
         public readonly struct AmbientServiceMapping
@@ -83,14 +91,6 @@ namespace CK.Core
             }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         }
-
-        /// <summary>
-        /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="AmbientServiceMapping"/>. Order matters: consecutive entries with
-        /// the same <see cref="AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
-        /// chain.
-        /// </summary>
-        public abstract IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings { get; }
 
     }
 

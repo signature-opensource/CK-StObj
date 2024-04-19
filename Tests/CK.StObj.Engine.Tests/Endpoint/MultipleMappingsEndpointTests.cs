@@ -38,8 +38,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             public IEnumerable<IMany> All { get; }
         }
 
-        [EndpointDefinition( EndpointKind.Front )]
-        public abstract class FirstEndpointDefinition : EndpointDefinition<FirstEndpointDefinition.Data>
+        [DIContainerDefinition( DIContainerKind.Endpoint )]
+        public abstract class FirstDIContainerDefinition : DIContainerDefinition<FirstDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData
             {
@@ -54,8 +54,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        [EndpointDefinition( EndpointKind.Front )]
-        public abstract class SecondEndpointDefinition : EndpointDefinition<SecondEndpointDefinition.Data>
+        [DIContainerDefinition( DIContainerKind.Endpoint )]
+        public abstract class SecondDIContainerDefinition : DIContainerDefinition<SecondDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData
             {
@@ -75,8 +75,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ),
                                                              typeof( ManyConsumer ),
-                                                             typeof( FirstEndpointDefinition ),
-                                                             typeof( SecondEndpointDefinition ) );
+                                                             typeof( FirstDIContainerDefinition ),
+                                                             typeof( SecondDIContainerDefinition ) );
             var result = TestHelper.CreateAutomaticServices( collector );
             await TestHelper.StartHostedServicesAsync( result.Services );
             try
@@ -84,8 +84,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var g = result.Services;
-                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
-                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+                var e2 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
                 using var s1 = e1.GetContainer().CreateScope();
                 using var s2 = e2.GetContainer().CreateScope();
 
@@ -112,8 +112,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                              typeof( ManyAuto2 ),
                                                              typeof( ManySingleton2 ),
                                                              typeof( ManyConsumer ),
-                                                             typeof( FirstEndpointDefinition ),
-                                                             typeof( SecondEndpointDefinition ) );
+                                                             typeof( FirstDIContainerDefinition ),
+                                                             typeof( SecondDIContainerDefinition ) );
             var result = TestHelper.CreateAutomaticServices( collector );
             await TestHelper.StartHostedServicesAsync( result.Services );
             try
@@ -121,8 +121,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var g = result.Services;
-                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
-                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+                var e2 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
                 using var s1 = e1.GetContainer().CreateScope();
                 using var s2 = e2.GetContainer().CreateScope();
 
@@ -149,8 +149,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ManyScoped ),
                                                              typeof( ManyConsumer ),
-                                                             typeof( FirstEndpointDefinition ),
-                                                             typeof( SecondEndpointDefinition ) );
+                                                             typeof( FirstDIContainerDefinition ),
+                                                             typeof( SecondDIContainerDefinition ) );
             var result = TestHelper.CreateAutomaticServices( collector );
             await TestHelper.StartHostedServicesAsync( result.Services );
             try
@@ -158,8 +158,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+                var e2 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
                 using var s1 = e1.GetContainer().CreateScope();
                 using var s2 = e2.GetContainer().CreateScope();
 
@@ -189,8 +189,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var collector = TestHelper.CreateStObjCollector( typeof( ManyScoped ),
                                                              typeof( ManyScoped2 ),
                                                              typeof( ManyConsumer ),
-                                                             typeof( FirstEndpointDefinition ),
-                                                             typeof( SecondEndpointDefinition ) );
+                                                             typeof( FirstDIContainerDefinition ),
+                                                             typeof( SecondDIContainerDefinition ) );
             var result = TestHelper.CreateAutomaticServices( collector,
                                                              configureServices: s =>
                                                              {
@@ -203,8 +203,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+                var e2 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
                 using var s1 = e1.GetContainer().CreateScope();
                 using var s2 = e2.GetContainer().CreateScope();
 
@@ -241,8 +241,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         // IMany will be resolved as Singleton because the auto services ManySingleton is registered.
         // This Buggy endpoint declares a IMany scoped service: this will fail when registering the StObjMap.
-        [EndpointDefinition( EndpointKind.Front )]
-        public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<ManyAsScopedEndpointDefinition.Data>
+        [DIContainerDefinition( DIContainerKind.Endpoint )]
+        public abstract class ManyAsScopedDIContainerDefinition : DIContainerDefinition<ManyAsScopedDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData
             {
@@ -264,15 +264,15 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
                                                              typeof( ManyConsumer ),
-                                                             typeof( ManyAsScopedEndpointDefinition ) );
+                                                             typeof( ManyAsScopedDIContainerDefinition ) );
             TestHelper.GetFailedAutomaticServicesConfiguration( collector,
                                                                 "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
         }
 
 
         // This one will be fine.
-        [EndpointDefinition( EndpointKind.Front )]
-        public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<ManyAsSingletonEndpointDefinition.Data>
+        [DIContainerDefinition( DIContainerKind.Endpoint )]
+        public abstract class ManyAsSingletonDIContainerDefinition : DIContainerDefinition<ManyAsSingletonDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData
             {
@@ -292,14 +292,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton),
                                                              typeof( ManyConsumer ),
-                                                             typeof( ManyAsSingletonEndpointDefinition ) );
+                                                             typeof( ManyAsSingletonDIContainerDefinition ) );
             var result = TestHelper.CreateAutomaticServices( collector );
             await TestHelper.StartHostedServicesAsync( result.Services );
             try
             {
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
 
-                var e = result.Services.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<ManyAsSingletonEndpointDefinition.Data>>().Single();
+                var e = result.Services.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<ManyAsSingletonDIContainerDefinition.Data>>().Single();
                 using var s1 = e.GetContainer().CreateScope();
 
                 var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
@@ -318,7 +318,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
                                                              typeof( ManyConsumer ),
-                                                             typeof( ManyAsScopedEndpointDefinition ) );
+                                                             typeof( ManyAsScopedDIContainerDefinition ) );
             var result = TestHelper.GetFailedAutomaticServicesConfiguration( collector,
                                                                              "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
                                                                              configureServices: s =>

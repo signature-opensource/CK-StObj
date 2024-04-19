@@ -9,7 +9,7 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements the EndpointTypeManager.
+    /// Implements the DIContainerHub.
     /// </summary>
     public sealed class AmbientServiceHubImpl : CSCodeGeneratorType
     {
@@ -41,9 +41,9 @@ namespace CK.Setup
 
 
             scope.GeneratedByComment( "Constructor initializer" )
-                 .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries )" )
+                 .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )" )
                  .OpenBlock()
-                 .Append( "entries = EndpointTypeManager_CK._ubiquitousMappings;" ).NewLine()
+                 .Append( "entries = DIContainerHub_CK._ubiquitousMappings;" ).NewLine()
                  .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
             foreach( var (type, index) in mappings )
@@ -66,7 +66,7 @@ namespace CK.Setup
             scope.Append( """
                            internal object At( int index ) => _mappers[index].Current;
 
-                           AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
+                           AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ubiquitousMappings ) { }
 
                            public override AmbientServiceHub CleanClone()
                            {

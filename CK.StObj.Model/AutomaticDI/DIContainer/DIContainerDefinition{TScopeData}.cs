@@ -5,19 +5,19 @@ using System.Collections.Generic;
 namespace CK.Core
 {
     /// <summary>
-    /// Base class for a endpoint definition.
-    /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.
-    /// The <typeparamref name="TScopeData"/> is a key as well as the <see cref="EndpointDefinition.Name"/>: all endpoint
+    /// Base class for a container definition.
+    /// The specialized class must be decorated with <see cref="DIContainerDefinitionAttribute"/>.
+    /// The <typeparamref name="TScopeData"/> is a key as well as the <see cref="DIContainerDefinition.Name"/>: all containers
     /// must have different name and different scope data type otherwise a setup error will be raised.
     /// </summary>
     /// <typeparam name="TScopeData">
-    /// Type of the scoped data that is injected in <see cref="IEndpointServiceProvider{TScopeData}"/>.
-    /// Must be a nested <c>public sealed class Data : IScopedData</c> or <c>public sealed class Data : BackScopedData</c> for
-    /// <see cref="EndpointKind.Back"/> endpoints.
+    /// Type of the scoped data that is injected in <see cref="IDIContainerServiceProvider{TScopeData}"/>.
+    /// Must be a nested <c>public sealed class Data : IScopedData</c> or <c>public sealed class Data : BackendScopedData</c> for
+    /// <see cref="DIContainerKind.Backend"/> containers.
     /// </typeparam>
     [CKTypeDefiner]
-    public abstract class EndpointDefinition<TScopeData> : EndpointDefinition
-        where TScopeData : class, EndpointDefinition.IScopedData
+    public abstract class DIContainerDefinition<TScopeData> : DIContainerDefinition
+        where TScopeData : class, DIContainerDefinition.IScopedData
     {
         /// <summary>
         /// Must be implemented to configure the endpoint services.

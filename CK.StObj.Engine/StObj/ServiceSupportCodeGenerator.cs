@@ -239,7 +239,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
         public void CreateConfigureServiceMethod( IActivityMonitor monitor, IStObjEngineMap engineMap )
         {
             var endpointResult = engineMap.EndpointResult;
-            bool hasEndpoint = endpointResult.EndpointContexts.Count > 0;
+            bool hasEndpoint = endpointResult.Containers.Count > 0;
 
             EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
 
@@ -253,18 +253,18 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // we minimize the number of registrations to process.
             if( hasEndpoint )
             {
-                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );" ).NewLine();
+                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, DIContainerHub_CK._endpointServices.ContainsKey );" ).NewLine();
             }
             // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
             // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.
-            // The common descriptors are then injected: the "true" singleton EndpointTypeManager is registered is the relay from endpoint containers
+            // The common descriptors are then injected: the "true" singleton DIContainerHub is registered is the relay from endpoint containers
             // to the global one and the ScopedDataHolder is also registered.
             fScope.Append( """
                         reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(
                                                         typeof( Microsoft.Extensions.Hosting.IHostedService ),
                                                         typeof( HostedServiceLifetimeTrigger ),
                                                         Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
-                        var theEPTM = new EndpointTypeManager_CK();
+                        var theEPTM = new DIContainerHub_CK();
                         var commonDescriptors = theEPTM.CreateCommonDescriptors( this );
                         reg.Services.AddRange( commonDescriptors );
                         """ ).NewLine();
@@ -284,7 +284,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                         EndpointHelper.FillStObjMappingsWithEndpoints( reg.Monitor, this, reg.Services, mappings );
                         // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                         bool success = true;
-                        foreach( var e in theEPTM._endpointTypes )
+                        foreach( var e in theEPTM._containers )
                         {
                             if( !e.ConfigureServices( reg.Monitor, this, mappings, commonDescriptors ) ) success = false;
                         }

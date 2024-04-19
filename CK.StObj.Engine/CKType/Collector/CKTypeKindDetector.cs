@@ -245,7 +245,8 @@ namespace CK.Setup
                         if( t.Name == nameof( IRealObject ) ) k = CKTypeKindExtension.RealObjectFlags | CKTypeKind.IsDefiner;
                         else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
                         else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | CKTypeKind.IsDefiner;
-                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( ISingletonAutoService ) ) k = /*CKTypeKindExtension.SingletonFlags*/
+                                                                                 CKTypeKind.IsSingleton   | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
                         else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | CKTypeKind.IsDefiner;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.

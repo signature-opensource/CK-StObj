@@ -8,8 +8,8 @@ namespace CK.Core
 {
     /// <summary>
     /// Helper scoped service that captures all the ubiquitous information services from a current
-    /// service provider so they can be overridden and marshalled to other <see cref="IEndpointType{TScopeData}"/>
-    /// containers through their <see cref="EndpointDefinition.IScopedData"/>.
+    /// service provider so they can be overridden and marshalled to other <see cref="IDIContainer{TScopeData}"/>
+    /// containers through their <see cref="DIContainerDefinition.IScopedData"/>.
     /// </summary>
     [Setup.ContextBoundDelegation( "CK.Setup.AmbientServiceHubImpl, CK.StObj.Engine" )]
     public abstract class AmbientServiceHub : IScopedAutoService
@@ -49,7 +49,7 @@ namespace CK.Core
         /// Used by generated code.
         /// </summary>
         protected readonly Mapper[] _mappers;
-        readonly ImmutableArray<EndpointTypeManager.AmbientServiceMapping> _entries;
+        readonly ImmutableArray<DIContainerHub.AmbientServiceMapping> _entries;
         bool _locked;
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace CK.Core
         /// </summary>
         /// <param name="mappers">Ready to use clean mappers.</param>
         /// <param name="entries">The ubiquitous services mapping.</param>
-        protected AmbientServiceHub( Mapper[] mappers, ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries )
+        protected AmbientServiceHub( Mapper[] mappers, ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )
         {
             _mappers = mappers;
             _entries = entries;
@@ -102,7 +102,7 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Locks these informations: this is called by <see cref="IEndpointServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
+        /// Locks these informations: this is called by <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
         /// so that instances cannot be changed anymore (Override throws).
         /// If this must be reused for another endpoint, use <see cref="CleanClone()"/>.
         /// </summary>
@@ -154,7 +154,7 @@ namespace CK.Core
         /// <param name="services">The current service provider (must be a scoped container).</param>
         /// <param name="entries">The ubiquitous services mapping.</param>
         /// <returns>The initial mapped values.</returns>
-        protected abstract Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries );
+        protected abstract Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries );
 
         ref Mapper Get( Type t )
         {

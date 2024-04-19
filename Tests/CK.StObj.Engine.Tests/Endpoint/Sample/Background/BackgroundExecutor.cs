@@ -12,10 +12,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public class BackgroundExecutor : ISingletonAutoService
     {
         readonly Channel<object?> _commands;
-        readonly IEndpointType<BackgroundEndpointDefinition.Data> _endpoint;
+        readonly IDIContainer<BackgroundDIContainerDefinition.Data> _endpoint;
         Task _runTask;
 
-        public BackgroundExecutor( IEndpointType<BackgroundEndpointDefinition.Data> endpoint )
+        public BackgroundExecutor( IDIContainer<BackgroundDIContainerDefinition.Data> endpoint )
         {
             _commands = Channel.CreateUnbounded<object?>();
             _runTask = Task.CompletedTask;
@@ -57,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 // We want any command executed by this loop to use the same monitor.
                 using( monitor.StartDependentActivity( cmd.CorrelationId, alwaysOpenGroup: true ) )
                 {
-                    var data = new BackgroundEndpointDefinition.Data( cmd.AmbientServiceHub, monitor );
+                    var data = new BackgroundDIContainerDefinition.Data( cmd.AmbientServiceHub, monitor );
                     using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
                     {
                         try

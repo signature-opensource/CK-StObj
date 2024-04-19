@@ -5,15 +5,14 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Captures the information about endpoint services: this is a reverse index of the
-    /// attributes declaration.
+    /// Captures the information about all the <see cref="DIContainerDefinition"/>.
     /// </summary>
-    public interface IEndpointResult
+    public interface IDIContainerAnalysisResult
     {
         /// <summary>
-        /// Gets all the <see cref="IEndpointContext"/>.
+        /// Gets all the <see cref="IDIContainerInfo"/>.
         /// </summary>
-        IReadOnlyList<IEndpointContext> EndpointContexts { get; }
+        IReadOnlyList<IDIContainerInfo> Containers { get; }
 
         /// <summary>
         /// Gets all the endpoint service types and their kind (they are not necessarily <see cref="IAutoService"/>).
@@ -27,11 +26,11 @@ namespace CK.Setup
 
         /// <summary>
         /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="EndpointTypeManager.AmbientServiceMapping"/>. Order matters: consecutive entries with
-        /// the same <see cref="EndpointTypeManager.AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
+        /// are expanded. See <see cref="DIContainerHub.AmbientServiceMapping"/>. Order matters: consecutive entries with
+        /// the same <see cref="DIContainerHub.AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
         /// chain.
         /// </summary>
-        IReadOnlyList<EndpointTypeManager.AmbientServiceMapping> AmbientServiceMappings { get; }
+        IReadOnlyList<DIContainerHub.AmbientServiceMapping> AmbientServiceMappings { get; }
 
         /// <summary>
         /// Captures the ambient service default provider implementation.

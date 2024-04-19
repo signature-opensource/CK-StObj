@@ -30,9 +30,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
         }
 
-        protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.AmbientServiceMapping> entries )
+        protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )
         {
-            entries = EndpointTypeManager_CK._ubiquitousMappings;
+            entries = DIContainerHub_CK._ambientMappings;
             return new Mapper[] {
                 new Mapper( Required( services, typeof(IFakeTenantInfo) ) ),
                 new Mapper( Required( services, typeof(IFakeAuthenticationInfo) ) ),
@@ -50,7 +50,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         internal object At( int index ) => _mappers[index].Current;
 
-        AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
+        AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ambientMappings ) { }
 
         public override AmbientServiceHub CleanClone()
         {

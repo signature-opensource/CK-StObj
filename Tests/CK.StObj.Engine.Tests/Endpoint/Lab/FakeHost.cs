@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
 
         // Mimics the code executed at startup based on the Fake objects.
-        public static IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
+        public static IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
                                                                                                         IServiceCollection globalConfiguration,
                                                                                                         out IServiceProvider? globalServiceProvider )
         {
@@ -38,21 +38,21 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 return null;
             }
             // 2 - Once the global DI container is built, the code generated HostedServiceLifetimeTrigger sets the global
-            //     container on THE EndpointTypeManager from its constructor: the HostedServiceLifetimeTrigger
+            //     container on THE DIContainerHub from its constructor: the HostedServiceLifetimeTrigger
             //     is a regular IHostedService, ISingletonAutoService that takes the global IServiceProvider in its constructor.
 
             // This is done by the application host.
             globalServiceProvider = globalConfiguration.BuildServiceProvider();
 
             // HostedServiceLifetimeTrigger constructor.
-            var theEPTM = ((EndpointTypeManager_CK)globalServiceProvider.GetRequiredService<EndpointTypeManager>());
+            var theEPTM = ((DIContainerHub_CK)globalServiceProvider.GetRequiredService<DIContainerHub>());
             theEPTM.SetGlobalContainer( globalServiceProvider );
 
             // 3 - From now on, on demand (this is lazily initialized), the endpoints are able to expose their
             //     own DI container.
-            var endpointType = globalServiceProvider.GetRequiredService<EndpointTypeManager>()
-                                .EndpointTypes
-                                .OfType<EndpointType<FakeBackEndpointDefinition.Data>>()
+            var endpointType = globalServiceProvider.GetRequiredService<DIContainerHub>()
+                                .Containers
+                                .OfType<EndpointType<FakeBackDIContainerDefinition.Data>>()
                                 .Single();
             return endpointType.GetContainer();
         }
