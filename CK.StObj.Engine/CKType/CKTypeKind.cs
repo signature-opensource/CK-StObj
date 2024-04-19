@@ -48,9 +48,6 @@ namespace CK.Setup
         /// <inheritdoc cref="AutoServiceKind.IsSingleton"/>
         IsSingleton = AutoServiceKind.IsSingleton,
 
-        /// <inheritdoc cref="AutoServiceKind.IsPerContextSingleton"/>
-        IsPerContextSingleton = AutoServiceKind.IsPerContextSingleton,
-
         /// <inheritdoc cref="AutoServiceKind.IsRealObject"/>
         IsRealObject = AutoServiceKind.IsRealObject,
 
@@ -93,9 +90,9 @@ namespace CK.Setup
         public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
 
         /// <summary>
-        /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/> | <see cref="IsPerContextSingleton"/>.
+        /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
         /// </summary>
-        public const CKTypeKind LifetimeMask = CKTypeKind.IsScoped | CKTypeKind.IsSingleton | CKTypeKind.IsPerContextSingleton;
+        public const CKTypeKind LifetimeMask = CKTypeKind.IsScoped | CKTypeKind.IsSingleton;
 
         /// <summary>
         /// Covers the <see cref="AutoServiceKind"/> subset.
@@ -159,7 +156,6 @@ namespace CK.Setup
             bool isAuto = (k & CKTypeKind.IsAutoService) != 0;
             bool isScoped = (k & CKTypeKind.IsScoped) != 0;
             bool isSingleton = (k & CKTypeKind.IsSingleton) != 0;
-            bool isCtxSingleton = (k & CKTypeKind.IsPerContextSingleton) != 0;
             bool isRealObject = (k & CKTypeKind.IsRealObject) != 0;
             bool isPoco = (k & CKTypeKind.IsPoco) != 0;
             bool isEndPoint = (k & CKTypeKind.IsEndpointService) != 0;
@@ -193,7 +189,7 @@ namespace CK.Setup
                     if( isAuto && !isClass ) AddConflict( "IRealObject interface cannot be a IAutoService" );
                 }
             }
-            else if( isScoped && (isSingleton || isCtxSingleton) )
+            else if( isScoped && isSingleton )
             {
                 AddConflict( "an interface or an implementation cannot be both Scoped and Singleton" );
             }
@@ -206,14 +202,10 @@ namespace CK.Setup
             }
             else if( isEndPoint )
             {
-                if( !isScoped && !(isSingleton | isCtxSingleton) )
+                if( !isScoped && !isSingleton )
                 {
                     AddConflict( "a Endpoint service must be known to be Scoped or Singleton" );
                 }
-            }
-            if( isSingleton && isCtxSingleton )
-            {
-                AddConflict( "a Singleton cannot be both a PerContext and a proceswide true singleton" );
             }
             if( isClass )
             {

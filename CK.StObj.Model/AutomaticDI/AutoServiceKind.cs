@@ -39,27 +39,6 @@ namespace CK.Core
         /// </summary>
         IsSingleton = 1 << 8,
 
-
-        /// <summary>
-        /// The type is singleton: all Unit of Works (including concurrent ones) in the DI context will use the same instance
-        /// but the background and each endpoint contexts have their own singleton instance (when they have one).
-        /// <list type="bullet">
-        ///  <item>
-        ///  Whether none, at least one or all endpoints have it depends on <see cref="IsEndpointService"/> and <see cref="IsRequiredEndpointService"/>.
-        ///  </item>
-        ///  <item>
-        ///  Whether the background context has this service depends on <see cref="IsBackgroundService"/>.
-        ///  </item>
-        /// </list>
-        /// <para>
-        /// <list type="bullet">
-        ///     <item><term>Implies</term><description><see cref="IsEndpointService"/> xor <see cref="IsRequiredEndpointService"/></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsScoped"/> and <see cref="IsSingleton"/></description></item>
-        /// </list>
-        /// </para>
-        /// </summary>
-        IsPerContextSingleton = 1 << 9,
-
         /// <summary>
         /// A <see cref="IRealObject"/> is a true singleton.
         /// <list type="bullet">

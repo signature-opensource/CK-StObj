@@ -348,7 +348,7 @@ namespace CK.Setup
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                             if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
-                            if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsPerContextSingleton;
+                            if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
                             if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
                             if( hasDefiner ) k |= CKTypeKind.IsDefiner;
                             if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;

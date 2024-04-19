@@ -29,7 +29,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             Debug.Assert( r != null );
             r.Containers.Should().HaveCount( 0 );
             r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsPerContextSingleton | AutoServiceKind.IsAutoService );
+            r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
         }
 
         [EndpointScopedService( isUbiquitousEndpointInfo: true )]
