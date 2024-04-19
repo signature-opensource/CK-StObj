@@ -370,13 +370,12 @@ namespace CK.Setup
         const string _gMultiple = """
             sealed class GMultiple : IStObjMultipleInterface
             {
-                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im, Type[] m )
+                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im )
                 {
                     IsScoped = s;
                     ItemType = i;
                     EnumerableType = e;
                     Implementations = im;
-                    MarshallableTypes = m;
                 }
 
                 public bool IsScoped { get; }
@@ -386,8 +385,6 @@ namespace CK.Setup
                 public Type EnumerableType { get; }
 
                 public IReadOnlyCollection<IStObjFinalClass> Implementations { get; }
-
-                public IReadOnlyCollection<Type> MarshallableTypes { get; }
             }
             """;
 
@@ -437,7 +434,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
             // We ensure that this StObjMap can be initialized once and only once (static bool _intializeOnce).
             // This doesn't mean that this StObjMap can be registered in a ServiceCollection only once: services registration
             // (including endpoints) are on the "run" side (the EndpointType<TScopedData> is a pure service that manages the 
-            // services as opposed to the real object EndpointDefinition).
+            // services as opposed to the real object DIContainerDefinition).
             GenerateInstanceConstructor( rootType, orderedStObjs );
 
             // Ignores null (error) return here: we always generate the code.

@@ -125,18 +125,18 @@ namespace CK.Setup
         // Injected in EndpointHelper if there's no endpoint.
         const string _endpointTypeInternalNoEndpoint =
             """
-            interface IEndpointTypeInternal : IEndpointType {}
+            interface IDIContainerInternal : IDIContainer {}
             """;
 
-        const string _checkAndNormalizeUbiquitousInfoServices =
+        const string _checkAndNormalizeAmbientServices =
             """
-            internal static bool CheckAndNormalizeUbiquitousInfoServices( IActivityMonitor monitor, IServiceCollection services, bool isFrontEndpoint )
+            internal static bool CheckAndNormalizeAmbientServices( IActivityMonitor monitor, IServiceCollection services, bool isFrontEndpoint )
             {
                 bool success = true;
-                var firstResolutions = new ServiceDescriptor?[EndpointTypeManager_CK._ubiquitousMappings.Length];
+                var firstResolutions = new ServiceDescriptor?[DIContainerHub_CK._ubiquitousMappings.Length];
                 foreach( var d in services )
                 {
-                    int idx = EndpointTypeManager_CK._ubiquitousMappings.IndexOf( m => m.UbiquitousType == d.ServiceType );
+                    int idx = DIContainerHub_CK._ubiquitousMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
                     if( idx >= 0 )
                     {
                         if( firstResolutions[idx] == null )
@@ -145,7 +145,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            monitor.Error( $"Ubiquitous service '{d.ServiceType.Name}' is mapped more than once. Ubiquitous service cannot be added more than once is a DI container." );
+                            monitor.Error( $"Ambient service '{d.ServiceType.Name}' is mapped more than once. Ambient service cannot be added more than once in a DI container." );
                             success = false;
                         }
                     }
@@ -161,7 +161,7 @@ namespace CK.Setup
                         {
                             if( first != null )
                             {
-                                services.AddScoped( EndpointTypeManager_CK._ubiquitousMappings[i].UbiquitousType, first );
+                                services.AddScoped( DIContainerHub_CK._ubiquitousMappings[i].AmbientServiceType, first );
                             }
                         }
                         else
@@ -173,7 +173,7 @@ namespace CK.Setup
                                 {
                                     if( firstResolutions[before] == null )
                                     {
-                                        services.AddScoped( EndpointTypeManager_CK._ubiquitousMappings[before].UbiquitousType, first );
+                                        services.AddScoped( DIContainerHub_CK._ubiquitousMappings[before].AmbientServiceType, first );
                                     }
                                 }
                             }
@@ -181,21 +181,23 @@ namespace CK.Setup
                     }
                     if( first == null )
                     {
-                        var defaults = isFrontEndpoint ? EndpointTypeManager_CK._ubiquitousFrontDescriptors : EndpointTypeManager_CK._ubiquitousBackDescriptors;
+                        var defaults = isFrontEndpoint
+                                        ? DIContainerHub_CK._ambientServiceEndpointDescriptors
+                                        : DIContainerHub_CK._ambientServiceBackendDescriptors;
                         services.AddRange( defaults.Skip( idx ).Take( other - idx ) );
                     }
                 }
                 return true;
 
-                static IEnumerable<(int, EndpointTypeManager.UbiquitousMapping, int)> GetMappingsRange()
+                static IEnumerable<(int, DIContainerHub.AmbientServiceMapping, int)> GetMappingsRange()
                 {
-                    int len = EndpointTypeManager_CK._ubiquitousMappings.Length;
+                    int len = DIContainerHub_CK._ubiquitousMappings.Length;
                     for( int i = 0; i < len; )
                     {
-                        var m = EndpointTypeManager_CK._ubiquitousMappings[i];
+                        var m = DIContainerHub_CK._ubiquitousMappings[i];
                         int start = i;
                         ++i;
-                        while( i < len && EndpointTypeManager_CK._ubiquitousMappings[i].MappingIndex == m.MappingIndex )
+                        while( i < len && DIContainerHub_CK._ubiquitousMappings[i].MappingIndex == m.MappingIndex )
                         {
                             ++i;
                         }
@@ -234,14 +236,14 @@ namespace CK.Setup
                 {
                     if( s.IsScoped )
                     {
-                        if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
+                        if( (s.AutoServiceKind & AutoServiceKind.IsAmbientService) == 0 )
                         {
                             AddGlobalServiceMapping( global, s, ServiceLifetime.Scoped );
                         }
                     }
                     else
                     {
-                        if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                        if( s.ClassType == typeof( DIContainerHub ) ) continue;
                         AddGlobalServiceMapping( global, s, ServiceLifetime.Singleton );
                     }
                 }
@@ -294,7 +296,7 @@ namespace CK.Setup
         // Injected in EndpointHelper if there are endpoints.
         const string _endpointTypeInternalWithEndpoints =
             """
-            interface IEndpointTypeInternal : IEndpointType
+            interface IDIContainerInternal : IDIContainer
             {
                 bool ConfigureServices( IActivityMonitor monitor,
                                         IStObjMap stObjMap,
@@ -354,7 +356,7 @@ namespace CK.Setup
                     {
                         if( isEndpointService )
                         {
-                            if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
+                            if( (s.AutoServiceKind & AutoServiceKind.IsAmbientService) == 0 )
                             {
                                 AddGlobalServiceMapping( global, s, ServiceLifetime.Scoped );
                             }
@@ -366,7 +368,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                        if( s.ClassType == typeof( DIContainerHub ) ) continue;
                         if( isEndpointService )
                         {
                             AddGlobalServiceMapping( global, s, ServiceLifetime.Singleton );
@@ -436,7 +438,7 @@ namespace CK.Setup
                 foreach( var d in global )
                 {
                     var t = d.ServiceType;
-                    if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
+                    if( t == typeof( DIContainerHub ) ) Throw.ArgumentException( "DIContainerHub must not be configured." );
                     // Skip any endpoint service and IHostedService.
                     // There's no need to have the IHostedService multiple service in the endpoint containers.
                     if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
@@ -463,19 +465,19 @@ namespace CK.Setup
             sealed class ScopeDataHolder
             {
                 [AllowNull]
-                internal EndpointDefinition.IScopedData _data;
+                internal DIContainerDefinition.IScopedData _data;
 
-                internal static object GetUbiquitous( IServiceProvider sp, int index )
+                internal static object GetAmbientService( IServiceProvider sp, int index )
                 {
                     // This looks scary, but:
                     // - first we resolve the ScopeDataHolder type that is necessary a ScopeDataHolder.
-                    // - then we know that the _data is necessarily a BackScopedData because:
-                    //      - this method is called only for back endpoints (front endpoints use the IEndpointUbiquitousServiceDefault<>
-                    //        singletons to resolve missing ubiquitous info instead of relying on the scoped Ubiquitous instance.
-                    //      - the BackScopedData inheritance is checked at setup time for Back endpoints.
-                    // - We can then access the UbiquitousInfo instance that is the code generated class with its At( mappingIndex )
+                    // - then we know that the _data is necessarily a BackendScopedData because:
+                    //      - this method is called only for backend contexts (front endpoints use the IEndpointUbiquitousServiceDefault<>
+                    //        singletons to resolve missing Ambient services instead of relying on the scoped instance).
+                    //      - the BackendScopedData inheritance is checked at setup time for Backend contexts.
+                    // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
                     //   hidden accessor.
-                    return Unsafe.As<EndpointUbiquitousInfo_CK>( Unsafe.As<EndpointDefinition.BackScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).UbiquitousInfo ).At( index );
+                    return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).AmbientServiceHub ).At( index );
                 }
             }
             
@@ -501,31 +503,31 @@ namespace CK.Setup
         const string _endpointType =
             """
             [CK.Core.StObjGen]
-            sealed class EndpointType<TScopedData> : IEndpointType<TScopedData>, IEndpointTypeInternal where TScopedData : class, EndpointDefinition.IScopedData
+            sealed class EndpointType<TScopedData> : IDIContainer<TScopedData>, IDIContainerInternal where TScopedData : class, DIContainerDefinition.IScopedData
             {
-                IEndpointServiceProvider<TScopedData>? _services;
+                IDIContainerServiceProvider<TScopedData>? _services;
 
-                readonly EndpointDefinition<TScopedData> _definition;
+                readonly DIContainerDefinition<TScopedData> _definition;
                 internal ServiceCollection? _configuration;
                 Type[] _singletons;
                 Type[] _scoped;
                 readonly object _lock;
                 bool _initializationSuccess;
 
-                public EndpointType( EndpointDefinition<TScopedData> definition )
+                public EndpointType( DIContainerDefinition<TScopedData> definition )
                 {
                     _singletons = _scoped = Type.EmptyTypes;
                     _definition = definition;
                     _lock = new object();
                 }
 
-                public EndpointDefinition EndpointDefinition => _definition;
+                public DIContainerDefinition DIContainerDefinition => _definition;
 
                 public Type ScopeDataType => typeof( TScopedData );
 
                 public string Name => _definition.Name;
 
-                public IEndpointServiceProvider<TScopedData> GetContainer() => _services ?? DoCreateContainer();
+                public IDIContainerServiceProvider<TScopedData> GetContainer() => _services ?? DoCreateContainer();
 
                 public bool IsService( Type serviceType ) => GetContainer().IsService( serviceType );
 
@@ -533,7 +535,7 @@ namespace CK.Setup
 
                 public IReadOnlyCollection<Type> SpecificScopedServices => _scoped;
 
-                IEndpointServiceProvider<TScopedData> DoCreateContainer()
+                IDIContainerServiceProvider<TScopedData> DoCreateContainer()
                 {
                     lock( _lock )
                     {
@@ -549,7 +551,7 @@ namespace CK.Setup
                     }
                 }
 
-                sealed class Provider : IEndpointServiceProvider<TScopedData>
+                sealed class Provider : IDIContainerServiceProvider<TScopedData>
                 {
                     readonly ServiceProvider _serviceProvider;
                     IServiceProviderIsService? _serviceProviderIsService;
@@ -562,7 +564,7 @@ namespace CK.Setup
                     public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
                     {
                         var scope = _serviceProvider.CreateAsyncScope();
-                        if( scopedData is EndpointDefinition.BackScopedData back ) back.UbiquitousInfo.Lock();
+                        if( scopedData is DIContainerDefinition.BackendScopedData back ) back.AmbientServiceHub.Lock();
                         scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                         return scope;
                     }
@@ -570,7 +572,7 @@ namespace CK.Setup
                     public IServiceScope CreateScope( TScopedData scopedData )
                     {
                         var scope = _serviceProvider.CreateScope();
-                        if( scopedData is EndpointDefinition.BackScopedData back ) back.UbiquitousInfo.Lock();
+                        if( scopedData is DIContainerDefinition.BackendScopedData back ) back.AmbientServiceHub.Lock();
                         scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                         return scope;
                     }
@@ -602,7 +604,7 @@ namespace CK.Setup
                     // Calls the user configuration.
                     _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
                     // Normalizes ubiquitous services.
-                    if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( monitor, endpoint, _definition.Kind == EndpointKind.Front ) )
+                    if( !EndpointHelper.CheckAndNormalizeAmbientServices( monitor, endpoint, _definition.Kind == DIContainerKind.Endpoint ) )
                     {
                         return false;
                     }
@@ -618,8 +620,8 @@ namespace CK.Setup
                         // Generates the Multiple descriptors.
                         var builder = new FinalConfigurationBuilder( _definition.Name, mappings );
                         builder.FinalConfigure( monitor, configuration );
-                        // Add the scoped ScopeDataHolder and the true singletons StObjMap, EndpointTypeManager, all the
-                        // IEndpointType<TScopeData> and the IEnumerable<IEndpoint>.
+                        // Add the scoped ScopeDataHolder and the true singletons StObjMap, DIContainerHub, all the
+                        // IDIContainer<TScopeData> and the IEnumerable<IEndpoint>.
                         configuration.AddRange( commonDescriptors );
                         // Waiting for .Net 8.
                         // configuration.MakeReadOnly();
@@ -645,8 +647,8 @@ namespace CK.Setup
                             }
                             else mappings.Add( d.ServiceType, new Mapping( false, null, d ) );
 
-                            bool isUbiquitousInfo = EndpointTypeManager_CK._ubiquitousMappings.Any( uD => uD.UbiquitousType == d.ServiceType );
-                            if( !isUbiquitousInfo )
+                            bool isAmbientService = DIContainerHub_CK._ubiquitousMappings.Any( uD => uD.AmbientServiceType == d.ServiceType );
+                            if( !isAmbientService )
                             {
                                 if( d.Lifetime == ServiceLifetime.Singleton )
                                 {
@@ -666,7 +668,7 @@ namespace CK.Setup
                         if( singletons != null ) _singletons = singletons.ToArray();
                         return success;
 
-                        static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, EndpointDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
+                        static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, DIContainerDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
                         {
                             bool success = true;
                             if( extra != null )
@@ -1062,7 +1064,7 @@ namespace CK.Setup
             """;
 
         /// <summary>
-        /// Always generate the IEndpointTypeInternal interface code (The EndpointTypeManager_CK needs it)
+        /// Always generate the IDIContainerInternal interface code (The DIContainerHub_CK needs it)
         /// and TypedServiceDescriptor code (the FillStObjMappings function needs it) but only
         /// add CK.StObj.EndpointType&lt;TScopeData&gt;, and the static EndpointHelper if at least one
         /// EndpointType exists.
@@ -1079,10 +1081,10 @@ namespace CK.Setup
                  .Append( _localNamespaces )
                  .Append( "static class EndpointHelper" )
                  .OpenBlock()
-                    .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;" )
+                    .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<DIContainerHub>( sp.GetService( typeof( DIContainerHub ) )! ).GlobalServiceProvider;" )
                     .NewLine()
                     .Append( _addGlobalServiceMapping )
-                    .Append( _checkAndNormalizeUbiquitousInfoServices )
+                    .Append( _checkAndNormalizeAmbientServices )
                     .CreatePart( out var helperExtension )
                  .CloseBlock()
                  .Append( _scopedDataHolder )

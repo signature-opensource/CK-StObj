@@ -12,23 +12,23 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public class BackgroundExecutor : ISingletonAutoService
     {
         readonly Channel<object?> _commands;
-        readonly IEndpointType<BackgroundEndpointDefinition.Data> _endpoint;
+        readonly IDIContainer<BackgroundDIContainerDefinition.Data> _endpoint;
         Task _runTask;
 
-        public BackgroundExecutor( IEndpointType<BackgroundEndpointDefinition.Data> endpoint )
+        public BackgroundExecutor( IDIContainer<BackgroundDIContainerDefinition.Data> endpoint )
         {
             _commands = Channel.CreateUnbounded<object?>();
             _runTask = Task.CompletedTask;
             _endpoint = endpoint;
         }
 
-        public void Push( IActivityMonitor monitor, EndpointUbiquitousInfo info, object command )
+        public void Push( IActivityMonitor monitor, AmbientServiceHub info, object command )
         {
             var correlationId = monitor.CreateToken();
             _commands.Writer.TryWrite( new RunCommand( correlationId, info, command, null ) );
         }
 
-        public Task RunAsync( IActivityMonitor monitor, EndpointUbiquitousInfo info, object command )
+        public Task RunAsync( IActivityMonitor monitor, AmbientServiceHub info, object command )
         {
             var correlationId = monitor.CreateToken();
             var tcs = new TaskCompletionSource();
@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public Task WaitForTerminationAsync() => _runTask;
 
-        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, EndpointUbiquitousInfo UbiquitousInfo, object Command, TaskCompletionSource? TCS );
+        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, AmbientServiceHub AmbientServiceHub, object Command, TaskCompletionSource? TCS );
 
         async Task RunAsync()
         {
@@ -57,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 // We want any command executed by this loop to use the same monitor.
                 using( monitor.StartDependentActivity( cmd.CorrelationId, alwaysOpenGroup: true ) )
                 {
-                    var data = new BackgroundEndpointDefinition.Data( cmd.UbiquitousInfo, monitor );
+                    var data = new BackgroundDIContainerDefinition.Data( cmd.AmbientServiceHub, monitor );
                     using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
                     {
                         try

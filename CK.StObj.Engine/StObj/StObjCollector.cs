@@ -76,7 +76,7 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
+        /// a service cannot be both scoped and singleton).
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -290,12 +290,12 @@ namespace CK.Setup
             if( _errorEntries.Count != 0 ) Throw.InvalidOperationException( $"There are {_errorEntries.Count} registration errors." );
             try
             {
-                // Systematically registers the EndpointTypeManager and the EndpointUbiquitousInfo: unit tests don't have to do it.
+                // Systematically registers the DIContainerHub and the AmbientServiceHub: unit tests don't have to do it.
                 // (Note that the PocoDirectory is registered by the CKTypeCollector.
-                _cc.RegisterClass( monitor, typeof( EndpointTypeManager ) );
-                _cc.RegisterClass( monitor, typeof( EndpointUbiquitousInfo ) );
+                _cc.RegisterClass( monitor, typeof( DIContainerHub ) );
+                _cc.RegisterClass( monitor, typeof( AmbientServiceHub ) );
 
-                EndpointResult? endpoints = null;
+                DIContainerAnalysisResult? endpoints = null;
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
                 if( orderedItems != null )
                 {
@@ -305,7 +305,7 @@ namespace CK.Setup
                     // map with the dirty trick below (SetFinalOrderedResults).
                     using( monitor.OpenInfo( "Endpoints handling." ) )
                     {
-                        endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.KindComputeFacade.KindDetector );
+                        endpoints = DIContainerAnalysisResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.KindComputeFacade.KindDetector );
                     }
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should
@@ -326,9 +326,9 @@ namespace CK.Setup
                                 buildValueCollector = null;
                             }
                         }
-                        if( endpoints != null && endpoints.HasUbiquitousInfoServices )
+                        if( endpoints != null && endpoints.HasAmbientServices )
                         {
-                            if( !endpoints.BuildUbiquitousMappingsAndCheckDefaultProvider( monitor, typeResult.RealObjects.EngineMap.Services ) )
+                            if( !endpoints.BuildAmbientServiceMappingsAndCheckDefaultProvider( monitor, typeResult.RealObjects.EngineMap.Services ) )
                             {
                                 buildValueCollector = null;
                             }

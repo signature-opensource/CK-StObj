@@ -9,29 +9,29 @@ namespace CK.Setup
 {
 
     /// <summary>
-    /// Implements a EndpointDefinition instance.
+    /// Implements a DIContainerDefinition instance.
     /// There is only the Name and the Kind to generate here...
     /// </summary>
-    public sealed class EndpointDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
+    public sealed class DIContainerDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
     {
-        readonly EndpointDefinitionAttribute _attr;
+        readonly DIContainerDefinitionAttribute _attr;
 
         /// <summary>
         /// Initializes a new endpoint definition implementor.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="decorated">The <see cref="EndpointDefinition"/> type.</param>
+        /// <param name="decorated">The <see cref="DIContainerDefinition"/> type.</param>
         /// <param name="attr">This attribute.</param>
-        public EndpointDefinitionImpl( IActivityMonitor monitor, Type decorated, EndpointDefinitionAttribute attr )
+        public DIContainerDefinitionImpl( IActivityMonitor monitor, Type decorated, DIContainerDefinitionAttribute attr )
         {
-            EndpointContext.CheckEndPointDefinition( monitor, decorated );
+            DIContainerInfo.CheckEndPointDefinition( monitor, decorated );
             _attr = attr;
         }
 
         /// <summary>
-        /// Gets the <see cref="EndpointDefinitionAttribute.Kind"/>.
+        /// Gets the <see cref="DIContainerDefinitionAttribute.Kind"/>.
         /// </summary>
-        public EndpointKind Kind => _attr.Kind;
+        public DIContainerKind Kind => _attr.Kind;
 
         /// <inheritdoc />
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
@@ -41,10 +41,10 @@ namespace CK.Setup
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
             var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
-            var e = endpointResult.EndpointContexts.First( c => c.EndpointDefinition.ClassType == classType );
+            var e = endpointResult.Containers.First( c => c.DIContainerDefinition.ClassType == classType );
 
             scope.Append( "public override string Name => " ).AppendSourceString( e.Name ).Append( ";" ).NewLine()
-                 .Append( "public override EndpointKind Kind => EndpointKind." ).Append( _attr.Kind.ToString() ).Append( ";" ).NewLine();
+                 .Append( "public override DIContainerKind Kind => DIContainerKind." ).Append( _attr.Kind.ToString() ).Append( ";" ).NewLine();
 
             return CSCodeGenerationResult.Success;
         }

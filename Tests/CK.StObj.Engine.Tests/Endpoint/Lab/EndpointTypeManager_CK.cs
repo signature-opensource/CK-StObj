@@ -5,25 +5,25 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using static CK.Core.ActivityMonitorSimpleCollector;
-using static CK.Core.EndpointTypeManager;
+using static CK.Core.DIContainerHub;
 using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
-    // The EndpointTypeManager is code generated.
-    sealed class EndpointTypeManager_CK : EndpointTypeManager
+    // The DIContainerHub is code generated.
+    sealed class DIContainerHub_CK : DIContainerHub
     {
-        // EndpointDefinition are IRealObject: they are static and resolved from
+        // DIContainerDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
-        static readonly EndpointDefinition[] _endpoints;
-        internal static readonly ImmutableArray<UbiquitousMapping> _ubiquitousMappings;
+        static readonly DIContainerDefinition[] _containerDefinitions;
+        internal static readonly ImmutableArray<AmbientServiceMapping> _ambientMappings;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
-        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;
-        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;
+        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceEndpointDescriptors;
+        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceBackendDescriptors;
 
-        internal readonly IEndpointTypeInternal[] _endpointTypes;
+        internal readonly IDIContainerInternal[] _containers;
 
-        static EndpointTypeManager_CK()
+        static DIContainerHub_CK()
         {
             _endpointServices = new Dictionary<Type, AutoServiceKind>()
             {
@@ -35,19 +35,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
                 { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
             };
-            _endpoints = new EndpointDefinition[] { new FakeBackEndpointDefinition_CK() };
-            _ubiquitousMappings = ImmutableArray.Create( 
-                new UbiquitousMapping( typeof(IFakeTenantInfo), 0 ),
-                new UbiquitousMapping( typeof(FakeTenantInfo), 0 ),
-                new UbiquitousMapping( typeof(IFakeAuthenticationInfo), 1 ),
-                new UbiquitousMapping( typeof(FakeAuthenticationInfo), 2 ),
-                new UbiquitousMapping( typeof(FakeCultureInfo), 3 )
+            _containerDefinitions = new DIContainerDefinition[] { new FakeBackDIContainerDefinition_CK() };
+            _ambientMappings = ImmutableArray.Create( 
+                new AmbientServiceMapping( typeof(IFakeTenantInfo), 0 ),
+                new AmbientServiceMapping( typeof(FakeTenantInfo), 0 ),
+                new AmbientServiceMapping( typeof(IFakeAuthenticationInfo), 1 ),
+                new AmbientServiceMapping( typeof(FakeAuthenticationInfo), 2 ),
+                new AmbientServiceMapping( typeof(FakeCultureInfo), 3 )
             );
-            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetUbiquitous( sp, 0 );
-            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetUbiquitous( sp, 1 );
-            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetUbiquitous( sp, 2 );
-            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetUbiquitous( sp, 3 );
-            _ubiquitousBackDescriptors = new ServiceDescriptor[] {
+            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetAmbientService( sp, 0 );
+            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
+            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetAmbientService( sp, 2 );
+            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetAmbientService( sp, 3 );
+            _ambientServiceBackendDescriptors = new ServiceDescriptor[] {
                     new ServiceDescriptor( typeof( IFakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeAuthenticationInfo), back1, ServiceLifetime.Scoped ),
@@ -57,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Func<IServiceProvider, object> front0 = sp => ((IEndpointUbiquitousServiceDefault<FakeTenantInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultTenantProvider ) )!).Default;
             Func<IServiceProvider, object> front1 = sp => ((IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
             Func<IServiceProvider, object> front3 = sp => ((IEndpointUbiquitousServiceDefault<FakeCultureInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultCultureProvider ) )!).Default;
-            _ubiquitousFrontDescriptors = new ServiceDescriptor[] {
+            _ambientServiceEndpointDescriptors = new ServiceDescriptor[] {
                     new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Singleton ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), front0, ServiceLifetime.Singleton ),
                     new ServiceDescriptor( typeof( IFakeAuthenticationInfo), front1, ServiceLifetime.Singleton ),
@@ -67,36 +67,36 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
-        public EndpointTypeManager_CK()
+        public DIContainerHub_CK()
         {
-            _endpointTypes = new IEndpointTypeInternal[]
+            _containers = new IDIContainerInternal[]
             {
-                    new EndpointType<FakeBackEndpointDefinition.Data>( new FakeBackEndpointDefinition_CK() )
+                    new EndpointType<FakeBackDIContainerDefinition.Data>( new FakeBackDIContainerDefinition_CK() )
             };
         }
 
-        public override IReadOnlyList<EndpointDefinition> EndpointDefinitions => _endpoints;
+        public override IReadOnlyList<DIContainerDefinition> ContainerDefinitions => _containerDefinitions;
 
         public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;
 
-        public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
+        public override IReadOnlyList<IDIContainer> Containers => _containers;
 
-        public override IReadOnlyList<UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
+        public override IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings => _ambientMappings;
 
         internal ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )
         {
             return new ServiceDescriptor[]
             {
                 // This endpointTypeManager that is the relay to the global services.
-                new ServiceDescriptor( typeof( EndpointTypeManager ), this ),
+                new ServiceDescriptor( typeof( DIContainerHub ), this ),
                 // The StObjMap singleton.
                 new ServiceDescriptor( typeof( IStObjMap ), stObjMap ),
 
-                // The IEndpointType<TScopeData> are true singletons. (Done for each EndpoitType.)
-                new ServiceDescriptor( typeof( IEndpointType<FakeBackEndpointDefinition.Data> ), _endpointTypes[0] ),
+                // The IDIContainer<TScopeData> are true singletons. (Done for each EndpoitType.)
+                new ServiceDescriptor( typeof( IDIContainer<FakeBackDIContainerDefinition.Data> ), _containers[0] ),
 
-                // ...as well as the IEnumerable<IEndpointType>.
-                new ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes ),
+                // ...as well as the IEnumerable<IDIContainer>.
+                new ServiceDescriptor( typeof( IEnumerable<IDIContainer> ), _containers ),
 
                 // And our fundamental scoped that holds the endpoint specific scoped Data.
                 new ServiceDescriptor( typeof( ScopeDataHolder ), typeof( ScopeDataHolder ), ServiceLifetime.Scoped )

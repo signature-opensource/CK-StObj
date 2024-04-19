@@ -71,9 +71,9 @@ namespace CK.StObj.Engine.Tests
                     <Types>
                         <Type Name="CK.Core.IActivityMonitor, CK.ActivityMonitor" Kind="IsScoped" />
                         <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" Kind="IsMultipleService|IsSingleton" Optional="True" />
-                        <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" Kind="IsSingleton,IsProcessService" Optional="True" />
+                        <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" Kind="IsSingleton" Optional="True" />
                         <!-- This is invalid but not at the configuration parsing level. -->
-                        <Type Name="StrangeService, StrangeAssembly" Kind="UbiquitousInfo|IsMultipleService" Optional="True" />
+                        <Type Name="StrangeService, StrangeAssembly" Kind="IsScoped|IsSingleton|IsMultipleService" Optional="True" />
                     </Types>
                     <ExcludedTypes>
                         <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
@@ -138,11 +138,11 @@ namespace CK.StObj.Engine.Tests
             t2.Optional.Should().BeTrue();
             var t3 = b1.Types[2];
             t3.Name.Should().Be( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" );
-            t3.Kind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsSingleton );
+            t3.Kind.Should().Be( AutoServiceKind.IsSingleton );
             t3.Optional.Should().BeTrue();
             var t4 = b1.Types[3];
             t4.Name.Should().Be( "StrangeService, StrangeAssembly" );
-            t4.Kind.Should().Be( AutoServiceKind.UbiquitousInfo | AutoServiceKind.IsMultipleService );
+            t4.Kind.Should().Be( AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton | AutoServiceKind.IsMultipleService );
             t4.Optional.Should().BeTrue();
 
             var bSample = b1.GetAspectConfiguration<SampleAspectConfiguration>();

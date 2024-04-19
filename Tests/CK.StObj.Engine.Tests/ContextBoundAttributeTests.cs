@@ -316,11 +316,11 @@ namespace CK.StObj.Engine.Tests
             r.EngineMap.AllTypesAttributesCache.Values
                           .Select( attrs => attrs.Type )
                           // These 3 objects are systematically registered.
-                          // The base EndpointDefinition of the DefaultEndpointDefinition that is a [CKTypeDefiner]
+                          // The base DIContainerDefinition of the DefaultDIContainerDefinition that is a [CKTypeDefiner]
                           // is also registered.
                           .Where( t => !typeof( PocoDirectory ).IsAssignableFrom( t )
-                                       && !typeof( EndpointTypeManager ).IsAssignableFrom( t )
-                                       && !typeof( EndpointUbiquitousInfo ).IsAssignableFrom( t ) )
+                                       && !typeof( DIContainerHub ).IsAssignableFrom( t )
+                                       && !typeof( AmbientServiceHub ).IsAssignableFrom( t ) )
                           .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
             r.EngineMap.AllTypesAttributesCache.Values

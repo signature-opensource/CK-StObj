@@ -5,15 +5,14 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Captures the information about endpoint services: this is a reverse index of the
-    /// attributes declaration.
+    /// Captures the information about all the <see cref="DIContainerDefinition"/>.
     /// </summary>
-    public interface IEndpointResult
+    public interface IDIContainerAnalysisResult
     {
         /// <summary>
-        /// Gets all the <see cref="IEndpointContext"/>.
+        /// Gets all the <see cref="IDIContainerInfo"/>.
         /// </summary>
-        IReadOnlyList<IEndpointContext> EndpointContexts { get; }
+        IReadOnlyList<IDIContainerInfo> Containers { get; }
 
         /// <summary>
         /// Gets all the endpoint service types and their kind (they are not necessarily <see cref="IAutoService"/>).
@@ -21,22 +20,22 @@ namespace CK.Setup
         IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices { get; }
 
         /// <summary>
-        /// Gets whether at least one ubiquitous information service type exists.
+        /// Gets whether at least one ambient information service type exists.
         /// </summary>
-        bool HasUbiquitousInfoServices { get; }
+        bool HasAmbientServices { get; }
 
         /// <summary>
         /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="EndpointTypeManager.UbiquitousMapping"/>. Order matters: consecutive entries with
-        /// the same <see cref="EndpointTypeManager.UbiquitousMapping.MappingIndex"/> belong to the same auto service inheritance
+        /// are expanded. See <see cref="DIContainerHub.AmbientServiceMapping"/>. Order matters: consecutive entries with
+        /// the same <see cref="DIContainerHub.AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
         /// chain.
         /// </summary>
-        IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings { get; }
+        IReadOnlyList<DIContainerHub.AmbientServiceMapping> AmbientServiceMappings { get; }
 
         /// <summary>
-        /// Captures the ubiquitous default provider implementation.
+        /// Captures the ambient service default provider implementation.
         /// </summary>
-        public readonly struct UbiquitousDefault
+        public readonly struct AmbientServiceDefault
         {
             /// <summary>
             /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> type that the
@@ -54,7 +53,7 @@ namespace CK.Setup
             /// </summary>
             /// <param name="providerType">The <see cref="IEndpointUbiquitousServiceDefault{T}"/> type.</param>
             /// <param name="provider">The service implementation.</param>
-            public UbiquitousDefault( Type providerType, IStObjFinalClass provider )
+            public AmbientServiceDefault( Type providerType, IStObjFinalClass provider )
             {
                 ProviderType = providerType;
                 Provider = provider;
@@ -62,9 +61,9 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ubiquitous
+        /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ambient
         /// service.
         /// </summary>
-        IReadOnlyList<UbiquitousDefault> DefaultUbiquitousValueProviders { get; }
+        IReadOnlyList<AmbientServiceDefault> DefaultAmbientServiceValueProviders { get; }
     }
 }

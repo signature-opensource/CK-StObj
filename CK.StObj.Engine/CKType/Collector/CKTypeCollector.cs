@@ -165,7 +165,7 @@ namespace CK.Setup
             if( (lt & CKTypeKind.HasError) == 0 )
             {
                 bool isExcluded = (lt & CKTypeKind.IsExcludedType) != 0;
-                if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                if( acParent != null || (lt & CKTypeKind.IsRealObject) != 0 )
                 {
                     objectInfo = RegisterObjectClassInfo( monitor, t, isExcluded, acParent );
                     Debug.Assert( objectInfo != null );

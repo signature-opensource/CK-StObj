@@ -30,7 +30,7 @@ namespace CK.Setup
         // This sucks...
         IReadOnlyList<MutableItem>? _orderedStObjs;
         Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
-        IEndpointResult? _endpointResult;
+        IDIContainerAnalysisResult? _endpointResult;
         IReadOnlyDictionary<Type, IStObjMultipleInterface>? _multiplemappings;
 
         /// <summary>
@@ -150,13 +150,13 @@ namespace CK.Setup
 
         IReadOnlyDictionary<Type, ITypeAttributesCache> IStObjEngineMap.AllTypesAttributesCache => (IReadOnlyDictionary<Type, ITypeAttributesCache>?)_allTypesAttributesCache ?? ImmutableDictionary<Type, ITypeAttributesCache>.Empty;
 
-        IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
+        IDIContainerAnalysisResult IStObjEngineMap.EndpointResult => _endpointResult!;
 
         IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
 
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
                                               Dictionary<Type,ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult? endpointResult,
+                                              IDIContainerAnalysisResult? endpointResult,
                                               IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             _orderedStObjs = ordered;

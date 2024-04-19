@@ -42,7 +42,7 @@ namespace CK.Setup
                     stopMethods.Reverse();
                     if( startMethods.Count == 0 && stopMethods.Count == 0 )
                     {
-                        monitor.CloseGroup( $"No OnHostStart/Stop[Async] method found on the {types.Count} real objects. HostedServiceLifetimeTrigger will only deal with the EndpointTypeManager." );
+                        monitor.CloseGroup( $"No OnHostStart/Stop[Async] method found on the {types.Count} real objects. HostedServiceLifetimeTrigger will only deal with the DIContainerHub." );
                     }
                     else
                     {
@@ -117,7 +117,7 @@ namespace CK.Setup
                                      public HostedServiceLifetimeTrigger( IServiceProvider s )
                                      {
                                        _services = s;
-                                       ((EndpointTypeManager_CK)s.GetService( typeof(EndpointTypeManager) ))!.SetGlobalContainer( s );
+                                       ((DIContainerHub_CK)s.GetService( typeof(DIContainerHub) ))!.SetGlobalContainer( s );
                                      }
                                      """ );
                 var start = c.CreateFunction( "public Task StartAsync( System.Threading.CancellationToken cancel )" );

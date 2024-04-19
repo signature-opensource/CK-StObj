@@ -93,7 +93,7 @@ namespace CK.Core
 
             /// <summary>
             /// Registers the map, the Real objects, singleton services, scoped services and initialize
-            /// any <see cref="IEndpointType{TScopeData}"/>.
+            /// any <see cref="IDIContainer{TScopeData}"/>.
             /// Caution: this never throws, instead any exception is logged and false is returned.
             /// </summary>
             /// <param name="map">The map to register. Must not be null.</param>

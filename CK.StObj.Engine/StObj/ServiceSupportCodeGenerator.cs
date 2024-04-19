@@ -14,12 +14,11 @@ namespace CK.Setup
         const string _stObjServiceClassDescriptor = """
                     sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
                     {
-                        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
+                        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
                         {
                             ClassType = t;
                             FinalType = finalType;
                             AutoServiceKind = k;
-                            MarshallableTypes = marshallableTypes;
                             MultipleMappings = mult;
                             UniqueMappings = uniq;
                        }
@@ -31,8 +30,6 @@ namespace CK.Setup
                         public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
 
                         public AutoServiceKind AutoServiceKind { get; }
-
-                        public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
                         public IReadOnlyCollection<Type> MultipleMappings { get; }
 
@@ -124,8 +121,6 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                                 .Append( ", " )
                                 .Append( d.AutoServiceKind )
                                 .Append( ", " )
-                                .AppendArray( d.MarshallableTypes )
-                                .Append( ", " )
                                 .AppendArray( d.MultipleMappings )
                                 .Append( ", " )
                                 .AppendArray( d.UniqueMappings )
@@ -164,8 +159,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                         }
                         _rootCtor.Append( ", " );
                     }
-                    _rootCtor.Append( "}, " ).NewLine()
-                             .AppendArray( m.MarshallableTypes ).Append( ") );" ).NewLine();
+                    _rootCtor.Append( "}) );" ).NewLine();
                 }
             }
         }
@@ -245,7 +239,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
         public void CreateConfigureServiceMethod( IActivityMonitor monitor, IStObjEngineMap engineMap )
         {
             var endpointResult = engineMap.EndpointResult;
-            bool hasEndpoint = endpointResult.EndpointContexts.Count > 0;
+            bool hasEndpoint = endpointResult.Containers.Count > 0;
 
             EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
 
@@ -253,24 +247,24 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             using var region = fScope.Region();
 
             fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine()
-                  .Append( "if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( reg.Monitor, reg.Services, true ) ) return false;" ).NewLine();
+                  .Append( "if( !EndpointHelper.CheckAndNormalizeAmbientServices( reg.Monitor, reg.Services, true ) ) return false;" ).NewLine();
 
             // Common endpoint container configuration is done on the global, externally configured services so that
             // we minimize the number of registrations to process.
             if( hasEndpoint )
             {
-                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );" ).NewLine();
+                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, DIContainerHub_CK._endpointServices.ContainsKey );" ).NewLine();
             }
             // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
             // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.
-            // The common descriptors are then injected: the "true" singleton EndpointTypeManager is registered is the relay from endpoint containers
+            // The common descriptors are then injected: the "true" singleton DIContainerHub is registered is the relay from endpoint containers
             // to the global one and the ScopedDataHolder is also registered.
             fScope.Append( """
                         reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(
                                                         typeof( Microsoft.Extensions.Hosting.IHostedService ),
                                                         typeof( HostedServiceLifetimeTrigger ),
                                                         Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
-                        var theEPTM = new EndpointTypeManager_CK();
+                        var theEPTM = new DIContainerHub_CK();
                         var commonDescriptors = theEPTM.CreateCommonDescriptors( this );
                         reg.Services.AddRange( commonDescriptors );
                         """ ).NewLine();
@@ -290,7 +284,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                         EndpointHelper.FillStObjMappingsWithEndpoints( reg.Monitor, this, reg.Services, mappings );
                         // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                         bool success = true;
-                        foreach( var e in theEPTM._endpointTypes )
+                        foreach( var e in theEPTM._containers )
                         {
                             if( !e.ConfigureServices( reg.Monitor, this, mappings, commonDescriptors ) ) success = false;
                         }

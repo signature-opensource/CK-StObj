@@ -5,16 +5,17 @@ using System;
 namespace CK.StObj.Engine.Tests.Endpoint
 {
     /// <summary>
-    /// This endpoint relies only on the EndpointUbiquitousInfo. Ubiquitous information can be
-    /// overridden but this endpoint has no way to retrieve any of the existing ubiquitous information.
+    /// This endpoint relies only on the AmbientServiceHub.
+    /// Ambient services can be overridden in the hub before using its generated <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
+    /// method.
     /// </summary>
-    [EndpointDefinition( EndpointKind.Back )]
-    public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.Data>
+    [DIContainerDefinition( DIContainerKind.Backend )]
+    public abstract class BackgroundDIContainerDefinition : DIContainerDefinition<BackgroundDIContainerDefinition.Data>
     {
-        public sealed class Data : BackScopedData
+        public sealed class Data : BackendScopedData
         {
-            internal Data( EndpointUbiquitousInfo ubiquitousInfo, IActivityMonitor monitor )
-                : base( ubiquitousInfo )
+            internal Data( AmbientServiceHub ambientServiceHub, IActivityMonitor monitor )
+                : base( ambientServiceHub )
             {
                 Monitor = monitor;
             }

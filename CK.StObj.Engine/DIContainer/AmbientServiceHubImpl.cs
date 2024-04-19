@@ -9,22 +9,22 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements the EndpointTypeManager.
+    /// Implements the DIContainerHub.
     /// </summary>
-    public sealed class EndpointUbiquitousInfoImpl : CSCodeGeneratorType
+    public sealed class AmbientServiceHubImpl : CSCodeGeneratorType
     {
         /// <inheritdoc />
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
-            Debug.Assert( scope.FullName == "CK.Core.EndpointUbiquitousInfo_CK" );
+            Debug.Assert( scope.FullName == "CK.Core.AmbientServiceHub_CK" );
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            var mappings = c.CurrentRun.EngineMap.EndpointResult.UbiquitousMappings;
+            var mappings = c.CurrentRun.EngineMap.EndpointResult.AmbientServiceMappings;
 
             scope.Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;" ).NewLine();
 
             scope.GeneratedByComment( "Static constructor" )
-                 .Append( "static EndpointUbiquitousInfo_CK()" )
+                 .Append( "static AmbientServiceHub_CK()" )
                  .OpenBlock()
                  .Append( "_descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" )
                  .CreatePart( out var descriptors )
@@ -35,15 +35,15 @@ namespace CK.Setup
             {
                 descriptors.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
                            .AppendTypeOf( type )
-                           .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append(index)
+                           .Append( ", sp => CK.StObj.ScopeDataHolder.GetAmbientService( sp, " ).Append(index)
                            .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
 
 
             scope.GeneratedByComment( "Constructor initializer" )
-                 .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries )" )
+                 .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )" )
                  .OpenBlock()
-                 .Append( "entries = EndpointTypeManager_CK._ubiquitousMappings;" ).NewLine()
+                 .Append( "entries = DIContainerHub_CK._ubiquitousMappings;" ).NewLine()
                  .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
             foreach( var (type, index) in mappings )
@@ -58,7 +58,7 @@ namespace CK.Setup
                           {
                               var o = services.GetService( type );
                               if( o != null ) return o;
-                              return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
+                              return Throw.InvalidOperationException<object>( $"Ambient service '{type}' not registered! This type must always be resolvable." );
                           }
                           """ )
                .CloseBlock();
@@ -66,9 +66,9 @@ namespace CK.Setup
             scope.Append( """
                            internal object At( int index ) => _mappers[index].Current;
 
-                           EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
+                           AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ubiquitousMappings ) { }
 
-                           public override EndpointUbiquitousInfo CleanClone()
+                           public override AmbientServiceHub CleanClone()
                            {
                                var c = (Mapper[])_mappers.Clone();
                                for( int i = 0; i < c.Length; i++ )
@@ -76,7 +76,7 @@ namespace CK.Setup
                                    ref var m = ref c[i];
                                    m.Current = m.Initial;
                                }
-                               return new EndpointUbiquitousInfo_CK( c );
+                               return new AmbientServiceHub_CK( c );
                            }
                            
                            """ );

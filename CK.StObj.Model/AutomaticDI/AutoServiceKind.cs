@@ -1,11 +1,13 @@
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CK.Core
 {
     /// <summary>
-    /// Defines Auto services flags.
+    /// Detailed flags that categorizes service types used by the Automatic DI.
+    /// This is a subset of a more complex enumeration defined and used by the engine but
+    /// due to the hybrid nature of the DI configuration, these flags need to be known by
+    /// the generated code that configures the DI containers: this is why they are exposed
+    /// at the Model level.
     /// </summary>
     [Flags]
     public enum AutoServiceKind
@@ -17,50 +19,63 @@ namespace CK.Core
         None = 0,
 
         /// <summary>
-        /// Indicates a service that has a data/configuration adherence to the current process: it requires some
-        /// sort of marshalling/configuration to be able to do its job remotely (out of this process).
-        /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
-        /// </summary>
-        IsProcessService = 1,
-
-        /// <summary>
-        /// This is a service bound to a endpoint: it may not be available in endpoint (a typical example of such service is the
-        /// IAuthenticationService that requires an HttpContext) and may not be available in the global DI container (a service
-        /// can be specific to a given endpoint or a family of endpoints but cannot live in the global application scope).
-        /// </summary>
-        IsEndpointService = 2,
-
-        /// <summary>
-        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> or <see cref="IsEndpointService"/>.
-        /// </summary>
-        IsMarshallable = 4,
-
-        /// <summary>
-        /// This service must be registered as a Singleton.
-        /// </summary>
-        IsSingleton = 8,
-
-        /// <summary>
-        /// This service must be registered as a Scoped service.
-        /// </summary>
-        IsScoped = 16,
-
-        /// <summary>
-        /// This is applicable only to interfaces. It states that the service is not unique: interfaces marked with this flag must all
-        /// be registered, associated to each of their implementation.
-        /// </summary>
-        IsMultipleService = 32,
-
-        /// <summary>
         /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
         /// </summary>
-        IsAutoService = 64,
+        IsAutoService = 1 << 6,
 
         /// <summary>
-        /// Ubiquitous info is a scoped endpoint service (and optionally a auto service) that must be available in all
-        /// containers. The instance must be directly marshallable (should be immutable or at least thread safe and
-        /// be independent of any other service). See <see cref="EndpointScopedServiceAttribute"/>.
+        /// The service is known to be a scoped service. Each Unit of Work is provided a unique instance.
+        /// <list type="bullet">
+        ///     <item><term>Rejects</term><description><see cref="IsSingleton"/></description></item>
+        /// </list>
         /// </summary>
-        UbiquitousInfo = 128 | IsEndpointService | IsScoped
+        IsScoped = 1 << 7,
+
+        /// <summary>
+        /// The service is known to be a singleton service: all Unit of Works (including concurrent ones) will use the exact same instance.
+        /// <list type="bullet">
+        ///     <item><term>Rejects</term><description><see cref="IsScoped"/></description></item>
+        /// </list>
+        /// </summary>
+        IsSingleton = 1 << 8,
+
+        /// <summary>
+        /// A <see cref="IRealObject"/> is a true singleton.
+        /// <list type="bullet">
+        ///     <item><term>Implies</term><description><see cref="IsSingleton"/></description></item>
+        ///     <item><term>Rejects</term><description><see cref="IsMultipleService"/></description></item>
+        /// </list>
+        /// </summary>
+        IsRealObject = 1 << 10,
+
+        /// <summary>
+        /// The type is a DI service available in some endpoint contexts but not necessarily in all of them.
+        /// <para>
+        /// It is up to each <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices"/> to register
+        /// an implementation or not for this service.
+        /// </para>
+        /// </summary>
+        IsEndpointService = 1 << 11,
+
+        /// <summary>
+        /// The type is a DI scoped service necessarily available in all contexts that automatically flows from endpoints
+        /// to the background context.
+        /// <list type="bullet">
+        ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsEndpointService"/></description></item>
+        /// </list>
+        /// </summary>
+        IsAmbientService = 1 << 14,
+
+        /// <summary>
+        /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
+        /// <list type="bullet">
+        ///     <item><term>Implies</term><description></description></item>
+        ///     <item><term>Rejects</term><description><see cref="IsRealObject"/></description></item>
+        /// </list>
+        /// </summary>
+        /// <remarks>
+        /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
+        /// </remarks>
+        IsMultipleService = 1 << 15,
     }
 }

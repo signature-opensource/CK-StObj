@@ -12,19 +12,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
     }
 
-    [EndpointDefinition( EndpointKind.Back )]
-    abstract class FakeBackEndpointDefinition : EndpointDefinition<FakeBackEndpointDefinition.Data>
+    [DIContainerDefinition( DIContainerKind.Backend )]
+    abstract class FakeBackDIContainerDefinition : DIContainerDefinition<FakeBackDIContainerDefinition.Data>
     {
         // Required definition of the specialized ScopedData type.
         // This can typically define internal fields used to exchange data from the external
         // to the internal world.
         // Here we have decided to explicitly provide the IActivityMonitor. This supposes that
         // it is "reserved" to work on this side in the scoped service container!
-        public sealed class Data : BackScopedData
+        public sealed class Data : BackendScopedData
         {
             internal readonly IActivityMonitor _monitor;
 
-            public Data( EndpointUbiquitousInfo info, IActivityMonitor monitor )
+            public Data( AmbientServiceHub info, IActivityMonitor monitor )
                 : base( info )
             {
                 _monitor = monitor;
