@@ -60,9 +60,6 @@ namespace CK.Setup
         /// <inheritdoc cref="AutoServiceKind.IsRequiredEndpointService"/>
         IsRequiredEndpointService = AutoServiceKind.IsRequiredEndpointService,
 
-        /// <inheritdoc cref="AutoServiceKind.IsBackgroundService"/>
-        IsBackgroundService = AutoServiceKind.IsBackgroundService,
-
         /// <inheritdoc cref="AutoServiceKind.IsAmbientService"/>
         IsAmbientService = AutoServiceKind.IsAmbientService,
 
@@ -85,7 +82,7 @@ namespace CK.Setup
         /// The <see cref="CKTypeKind.IsSingleton"/> and its implied flags:
         /// IsBackgroundService | CKTypeKind.IsRequiredEndpointService
         /// </summary>
-        public const CKTypeKind SingletonFlags = CKTypeKind.IsSingleton | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService;
+        public const CKTypeKind SingletonFlags = CKTypeKind.IsSingleton | CKTypeKind.IsRequiredEndpointService;
 
         /// <summary>
         /// The <see cref="CKTypeKind.IsRealObject"/> and its implied flags:
@@ -97,7 +94,7 @@ namespace CK.Setup
         /// The <see cref="CKTypeKind.IsAmbientService"/> and its implied flags:
         /// IsAmbientService | IsBackgroundService | IsRequiredEndpointService | IsScoped
         /// </summary>
-        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
+        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/> | <see cref="IsPerContextSingleton"/>.

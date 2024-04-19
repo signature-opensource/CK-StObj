@@ -347,11 +347,11 @@ namespace CK.Setup
                             k &= ~CKTypeKind.HasError;
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
-                            if( hasSingletonService ) k |= CKTypeKind.IsSingleton | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsBackgroundService;
+                            if( hasSingletonService ) k |= CKTypeKind.IsSingleton | CKTypeKind.IsRequiredEndpointService;
                             if( isEndpointSingleton ) k |= CKTypeKind.IsOptionalEndpointService | CKTypeKind.IsPerContextSingleton;
                             if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
                             if( hasDefiner ) k |= CKTypeKind.IsDefiner;
-                            if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsBackgroundService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
+                            if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
                             else if( isEndpointScoped ) k |= CKTypeKind.IsOptionalEndpointService | CKTypeKind.IsScoped;
 
                             // Final check if the type filter has not excluded the type.

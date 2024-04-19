@@ -96,11 +96,6 @@ namespace CK.Core
         IsRequiredEndpointService = 1 << 12,
 
         /// <summary>
-        /// The type is a DI service available in the background context.
-        /// </summary>
-        IsBackgroundService = 1 << 13,
-
-        /// <summary>
         /// The type is a DI scoped service necessarily available in all contexts that automatically flows from endpoints
         /// to the background context.
         /// <list type="bullet">
