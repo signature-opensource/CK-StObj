@@ -54,11 +54,8 @@ namespace CK.Setup
         /// <inheritdoc cref="AutoServiceKind.IsRealObject"/>
         IsRealObject = AutoServiceKind.IsRealObject,
 
-        /// <inheritdoc cref="AutoServiceKind.IsOptionalEndpointService"/>
-        IsOptionalEndpointService = AutoServiceKind.IsOptionalEndpointService,
-
-        /// <inheritdoc cref="AutoServiceKind.IsRequiredEndpointService"/>
-        IsRequiredEndpointService = AutoServiceKind.IsRequiredEndpointService,
+        /// <inheritdoc cref="AutoServiceKind.IsEndpointService"/>
+        IsEndpointService = AutoServiceKind.IsEndpointService,
 
         /// <inheritdoc cref="AutoServiceKind.IsAmbientService"/>
         IsAmbientService = AutoServiceKind.IsAmbientService,
@@ -79,22 +76,21 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
-        /// The <see cref="CKTypeKind.IsSingleton"/> and its implied flags:
-        /// IsBackgroundService | CKTypeKind.IsRequiredEndpointService
+        /// The <see cref="CKTypeKind.IsSingleton"/>.
         /// </summary>
-        public const CKTypeKind SingletonFlags = CKTypeKind.IsSingleton | CKTypeKind.IsRequiredEndpointService;
+        public const CKTypeKind SingletonFlags = CKTypeKind.IsSingleton;
 
         /// <summary>
         /// The <see cref="CKTypeKind.IsRealObject"/> and its implied flags:
-        /// IsSingleton | IsBackgroundService | CKTypeKind.IsRequiredEndpointService
+        /// IsSingleton
         /// </summary>
         public const CKTypeKind RealObjectFlags = CKTypeKind.IsRealObject | SingletonFlags;
 
         /// <summary>
         /// The <see cref="CKTypeKind.IsAmbientService"/> and its implied flags:
-        /// IsAmbientService | IsBackgroundService | IsRequiredEndpointService | IsScoped
+        /// IsEndpointService | IsScoped
         /// </summary>
-        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsRequiredEndpointService | CKTypeKind.IsScoped;
+        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/> | <see cref="IsPerContextSingleton"/>.
@@ -166,8 +162,7 @@ namespace CK.Setup
             bool isCtxSingleton = (k & CKTypeKind.IsPerContextSingleton) != 0;
             bool isRealObject = (k & CKTypeKind.IsRealObject) != 0;
             bool isPoco = (k & CKTypeKind.IsPoco) != 0;
-            bool isOptEndPoint = (k & CKTypeKind.IsOptionalEndpointService) != 0;
-            bool isReqEndPoint = (k & CKTypeKind.IsRequiredEndpointService) != 0;
+            bool isEndPoint = (k & CKTypeKind.IsEndpointService) != 0;
             bool isMultiple = (k & CKTypeKind.IsMultipleService) != 0;
             bool isAmbient = (k & CKTypeKind.IsAmbientService) != 0;
 
@@ -191,7 +186,7 @@ namespace CK.Setup
                     if( !isSingleton ) AddConflict( "RealObject must be a Singleton" );
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
                     if( isScoped ) AddConflict( "RealObject cannot have a Scoped lifetime" );
-                    if( isOptEndPoint ) AddConflict( "RealObject cannot be an optional Endpoint service" );
+                    if( isEndPoint ) AddConflict( "RealObject cannot be an optional Endpoint service" );
                     if( isMultiple ) AddConflict( "IRealObject interface cannot be marked as a Multiple service" );
                     // Allow a class to be RealObject that implements a service (usually the default service) but
                     // forbids defining an interface that is both.
@@ -209,7 +204,7 @@ namespace CK.Setup
                     AddConflict( "an ambient service info can only be a required endpoint and background scoped service (and optionally a IScopedAutoService)." );
                 }
             }
-            else if( isOptEndPoint || isReqEndPoint )
+            else if( isEndPoint )
             {
                 if( !isScoped && !(isSingleton | isCtxSingleton) )
                 {
@@ -219,10 +214,6 @@ namespace CK.Setup
             if( isSingleton && isCtxSingleton )
             {
                 AddConflict( "a Singleton cannot be both a PerContext and a proceswide true singleton" );
-            }
-            if( isOptEndPoint && isReqEndPoint )
-            {
-                AddConflict( "a Endpoint service cannot be both optional and required" );
             }
             if( isClass )
             {

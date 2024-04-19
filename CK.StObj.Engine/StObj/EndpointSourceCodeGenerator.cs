@@ -351,7 +351,7 @@ namespace CK.Setup
                 // capture the implementation type.
                 foreach( var s in stObjMap.Services.MappingList )
                 {
-                    bool isEndpointService = (s.AutoServiceKind & (AutoServiceKind.IsOptionalEndpointService|AutoServiceKind.IsRequiredEndpointService)) != 0;
+                    bool isEndpointService = (s.AutoServiceKind & AutoServiceKind.IsEndpointService) != 0;
                     if( s.IsScoped )
                     {
                         if( isEndpointService )
@@ -680,7 +680,7 @@ namespace CK.Setup
                                     {
                                         if( autoMap is IStObjServiceClassDescriptor service )
                                         {
-                                            if( (service.AutoServiceKind & (AutoServiceKind.IsOptionalEndpointService|AutoServiceKind.IsRequiredEndpointService)) == 0 )
+                                            if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
                                             {
                                                 monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
                                                 success = false;

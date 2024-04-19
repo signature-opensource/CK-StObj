@@ -45,7 +45,7 @@ namespace CK.Core
         /// but the background and each endpoint contexts have their own singleton instance (when they have one).
         /// <list type="bullet">
         ///  <item>
-        ///  Whether none, at least one or all endpoints have it depends on <see cref="IsOptionalEndpointService"/> and <see cref="IsRequiredEndpointService"/>.
+        ///  Whether none, at least one or all endpoints have it depends on <see cref="IsEndpointService"/> and <see cref="IsRequiredEndpointService"/>.
         ///  </item>
         ///  <item>
         ///  Whether the background context has this service depends on <see cref="IsBackgroundService"/>.
@@ -53,7 +53,7 @@ namespace CK.Core
         /// </list>
         /// <para>
         /// <list type="bullet">
-        ///     <item><term>Implies</term><description><see cref="IsOptionalEndpointService"/> xor <see cref="IsRequiredEndpointService"/></description></item>
+        ///     <item><term>Implies</term><description><see cref="IsEndpointService"/> xor <see cref="IsRequiredEndpointService"/></description></item>
         ///     <item><term>Rejects</term><description><see cref="IsScoped"/> and <see cref="IsSingleton"/></description></item>
         /// </list>
         /// </para>
@@ -71,36 +71,18 @@ namespace CK.Core
 
         /// <summary>
         /// The type is a DI service available in some endpoint contexts but not necessarily in all of them.
-        /// <list type="bullet">
-        ///     <item><term>Implies</term><description></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsRequiredEndpointService"/></description></item>
-        /// </list>
         /// <para>
         /// It is up to each <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices"/> to register
         /// an implementation or not for this service.
         /// </para>
         /// </summary>
-        IsOptionalEndpointService = 1 << 11,
-
-        /// <summary>
-        /// The type is a DI service available in all endpoint contexts.
-        /// <list type="bullet">
-        ///     <item><term>Implies</term><description></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsOptionalEndpointService"/></description></item>
-        /// </list>
-        /// <para>
-        /// All endpoint <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices"/> methods
-        /// must be able to register an implementation for it.
-        /// </para>
-        /// </summary>
-        IsRequiredEndpointService = 1 << 12,
+        IsEndpointService = 1 << 11,
 
         /// <summary>
         /// The type is a DI scoped service necessarily available in all contexts that automatically flows from endpoints
         /// to the background context.
         /// <list type="bullet">
-        ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsBackgroundService"/> and <see cref="IsRequiredEndpointService"/></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsOptionalEndpointService"/></description></item>
+        ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsEndpointService"/></description></item>
         /// </list>
         /// </summary>
         IsAmbientService = 1 << 14,
