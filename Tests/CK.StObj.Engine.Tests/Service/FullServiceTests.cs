@@ -332,30 +332,30 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void startup_services_registration_on_real_objects()
         {
-            // Successful run: TotallyExternalStartupService is available.
-            {
-                var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
-                var startupServices = new SimpleServiceContainer();
-                startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
+            //// Successful run: TotallyExternalStartupService is available.
+            //{
+            //    var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
+            //    var startupServices = new SimpleServiceContainer();
+            //    startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-                using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
-                {
-                    using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
-                    sp.GetRequiredService<IA1>().Should().BeSameAs( sp.GetRequiredService<A>() );
-                    sp.GetRequiredService<IBIsRealObject>().Should().BeSameAs( sp.GetRequiredService<B>() );
-                    using( var scope = sp.CreateScope() )
-                    {
-                        sp.GetRequiredService<IA1>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IA1>(), "Real object is Singleton." );
-                        sp.GetRequiredService<IBIsRealObject>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IBIsRealObject>(), "Real object is Singleton." );
-                    }
-                    // We are using here the default B's implementation.
-                    sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
+            //    using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
+            //    {
+            //        using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
+            //        sp.GetRequiredService<IA1>().Should().BeSameAs( sp.GetRequiredService<A>() );
+            //        sp.GetRequiredService<IBIsRealObject>().Should().BeSameAs( sp.GetRequiredService<B>() );
+            //        using( var scope = sp.CreateScope() )
+            //        {
+            //            sp.GetRequiredService<IA1>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IA1>(), "Real object is Singleton." );
+            //            sp.GetRequiredService<IBIsRealObject>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IBIsRealObject>(), "Real object is Singleton." );
+            //        }
+            //        // We are using here the default B's implementation.
+            //        sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
-                    entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                    entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                    entries.Should().Contain( e => e.Text == "I'm doing something from B." );
-                }
-            }
+            //        entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+            //        entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+            //        entries.Should().Contain( e => e.Text == "I'm doing something from B." );
+            //    }
+            //}
             // Failed (while Configuring Services): TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem is missing.
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );

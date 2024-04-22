@@ -162,13 +162,12 @@ namespace CK.Testing.StObjEngine
         /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configuration.</param>
-        /// <returns>The (failed) service register.</returns>
-        StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
-                                                                                  string message,
-                                                                                  IEnumerable<string>? otherMessages = null,
-                                                                                  Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
-                                                                                  SimpleServiceContainer? startupServices = null,
-                                                                                  Action<StObjContextRoot.ServiceRegister>? configureServices = null );
+        void GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                      string message,
+                                                      IEnumerable<string>? otherMessages = null,
+                                                      Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                      SimpleServiceContainer? startupServices = null,
+                                                      Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 
         /// <summary>
         /// Starts any <see cref="IHostedService"/> in <paramref name="services"/>.

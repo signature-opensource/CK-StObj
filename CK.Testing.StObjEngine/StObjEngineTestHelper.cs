@@ -164,22 +164,32 @@ namespace CK.Testing
             return new AutomaticServicesResult( loadResult, reg, reg.Services.BuildServiceProvider() );
         }
 
-        StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
-                                                                                                             string message,
-                                                                                                             IEnumerable<string>? otherMessages,
-                                                                                                             Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
-                                                                                                             SimpleServiceContainer? startupServices,
-                                                                                                             Action<StObjContextRoot.ServiceRegister>? configureServices )
+        void IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                 string message,
+                                                                                 IEnumerable<string>? otherMessages,
+                                                                                 Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                 SimpleServiceContainer? startupServices,
+                                                                                 Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
-            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator ).Map;
-            var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             using( TestHelper.Monitor.CollectEntries( out var entries ) )
             {
-                configureServices?.Invoke( reg );
-                reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
-                CheckExpectedMessages( entries.Select( e => e.Text + CKExceptionData.CreateFrom( e.Exception )?.ToString() ), message, otherMessages );
+                GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, generateSourceFiles: true, CompileOption.Compile );
+                bool loadMapSucceed = false;
+                bool addedStobjMapSucceed = false; 
+                if( r.Success )
+                {
+                    var map = r.EngineResult.Groups[0].LoadStObjMap( TestHelper.Monitor, embeddedIfPossible: true );
+                    if( map != null )
+                    {
+                        loadMapSucceed = true;
+                        var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
+                        configureServices?.Invoke( reg );
+                        addedStobjMapSucceed = reg.AddStObjMap( map );
+                    }
+                    CheckExpectedMessages( entries.Select( e => e.Text + CKExceptionData.CreateFrom( e.Exception )?.ToString() ), message, otherMessages );
+                    addedStobjMapSucceed.Should().BeFalse( loadMapSucceed ? "Service configuration (AddStObjMap) failed." : "Failed result: LoadStObjMap failed." );
+                }
             }
-            return reg;
         }
 
         async Task<ServiceProvider> IStObjEngineTestHelperCore.StartHostedServicesAsync( ServiceProvider services, CancellationToken cancellation )

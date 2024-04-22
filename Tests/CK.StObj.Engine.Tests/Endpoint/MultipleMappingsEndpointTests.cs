@@ -319,13 +319,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
                                                              typeof( ManyConsumer ),
                                                              typeof( ManyAsScopedDIContainerDefinition ) );
-            var result = TestHelper.GetFailedAutomaticServicesConfiguration( collector,
-                                                                             "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
-                                                                             configureServices: s =>
-                                                                             {
-                                                                                 s.Services.AddScoped<ManyNothing>();
-                                                                                 s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
-                                                                             } );
+            TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                                                                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
+                                                                configureServices: s =>
+                                                                {
+                                                                    s.Services.AddScoped<ManyNothing>();
+                                                                    s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+                                                                } );
         }
 
 
