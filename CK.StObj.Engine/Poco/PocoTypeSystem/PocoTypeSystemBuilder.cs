@@ -188,12 +188,12 @@ namespace CK.Setup
 
         void HandleNotSerializableAndNotExchangeableAttributes( IActivityMonitor monitor, IPocoType t )
         {
-            if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NotSerializableAttribute ) ) )
+            if( t.Type.CustomAttributes.Any( a => typeof( INotSerializableAttribute ).IsAssignableFrom( a.AttributeType ) ) )
             {
                 monitor.Info( $"Poco '{t}' is [NotSerializable]." );
                 DoSetNotSerializable( t );
             }
-            if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NotExchangeableAttribute ) ) )
+            if( t.Type.CustomAttributes.Any( a => typeof( INotExchangeableAttribute ).IsAssignableFrom( a.AttributeType ) ) )
             {
                 monitor.Info( $"Poco '{t}' is [NotExchangeable]." );
                 DoSetNotExchangeable( t );
