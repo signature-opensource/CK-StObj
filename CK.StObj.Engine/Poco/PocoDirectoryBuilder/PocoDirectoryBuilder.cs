@@ -117,7 +117,7 @@ namespace CK.Setup
                     {
                         if( singlePrimary != baseType.Primary )
                         {
-                            monitor.Fatal( $"Poco interface '{t.AssemblyQualifiedName}' extends both '{singlePrimary.Type.Name}' and '{baseType.Primary.Type.Name}' (via '{baseType.Type.Name}')." );
+                            monitor.Fatal( $"Poco interface '{t:N}' extends both '{singlePrimary.Type.Name}' and '{baseType.Primary.Type.Name}' (via '{baseType.Type.Name}')." );
                             return null;
                         }
                     }

@@ -30,7 +30,7 @@ namespace CK.Setup
             return serviceInfo;
         }
 
-        bool IsAutoService( IActivityMonitor monitor, Type t ) => (KindDetector.GetRawKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( IActivityMonitor monitor, Type t ) => (KindDetector.GetNonDefinerKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo? FindServiceClassInfo( IActivityMonitor monitor, Type t )
         {
@@ -52,7 +52,7 @@ namespace CK.Setup
         /// </summary>
         AutoServiceInterfaceInfo? RegisterServiceInterface( IActivityMonitor monitor, Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( monitor, t ) );
+            Debug.Assert( t.IsInterface && lt == KindDetector.GetNonDefinerKind( monitor, t ) );
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
             {
                 if( (lt & CKTypeKind.IsExcludedType) == 0 )
@@ -74,7 +74,7 @@ namespace CK.Setup
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind k = KindDetector.GetRawKind( monitor, iT );
+                CKTypeKind k = KindDetector.GetNonDefinerKind( monitor, iT );
                 if( (k & CKTypeKind.HasError) == 0 )
                 {
                     if( (k & CKTypeKind.IsMultipleService) != 0 )

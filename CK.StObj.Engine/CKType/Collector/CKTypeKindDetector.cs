@@ -161,15 +161,21 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Checks whether the type kind: <see cref="CKTypeKind.IsExcludedType"/> or <see cref="CKTypeKind.HasError"/> flag set.
-        /// <para>
-        /// Note that [CKTypeDefiner] and [CKTypeSuperDefiner] kind is always <see cref="CKTypeKind.None"/>.
-        /// </para>
+        /// Gets the kind, whatever it is.
         /// </summary>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type that can be an interface or a class.</param>
         /// <returns>The CK type kind (may be invalid or excluded).</returns>
-        public CKTypeKind GetRawKind( IActivityMonitor m, Type t )
+        public CKTypeKind GetRawKind( IActivityMonitor m, Type t ) => RawGet( m, t );
+
+        /// <summary>
+        /// Gets the kind except if it is a definer: when [CKTypeDefiner] or [CKTypeSuperDefiner]
+        /// the returned kind is always <see cref="CKTypeKind.None"/>.
+        /// </summary>
+        /// <param name="m">The monitor to use.</param>
+        /// <param name="t">The type that can be an interface or a class.</param>
+        /// <returns>The CK type kind (may be invalid or excluded).</returns>
+        public CKTypeKind GetNonDefinerKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
             return (k & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0

@@ -132,7 +132,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 bool hasRegistrationError = false;
                 using( TestHelper.Monitor.OnError( () => hasRegistrationError = true ) )
                 {
-                    var k = a.GetRawKind( TestHelper.Monitor, t );
+                    var k = a.GetNonDefinerKind( TestHelper.Monitor, t );
                     hasCombinationError = k.GetCombinationError( t.IsClass ) != null;
                 }
                 (hasCombinationError | hasRegistrationError).Should().BeTrue();
@@ -148,8 +148,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             CheckNotPossible( typeof( NotPossible2 ) );
 
             // This is explicitly allowed thanks to the parameter.
-            a.GetRawKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: true ).Should().BeNull( "This is possible for a Class." );
-            a.GetRawKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: false ).Should().NotBeNull();
+            a.GetNonDefinerKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: true ).Should().BeNull( "This is possible for a Class." );
+            a.GetNonDefinerKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: false ).Should().NotBeNull();
         }
 
         // IRA is a Super Definer.

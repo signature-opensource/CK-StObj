@@ -723,7 +723,7 @@ namespace CK.Setup
                     }
                 }
             }
-            var kind = collector.KindDetector.GetRawKind( monitor, tParam );
+            var kind = collector.KindDetector.GetNonDefinerKind( monitor, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
             var conflictMsg = (kind & CKTypeKind.HasError) != 0 ? kind.GetCombinationError( tParam.IsClass ) : null;

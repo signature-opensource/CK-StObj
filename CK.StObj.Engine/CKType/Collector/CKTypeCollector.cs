@@ -63,7 +63,7 @@ namespace CK.Setup
 
             KindDetector = new CKTypeKindDetector( typeFilter );
             _memberInfoFactory = new ExtMemberInfoFactory();
-            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetNonDefinerKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _alsoRegisteredTypes = new List<Type>();
             _alsoRegister = _alsoRegisteredTypes.Add;
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
@@ -112,11 +112,14 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    bool isPoco;
-                    if( isPoco = _pocoBuilder.RegisterInterface( monitor, type ) )
+                    if( _pocoBuilder.RegisterInterface( monitor, type ) )
                     {
                         RegisterAssembly( monitor, type, isVFeature: true );
                     }
+                    // The PocoBuilder doesn't handle Definers: we want the attributes on
+                    // IPoco property to be handled.
+                    // So me must re-test here... All this cache stuff HAS to be refactored!
+                    bool isPoco = (KindDetector.GetRawKind( monitor, type ) & CKTypeKind.IsPoco) != 0;
                     RegisterRegularType( monitor, type, isPoco );
                 }
                 else
@@ -161,7 +164,7 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( monitor, t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind lt = KindDetector.GetRawKind( monitor, t );
+            CKTypeKind lt = KindDetector.GetNonDefinerKind( monitor, t );
             if( (lt & CKTypeKind.HasError) == 0 )
             {
                 bool isExcluded = (lt & CKTypeKind.IsExcludedType) != 0;

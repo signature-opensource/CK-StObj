@@ -22,11 +22,10 @@ namespace CK.Setup
         /// <returns>A new instance on success, null on error.</returns>
         public static object? SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t, params object[] requiredParameters )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
+            Throw.CheckNotNullArgument( monitor );
             ISimpleObjectActivator activator = @this.GetService<ISimpleObjectActivator>( false );
             if( activator == null )
             {
-                monitor.Info( "No registered ISimpleObjectActivator found. Using transient new SimpleObjectActivator()." );
                 activator = new SimpleObjectActivator();
             }
             return activator.Create( monitor, t, @this, requiredParameters );
