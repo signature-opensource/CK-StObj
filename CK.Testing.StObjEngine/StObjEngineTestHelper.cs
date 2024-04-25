@@ -186,9 +186,13 @@ namespace CK.Testing
                         configureServices?.Invoke( reg );
                         addedStobjMapSucceed = reg.AddStObjMap( map );
                     }
-                    CheckExpectedMessages( entries.Select( e => e.Text + CKExceptionData.CreateFrom( e.Exception )?.ToString() ), message, otherMessages );
-                    addedStobjMapSucceed.Should().BeFalse( loadMapSucceed ? "Service configuration (AddStObjMap) failed." : "Failed result: LoadStObjMap failed." );
                 }
+                CheckExpectedMessages( entries.Select( e => e.Text + CKExceptionData.CreateFrom( e.Exception )?.ToString() ), message, otherMessages );
+                addedStobjMapSucceed.Should().BeFalse( loadMapSucceed
+                                                         ? "Service configuration (AddStObjMap) failed."
+                                                         : r.Success
+                                                            ? "LoadStObjMap failed."
+                                                            : "Code generation failed." );
             }
         }
 
