@@ -63,7 +63,7 @@ namespace CK.Setup
 
             KindDetector = new CKTypeKindDetector( typeFilter );
             _memberInfoFactory = new ExtMemberInfoFactory();
-            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetNonDefinerKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetNonDefinerKind( m, t ) & (CKTypeKind.IsPoco|CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco, typeFilter: _typeFilter );
             _alsoRegisteredTypes = new List<Type>();
             _alsoRegister = _alsoRegisteredTypes.Add;
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
@@ -119,7 +119,7 @@ namespace CK.Setup
                     // The PocoBuilder doesn't handle Definers: we want the attributes on
                     // IPoco property to be handled.
                     // So me must re-test here... All this cache stuff HAS to be refactored!
-                    bool isPoco = (KindDetector.GetRawKind( monitor, type ) & CKTypeKind.IsPoco) != 0;
+                    bool isPoco = (KindDetector.GetRawKind( monitor, type ) & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
                     RegisterRegularType( monitor, type, isPoco );
                 }
                 else

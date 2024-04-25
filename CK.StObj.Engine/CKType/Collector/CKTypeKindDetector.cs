@@ -166,7 +166,7 @@ namespace CK.Setup
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type that can be an interface or a class.</param>
         /// <returns>The CK type kind (may be invalid or excluded).</returns>
-        public CKTypeKind GetRawKind( IActivityMonitor m, Type t ) => RawGet( m, t );
+        public CKTypeKind GetRawKind( IActivityMonitor m, Type t ) => RawGet( m, t ) & MaskPublicInfo;
 
         /// <summary>
         /// Gets the kind except if it is a definer: when [CKTypeDefiner] or [CKTypeSuperDefiner]
