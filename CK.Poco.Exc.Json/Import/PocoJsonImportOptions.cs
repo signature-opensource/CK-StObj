@@ -7,7 +7,7 @@ namespace CK.Poco.Exc.Json
     /// <summary>
     /// Describes dynamic deserialization options.
     /// </summary>
-    public sealed class PocoJsonImportOptions
+    public sealed class PocoJsonImportOptions : IMCDeserializationOptions 
     {
         /// <summary>
         /// Gets a singleton default option:
@@ -16,6 +16,7 @@ namespace CK.Poco.Exc.Json
         ///     <item>Json comments are silently skipped.</item>
         ///     <item>The maximal Json depth is 64.</item>
         ///     <item>The type filter name is "AllExchangeable".</item>
+        ///     <item>Cultures are not automatically created. Unknown cutures default to <see cref="NormalizedCultureInfo.CodeDefault"/>.</item>
         /// </list>
         /// </summary>
         public static readonly PocoJsonImportOptions Default = new PocoJsonImportOptions();
@@ -27,6 +28,7 @@ namespace CK.Poco.Exc.Json
         ///     <item>Json comments are silently skipped.</item>
         ///     <item>The maximal Json depth is 1000.</item>
         ///     <item>The type filter name is "AllSerializable".</item>
+        ///     <item>Cultures are automatically created if needed.</item>
         /// </list>
         /// </summary>
         public static readonly PocoJsonImportOptions ToStringDefault = new PocoJsonImportOptions()
@@ -35,9 +37,10 @@ namespace CK.Poco.Exc.Json
             {
                 AllowTrailingCommas = true,
                 CommentHandling = JsonCommentHandling.Skip,
-                MaxDepth = 1000                
+                MaxDepth = 1000,
             },
-            TypeFilterName = "AllSerializable"
+            TypeFilterName = "AllSerializable",
+            CreateUnexistingCultures = true
         };
 
         /// <summary>
@@ -59,5 +62,11 @@ namespace CK.Poco.Exc.Json
         /// Defaults to "AllExchangeable".
         /// </summary>
         public string TypeFilterName { get; init; }
+
+        /// <inheritdoc />
+        public bool CreateUnexistingCultures { get; init; }
+
+        /// <inheritdoc />
+        public NormalizedCultureInfo? DefaultCulture { get; init; }
     }
 }

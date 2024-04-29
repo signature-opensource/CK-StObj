@@ -71,13 +71,13 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
             var t = d.Create<IThingMore>();
             t.CreationDate = new DateTime( 2024, 2, 12, 12, 6, 28 );
             t.LifeTime = new TimeSpan( 5, 30, 0 );
-            t.Culture = NormalizedCultureInfo.GetNormalizedCultureInfo( "fr-CA" );
+            t.Culture = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "fr-CA" );
             t.Data.Name = "Albert";
             t.Data.Power = 1;
             t.Data.Id = Guid.Parse( "{5A246ADD-2E07-4255-B957-2193FE06DB42}" );
             t.Data.Ratio = Math.PI;
             t.MultipleDatas.Add( new Data( new LocalOnlyData( "LOCAL-DATA-ONLY" ), "Eva", 2, Guid.Empty, Math.E, new MemoryOnlyData( "NOWAY" ) ) );
-            t.MoreData.CultureExt = ExtendedCultureInfo.GetExtendedCultureInfo( "fr,es,de,en" );
+            t.MoreData.CultureExt = ExtendedCultureInfo.EnsureExtendedCultureInfo( "fr,es,de,en" );
             t.Raw = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
             return t;
         }

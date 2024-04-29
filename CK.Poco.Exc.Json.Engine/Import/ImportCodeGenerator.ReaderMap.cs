@@ -261,11 +261,13 @@ namespace CK.Setup.PocoJson
                 }
                 if( type.Type == typeof( NormalizedCultureInfo ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.NormalizedCultureInfo.GetNormalizedCultureInfo( r.GetString() );if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ResolveCulture( r.GetString(), rCtx ).PrimaryCulture;" ).NewLine()
+                                                    .Append( "if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( ExtendedCultureInfo ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.ExtendedCultureInfo.GetExtendedCultureInfo( r.GetString() );if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ResolveCulture( r.GetString(), rCtx );").NewLine()
+                                                    .Append( "if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( SimpleUserMessage ) )
                 {

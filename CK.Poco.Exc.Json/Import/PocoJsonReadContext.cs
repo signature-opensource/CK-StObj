@@ -12,7 +12,7 @@ namespace CK.Poco.Exc.Json
     /// This context must be disposed once done with it.
     /// </para>
     /// </summary>
-    public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IDisposable
+    public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IMCDeserializationOptions, IDisposable
     {
         readonly IUtf8JsonReaderContext? _inner;
         readonly ExchangeableRuntimeFilter _typeFilter;
@@ -43,6 +43,12 @@ namespace CK.Poco.Exc.Json
         /// </summary>
         public ExchangeableRuntimeFilter RuntimeFilter => _typeFilter;
 
+        /// <inheritdoc />
+        public bool CreateUnexistingCultures => _options.CreateUnexistingCultures;
+
+        /// <inheritdoc />
+        public NormalizedCultureInfo? DefaultCulture => _options.DefaultCulture;
+
         /// <summary>
         /// Disposes this context (disposing the <see cref="IUtf8JsonReaderContext"/> if
         /// any and if it is disposable).
@@ -52,7 +58,6 @@ namespace CK.Poco.Exc.Json
             if( _inner is IDisposable d ) d.Dispose();
         }
 
-        /// <inheritdoc />
         public void ReadMoreData( ref Utf8JsonReader reader ) => _inner?.ReadMoreData( ref reader );
 
         /// <inheritdoc />

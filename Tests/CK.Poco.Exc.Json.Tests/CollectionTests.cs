@@ -122,7 +122,7 @@ namespace CK.Poco.Exc.Json.Tests
                 o.ListOfList.Add( new List<int> { 1, 2 } );
                 o.ListOfList.Add( new List<int> { 3, 4, 5 } );
                 o.ListOfNC.AddRangeArray( NormalizedCultureInfo.Invariant, NormalizedCultureInfo.CodeDefault );
-                o.ListOfEC.AddRangeArray( NormalizedCultureInfo.CodeDefault, ExtendedCultureInfo.GetExtendedCultureInfo( "es,fr,de" ) );
+                o.ListOfEC.AddRangeArray( NormalizedCultureInfo.CodeDefault, ExtendedCultureInfo.EnsureExtendedCultureInfo( "es,fr,de" ) );
                 o.CovariantListImpl.Add( 42 );
                 o.CovariantListImpl.Add( 3712 );
                 o.CovariantListNullableImpl.Add( null );
@@ -197,7 +197,7 @@ namespace CK.Poco.Exc.Json.Tests
             var oS = directory.Create<IWithSets>( o =>
             {
                 o.SetOfNC.AddRangeArray( NormalizedCultureInfo.Invariant, NormalizedCultureInfo.CodeDefault );
-                o.SetOfEC.AddRangeArray( NormalizedCultureInfo.CodeDefault, ExtendedCultureInfo.GetExtendedCultureInfo( "es, de, fr" ) );
+                o.SetOfEC.AddRangeArray( NormalizedCultureInfo.CodeDefault, ExtendedCultureInfo.EnsureExtendedCultureInfo( "es, de, fr" ) );
                 o.CovariantSetImpl.Add( 42 );
                 o.CovariantSetImpl.Add( 3712 );
                 o.CovariantSetNullableImpl.Add( null );
@@ -591,8 +591,8 @@ namespace CK.Poco.Exc.Json.Tests
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
-            var c1 = NormalizedCultureInfo.GetNormalizedCultureInfo( "es" );
-            var c2 = NormalizedCultureInfo.GetNormalizedCultureInfo( "de" );
+            var c1 = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "es" );
+            var c2 = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "de" );
             var p1 = directory.Create<IConcrete>( o => o.Name = "c" );
             var p2 = directory.Create<ISecondary>( o => o.Name = "s" );
             var oD = directory.Create<IWithDicsA>( oD =>
