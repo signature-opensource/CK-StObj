@@ -63,7 +63,7 @@ namespace CK.Setup
 
             KindDetector = new CKTypeKindDetector( typeFilter );
             _memberInfoFactory = new ExtMemberInfoFactory();
-            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetNonDefinerKind( m, t ) & (CKTypeKind.IsPoco|CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco, typeFilter: _typeFilter );
+            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, KindDetector );
             _alsoRegisteredTypes = new List<Type>();
             _alsoRegister = _alsoRegisteredTypes.Add;
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
@@ -112,15 +112,22 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoBuilder.RegisterInterface( monitor, type ) )
-                    {
-                        RegisterAssembly( monitor, type, isVFeature: true );
-                    }
                     // The PocoBuilder doesn't handle Definers: we want the attributes on
                     // IPoco property to be handled.
-                    // So me must re-test here... All this cache stuff HAS to be refactored!
-                    bool isPoco = (KindDetector.GetRawKind( monitor, type ) & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
-                    RegisterRegularType( monitor, type, isPoco );
+                    // So me must test here to handle definers and have
+                    // to get any IAutoImplementor...
+                    //
+                    // All this cache stuff HAS to be refactored!
+                    //
+                    var kind = KindDetector.GetRawKind( monitor, type );
+                    bool isPoco = (kind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
+                    TypeAttributesCache? typeCache = RegisterRegularType( monitor, type, isPoco );
+                    Throw.DebugAssert( "isPoco => type cache (even empty).", !isPoco || typeCache != null );
+
+                    if( isPoco && (kind & CKTypeKind.IsDefiner) == 0 )
+                    {
+                        _pocoBuilder.RegisterInterface( monitor, type );
+                    }
                 }
                 else
                 {
@@ -225,18 +232,19 @@ namespace CK.Setup
             }
         }
 
-        void RegisterRegularType( IActivityMonitor monitor, Type t, bool alwaysCreateBoundAttributeCache )
+        TypeAttributesCache? RegisterRegularType( IActivityMonitor monitor, Type t, bool alwaysCreateBoundAttributeCache )
         {
-            if( !_regularTypeCollector.ContainsKey( t ) )
+            if( !_regularTypeCollector.TryGetValue( t, out var c ) )
             {
-                var c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t, _alsoRegister, alwaysCreateBoundAttributeCache );
+                c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t, _alsoRegister, alwaysCreateBoundAttributeCache );
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
-                    monitor.Trace( $"At least one bound attribute on '{t}' has been registered." );
+                    // $"At least one bound attribute on '{t}' has been registered." );
                     RegisterAssembly( monitor, t, isVFeature: true );
                 }
             }
+            return c;
         }
 
         /// <summary>
@@ -263,7 +271,7 @@ namespace CK.Setup
                 IPocoDirectory? pocoDirectory;
                 using( monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
-                    pocoDirectory = _pocoBuilder.Build( _tempAssembly, monitor );
+                    pocoDirectory = _pocoBuilder.Build( _tempAssembly, monitor, _regularTypeCollector );
                     if( pocoDirectory != null )
                     {
                         _tempAssembly.Memory.Add( typeof( IPocoDirectory ), pocoDirectory );

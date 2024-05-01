@@ -241,9 +241,9 @@ namespace CK.Setup
                 }
             }
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
-                if( base.CanReadFrom( type ) ) return true;
+                if( base.IsSubTypeOf( type ) ) return true;
                 return _genericTypeDefinition != null && IsGenericReadable( type, _genericTypeDefinition, _genericArguments );
             }
 
@@ -258,11 +258,11 @@ namespace CK.Setup
                         var a = _arguments[i];
                         if( (a.Parameter.Attributes & GenericParameterAttributes.Covariant) != 0 )
                         {
-                            if( !a.Type.CanReadFrom( other.GenericArguments[i].Type ) ) return false;
+                            if( !a.Type.IsSubTypeOf( other.GenericArguments[i].Type ) ) return false;
                         }
                         else if( (a.Parameter.Attributes & GenericParameterAttributes.Contravariant) != 0 )
                         {
-                            if( !other.GenericArguments[i].Type.CanReadFrom( a.Type ) ) return false;
+                            if( !other.GenericArguments[i].Type.IsSubTypeOf( a.Type ) ) return false;
                         }
                         else if( a.Type != other.GenericArguments[i].Type ) return false;
                     }
@@ -434,9 +434,9 @@ namespace CK.Setup
 
             IOneOfPocoType IOneOfPocoType.NonNullable => this;
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
-                if( base.CanReadFrom( type ) ) return true;
+                if( base.IsSubTypeOf( type ) ) return true;
                 return _genericTypeDefinition != null && AbstractPocoType.IsGenericReadable( type, _genericTypeDefinition, _genericArguments );
             }
 

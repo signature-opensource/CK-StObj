@@ -56,10 +56,9 @@ namespace CK.StObj.Engine.Tests
         {
             StObjCollector collector = TestHelper.CreateStObjCollector( typeof( A2Spec ) );
             var r = TestHelper.GetSuccessfulResult( collector );
-            Debug.Assert( r.EngineMap != null, "No initialization error." );
+            Throw.DebugAssert( r.EngineMap != null );
             r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2Spec>();
         }
-
 
         public abstract class A3 : A
         {

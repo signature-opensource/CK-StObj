@@ -10,7 +10,7 @@ namespace CK.Core
 {
     /// <summary>
     /// Gives access to all the existing <see cref="DIContainerDefinition"/> and <see cref="IDIContainer"/>.
-    /// This is a singleton service that is available in all containers.
+    /// This is a processwide singleton service.
     /// </summary>
     [Setup.ContextBoundDelegation( "CK.Setup.DIContainerHubImpl, CK.StObj.Engine" )]
     public abstract class DIContainerHub : ISingletonAutoService

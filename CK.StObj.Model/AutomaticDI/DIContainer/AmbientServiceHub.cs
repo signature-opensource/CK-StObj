@@ -73,18 +73,32 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Gets the value retrieved from the originating DI container for a type (that must be a ubiquitous service type).
+        /// Gets the value retrieved from the originating DI container for a type (that must be an Ambient service type).
         /// </summary>
-        /// <param name="t">The ubiquitous service type.</param>
+        /// <param name="t">The ambient service type.</param>
         /// <returns>The initial value.</returns>
         public object GetInitialValue( Type t ) => Get( t ).Initial;
 
         /// <summary>
-        /// Gets the current value for a type (that must be a ubiquitous service type).
+        /// Gets the value retrieved from the originating DI container for a type (that must be an Ambient service type).
         /// </summary>
-        /// <param name="t">The ubiquitous service type.</param>
+        /// <typeparam name="T">The ambient service type.</typeparam>
         /// <returns>The initial value.</returns>
+        public T GetInitialValue<T>() => (T)Get( typeof(T) ).Initial;
+
+        /// <summary>
+        /// Gets the current value for a type (that must be an Ambient service type).
+        /// </summary>
+        /// <param name="t">The Ambient service type.</param>
+        /// <returns>The current value.</returns>
         public object GetCurrentValue( Type t ) => Get( t ).Current;
+
+        /// <summary>
+        /// Gets the current value for a type (that must be an Ambient service type).
+        /// </summary>
+        /// <typeparam name="T">The ambient service type.</typeparam>
+        /// <returns>The current value.</returns>
+        public T GetCurrentValue<T>() => (T)Get( typeof(T) ).Current;
 
         /// <summary>
         /// Gets whether at least one value is overridden.
@@ -104,7 +118,7 @@ namespace CK.Core
         /// <summary>
         /// Locks these informations: this is called by <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
         /// so that instances cannot be changed anymore (Override throws).
-        /// If this must be reused for another endpoint, use <see cref="CleanClone()"/>.
+        /// If this must be reused for another container, use <see cref="CleanClone()"/>.
         /// </summary>
         public void Lock() => _locked = true;
 
@@ -152,7 +166,7 @@ namespace CK.Core
         /// Code generated.
         /// </summary>
         /// <param name="services">The current service provider (must be a scoped container).</param>
-        /// <param name="entries">The ubiquitous services mapping.</param>
+        /// <param name="entries">The ambient services mapping.</param>
         /// <returns>The initial mapped values.</returns>
         protected abstract Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries );
 

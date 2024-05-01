@@ -147,7 +147,7 @@ namespace CK.Setup
             INamedPocoType INamedPocoType.Nullable => Nullable;
             INamedPocoType INamedPocoType.NonNullable => this;
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
@@ -156,7 +156,7 @@ namespace CK.Setup
                 if( _fields.Length != aType._fields.Length ) return false;
                 for( int i = 0; i < _fields.Length; i++ )
                 {
-                    if( !_fields[i].Type.CanReadFrom( aType._fields[i].Type ) ) return false;
+                    if( !_fields[i].Type.IsSubTypeOf( aType._fields[i].Type ) ) return false;
                 }
                 return true;
             }

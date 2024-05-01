@@ -57,7 +57,7 @@ namespace CK.Setup
             {
                 if( (lt & CKTypeKind.IsExcludedType) == 0 )
                 {
-                    var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false, _alsoRegister );
+                    var attr = new TypeAttributesCache( monitor, t, _serviceProvider, _alsoRegister );
                     info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( monitor, t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;
                     if( info.Interfaces.Count == 0 ) ++_serviceRootInterfaceCount;

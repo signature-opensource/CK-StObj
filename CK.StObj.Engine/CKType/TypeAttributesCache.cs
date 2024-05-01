@@ -37,7 +37,6 @@ namespace CK.Setup
         }
         readonly Entry[] _all;
         readonly MemberInfo[] _typeMembers;
-        readonly bool _includeBaseClasses;
 
         /// <summary>
         /// Initializes a new <see cref="TypeAttributesCache"/> that can consider only members explicitly 
@@ -46,14 +45,12 @@ namespace CK.Setup
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="type">Type for which attributes must be cached.</param>
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
-        /// <param name="includeBaseClass">True to include attributes of base classes and attributes on members of the base classes.</param>
         /// <param name="alsoRegister">Enables a <see cref="IAttributeContextBoundInitializer.Initialize"/> to register types (typically nested types).</param>
-        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClass, Action<Type> alsoRegister )
+        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, Action<Type> alsoRegister )
             : this( monitor,
                     type,
-                    (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), includeBaseClass ),
+                    (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), inherit: false ),
                     services,
-                    includeBaseClass,
                     alsoRegister )
         {
         }
@@ -62,7 +59,6 @@ namespace CK.Setup
                              Type type,
                              IAttributeContextBound[] typeAttributes,
                              IServiceProvider services,
-                             bool includeBaseClasses,
                              Action<Type> alsoRegister )
         {
             Throw.CheckNotNullArgument( type );
@@ -73,13 +69,11 @@ namespace CK.Setup
             _all = Array.Empty<Entry>();
 
             var all = new List<Entry>();
-            int initializerCount = Register( monitor, services, all, type, includeBaseClasses, typeAttributes );
+            int initializerCount = Register( monitor, services, all, type, typeAttributes );
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            if( includeBaseClasses ) flags &= ~BindingFlags.DeclaredOnly;
             _typeMembers = type.GetMembers( flags );
-            foreach( var m in _typeMembers ) initializerCount += Register( monitor, services, all, m, false );
+            foreach( var m in _typeMembers ) initializerCount += Register( monitor, services, all, m );
             _all = all.ToArray();
-            _includeBaseClasses = includeBaseClasses;
             if( initializerCount > 0 )
             {
                 foreach( Entry e in _all )
@@ -97,12 +91,11 @@ namespace CK.Setup
                       IServiceProvider services,
                       List<Entry> all,
                       MemberInfo m,
-                      bool includeBaseClass,
                       IAttributeContextBound[]? alreadyKnownMemberAttributes = null )
         {
             int initializerCount = 0;
             var attr = alreadyKnownMemberAttributes
-                       ?? (IAttributeContextBound[])m.GetCustomAttributes( typeof( IAttributeContextBound ), includeBaseClass );
+                       ?? (IAttributeContextBound[])m.GetCustomAttributes( typeof( IAttributeContextBound ), inherit: false );
             foreach( var a in attr )
             {
                 object? finalAttributeToUse = a;
@@ -153,7 +146,7 @@ namespace CK.Setup
         {
             var attr = (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), false );
             return alwaysCreate || attr.Length > 0
-                        ? new TypeAttributesCache( monitor, type, attr, services, false, alsoRegister )
+                        ? new TypeAttributesCache( monitor, type, attr, services, alsoRegister )
                         : null;
         }
 
@@ -161,13 +154,6 @@ namespace CK.Setup
         /// Get the Type that is managed by this cache.
         /// </summary>
         public Type Type { get; } 
-
-        /// <summary>
-        /// Gets all <see cref="MemberInfo"/> that this <see cref="ICKCustomAttributeMultiProvider"/> handles.
-        /// The <see cref="Type"/> is appended to this list.
-        /// </summary>
-        /// <returns>Enumeration of members.</returns>
-        public IEnumerable<MemberInfo> GetMembers() => _typeMembers.Append( Type );
 
         /// <summary>
         /// Gets whether an attribute that is assignable to the given <paramref name="attributeType"/> 
@@ -182,7 +168,7 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
             Throw.CheckNotNullArgument( attributeType );
             return _all.Any( e => e.M == m && attributeType.IsAssignableFrom( e.Attr.GetType() ) )
-                    || ( (m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type ))) 
+                    || ( m.DeclaringType == Type 
                          && m.GetCustomAttributes(false).Any( a => attributeType.IsAssignableFrom( a.GetType()) ) );
         }
 
@@ -200,7 +186,7 @@ namespace CK.Setup
             Throw.CheckArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
             Throw.CheckNotNullArgument( attributeType );
             var fromCache = _all.Where( e => e.M == m && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
-            if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
+            if( m.DeclaringType == Type )
             {
                 return fromCache
                         .Concat( m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) ) );
@@ -221,7 +207,7 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( m );
             Throw.CheckNotNullArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
             var fromCache = _all.Where( e => e.M == m && e.Attr is T ).Select( e => (T)e.Attr );
-            if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
+            if( m.DeclaringType == Type )
             {
                 return fromCache
                         .Concat( m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && a is T).Select( a => (T)(object)a ) );
@@ -240,7 +226,7 @@ namespace CK.Setup
             var fromCache = _all.Where( e => (!memberOnly || e.M != Type) && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
             var fromMembers = _typeMembers.SelectMany( m => m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) ) );
             if( memberOnly ) return fromCache.Concat( fromMembers );
-            var fromType = Type.GetCustomAttributes( _includeBaseClasses ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) );
+            var fromType = Type.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) );
             return fromCache.Concat( fromType ).Concat( fromMembers );
         }
 
@@ -260,7 +246,7 @@ namespace CK.Setup
                                             .Where( a => a is not IAttributeContextBound && a is T )
                                             .Select( a => (T)a );
             if( memberOnly ) return fromCache.Concat( fromMembers );
-            var fromType = Type.GetCustomAttributes( _includeBaseClasses )
+            var fromType = Type.GetCustomAttributes( false )
                                 .Where( a => a is not IAttributeContextBound && a is T ).Select( a => (T)(object)a );
             return fromCache.Concat( fromType ).Concat( fromMembers );
         }
@@ -274,7 +260,7 @@ namespace CK.Setup
         public IEnumerable<object> GetTypeCustomAttributes( Type attributeType )
         {
             var fromCache = _all.Where( e => e.M == Type && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
-            var fromType = Type.GetCustomAttributes( _includeBaseClasses ).Where( a => a is not IAttributeContextBound && attributeType.IsAssignableFrom( a.GetType() ) );
+            var fromType = Type.GetCustomAttributes( false ).Where( a => a is not IAttributeContextBound && attributeType.IsAssignableFrom( a.GetType() ) );
             return fromCache.Concat( fromType );
         }
 
@@ -287,7 +273,7 @@ namespace CK.Setup
         public IEnumerable<T> GetTypeCustomAttributes<T>()
         {
             var fromCache = _all.Where( e => e.Attr is T && e.M == Type ).Select( e => (T)e.Attr );
-            var fromType = Type.GetCustomAttributes( _includeBaseClasses )
+            var fromType = Type.GetCustomAttributes( false )
                                 .Where( a => !(a is IAttributeContextBound) && a is T ).Select( a => (T)(object)a );
             return fromCache.Concat( fromType );
         }

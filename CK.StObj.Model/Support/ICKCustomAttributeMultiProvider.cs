@@ -27,11 +27,5 @@ namespace CK.Setup
         /// <returns>Enumeration of attributes (possibly empty).</returns>
         IEnumerable<object> GetAllCustomAttributes( Type attributeType );
 
-        /// <summary>
-        /// Gets all <see cref="MemberInfo"/> that this <see cref="ICKCustomAttributeMultiProvider"/> handles.
-        /// </summary>
-        /// <returns>Enumeration of members.</returns>
-        IEnumerable<MemberInfo> GetMembers();
-
     }
 }

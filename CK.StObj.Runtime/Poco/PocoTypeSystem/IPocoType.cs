@@ -342,11 +342,11 @@ namespace CK.Setup
         bool IsSamePocoType( IPocoType type );
 
         /// <summary>
-        /// Gets whether the given type is covariant with this one.
+        /// Gets whether the <paramref name="type"/> is a super type of this one.
         /// </summary>
         /// <param name="type">The type to check.</param>
         /// <returns>True if the type is covariant, false otherwise.</returns>
-        bool CanReadFrom( IPocoType type );
+        bool IsSubTypeOf( IPocoType type );
 
         /// <summary>
         /// Returns "[<see cref="Kind"/>]<see cref="CSharpName"/>".

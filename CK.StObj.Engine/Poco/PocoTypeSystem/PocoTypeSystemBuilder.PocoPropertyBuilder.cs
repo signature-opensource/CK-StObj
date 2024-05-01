@@ -167,7 +167,7 @@ namespace CK.Setup
                                     monitor.Warn( $"{prop}: UnionType '{oneType.CSharpName}' duplicated. Removing one." );
                                     oneTypeToAdd = null;
                                 }
-                                else if( tE.CanReadFrom( oneType ) )
+                                else if( tE.IsSubTypeOf( oneType ) )
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
@@ -180,7 +180,7 @@ namespace CK.Setup
                                         success = false;
                                     }
                                 }
-                                else if( oneType.CanReadFrom( tE ) )
+                                else if( oneType.IsSubTypeOf( tE ) )
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
@@ -282,7 +282,7 @@ namespace CK.Setup
                     if( _bestReg == null )
                     {
                         // Gets the first type that satisfies all the declared type.
-                        (_bestProperty, _bestReg) = abstractReadOnlyToCheck.FirstOrDefault( c => abstractReadOnlyToCheck.All( a => c.T.CanReadFrom( a.T ) ) );
+                        (_bestProperty, _bestReg) = abstractReadOnlyToCheck.FirstOrDefault( c => abstractReadOnlyToCheck.All( a => c.T.IsSubTypeOf( a.T ) ) );
                         if( _bestReg == null )
                         {
                             var allProps = abstractReadOnlyToCheck.Select( p => $"Type {p.T.ToString()} of {p.P}" ).Concatenate( Environment.NewLine );
@@ -463,7 +463,7 @@ namespace CK.Setup
             {
                 Throw.DebugAssert( _bestReg != null && _bestProperty != null );
                 Throw.DebugAssert( !p.PropertyInfo.PropertyType.IsByRef && !p.PropertyInfo.CanWrite );
-                if( !_bestReg.CanReadFrom( type ) )
+                if( !_bestReg.IsSubTypeOf( type ) )
                 {
                     monitor.OpenError( $"Read only {p} of type '{type}' is not compatible with {_bestReg}." );
                     return false;

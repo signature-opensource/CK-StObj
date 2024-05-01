@@ -74,17 +74,22 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointScopedService( isUbiquitousEndpointInfo: true )]
         public class AutoAmbientThing : IAutoService
         {
-            public string? ThingName { get; set; }
+            readonly string _name;
 
-            // This test that no public constructor is allowed on Endpoint AutoService.
-            protected AutoAmbientThing() { }
+            public string ThingName => _name;
+
+            // This tests that no public constructor is allowed on Endpoint AutoService.
+            protected AutoAmbientThing( string name )
+            {
+                _name = name;
+            }
         }
 
         public class SpecAutoAmbientThing : AutoAmbientThing
         {
-            protected SpecAutoAmbientThing() { }
+            protected SpecAutoAmbientThing( string name ) : base( name ) { }
 
-            public static SpecAutoAmbientThing Create() => new SpecAutoAmbientThing();
+            public static SpecAutoAmbientThing Create( string name ) => new SpecAutoAmbientThing( name );
         }
 
         public sealed class SpecAutoAmbientThingProvider : IEndpointUbiquitousServiceDefault<SpecAutoAmbientThing>
@@ -94,8 +99,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 get
                 {
 
-                    var s = SpecAutoAmbientThing.Create();
-                    s.ThingName = "I'm the default (AutoService spec) thing name!";
+                    var s = SpecAutoAmbientThing.Create( "I'm the default (AutoService spec) thing name!" );
                     return s;
                 }
             }

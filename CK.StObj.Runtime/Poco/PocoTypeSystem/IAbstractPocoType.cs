@@ -38,7 +38,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the minimal set of <see cref="Generalizations"/> (no implementation less abstract poco),
-        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/>.
+        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.IsSubTypeOf(IPocoType)"/>.
         /// <para>
         /// This uses and caches <see cref="PocoTypeExtensions.ComputeMinimal{T}(IEnumerable{T})"/>.
         /// </para>

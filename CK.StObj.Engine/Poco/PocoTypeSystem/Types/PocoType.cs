@@ -93,14 +93,14 @@ namespace CK.Setup
 
             public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
 
-            public bool CanReadFrom( IPocoType type )
+            public bool IsSubTypeOf( IPocoType type )
             {
                 // We are on a nullable: if the the type is non nullable, it's over because we
                 // cannot read a non nullable from a nullable.
                 // Non nullable CanReadFrom don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return type.IsNullable && _nonNullable.CanReadFrom( type );
+                return type.IsNullable && _nonNullable.IsSubTypeOf( type );
             }
 
             public override string ToString() => PocoType.ToString( this );
@@ -211,14 +211,14 @@ namespace CK.Setup
 
             public bool IsReadOnlyCompliant => _nonNullable.IsReadOnlyCompliant;
 
-            public bool CanReadFrom( IPocoType type )
+            public bool IsSubTypeOf( IPocoType type )
             {
                 // We are on a nullable: if the the type is non nullable, it's over because we
                 // cannot read a non nullable from a nullable.
                 // Non nullable IsReadableType predicates don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return type.IsNullable && _nonNullable.CanReadFrom( type );
+                return type.IsNullable && _nonNullable.IsSubTypeOf( type );
             }
 
             public override string ToString() => PocoType.ToString( this );
@@ -463,7 +463,7 @@ namespace CK.Setup
         /// <summary>
         /// Simply calls <c>type.Type.IsAssignableFrom( Type )</c> at this level.
         /// </summary>
-        public virtual bool CanReadFrom( IPocoType type )
+        public virtual bool IsSubTypeOf( IPocoType type )
         {
             Throw.DebugAssert( "Null implementations override this.", !IsNullable );
             Throw.DebugAssert( "Value Type nullable <: not nullable is kindly handled by .Net.", typeof( int? ).IsAssignableFrom( typeof( int ) ) );

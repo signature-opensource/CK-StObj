@@ -39,7 +39,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the minimal set of <see cref="AbstractTypes"/> (no implementation less abstract poco),
-        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/>.
+        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.IsSubTypeOf(IPocoType)"/>.
         /// <para>
         /// The returned types are nullable if this one is the <see cref="Nullable"/>.
         /// </para>

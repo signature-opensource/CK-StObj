@@ -204,7 +204,7 @@ namespace CK.Setup
 
             internal void SetSecondaryTypes( ISecondaryPocoType[] secondaryTypes ) => _secondaryTypes = secondaryTypes;
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;

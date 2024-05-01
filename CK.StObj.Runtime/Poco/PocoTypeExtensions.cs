@@ -9,7 +9,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Reduces a set of <see cref="IPocoType"/> to a minimal set of independent types
-        /// based on extended covariance rules implemented by <see cref="IPocoType.CanReadFrom(IPocoType)"/>.
+        /// based on extended covariance rules implemented by <see cref="IPocoType.IsSubTypeOf(IPocoType)"/>.
         /// </summary>
         /// <typeparam name="T">Actual Poco type.</typeparam>
         /// <param name="types">This types.</param>
@@ -23,7 +23,7 @@ namespace CK.Setup
                 int j = 0;
                 while( j < i )
                 {
-                    if( result[j].CanReadFrom( a ) )
+                    if( result[j].IsSubTypeOf( a ) )
                     {
                         result.RemoveAt( i-- );
                         goto skip;
@@ -32,7 +32,7 @@ namespace CK.Setup
                 }
                 while( ++j < result.Count )
                 {
-                    if( result[j].CanReadFrom( a ) )
+                    if( result[j].IsSubTypeOf( a ) )
                     {
                         result.RemoveAt( i-- );
                         goto skip;

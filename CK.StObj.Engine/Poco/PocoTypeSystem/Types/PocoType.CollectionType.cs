@@ -232,7 +232,7 @@ namespace CK.Setup
 
             #endregion
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
@@ -244,7 +244,7 @@ namespace CK.Setup
                 IPocoType thisItemType = ItemTypes[0];
                 if( other.IsAbstractCollection )
                 {
-                    return thisItemType.CanReadFrom( otherItemType );
+                    return thisItemType.IsSubTypeOf( otherItemType );
                 }
                 Throw.DebugAssert( "Otherwise, other would be this.", thisItemType != otherItemType );
                 // Both are List<> or HashSet<>.
@@ -359,7 +359,7 @@ namespace CK.Setup
 
             #endregion
 
-            public override bool CanReadFrom( IPocoType type ) => _concreteCollection.CanReadFrom( type );
+            public override bool IsSubTypeOf( IPocoType type ) => _concreteCollection.IsSubTypeOf( type );
         }
 
         // Dictionary.
@@ -487,7 +487,7 @@ namespace CK.Setup
 
             ICollectionPocoType ICollectionPocoType.NonNullable => this;
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
@@ -502,7 +502,7 @@ namespace CK.Setup
                 IPocoType otherItemType = other.ItemTypes[1];
                 if( other.IsAbstractCollection )
                 {
-                    return thisItemType.CanReadFrom( otherItemType );
+                    return thisItemType.IsSubTypeOf( otherItemType );
                 }
                 Throw.DebugAssert( "Otherwise, other would be this.", thisItemType != otherItemType );
                 // Save the non nullable <: nullable type value
@@ -549,7 +549,7 @@ namespace CK.Setup
 
             public ICollectionPocoType? ConcreteCollection => null;
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
                 return true;
             }

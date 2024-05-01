@@ -40,51 +40,27 @@ namespace CK.Setup
         readonly Dictionary<Type, InterfaceEntry?> _all;
         readonly List<List<Type>> _result;
         readonly string _namespace;
-        readonly Func<IActivityMonitor, Type, bool> _typeFilter;
         readonly IExtMemberInfoFactory _memberInfoFactory;
-        readonly Func<IActivityMonitor, Type, bool> _actualPocoPredicate;
+        readonly CKTypeKindDetector _kindDetector;
 
-        /// <summary>
-        /// Initializes a new <see cref="PocoDirectoryBuilder"/>.
-        /// </summary>
-        /// <param name="memberInfoFactory">The member info factory.</param>
-        /// <param name="actualPocoPredicate">
-        /// This must be true for actual IPoco interfaces: when false, "base interface" are not directly registered.
-        /// This implements the <see cref="CKTypeDefinerAttribute"/> behavior.
-        /// </param>
-        /// <param name="namespace">Namespace into which dynamic types will be created.</param>
-        /// <param name="typeFilter">Optional type filter.</param>
-        public PocoDirectoryBuilder( IExtMemberInfoFactory memberInfoFactory,
-                                     Func<IActivityMonitor, Type, bool> actualPocoPredicate,
-                                     string @namespace = "CK.GPoco",
-                                     Func<IActivityMonitor, Type, bool>? typeFilter = null )
+        internal PocoDirectoryBuilder( IExtMemberInfoFactory memberInfoFactory,
+                                       CKTypeKindDetector kindDetector,
+                                       string @namespace = "CK.GPoco" )
         {
-            Throw.CheckNotNullArgument( memberInfoFactory );
-            Throw.CheckNotNullArgument( actualPocoPredicate );
-            Throw.CheckNotNullArgument( @namespace );
             _memberInfoFactory = memberInfoFactory;
-            _actualPocoPredicate = actualPocoPredicate;
+            _kindDetector = kindDetector;
             _namespace = @namespace;
             _all = new Dictionary<Type, InterfaceEntry?>();
             _result = new List<List<Type>>();
-            _typeFilter = typeFilter ?? (( m, type ) => true);
         }
 
-        /// <summary>
-        /// Registers a type that must be an interface that may be a <see cref="IPoco"/> interface.
-        /// </summary>
-        /// <param name="monitor">Monitor that will be used to signal errors.</param>
-        /// <param name="t">Interface type to register (must not be null).</param>
-        /// <returns>True if the type has been registered, false otherwise.</returns>
-        public bool RegisterInterface( IActivityMonitor monitor, Type t )
-        {
-            Throw.CheckArgument( t?.IsInterface is true );
-            return _actualPocoPredicate( monitor, t ) && DoRegisterInterface( monitor, t ) != null;
-        }
+        bool IsPocoButNotDefiner( IActivityMonitor monitor, Type t ) => (_kindDetector.GetNonDefinerKind( monitor, t ) & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
 
+        public bool RegisterInterface( IActivityMonitor monitor, Type t ) => DoRegisterInterface( monitor, t ) != null;
+        
         InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t )
         {
-            Throw.DebugAssert( t.IsInterface && _actualPocoPredicate( monitor, t ) );
+            Throw.DebugAssert( t.IsInterface && IsPocoButNotDefiner( monitor, t ) );
             if( !_all.TryGetValue( t, out var p ) )
             {
                 p = TryCreateInterfaceEntry( monitor, t );
@@ -96,17 +72,12 @@ namespace CK.Setup
 
         InterfaceEntry? TryCreateInterfaceEntry( IActivityMonitor monitor, Type t )
         {
-            if( !_typeFilter( monitor, t ) )
-            {
-                monitor.Warn( $"Poco interface '{t.AssemblyQualifiedName}' is excluded." );
-                return null;
-            }
             InterfaceEntry? singlePrimary = null;
             foreach( Type b in t.GetInterfaces() )
             {
                 if( b == typeof( IPoco ) ) continue;
                 // Attempts to register the base if and only if it is not a "definer".
-                if( _actualPocoPredicate( monitor, b ) )
+                if( IsPocoButNotDefiner( monitor, b ) )
                 {
                     var baseType = DoRegisterInterface( monitor, b );
                     // Excluded Poco interfaces are null here. Let's continue.
@@ -135,13 +106,13 @@ namespace CK.Setup
         /// <param name="assembly">The dynamic assembly: its <see cref="IDynamicAssembly.StubModuleBuilder"/> will host the generated stub.</param>
         /// <param name="monitor">Monitor to use.</param>
         /// <returns>The result or null on error.</returns>
-        public IPocoDirectory? Build( IDynamicAssembly assembly, IActivityMonitor monitor )
+        public IPocoDirectory? Build( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypeCollector )
         {
             Result r = new Result();
             bool hasNameError = false;
             foreach( var signature in _result )
             {
-                var cInfo = CreateClassInfo( assembly, _memberInfoFactory, monitor, signature );
+                var cInfo = CreateClassInfo( assembly, _memberInfoFactory, monitor, signature, regularTypeCollector );
                 if( cInfo == null ) return null;
                 r.Roots.Add( cInfo );
 
@@ -176,7 +147,8 @@ namespace CK.Setup
         static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly,
                                               IExtMemberInfoFactory memberInfoFactory,
                                               IActivityMonitor monitor,
-                                              IReadOnlyList<Type> interfaces )
+                                              IReadOnlyList<Type> interfaces,
+                                              IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypeCollector )
         {
             // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
             var primary = interfaces[0];
@@ -432,6 +404,30 @@ namespace CK.Setup
                             // Always implement the stub as long as there is no error.
                             ImplementInterfaceProperty( tB, p, uniquePropertyIndex++ );
                         }
+                    }
+                }
+                // Creates a stub method for all non DIM methods.
+                foreach( var method in i.GetMethods() )
+                {
+                    // Filters out methods with special name (this skips get_XXX and set_XXX)
+                    // We keep static methods (even if we don't currently use them).
+                    if( (method.Attributes & MethodAttributes.SpecialName) != 0 ) continue;
+                    // Is this a Default Implementation Method?
+                    // If yes, we let it as is. 
+                    bool isDIM = (method.Attributes & MethodAttributes.Abstract) == 0;
+                    if( !isDIM )
+                    {
+                        MethodAttributes mA = method.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.VtableLayoutMask);
+                        var mB = tB.DefineMethod( method.Name, mA, method.ReturnType, method.GetParameters().Select( p => p.ParameterType ).ToArray() );
+                        ILGenerator g = mB.GetILGenerator();
+                        if( method.ReturnType != typeof(void) )
+                        {
+                            var local = g.DeclareLocal( method.ReturnType );
+                            g.Emit( OpCodes.Ldfld, local );
+                            g.Emit( OpCodes.Initobj, method.ReturnType );
+                            g.Emit( OpCodes.Ldfld, local );
+                        }
+                        g.Emit( OpCodes.Ret );
                     }
                 }
             }

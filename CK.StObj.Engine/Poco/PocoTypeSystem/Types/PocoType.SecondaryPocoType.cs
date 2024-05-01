@@ -43,9 +43,9 @@ namespace CK.Setup
 
             public override DefaultValueInfo DefaultValueInfo => _primary.DefaultValueInfo;
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
-                return _primary.CanReadFrom( type );
+                return _primary.IsSubTypeOf( type );
             }
 
             new ISecondaryPocoType Nullable => Unsafe.As<ISecondaryPocoType>( _nullable );

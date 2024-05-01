@@ -2,6 +2,8 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 
 #nullable enable
 
@@ -19,7 +21,7 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeInfo
     {
-        readonly TypeAttributesCache? _attributes;
+        readonly ITypeAttributesCache? _attributes;
         readonly Type[] _interfacesCache;
         CKTypeInfo? _nextSibling;
         CKTypeInfo? _firstChild;
@@ -62,7 +64,18 @@ namespace CK.Setup
             }
             else
             {
-                _attributes = new TypeAttributesCache( monitor, t, services, parent == null, alsoRegister );
+                _attributes = new TypeAttributesCache( monitor, t, services, alsoRegister );
+                if( parent == null )
+                {
+                    // See the Composite below. This flattens the members and their attributes
+                    // on the type from the outside instead of handling this inside the TypeAttributesCache.
+                    var tUp = t;
+                    while( tUp.BaseType != null && tUp.BaseType != typeof(object) )
+                    {
+                        _attributes = new Composite( _attributes, new TypeAttributesCache( monitor, tUp.BaseType, services, alsoRegister ) );
+                        tUp = tUp.BaseType;
+                    }
+                }
                 _interfacesCache = t.GetInterfaces();
                 if( parent != null )
                 {
@@ -70,6 +83,75 @@ namespace CK.Setup
                     parent._firstChild = this;
                     ++parent._specializationCount;
                 }
+            }
+        }
+
+        // Terrible trick that enabled us to remove the ugly "includeBaseClass" in TypeCacheAttribute.
+        // This was the only place where it was used, so we replaced it with this (bit cleaner) composition.
+        sealed class Composite : ITypeAttributesCache
+        {
+            readonly ITypeAttributesCache _this;
+            readonly ITypeAttributesCache _base;
+
+            public Composite( ITypeAttributesCache @this, ITypeAttributesCache @base )
+            {
+                _this = @this;
+                _base = @base;
+            }
+
+            public Type Type => _this.Type;
+
+            public IEnumerable<object> GetAllCustomAttributes( Type attributeType, bool memberOnly = false )
+            {
+                return _this.GetAllCustomAttributes( attributeType, memberOnly )
+                        .Concat( _base.GetAllCustomAttributes( attributeType, memberOnly ) );
+            }
+
+            public IEnumerable<T> GetAllCustomAttributes<T>( bool memberOnly = false )
+            {
+                return _this.GetAllCustomAttributes<T>( memberOnly )
+                        .Concat( _base.GetAllCustomAttributes<T>( memberOnly ) );
+            }
+
+            public IEnumerable<T> GetAllCustomAttributes<T>()
+            {
+                return ((ICKCustomAttributeMultiProvider)_this).GetAllCustomAttributes<T>()
+                        .Concat( ((ICKCustomAttributeMultiProvider)_base).GetAllCustomAttributes<T>() );
+            }
+
+            public IEnumerable<object> GetAllCustomAttributes( Type attributeType )
+            {
+                return ((ICKCustomAttributeMultiProvider)_this).GetAllCustomAttributes( attributeType )
+                        .Concat( ((ICKCustomAttributeMultiProvider)_base).GetAllCustomAttributes( attributeType ) );
+            }
+
+            public IEnumerable<object> GetCustomAttributes( MemberInfo m, Type attributeType )
+            {
+                return _this.GetCustomAttributes( m, attributeType )
+                        .Concat( _base.GetCustomAttributes( m, attributeType ) );
+            }
+
+            public IEnumerable<T> GetCustomAttributes<T>( MemberInfo m )
+            {
+                return _this.GetCustomAttributes<T>( m )
+                        .Concat( _base.GetCustomAttributes<T>( m ) );
+            }
+
+            public IEnumerable<object> GetTypeCustomAttributes( Type attributeType )
+            {
+                return _this.GetTypeCustomAttributes( attributeType )
+                        .Concat( _base.GetTypeCustomAttributes( attributeType ) );
+            }
+
+            public IEnumerable<T> GetTypeCustomAttributes<T>()
+            {
+                return _this.GetTypeCustomAttributes<T>()
+                        .Concat( _base.GetTypeCustomAttributes<T>() );
+            }
+
+            public bool IsDefined( MemberInfo m, Type attributeType )
+            {
+                return _this.IsDefined( m, attributeType ) || _base.IsDefined( m, attributeType );
             }
         }
 

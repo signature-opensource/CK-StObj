@@ -94,11 +94,11 @@ namespace CK.Setup
                 if( _implementationCount == 0 ) SetImplementationLess();
             }
 
-            public override bool CanReadFrom( IPocoType type )
+            public override bool IsSubTypeOf( IPocoType type )
             {
                 if( type == this || type.Kind == PocoTypeKind.Any ) return true;
                 // To allow the type to be readable, it must be readable.
-                return type.IsNullable && _k.Types.Any( a => a.CanReadFrom( type ) );
+                return type.IsNullable && _k.Types.Any( a => a.IsSubTypeOf( type ) );
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );

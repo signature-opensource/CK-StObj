@@ -1,10 +1,13 @@
+using CK.CodeGen;
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -141,6 +144,73 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "has a Default Implementation Method (DIM). To be supported, all 'ValidDIM' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
+
+        /// <summary>
+        /// Very stupid attribute that shows how easy it is to participate in code generation.
+        /// Note that in real life, the code generation is implemented in a "Setup dependency" (a Runtime or Engine component)
+        /// and the Attribute itself carries only the definition of the code generation: see <see cref="ContextBoundDelegationAttribute"/>
+        /// to easily implement this.
+        /// </summary>
+        class StupidCodeAttribute : Attribute, IAutoImplementorMethod
+        {
+            public StupidCodeAttribute( string actualCode, bool isLamda = false )
+            {
+                ActualCode = actualCode;
+            }
+
+            public bool IsLambda { get; }
+
+            public string ActualCode { get; }
+
+            public CSCodeGenerationResult Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope b )
+            {
+                IFunctionScope mB = b.CreateOverride( m );
+                mB.Parent.Should().BeSameAs( b, "The function is ready to be implemented." );
+
+                if( IsLambda ) mB.Append( "=> " ).Append( ActualCode ).Append( ';' ).NewLine();
+                else mB.Append( ActualCode );
+
+                return CSCodeGenerationResult.Success;
+            }
+        }
+
+        public int DoSomethingResult;
+
+        public interface IPocoWithAbstractAndDefaultImplementationMethods : IPoco
+        {
+            int One { get; set; }
+
+            // Regular (abstract methods).
+            [StupidCode( "t.DoSomethingResult = i + s.Length;", isLamda: true )]
+            void DoSomething( DefaultImplementationMethodsTests t, int i, string s );
+
+            // DIM
+            void Something( DefaultImplementationMethodsTests t, string s ) => DoSomething( t, 3712, s );
+
+            // Regular (abstract methods).
+            [StupidCode( "return s != null ? i + s.Length : null;" )]
+            int? DoCompute( int i, string? s );
+
+            // DIM
+            int Compute( string? s ) => DoCompute( 3712, s ) ?? -1;
+        }
+
+        [Test]
+        public void poco_can_have_Abstract_and_DefaultImplementationMethods()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var poco = s.GetRequiredService<PocoDirectory>();
+
+            var o = poco.Create<IPocoWithAbstractAndDefaultImplementationMethods>();
+
+            DoSomethingResult = 0;
+            o.Something( this, "12345" );
+            DoSomethingResult.Should().Be( 3712 + 5 );
+
+            o.Compute( null ).Should().Be( -1 );
+            o.Compute( "123" ).Should().Be( 3712 + 3 );
+        }
 
     }
 }
