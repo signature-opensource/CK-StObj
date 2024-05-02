@@ -20,7 +20,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
     public interface IBatchCommand : ICommand<ICrisResult[]>, IHaveListOfCommandObject
     {
         ICommand? First { get; set; }
-        new IList<ICommand> OtherCommands { get; }
+        new IList<IAbstractCommand> OtherCommands { get; }
     }
 
     public record struct Person( string Name, int Power );

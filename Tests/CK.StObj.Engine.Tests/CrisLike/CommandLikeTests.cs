@@ -121,7 +121,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
 
             var command = ts.FindByType<IPrimaryPocoType>( typeof( ICommandWithPocoResult ) );
             Throw.DebugAssert( command != null );
-            command.AllAbstractTypes.Should().HaveCount( 5 );
+            command.AllAbstractTypes.Should().HaveCount( 6 );
             command.AbstractTypes.Should().BeEquivalentTo( command.AllAbstractTypes, "No ImplementationLess since we registered the IUnifiedResult." );
             // Consider all ICommand<T> and reduce them.
             var withResult = command.AbstractTypes.Where( a => a.GenericTypeDefinition == commandWithResultType );
@@ -138,7 +138,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
             var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
 
             var withCommandButNotItsResult = ts.SetManager.EmptyExchangeable.Include( new[] { ts.FindByType( typeof( ICommandUnifiedWithTheResult ) )! } );
-            withCommandButNotItsResult.NonNullableTypes.Select( t => t.ToString() ).Should().HaveCount( 15 )
+            withCommandButNotItsResult.NonNullableTypes.Select( t => t.ToString() ).Should().HaveCount( 16 )
                 .And.BeEquivalentTo( new[]
                 {
                     "[PrimaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithPocoResult",
@@ -153,7 +153,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
                     "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IMoreResult>",
                     "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IAnotherResult>",
                     "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IResult>",
-                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.IAbstractCommand",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICrisPoco",
                     "[AbstractPoco]CK.Core.IPoco",
                     "[Basic]int"
                 } );

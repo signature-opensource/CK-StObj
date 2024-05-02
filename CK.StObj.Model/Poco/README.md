@@ -45,7 +45,7 @@ Commands and their results are modeled by CRIS:
 ```csharp
 /// <summary>
 /// The base command interface marker is a simple <see cref="IPoco"/>.
-/// Any type that extends this interface defines a new command type.
+/// Any interface that extends this interface defines a new command type.
 /// </summary>
 [CKTypeDefiner]
 public interface ICommand : IPoco
@@ -76,7 +76,8 @@ and define a family.
 __Notes:__
 - `[AutoImplementationClaim]` is an "advanced" attribute that states that this member is not a
 regular property, it will be automatically implemented by some aspects of the framework.
-- The real Cris command model is a bit more complex than that.
+- The real Cris command model is a bit more complex than that: a `IAbstractCommand` generalizes them
+  and is itself a `ICrisPoco`, the `ICommandModel` is actually a `ICrisPocoModel`.
 
 #### The [CKTypeSuperDefiner] defines abstract IPoco
 Using the `[CKTypeSuperDefiner]` makes direct extensions on the interface an abstraction rather

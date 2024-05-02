@@ -10,7 +10,7 @@ namespace CK.CrisLike
     /// This is simplified model since we ignore command handlers here, we just consider the ICommand
     /// specialized poco.
     /// </summary>
-    public interface ICommandModel
+    public interface ICrisPocoModel
     {
         /// <summary>
         /// Gets the command type: this is the final type that implements the <see cref="IPoco"/> command.
@@ -20,7 +20,7 @@ namespace CK.CrisLike
         /// <summary>
         /// Creates a new command object.
         /// </summary>
-        ICommand Create();
+        IAbstractCommand Create();
 
         /// <summary>
         /// Gets the command index.

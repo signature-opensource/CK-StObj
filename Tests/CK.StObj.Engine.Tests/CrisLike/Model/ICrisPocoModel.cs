@@ -10,7 +10,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
     /// This is simplified model since we ignore command handlers here, we just consider the ICommand
     /// specialized poco.
     /// </summary>
-    public interface ICommandModel
+    public interface ICrisPocoModel
     {
         /// <summary>
         /// Gets the command type: this is the final type that implements the <see cref="IPoco"/> command.
@@ -18,9 +18,9 @@ namespace CK.StObj.Engine.Tests.CrisLike
         Type CommandType { get; }
 
         /// <summary>
-        /// Creates a new command object.
+        /// Creates a new Cris object.
         /// </summary>
-        ICommand Create();
+        ICrisPoco Create();
 
         /// <summary>
         /// Gets the command index.

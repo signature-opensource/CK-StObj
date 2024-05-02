@@ -40,23 +40,23 @@ namespace CK.StObj.Engine.Tests.CrisLike
 
             CodeWriterExtensions.Append( scope, "public " ).Append( scope.Name ).Append( "() : base( CreateCommands() ) {}" ).NewLine();
 
-            scope.Append( "static IReadOnlyList<ICommandModel> CreateCommands()" ).NewLine()
+            scope.Append( "static IReadOnlyList<ICrisPocoModel> CreateCommands()" ).NewLine()
                  .OpenBlock()
-                 .Append( "var list = new ICommandModel[]" ).NewLine()
+                 .Append( "var list = new ICrisPocoModel[]" ).NewLine()
                  .Append( "{" ).NewLine();
             int idx = 0;
             foreach( var e in commandPocos )
             {
                 var f = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, e.PocoFactoryClass );
-                f.Definition.BaseTypes.Add( new ExtendedTypeName( "ICommandModel" ) );
+                f.Definition.BaseTypes.Add( new ExtendedTypeName( "ICrisPocoModel" ) );
                 f.Append( "public Type CommandType => PocoClassType;" ).NewLine()
                  .Append( "public int CommandIdx => " ).Append( idx++ ).Append( ";" ).NewLine()
                  .Append( "public string CommandName => Name;" ).NewLine()
-                 .Append( "ICommand ICommandModel.Create() => (ICommand)Create();" ).NewLine();
+                 .Append( "ICrisPoco ICrisPocoModel.Create() => (ICrisPoco)Create();" ).NewLine();
 
                 // The CommandModel is the _factory field.
                 var p = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, e.PocoClass );
-                p.Append( "public ICommandModel CommandModel => _factory;" ).NewLine();
+                p.Append( "public ICrisPocoModel CrisPocoModel => _factory;" ).NewLine();
 
                 scope.Append( p.FullName ).Append( "._factory," ).NewLine();
             }

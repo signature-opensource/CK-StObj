@@ -99,14 +99,12 @@ namespace CK.Setup
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
                 // can refer to the _factory to access the factory extended code without cast.
                 //
-                // This static internal field is an awful shortcut but it makes things simpler and more efficient
+                // This static internal field is a shortcut. It makes things simpler and more efficient
                 // than looking up the factory in the DI (and downcasting it) each time we need it.
-                // This simplification has been done for Cris Command implementation: a ICommand exposes
-                // its ICommandModel: we used to inject the ICommandModel (that is the extended PocoFactory) in the ICommand
-                // PocoClass ctor from the factory methods. It worked but it was complex... and, eventually, there
-                // can (today) but most importantly there SHOULD, be only one StObjMap/Concrete generated code in an
-                // assembly. Maybe one day, the StObj instances themselves can be made static (since they are some kind of
-                // "absolute singletons").
+                // This simplification has been done for Cris implementation: a ICrisPoco exposes
+                // its ICrisPocoModel: we used to inject the ICrisPocoModel (that is the extended PocoFactory) in the ICrisPoco
+                // PocoClass ctor from the factory methods. It worked but it was complex... Now it is much simpler
+                // Maybe one day, the StObj instances themselves can be made static (since they are processwide singletons).
                 //
                 // Note to myself: this "static shortcut" is valid because we are on a "final generation", not on a
                 // local, per-module, intermediate, code generation like .Net 5 Code Generators.

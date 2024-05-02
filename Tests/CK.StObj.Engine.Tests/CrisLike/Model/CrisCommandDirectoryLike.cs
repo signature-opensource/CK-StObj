@@ -11,15 +11,15 @@ namespace CK.StObj.Engine.Tests.CrisLike
     [CK.Setup.ContextBoundDelegation( "CK.StObj.Engine.Tests.CrisLike.CrisCommandDirectoryLikeImpl, CK.StObj.Engine.Tests" )]
     public abstract class CrisCommandDirectoryLike : ISingletonAutoService
     {
-        protected CrisCommandDirectoryLike( IReadOnlyList<ICommandModel> commands )
+        protected CrisCommandDirectoryLike( IReadOnlyList<ICrisPocoModel> commands )
         {
             Commands = commands;
         }
 
         /// <summary>
-        /// Gets all the commands indexed by their <see cref="ICommandModel.CommandIdx"/>.
+        /// Gets all the commands indexed by their <see cref="ICrisPocoModel.CommandIdx"/>.
         /// </summary>
-        public IReadOnlyList<ICommandModel> Commands { get; }
+        public IReadOnlyList<ICrisPocoModel> Commands { get; }
 
     }
 }
