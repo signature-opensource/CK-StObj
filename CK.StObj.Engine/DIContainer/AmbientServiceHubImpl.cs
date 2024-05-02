@@ -21,36 +21,22 @@ namespace CK.Setup
 
             var mappings = c.CurrentRun.EngineMap.EndpointResult.AmbientServiceMappings;
 
-            scope.Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;" ).NewLine();
-
-            scope.GeneratedByComment( "Static constructor" )
-                 .Append( "static AmbientServiceHub_CK()" )
-                 .OpenBlock()
-                 .Append( "_descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" )
-                 .CreatePart( out var descriptors )
-                 .Append( "};" ).NewLine()
-                 .CloseBlock();
-
-            foreach( var (type, index) in mappings )
-            {
-                descriptors.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
-                           .AppendTypeOf( type )
-                           .Append( ", sp => CK.StObj.ScopeDataHolder.GetAmbientService( sp, " ).Append(index)
-                           .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
-            }
-
-
             scope.GeneratedByComment( "Constructor initializer" )
                  .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )" )
                  .OpenBlock()
                  .Append( "entries = DIContainerHub_CK._ubiquitousMappings;" ).NewLine()
                  .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
-            foreach( var (type, index) in mappings )
+            foreach( var (type, index, isIntrinsic) in mappings )
             {
                 if( current == index ) continue;
                 current = index;
-                scope.Append( "new Mapper( Required( services, " ).AppendTypeOf( type ).Append( " ) )," ).NewLine();
+                if( isIntrinsic )
+                {
+                    scope.Append( "default, // " ).Append( type.Name );
+                }
+                else scope.Append( "new Mapper( Required( services, " ).AppendTypeOf( type ).Append( " ) )," );
+                scope.NewLine();
             }
             scope.Append( "};" ).NewLine()
                  .Append( """

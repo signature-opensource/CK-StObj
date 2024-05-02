@@ -7,12 +7,12 @@ using System.Diagnostics.CodeAnalysis;
 namespace CK.Core
 {
     /// <summary>
-    /// Helper scoped service that captures all the ubiquitous information services from a current
-    /// service provider so they can be overridden and marshalled to other <see cref="IDIContainer{TScopeData}"/>
-    /// containers through their <see cref="DIContainerDefinition.IScopedData"/>.
+    /// Helper scoped service that captures all the Ambient services from a current
+    /// service provider so they can be overridden and marshalled to backend <see cref="IDIContainer{TScopeData}"/>
+    /// containers through their <see cref="DIContainerDefinition.BackendScopedData"/>.
     /// </summary>
     [Setup.ContextBoundDelegation( "CK.Setup.AmbientServiceHubImpl, CK.StObj.Engine" )]
-    public abstract class AmbientServiceHub : IScopedAutoService
+    public abstract class AmbientServiceHub : IAmbientAutoService
     {
         /// <summary>
         /// Used by generated code.
@@ -156,12 +156,12 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Overrides a ubiquitous resolution with an explicit instance.
+        /// Overrides an Ambient service with an explicit instance.
         /// <para>
         /// This throws a <see cref="InvalidOperationException"/> if <see cref="IsLocked"/> is true.
         /// </para>
         /// </summary>
-        /// <param name="type">The instance type that must be a endpoint ubiquitous type.</param>
+        /// <param name="type">The instance type that must be an Ambient service type.</param>
         /// <param name="instance">The instance that must replace the default instance from the originating container.</param>
         public void Override( Type type, object instance )
         {

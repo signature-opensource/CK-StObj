@@ -69,7 +69,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 ubiq.IsLocked.Should().BeTrue();
                 ubiq = ubiq.CleanClone();
-                ubiq.Override( new FakeTenantInfo( "AntotherTenant" ) );
+                ubiq.Override( new FakeTenantInfo( "AnotherTenant" ) );
                 backExecutor.Push( TestHelper.Monitor, ubiq, command: "Background in another tenant" );
             }
 
@@ -79,7 +79,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var history = endpointServices.GetRequiredService<SampleCommandMemory>();
             history.ExecutionTrace.Should().HaveCount( 3 ).And.Contain( "In-line - AcmeCorp - Request monitor",
                                                                         "Background - AcmeCorp - Runner monitor",
-                                                                        "Background in another tenant - AnotherTenant - Runner monitor" );
+                                                                        "Background in another tenant - AnoherTenant - Runner monitor" );
         }
 
 

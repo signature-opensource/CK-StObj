@@ -25,26 +25,46 @@ namespace CK.Setup
         bool HasAmbientServices { get; }
 
         /// <summary>
-        /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="DIContainerHub.AmbientServiceMapping"/>. Order matters: consecutive entries with
+        /// Lists all the ambient service types where <see cref="IAutoService"/> inheritance chains
+        /// are expanded.
+        /// <para>
+        /// Order matters: consecutive entries with
         /// the same <see cref="DIContainerHub.AmbientServiceMapping.MappingIndex"/> belong to the same auto service inheritance
         /// chain.
+        /// </para>
+        /// <para>
+        /// See <see cref="DIContainerHub.AmbientServiceMapping"/>. 
+        /// </para>
         /// </summary>
         IReadOnlyList<DIContainerHub.AmbientServiceMapping> AmbientServiceMappings { get; }
 
         /// <summary>
         /// Captures the ambient service default provider implementation.
+        /// When <see cref="IsValid"/> is false, this default must be ignored: the ambient service
+        /// has no need for a default value provider.
+        /// This is the case of the <see cref="AmbientServiceHub"/>.
         /// </summary>
         public readonly struct AmbientServiceDefault
         {
             /// <summary>
+            /// Gets whether this default is valid.
+            /// </summary>
+            public bool IsValid => ProviderType != null;
+
+            /// <summary>
             /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> type that the
             /// <see cref="Provider"/> implements.
+            /// <para>
+            /// <see cref="IsValid"/> MUST be true for this to used.
+            /// </para>
             /// </summary>
             public Type ProviderType { get; }
 
             /// <summary>
             /// Gets the service implementation.
+            /// <para>
+            /// <see cref="IsValid"/> MUST be true for this to used.
+            /// </para>
             /// </summary>
             public IStObjFinalClass Provider { get; }
 

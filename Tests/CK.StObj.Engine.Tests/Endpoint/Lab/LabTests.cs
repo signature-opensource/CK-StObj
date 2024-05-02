@@ -6,7 +6,6 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -70,10 +69,15 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            // From the global, obtains a AmbientServiceHub.
+            // From the global, obtains a AmbientServiceHub:
+            // This uses the AmbientServiceHub( IServiceProvider services ) contructor to build the hub
+            // from the endpoint configured services.
             var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
 
             using var scopedE = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
+
+            // From a background container, the AmbientServiceHub is resolved from the ScopedDataHolder.
+            var backgroundUbiq = scopedE.ServiceProvider.GetRequiredService<AmbientServiceHub>();
 
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
@@ -364,7 +368,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         }
 
         [Test]
-        public void ubiquitous_services_test()
+        public void ambient_services_test()
         {
             ServiceCollection global = new ServiceCollection();
             FakeHost.ConfigureGlobal( global );

@@ -11,16 +11,15 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
     using CK.Core;
     using Microsoft.Extensions.DependencyInjection;
-    using System.Collections.Generic;
-    using System;
     using Microsoft.Extensions.DependencyInjection.Extensions;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
+    using NUnit.Framework;
+    using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
-    using static CK.StObj.Engine.Tests.Service.BasicEndpointServiceTests;
-    using NUnit.Framework;
 
     // This one is always required because DIContainerHub_CK holds an array of
     // IDIContainerInternal (even if it is empty).
@@ -146,17 +145,25 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var firstResolutions = new ServiceDescriptor?[DIContainerHub_CK._ambientMappings.Length];
             foreach( var d in services )
             {
-                int idx = DIContainerHub_CK._ambientMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
-                if( idx >= 0 )
+                if( d.ServiceType == typeof( DIContainerHub ) || d.ServiceType == typeof( AmbientServiceHub ) )
                 {
-                    if( firstResolutions[idx] == null )
+                    monitor.Error( $"Service '{d.ServiceType.Name}' must not be configured." );
+                    success = false;
+                }
+                else
+                {
+                    int idx = DIContainerHub_CK._ambientMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
+                    if( idx >= 0 )
                     {
-                        firstResolutions[idx] = d;
-                    }
-                    else
-                    {
-                        monitor.Error( $"Ambient service '{d.ServiceType.Name}' is mapped more than once. Ambient service cannot be added more than once is a DI container." );
-                        success = false;
+                        if( firstResolutions[idx] == null )
+                        {
+                            firstResolutions[idx] = d;
+                        }
+                        else
+                        {
+                            monitor.Error( $"Ambient service '{d.ServiceType.Name}' is mapped more than once. Ambient service cannot be added more than once is a DI container." );
+                            success = false;
+                        }
                     }
                 }
             }
@@ -215,7 +222,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         }
 
 
-        // Injected only if there are endpoints.
+        // Injected only if there is at least one DIContainer.
         internal static Dictionary<Type, Mapping> CreateInitialMapping( IActivityMonitor monitor,
                                                                         IServiceCollection global,
                                                                         Func<Type, bool> isEndpointService )
@@ -224,9 +231,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             foreach( var d in global )
             {
                 var t = d.ServiceType;
-                if( t == typeof( DIContainerHub ) ) Throw.ArgumentException( "DIContainerHub must not be configured." );
                 // Skip any endpoint service and IHostedService.
-                // There's no need to have the IHostedService multiple service in the endpoint containers.
+                // There's no need to have the IHostedService multiple service in any other container than the global one.
                 if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
                 {
                     continue;
@@ -426,13 +432,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         [AllowNull]
         internal DIContainerDefinition.IScopedData _data;
 
+        internal static object GetAmbientServiceHub( IServiceProvider sp )
+        {
+            // See below.
+            return Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data ).AmbientServiceHub;
+        }
+
         internal static object GetAmbientService( IServiceProvider sp, int index )
         {
             // This looks scary, but:
             // - first we resolve the ScopeDataHolder type that is necessary a ScopeDataHolder.
             // - then we know that the _data is necessarily a BackendScopedData because:
-            //      - this method is called only for backend contexts (front endpoints use the IEndpointUbiquitousServiceDefault<>
-            //        singletons to resolve missing Ambient services instead of relying on the scoped instance).
+            //      - this method is called only for backend contexts (front endpoints use the registered services or
+            //        the IEndpointUbiquitousServiceDefault<> singletons to resolve missing Ambient services).
             //      - the BackendScopedData inheritance is checked at setup time for Backend contexts.
             // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
             //   hidden accessor.
@@ -453,7 +465,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     }
 
     [CK.Core.StObjGen]
-    sealed class EndpointType<TScopedData> : IDIContainer<TScopedData>, IDIContainerInternal where TScopedData : class, DIContainerDefinition.IScopedData
+    sealed class DIContainer<TScopedData> : IDIContainer<TScopedData>, IDIContainerInternal where TScopedData : class, DIContainerDefinition.IScopedData
     {
         IDIContainerServiceProvider<TScopedData>? _services;
 
@@ -464,7 +476,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         readonly object _lock;
         bool _initializationSuccess;
 
-        public EndpointType( DIContainerDefinition<TScopedData> definition )
+        public DIContainer( DIContainerDefinition<TScopedData> definition )
         {
             _singletons = _scoped = Type.EmptyTypes;
             _definition = definition;
@@ -553,7 +565,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             // Calls the user configuration.
             _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
-            // Normalizes ubiquitous services.
+            // Normalizes ambient services.
             if( !EndpointHelper.CheckAndNormalizeAmbientServices( monitor, endpoint, _definition.Kind == DIContainerKind.Endpoint ) )
             {
                 return false;

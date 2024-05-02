@@ -65,10 +65,12 @@ namespace CK.Core
             /// </summary>
             /// <param name="ambientServiceType">The ambient service type.</param>
             /// <param name="mappingIndex">The index.</param>
-            public AmbientServiceMapping( Type ambientServiceType, int mappingIndex )
+            /// <param name="isIntrinsic">See <see cref="IsIntrinsic"/>.</param>
+            public AmbientServiceMapping( Type ambientServiceType, int mappingIndex, bool isIntrinsic )
             {
                 AmbientServiceType = ambientServiceType;
                 MappingIndex = mappingIndex;
+                IsIntrinsic = isIntrinsic;
             }
 
             /// <summary>
@@ -82,12 +84,21 @@ namespace CK.Core
             /// </summary>
             public int MappingIndex { get; }
 
+            /// <summary>
+            /// Gets whether this service is a managed by the framework.
+            /// An intrisic service has no default value provider and is registered
+            /// explicitely. Currently only <see cref="AmbientServiceHub"/> is concerned.
+            /// </summary>
+            public bool IsIntrinsic { get; }
+
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
             [EditorBrowsable(EditorBrowsableState.Never)]
-            public void Deconstruct( out Type t, out int i )
+            public void Deconstruct( out Type t, out int i, out bool isIntrinsic )
             {
                 t = AmbientServiceType;
                 i = MappingIndex;
+                isIntrinsic = IsIntrinsic;
             }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         }

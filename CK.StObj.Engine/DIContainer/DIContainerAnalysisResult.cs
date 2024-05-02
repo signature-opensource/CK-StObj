@@ -38,12 +38,12 @@ namespace CK.Setup
         public IReadOnlyList<IDIContainerAnalysisResult.AmbientServiceDefault> DefaultAmbientServiceValueProviders => _ambienDefaults;
 
         DIContainerAnalysisResult( IReadOnlyList<DIContainerInfo> contexts,
-                        IReadOnlyDictionary<Type, AutoServiceKind> endpointServices,
-                        IReadOnlyList<Type> ubiquitousServices )
+                                   IReadOnlyDictionary<Type, AutoServiceKind> endpointServices,
+                                   IReadOnlyList<Type> ambientServices )
         {
             _containers = contexts;
             _endpointServices = endpointServices;
-            _rawAmbientServices = ubiquitousServices;
+            _rawAmbientServices = ambientServices;
             _ambientMappings = new List<DIContainerHub.AmbientServiceMapping>();
             _ambienDefaults = new List<IDIContainerAnalysisResult.AmbientServiceDefault>();
         }
@@ -119,14 +119,19 @@ namespace CK.Setup
 
             bool success = true;
             // Use list and not hash set (no volume here).
-            var ubiquitousTypes = new List<Type>( _rawAmbientServices );
+            // This is not an easy part to understand. This builds the mappings and fills the _ambienDefaults
+            // list. Mapping index reflects IAutoService inheritance chain (for auto service) and the
+            // _ambienDefaults list is synchronized with this index.
+            var ambientServiceTypes = new List<Type>( _rawAmbientServices );
             int current = 0;
-            while( ubiquitousTypes.Count > 0 )
+            while( ambientServiceTypes.Count > 0 )
             {
-                var t = ubiquitousTypes[ubiquitousTypes.Count - 1];
+                var t = ambientServiceTypes[ambientServiceTypes.Count - 1];
                 var auto = services.ToLeaf( t );
                 if( auto != null )
                 {
+                    // AmbientServiceHub is intrinsic.
+                    bool isIntrinsic = t == typeof( AmbientServiceHub );
                     // We check that if more than one default value provider exists,
                     // they are the same final type.
                     IDIContainerAnalysisResult.AmbientServiceDefault? defaultProvider = null;
@@ -134,26 +139,36 @@ namespace CK.Setup
                     // from most abstract to leaf type here.
                     foreach( var m in auto.UniqueMappings )
                     {
-                        _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( m, current ) );
-                        ubiquitousTypes.Remove( m );
-                        if( !FindSameDefaultProvider( monitor, services, m, ref defaultProvider ) ) success = false;
+                        _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( m, current, isIntrinsic ) );
+                        ambientServiceTypes.Remove( m );
+                        if( !isIntrinsic && !FindSameDefaultProvider( monitor, services, m, ref defaultProvider ) )
+                        {
+                            success = false;
+                        }
                     }
-                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( auto.ClassType, current ) );
-                    ubiquitousTypes.Remove( auto.ClassType );
-                    if( !FindSameDefaultProvider( monitor, services, t, ref defaultProvider ) )
+                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( auto.ClassType, current, isIntrinsic ) );
+                    ambientServiceTypes.Remove( auto.ClassType );
+                    if( isIntrinsic )
                     {
-                        success = false;
-                    }
-                    else if( !defaultProvider.HasValue )
-                    {
-                        monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
-                                       $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '" )}'. " +
-                                       $"All ambient service must have a default value provider." );
-                        success = false;
+                        _ambienDefaults.Add( default );
                     }
                     else
                     {
-                        _ambienDefaults.Add( defaultProvider.Value );
+                        if( !FindSameDefaultProvider( monitor, services, t, ref defaultProvider ) )
+                        {
+                            success = false;
+                        }
+                        else if( !defaultProvider.HasValue )
+                        {
+                            monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
+                                           $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '" )}'. " +
+                                           $"All ambient service must have a default value provider." );
+                            success = false;
+                        }
+                        else
+                        {
+                            _ambienDefaults.Add( defaultProvider.Value );
+                        }
                     }
                 }
                 else
@@ -167,8 +182,8 @@ namespace CK.Setup
                     {
                         success = false;
                     }
-                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( t, current ) );
-                    ubiquitousTypes.RemoveAt( ubiquitousTypes.Count - 1 );
+                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( t, current, false ) );
+                    ambientServiceTypes.RemoveAt( ambientServiceTypes.Count - 1 );
                 }
                 ++current;
             }

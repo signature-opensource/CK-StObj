@@ -242,17 +242,17 @@ namespace CK.Setup
                     var allInterfaces = t.GetInterfaces().Where( i => i.IsPublic || i.IsNestedPublic ).ToArray();
 
                     // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
-                    // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IProcessAutoService
+                    // We must also handle here interfaces that have 2 baseS because IAmbientAutoService => IScopedAutoService => IAutoService.
                     // are extending IAutoService.
                     if( t.IsInterface
-                        && allInterfaces.Length <= 1
+                        && allInterfaces.Length <= 2
                         && t.GetMembers().Length == 0 )
                     {
                         if( t.Name == nameof( IRealObject ) ) k = CKTypeKindExtension.RealObjectFlags | CKTypeKind.IsDefiner;
                         else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
                         else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | CKTypeKind.IsDefiner;
-                        else if( t.Name == nameof( ISingletonAutoService ) ) k = /*CKTypeKindExtension.SingletonFlags*/
-                                                                                 CKTypeKind.IsSingleton   | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsSingleton | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t == typeof( IAmbientAutoService ) ) k = CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
                         else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | CKTypeKind.IsDefiner;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.

@@ -239,9 +239,9 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
         public void CreateConfigureServiceMethod( IActivityMonitor monitor, IStObjEngineMap engineMap )
         {
             var endpointResult = engineMap.EndpointResult;
-            bool hasEndpoint = endpointResult.Containers.Count > 0;
+            bool hasDIContainer = endpointResult.Containers.Count > 0;
 
-            EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
+            EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasDIContainer );
 
             var fScope = _rootType.CreateFunction( "public bool ConfigureServices( in StObjContextRoot.ServiceRegister reg )" );
             using var region = fScope.Region();
@@ -251,7 +251,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
 
             // Common endpoint container configuration is done on the global, externally configured services so that
             // we minimize the number of registrations to process.
-            if( hasEndpoint )
+            if( hasDIContainer )
             {
                 fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, DIContainerHub_CK._endpointServices.ContainsKey );" ).NewLine();
             }
@@ -268,7 +268,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                         var commonDescriptors = theEPTM.CreateCommonDescriptors( this );
                         reg.Services.AddRange( commonDescriptors );
                         """ ).NewLine();
-            if( !hasEndpoint )
+            if( !hasDIContainer )
             {
                 // If there's no endpoint, we must only register the StObjMap (real objects and auto services) and we are done
                 // (we have no mappings for endpoint container).

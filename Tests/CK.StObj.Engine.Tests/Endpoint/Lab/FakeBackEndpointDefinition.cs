@@ -1,7 +1,6 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Runtime.CompilerServices;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
@@ -19,7 +18,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // This can typically define internal fields used to exchange data from the external
         // to the internal world.
         // Here we have decided to explicitly provide the IActivityMonitor. This supposes that
-        // it is "reserved" to work on this side in the scoped service container!
+        // this DI container must be used with awaiting whathever it does.
         public sealed class Data : BackendScopedData
         {
             internal readonly IActivityMonitor _monitor;

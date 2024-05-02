@@ -68,12 +68,16 @@ namespace CK.Setup
             {
                 DIContainerHub.AmbientServiceMapping e = endpointResult.AmbientServiceMappings[i];
                 if( i > 0 ) scope.Append( "," ).NewLine();
-                scope.Append( "new AmbientServiceMapping( " ).AppendTypeOf( e.AmbientServiceType ).Append( "," ).Append( e.MappingIndex ).Append( ")" );
+                scope.Append( "new AmbientServiceMapping( " ).AppendTypeOf( e.AmbientServiceType ).Append( "," ).Append( e.MappingIndex ).Append( "," ).Append( e.IsIntrinsic ).Append( ")" );
             }
             scope.Append( ");" ).NewLine();
 
             var sharedPart = scope.CreatePart();
-            scope.Append( "_ambientServiceBackendDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
+            scope.Append( """
+                          _ambientServiceBackendDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
+                          new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( AmbientServiceHub ), CK.StObj.ScopeDataHolder.GetAmbientServiceHub, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+
+                          """ );
             foreach( var e in endpointResult.AmbientServiceMappings )
             {
                 if( !sharedPart.Memory.TryGetValue( e.MappingIndex, out var oGetter ) )
@@ -90,23 +94,30 @@ namespace CK.Setup
             }
             scope.Append( "};" ).NewLine();
 
-            scope.Append( "_ambientServiceEndpointDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
+            scope.Append( """
+                          _ambientServiceEndpointDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
+                          new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( AmbientServiceHub ), sp => new AmbientServiceHub_CK( sp ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
+
+                          """ ).NewLine();
             foreach( var e in endpointResult.AmbientServiceMappings )
             {
                 var defaultProvider = endpointResult.DefaultAmbientServiceValueProviders[e.MappingIndex];
-                if( !sharedPart.Memory.TryGetValue( defaultProvider.Provider.ClassType, out var oGetter ) )
+                if( defaultProvider.IsValid )
                 {
-                    oGetter = $"front{e.MappingIndex}";
-                    sharedPart.Append( "Func<IServiceProvider,object> " ).Append( (string)oGetter )
-                              .Append( " = sp => ((" ).AppendGlobalTypeName(defaultProvider.ProviderType)
-                              .Append( "?)CK.StObj.EndpointHelper.GetGlobalProvider(sp).GetService( " ).AppendTypeOf( defaultProvider.Provider.ClassType )
-                              .Append( " )!).Default;" ).NewLine();
-                    sharedPart.Memory.Add( defaultProvider.Provider.ClassType, oGetter );
+                    if( !sharedPart.Memory.TryGetValue( defaultProvider.Provider.ClassType, out var oGetter ) )
+                    {
+                        oGetter = $"front{e.MappingIndex}";
+                        sharedPart.Append( "Func<IServiceProvider,object> " ).Append( (string)oGetter )
+                                  .Append( " = sp => ((" ).AppendGlobalTypeName( defaultProvider.ProviderType )
+                                  .Append( "?)CK.StObj.EndpointHelper.GetGlobalProvider(sp).GetService( " ).AppendTypeOf( defaultProvider.Provider.ClassType )
+                                  .Append( " )!).Default;" ).NewLine();
+                        sharedPart.Memory.Add( defaultProvider.Provider.ClassType, oGetter );
+                    }
+                    Debug.Assert( oGetter != null );
+                    scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
+                         .AppendTypeOf( e.AmbientServiceType ).Append( ", " ).Append( (string)oGetter )
+                         .Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
                 }
-                Debug.Assert( oGetter != null );
-                scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
-                     .AppendTypeOf( e.AmbientServiceType ).Append( ", " ).Append( (string)oGetter )
-                     .Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
             scope.Append( "};" ).NewLine();
 
@@ -122,13 +133,13 @@ namespace CK.Setup
             int i = 0;
             foreach( var e in endpointResult.Containers )
             {
-                // The DIContainerHub_CK directly and immediately instantiates the EndpointType<> objects.
+                // The DIContainerHub_CK directly and immediately instantiates the DIContainer<> objects.
                 // These are singletons just like this DIContainerHub. They are registered
                 // as singleton instances in the global container (and, as global singleton instances,
-                // also in endpoint containers). The IEnumerable<IDIContainer> is also explicitly
+                // also in all containers). The IEnumerable<IDIContainer> is also explicitly
                 // registered: that is the _containers array.
                 var scopeDataTypeName = e.ScopeDataType.ToGlobalTypeName();
-                scope.Append( "new CK.StObj.EndpointType<" )
+                scope.Append( "new CK.StObj.DIContainer<" )
                     .Append( scopeDataTypeName )
                     .Append( ">( (DIContainerDefinition<" ).Append( scopeDataTypeName ).Append( ">)_containerDefinitions[" ).Append( i++ ).Append( "] )," ).NewLine();
             }

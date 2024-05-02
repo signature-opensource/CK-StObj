@@ -9,7 +9,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
         public static void ConfigureGlobal( ServiceCollection global )
         {
-            // Here we are working with 3 fake ubiquitous services.
+            // Here we are working with 3 fake ambient services.
             // None of them have code generation (but they could).
             // These simulate resolution from a request token, query parameter or other mean
             // of deducing these informations for the global context.
@@ -48,11 +48,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var theEPTM = ((DIContainerHub_CK)globalServiceProvider.GetRequiredService<DIContainerHub>());
             theEPTM.SetGlobalContainer( globalServiceProvider );
 
-            // 3 - From now on, on demand (this is lazily initialized), the endpoints are able to expose their
+            // 3 - From now on, on demand (this is lazily initialized), the DIContainers are able to expose their
             //     own DI container.
             var endpointType = globalServiceProvider.GetRequiredService<DIContainerHub>()
                                 .Containers
-                                .OfType<EndpointType<FakeBackDIContainerDefinition.Data>>()
+                                .OfType<DIContainer<FakeBackDIContainerDefinition.Data>>()
                                 .Single();
             return endpointType.GetContainer();
         }

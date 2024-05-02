@@ -136,17 +136,25 @@ namespace CK.Setup
                 var firstResolutions = new ServiceDescriptor?[DIContainerHub_CK._ubiquitousMappings.Length];
                 foreach( var d in services )
                 {
-                    int idx = DIContainerHub_CK._ubiquitousMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
-                    if( idx >= 0 )
+                    if( d.ServiceType == typeof( DIContainerHub ) || d.ServiceType == typeof( AmbientServiceHub ) )
                     {
-                        if( firstResolutions[idx] == null )
+                        monitor.Error( $"Service '{d.ServiceType.Name}' must not be configured." );
+                        success = false;
+                    }
+                    else
+                    {
+                        int idx = DIContainerHub_CK._ubiquitousMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
+                        if( idx >= 0 )
                         {
-                            firstResolutions[idx] = d;
-                        }
-                        else
-                        {
-                            monitor.Error( $"Ambient service '{d.ServiceType.Name}' is mapped more than once. Ambient service cannot be added more than once in a DI container." );
-                            success = false;
+                            if( firstResolutions[idx] == null )
+                            {
+                                firstResolutions[idx] = d;
+                            }
+                            else
+                            {
+                                monitor.Error( $"Ambient service '{d.ServiceType.Name}' is mapped more than once. Ambient service cannot be added more than once in a DI container." );
+                                success = false;
+                            }
                         }
                     }
                 }
@@ -438,9 +446,8 @@ namespace CK.Setup
                 foreach( var d in global )
                 {
                     var t = d.ServiceType;
-                    if( t == typeof( DIContainerHub ) ) Throw.ArgumentException( "DIContainerHub must not be configured." );
                     // Skip any endpoint service and IHostedService.
-                    // There's no need to have the IHostedService multiple service in the endpoint containers.
+                    // There's no need to have the IHostedService multiple service in any other container than the global one.
                     if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
                     {
                         continue;
@@ -467,13 +474,19 @@ namespace CK.Setup
                 [AllowNull]
                 internal DIContainerDefinition.IScopedData _data;
 
+                internal static object GetAmbientServiceHub( IServiceProvider sp )
+                {
+                    // See below.
+                    return Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data ).AmbientServiceHub;
+                }
+
                 internal static object GetAmbientService( IServiceProvider sp, int index )
                 {
                     // This looks scary, but:
                     // - first we resolve the ScopeDataHolder type that is necessary a ScopeDataHolder.
                     // - then we know that the _data is necessarily a BackendScopedData because:
-                    //      - this method is called only for backend contexts (front endpoints use the IEndpointUbiquitousServiceDefault<>
-                    //        singletons to resolve missing Ambient services instead of relying on the scoped instance).
+                    //      - this method is called only for backend contexts (front endpoints use the registered services or
+                    //        the IEndpointUbiquitousServiceDefault<> singletons to resolve missing Ambient services).
                     //      - the BackendScopedData inheritance is checked at setup time for Backend contexts.
                     // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
                     //   hidden accessor.
@@ -500,10 +513,10 @@ namespace CK.Setup
             """;
 
         // Injected only if there are endpoints.
-        const string _endpointType =
+        const string _diContainerType =
             """
             [CK.Core.StObjGen]
-            sealed class EndpointType<TScopedData> : IDIContainer<TScopedData>, IDIContainerInternal where TScopedData : class, DIContainerDefinition.IScopedData
+            sealed class DIContainer<TScopedData> : IDIContainer<TScopedData>, IDIContainerInternal where TScopedData : class, DIContainerDefinition.IScopedData
             {
                 IDIContainerServiceProvider<TScopedData>? _services;
 
@@ -514,7 +527,7 @@ namespace CK.Setup
                 readonly object _lock;
                 bool _initializationSuccess;
 
-                public EndpointType( DIContainerDefinition<TScopedData> definition )
+                public DIContainer( DIContainerDefinition<TScopedData> definition )
                 {
                     _singletons = _scoped = Type.EmptyTypes;
                     _definition = definition;
@@ -621,7 +634,7 @@ namespace CK.Setup
                         var builder = new FinalConfigurationBuilder( _definition.Name, mappings );
                         builder.FinalConfigure( monitor, configuration );
                         // Add the scoped ScopeDataHolder and the true singletons StObjMap, DIContainerHub, all the
-                        // IDIContainer<TScopeData> and the IEnumerable<IEndpoint>.
+                        // IDIContainer<TScopeData> and the IEnumerable<IDIContainer>.
                         configuration.AddRange( commonDescriptors );
                         // Waiting for .Net 8.
                         // configuration.MakeReadOnly();
@@ -1101,7 +1114,7 @@ namespace CK.Setup
                      .Append( _endpointTypeInternalWithEndpoints )
                      .Append( _mapping )
                      .Append( _globalServices )
-                     .Append( _endpointType )
+                     .Append( _diContainerType )
                      .Append( _finalConfigurationBuilder );
                     helperExtension.Append( _createInitialMapping )
                                    .Append( _fillStObjMappingsWithEndpoints );

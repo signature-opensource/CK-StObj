@@ -13,4 +13,5 @@ namespace CK.Core
     public interface IClosedPoco : IPoco
     {
     }
+
 }
