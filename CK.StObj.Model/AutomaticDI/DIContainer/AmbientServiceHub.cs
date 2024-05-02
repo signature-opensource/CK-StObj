@@ -54,11 +54,20 @@ namespace CK.Core
 
         /// <summary>
         /// Initializes a new <see cref="AmbientServiceHub"/> from a current context.
+        /// <para>
+        /// This is used in endpoint containers to capture the decisions of the endpoint services configuration
+        /// and <see cref="IsLocked"/> is true.
+        /// </para>
+        /// <para>
+        /// Background containers have an injected hub (also locked by <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/>)
+        /// and ambient services are resolved from the hub.
+        /// </para>
         /// </summary>
         /// <param name="services">The current service provider (must be a scoped container).</param>
         public AmbientServiceHub( IServiceProvider services )
         {
             _mappers = Initialize( services, out _entries );
+            _locked = true;
         }
 
         /// <summary>

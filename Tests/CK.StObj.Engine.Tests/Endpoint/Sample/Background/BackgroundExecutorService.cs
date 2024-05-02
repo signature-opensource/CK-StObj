@@ -1,21 +1,18 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    public class BackgroundExecutor : ISingletonAutoService
+    public class BackgroundExecutorService : ISingletonAutoService
     {
         readonly Channel<object?> _commands;
         readonly IDIContainer<BackgroundDIContainerDefinition.Data> _endpoint;
         Task _runTask;
 
-        public BackgroundExecutor( IDIContainer<BackgroundDIContainerDefinition.Data> endpoint )
+        public BackgroundExecutorService( IDIContainer<BackgroundDIContainerDefinition.Data> endpoint )
         {
             _commands = Channel.CreateUnbounded<object?>();
             _runTask = Task.CompletedTask;

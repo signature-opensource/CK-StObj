@@ -24,13 +24,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var c = TestHelper.CreateStObjCollector( typeof( DefaultCommandProcessor ),
                                                      typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutor ),
+                                                     typeof( BackgroundExecutorService ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( TenantResolutionService ),
                                                      typeof( FakeTenantInfo ),
                                                      typeof( DefaultTenantProvider ),
                                                      typeof( TransactionalCallContextLike ) );
-            using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
+            using var endpointServices = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
                 services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
                 services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -44,29 +44,31 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 }
             } ).Services;
 
-            await TestHelper.StartHostedServicesAsync( services );
+            await TestHelper.StartHostedServicesAsync( endpointServices );
 
             // In-line execution of a request.
-            using( var scoped = services.CreateScope() )
+            using( var scoped = endpointServices.CreateScope() )
             {
                 scoped.ServiceProvider.GetRequiredService<DefaultCommandProcessor>().Process( command: "In-line" );
             }
 
-            // BackgroundExecutor is a singleton. We can retrieve it from the root services.
-            var backExecutor = services.GetRequiredService<BackgroundExecutor>();
+            // BackgroundExecutorService is a singleton. We can retrieve it from the root services.
+            var backExecutor = endpointServices.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
 
             // Background execution of a request.
-            using( var scoped = services.CreateScope() )
+            using( var scoped = endpointServices.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 backExecutor.Push( TestHelper.Monitor, ubiq, command: "Background" );
             }
 
             // Background execution of a request with an overridden tenant.
-            using( var scoped = services.CreateScope() )
+            using( var scoped = endpointServices.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
+                ubiq.IsLocked.Should().BeTrue();
+                ubiq = ubiq.CleanClone();
                 ubiq.Override( new FakeTenantInfo( "AntotherTenant" ) );
                 backExecutor.Push( TestHelper.Monitor, ubiq, command: "Background in another tenant" );
             }
@@ -74,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             backExecutor.Stop();
             await backExecutor.WaitForTerminationAsync();
 
-            var history = services.GetRequiredService<SampleCommandMemory>();
+            var history = endpointServices.GetRequiredService<SampleCommandMemory>();
             history.ExecutionTrace.Should().HaveCount( 3 ).And.Contain( "In-line - AcmeCorp - Request monitor",
                                                                         "Background - AcmeCorp - Runner monitor",
                                                                         "Background in another tenant - AnotherTenant - Runner monitor" );
@@ -87,7 +89,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessorWithOptions ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutor ) );
+                                                     typeof( BackgroundExecutorService ) );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
                 services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
@@ -99,7 +101,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             await TestHelper.StartHostedServicesAsync( services );
 
             // BackgroundExecutor is a singleton. We can retrieve it from the root services.
-            var backExecutor = services.GetRequiredService<BackgroundExecutor>();
+            var backExecutor = services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
 
             using( var scoped = services.CreateScope() )
@@ -118,7 +120,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessorWithOptionsSnapshot ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutor ) );
+                                                     typeof( BackgroundExecutorService ) );
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
@@ -134,7 +136,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             // BackgroundExecutor and SampleCommandMemory are singletond. We can retrieve them from the root services.
             var history = services.GetRequiredService<SampleCommandMemory>();
-            var backExecutor = services.GetRequiredService<BackgroundExecutor>();
+            var backExecutor = services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
 
             using( var scoped = services.CreateScope() )
@@ -163,7 +165,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessorWithOptionsMonitor ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutor ) );
+                                                     typeof( BackgroundExecutorService ) );
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
@@ -186,7 +188,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             // BackgroundExecutor and SampleCommandMemory are singletons. We can retrieve them from the root services.
             var history = services.GetRequiredService<SampleCommandMemory>();
-            var backExecutor = services.GetRequiredService<BackgroundExecutor>();
+            var backExecutor = services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
 
             config.GetRequiredSection( "Opt" ).GetReloadToken().RegisterChangeCallback( _ => ActivityMonitor.StaticLogger.Info( "Configuration changed!" ), null );
