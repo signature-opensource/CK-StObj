@@ -146,7 +146,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var ts = r.PocoTypeSystemBuilder;
 
             var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
-            Debug.Assert( p != null );
+            Throw.DebugAssert( p != null );
             p.IsOblivious.Should().BeTrue();
             p.IsNullable.Should().BeTrue();
             p.Should().BeAssignableTo<IPrimaryPocoType>();

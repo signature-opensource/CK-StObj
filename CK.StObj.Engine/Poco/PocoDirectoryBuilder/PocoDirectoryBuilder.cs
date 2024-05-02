@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,10 @@ namespace CK.Setup
 {
     /// <summary>
     /// Registrar for <see cref="IPoco"/> interfaces.
+    /// This is a mess: CKTypeKindDetector can handle Abstract/Secondary/Primary
+    /// classification directly.
+    /// What should be kept here is the emit of the stubs, but the structure should be done
+    /// by CKTypeKindDetector and PocoTypeSystemBuilder.
     /// </summary>
     partial class PocoDirectoryBuilder
     {
@@ -42,6 +47,10 @@ namespace CK.Setup
         readonly string _namespace;
         readonly IExtMemberInfoFactory _memberInfoFactory;
         readonly CKTypeKindDetector _kindDetector;
+        // Yet another patch to save the Abstracts that are only discovered by the
+        // legacy code IF they have a Primary. This used to be a feature... but
+        // now we have the implementation less handling in the PocoTypeSystemBuilder.
+        readonly HashSet<Type> _definers;
 
         internal PocoDirectoryBuilder( IExtMemberInfoFactory memberInfoFactory,
                                        CKTypeKindDetector kindDetector,
@@ -52,15 +61,23 @@ namespace CK.Setup
             _namespace = @namespace;
             _all = new Dictionary<Type, InterfaceEntry?>();
             _result = new List<List<Type>>();
+            _definers = new HashSet<Type>();
         }
+
+        bool IsPoco( IActivityMonitor monitor, Type t ) => (_kindDetector.GetRawKind( monitor, t ) & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
 
         bool IsPocoButNotDefiner( IActivityMonitor monitor, Type t ) => (_kindDetector.GetNonDefinerKind( monitor, t ) & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
 
-        public bool RegisterInterface( IActivityMonitor monitor, Type t ) => DoRegisterInterface( monitor, t ) != null;
+        public bool RegisterInterface( IActivityMonitor monitor, Type t, CKTypeKind rawKind ) => DoRegisterInterface( monitor, t, rawKind ) != null;
         
-        InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t )
+        InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t, CKTypeKind rawKind )
         {
-            Throw.DebugAssert( t.IsInterface && IsPocoButNotDefiner( monitor, t ) );
+            Throw.DebugAssert( t.IsInterface && t.IsVisible &&  (rawKind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco );
+            if( (rawKind & CKTypeKind.IsDefiner) != 0 )
+            {
+                _definers.Add( t );
+                return null;
+            }
             if( !_all.TryGetValue( t, out var p ) )
             {
                 p = TryCreateInterfaceEntry( monitor, t );
@@ -73,13 +90,17 @@ namespace CK.Setup
         InterfaceEntry? TryCreateInterfaceEntry( IActivityMonitor monitor, Type t )
         {
             InterfaceEntry? singlePrimary = null;
-            foreach( Type b in t.GetInterfaces() )
+            Type[] bs = t.GetInterfaces();
+            if( bs.Length == 0 ) return null;
+            foreach( Type b in bs )
             {
                 if( b == typeof( IPoco ) ) continue;
-                // Attempts to register the base if and only if it is not a "definer".
-                if( IsPocoButNotDefiner( monitor, b ) )
+                // Attempts to register the base if and only if it is not a definer and it is a public interface.
+                if( !b.IsVisible ) continue;
+                var rawKind = _kindDetector.GetRawKind( monitor, b );
+                if( (rawKind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco )
                 {
-                    var baseType = DoRegisterInterface( monitor, b );
+                    var baseType = DoRegisterInterface( monitor, b, rawKind );
                     // Excluded Poco interfaces are null here. Let's continue.
                     // Errors are detected by a collector on the monitor anyway.
                     if( baseType == null ) continue;
@@ -138,6 +159,16 @@ namespace CK.Setup
                 }
 
                 hasNameError |= !cInfo.InitializeNames( monitor );
+            }
+            // Auwful fill...
+            // Now the registered abstracts without implementations appear
+            // in the OtherInterfaces with... no implementation.
+            foreach( var def in _definers )
+            {
+                if( !r.OtherInterfaces.ContainsKey( def ) )
+                {
+                    r.OtherInterfaces.Add( def, Array.Empty<PocoRootInfo>() );
+                }
             }
             return hasNameError || !r.BuildNameIndex( monitor ) ? null : r;
         }

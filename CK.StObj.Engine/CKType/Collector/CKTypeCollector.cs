@@ -123,10 +123,9 @@ namespace CK.Setup
                     bool isPoco = (kind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
                     TypeAttributesCache? typeCache = RegisterRegularType( monitor, type, isPoco );
                     Throw.DebugAssert( "isPoco => type cache (even empty).", !isPoco || typeCache != null );
-
-                    if( isPoco && (kind & CKTypeKind.IsDefiner) == 0 )
+                    if( isPoco )
                     {
-                        _pocoBuilder.RegisterInterface( monitor, type );
+                        _pocoBuilder.RegisterInterface( monitor, type, kind );
                     }
                 }
                 else

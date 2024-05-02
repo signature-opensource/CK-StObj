@@ -72,7 +72,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void Poco_OtherInterfaces_does_NOT_contain_the_definers_that_are_not_used()
+        public void Poco_OtherInterfaces_contains_the_definers_that_are_not_used()
         {
             // With IFinal1 only: ICommandAuthDeviceId is not here.
             {
@@ -85,7 +85,8 @@ namespace CK.StObj.Engine.Tests.Poco
                                                                            typeof( ICommandPart ),
                                                                            typeof( ICommandAuthUnsafe ),
                                                                            typeof( ICommandAuthNormal ),
-                                                                           typeof( ICommandAuthCritical ) } );
+                                                                           typeof( ICommandAuthCritical ),
+                                                                           typeof( ICommandAuthDeviceId ) } );
             }
             // Without IPoco at all: no definers are referenced.
             {
@@ -94,7 +95,12 @@ namespace CK.StObj.Engine.Tests.Poco
                 Debug.Assert( poco != null );
 
                 poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );
-                poco.OtherInterfaces.Keys.Should().BeEmpty();
+                poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
+                                                                           typeof( ICommandPart ),
+                                                                           typeof( ICommandAuthUnsafe ),
+                                                                           typeof( ICommandAuthNormal ),
+                                                                           typeof( ICommandAuthCritical ),
+                                                                           typeof( ICommandAuthDeviceId ) } );
             }
         }
 

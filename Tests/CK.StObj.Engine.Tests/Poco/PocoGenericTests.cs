@@ -2,16 +2,10 @@ using CK.Core;
 using CK.Setup;
 using CK.StObj.Engine.Tests.CrisLike;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.Poco.RecursivePocoTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -498,6 +492,17 @@ namespace CK.StObj.Engine.Tests.Poco
                                                         .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
                 .Should().Be( "[AbstractPoco]IInput<object>" );
 
+        }
+
+        [Test]
+        public void registering_purely_abstract_type()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IAbstractCommand ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+            var pocoBuilder = r.CKTypeResult.PocoTypeSystemBuilder;
+            var veryAbstract = pocoBuilder.FindByType<IAbstractPocoType>( typeof( IAbstractCommand ) );
+            Throw.DebugAssert( veryAbstract != null );
+            veryAbstract.ImplementationLess.Should().BeTrue();
         }
 
     }
