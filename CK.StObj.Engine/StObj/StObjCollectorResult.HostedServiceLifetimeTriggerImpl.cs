@@ -117,7 +117,7 @@ namespace CK.Setup
                                      public HostedServiceLifetimeTrigger( IServiceProvider s )
                                      {
                                        _services = s;
-                                       ((DIContainerHub_CK)s.GetService( typeof(DIContainerHub) ))!.SetGlobalContainer( s );
+                                       DIContainerHub_CK.SetGlobalServices( s );
                                      }
                                      """ );
                 var start = c.CreateFunction( "public Task StartAsync( System.Threading.CancellationToken cancel )" );
@@ -150,11 +150,11 @@ namespace CK.Setup
                 }
             }
 
-            void GenerateMethodCode( IActivityMonitor monitor,
-                                     IFunctionScope body,
-                                     List<(IStObjResult T, MethodInfo M)> methods,
-                                     TypeRegistrar requiredTypes,
-                                     out bool asyncRequires )
+            static void GenerateMethodCode( IActivityMonitor monitor,
+                                            IFunctionScope body,
+                                            List<(IStObjResult T, MethodInfo M)> methods,
+                                            TypeRegistrar requiredTypes,
+                                            out bool asyncRequires )
             {
                 asyncRequires = false;
                 body.Append( "using var scope = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope( _services );" ).NewLine();

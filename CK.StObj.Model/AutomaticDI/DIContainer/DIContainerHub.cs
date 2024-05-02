@@ -16,16 +16,6 @@ namespace CK.Core
     public abstract class DIContainerHub : ISingletonAutoService
     {
         /// <summary>
-        /// Used by the generated code.
-        /// </summary>
-        protected IServiceProvider? _global;
-
-        /// <summary>
-        /// Gets the global service provider.
-        /// </summary>
-        public IServiceProvider GlobalServiceProvider => _global!;
-
-        /// <summary>
         /// Gets all the container definitions.
         /// </summary>
         public abstract IReadOnlyList<DIContainerDefinition> ContainerDefinitions { get; }

@@ -13,6 +13,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     // The DIContainerHub is code generated.
     sealed class DIContainerHub_CK : DIContainerHub
     {
+        // This is static: there is only one global container per application.
+        // More precisely, there is only one service configuration per loaded StObjMap
+        // (there may be multiple StObjMap loaded in an application domain).
+        static IServiceProvider? _globalServices;
+        internal static IServiceProvider GlobalServices => _globalServices!;
+        // This is called by the code generated HostedServiceLifetimeTrigger constructor. 
+        internal static void SetGlobalServices( IServiceProvider serviceProvider ) => _globalServices = serviceProvider;
+
         // DIContainerDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
         static readonly DIContainerDefinition[] _containerDefinitions;
@@ -37,11 +45,15 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
             _containerDefinitions = new DIContainerDefinition[] { new FakeBackDIContainerDefinition_CK() };
             _ambientMappings = ImmutableArray.Create(
+                // Intrinsic.
                 new AmbientServiceMapping( typeof( AmbientServiceHub ), 0, true ),
+                // IFakeTenantInfo is an auto service: the inheritance chain is analyzed, they share the same index.
                 new AmbientServiceMapping( typeof( IFakeTenantInfo ), 1, false ),
                 new AmbientServiceMapping( typeof( FakeTenantInfo ), 1, false ),
+                // Not an auto service: autonmous entries.
                 new AmbientServiceMapping( typeof( IFakeAuthenticationInfo ), 2, false ),
                 new AmbientServiceMapping( typeof( FakeAuthenticationInfo ), 3, false ),
+                // Single entry.
                 new AmbientServiceMapping( typeof( FakeCultureInfo ), 4, false )
             );
             Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
@@ -56,9 +68,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                     new ServiceDescriptor( typeof( FakeAuthenticationInfo), back2, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeCultureInfo), back3, ServiceLifetime.Scoped ),
             };
-            Func<IServiceProvider, object> front0 = sp => ((IEndpointUbiquitousServiceDefault<FakeTenantInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultTenantProvider ) )!).Default;
-            Func<IServiceProvider, object> front1 = sp => ((IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
-            Func<IServiceProvider, object> front3 = sp => ((IEndpointUbiquitousServiceDefault<FakeCultureInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultCultureProvider ) )!).Default;
+            // These declarations are only here as the defaults.
+            // In practice they are overridden by the endpoint container definition ConfigureServices.
+            Func<IServiceProvider, object> front0 = sp => ((IEndpointUbiquitousServiceDefault<FakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultTenantProvider ) )!).Default;
+            Func<IServiceProvider, object> front1 = sp => ((IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
+            Func<IServiceProvider, object> front3 = sp => ((IEndpointUbiquitousServiceDefault<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
             _ambientServiceEndpointDescriptors = new ServiceDescriptor[] {
                     new ServiceDescriptor( typeof( AmbientServiceHub ), sp => new AmbientServiceHub_CK( sp ), ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Scoped ),
@@ -106,7 +120,5 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
         }
 
-        // This is called by the code generated HostedServiceLifetimeTrigger constructor. 
-        internal void SetGlobalContainer( IServiceProvider serviceProvider ) => _global = serviceProvider;
     }
 }

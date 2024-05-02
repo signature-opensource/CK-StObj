@@ -789,7 +789,7 @@ namespace CK.Setup
                                     && !d.ServiceType.IsGenericTypeDefinition )
                                 {
                                     endpoint.Add( new ServiceDescriptor( d.ServiceType,
-                                                                         sp => EndpointHelper.GetGlobalProvider( sp ).GetService( d.ServiceType )!,
+                                                                         sp => DIContainerHub_CK.GlobalServices.GetService( d.ServiceType )!,
                                                                          ServiceLifetime.Singleton ) );
                                 }
                                 else
@@ -807,7 +807,7 @@ namespace CK.Setup
                                 && last.ImplementationInstance == null
                                 && !last.ServiceType.IsGenericTypeDefinition )
                             {
-                                endpoint.Add( new ServiceDescriptor( t, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( t )!, ServiceLifetime.Singleton ) );
+                                endpoint.Add( new ServiceDescriptor( t, sp => DIContainerHub_CK.GlobalServices.GetService( t )!, ServiceLifetime.Singleton ) );
                             }
                             else
                             {
@@ -849,7 +849,7 @@ namespace CK.Setup
                                         }
                                         if( r.SingGlobal != null )
                                         {
-                                            var g = EndpointHelper.GetGlobalProvider( sp );
+                                            var g = DIContainerHub_CK.GlobalServices;
                                             foreach( var sing in r.SingGlobal )
                                             {
                                                 a.SetValue( g.GetService( sing ), i++ );
@@ -865,7 +865,7 @@ namespace CK.Setup
                             {
                                 // For homogeneous singletons from global, we register the resolution of its IEnumerable<T>
                                 // through the hook otherwise we'll have a enumeration of n times the last singleton registration.
-                                endpoint.Add( new ServiceDescriptor( tEnum, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( tEnum )!, ServiceLifetime.Singleton ) );
+                                endpoint.Add( new ServiceDescriptor( tEnum, sp => DIContainerHub_CK.GlobalServices.GetService( tEnum )!, ServiceLifetime.Singleton ) );
                             }
                             else
                             {
@@ -892,7 +892,7 @@ namespace CK.Setup
                                             }
                                             if( r.SingGlobal != null )
                                             {
-                                                var g = EndpointHelper.GetGlobalProvider( sp );
+                                                var g = DIContainerHub_CK.GlobalServices;
                                                 foreach( var sing in r.SingGlobal )
                                                 {
                                                     a.SetValue( g.GetService( sing ), i++ );
@@ -1094,8 +1094,6 @@ namespace CK.Setup
                  .Append( _localNamespaces )
                  .Append( "static class EndpointHelper" )
                  .OpenBlock()
-                    .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<DIContainerHub>( sp.GetService( typeof( DIContainerHub ) )! ).GlobalServiceProvider;" )
-                    .NewLine()
                     .Append( _addGlobalServiceMapping )
                     .Append( _checkAndNormalizeAmbientServices )
                     .CreatePart( out var helperExtension )

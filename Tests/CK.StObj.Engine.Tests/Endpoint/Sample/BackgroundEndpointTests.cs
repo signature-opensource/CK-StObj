@@ -134,7 +134,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             await TestHelper.StartHostedServicesAsync( services );
 
-            // BackgroundExecutor and SampleCommandMemory are singletond. We can retrieve them from the root services.
+            // BackgroundExecutor and SampleCommandMemory are singletons. We can retrieve them from the root services.
             var history = services.GetRequiredService<SampleCommandMemory>();
             var backExecutor = services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();

@@ -18,15 +18,30 @@ namespace CK.Setup
             Debug.Assert( scope.FullName == "CK.Core.DIContainerHub_CK" );
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            // This CK.Core.DIContainerHub_CK statically exposes the default and all endpoint definitions.
-            // static (Real Objects)
-            scope.Append( "internal static readonly DIContainerDefinition[] _containerDefinitions;" ).NewLine()
-                 .Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine()
-                 .Append( "internal static readonly ImmutableArray<AmbientServiceMapping> _ubiquitousMappings;" ).NewLine()
-                 .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceEndpointDescriptors;" ).NewLine()
-                 .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceBackendDescriptors;" ).NewLine();
-            // instance (bound to the DI world). 
-            scope.Append( "internal readonly CK.StObj.IDIContainerInternal[] _containers;" ).NewLine();
+            scope.Append( """
+                // This is static: there is only one global container per application.
+                // More precisely, there is only one service configuration per loaded StObjMap
+                // (there may be multiple StObjMap loaded in an application domain).
+                static IServiceProvider? _globalServices;
+                internal static IServiceProvider GlobalServices => _globalServices!;
+                // This is called by the code generated HostedServiceLifetimeTrigger constructor. 
+                internal static void SetGlobalServices( IServiceProvider serviceProvider ) => _globalServices = serviceProvider;
+
+                internal static readonly DIContainerDefinition[] _containerDefinitions;
+                internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;
+                internal static readonly ImmutableArray<AmbientServiceMapping> _ubiquitousMappings;
+                internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceEndpointDescriptors;
+                internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceBackendDescriptors;
+
+                // instance field (bound to the DI world). 
+                internal readonly CK.StObj.IDIContainerInternal[] _containers;
+
+                public override IReadOnlyList<DIContainerDefinition> ContainerDefinitions => _containerDefinitions;
+                public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;
+                public override IReadOnlyList<IDIContainer> Containers => _containers;
+                public override IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings => _ubiquitousMappings;
+
+                """ );
 
             var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
 
@@ -34,12 +49,6 @@ namespace CK.Setup
             InstanceConstructor( scope, endpointResult );
             CreateCommonDescriptors( scope, endpointResult );
 
-            scope.Append( "public override IReadOnlyList<DIContainerDefinition> ContainerDefinitions => _containerDefinitions;" ).NewLine()
-                 .Append( "public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;" ).NewLine()
-                 .Append( "public override IReadOnlyList<IDIContainer> Containers => _containers;" ).NewLine()
-                 .Append( "public override IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings => _ubiquitousMappings;" ).NewLine()
-                 .Append( "internal void SetGlobalContainer( IServiceProvider g ) => _global = g;" ).NewLine();
-            
             return CSCodeGenerationResult.Success;
         }
 
@@ -109,7 +118,7 @@ namespace CK.Setup
                         oGetter = $"front{e.MappingIndex}";
                         sharedPart.Append( "Func<IServiceProvider,object> " ).Append( (string)oGetter )
                                   .Append( " = sp => ((" ).AppendGlobalTypeName( defaultProvider.ProviderType )
-                                  .Append( "?)CK.StObj.EndpointHelper.GetGlobalProvider(sp).GetService( " ).AppendTypeOf( defaultProvider.Provider.ClassType )
+                                  .Append( "?)DIContainerHub_CK.GlobalServices.GetService( " ).AppendTypeOf( defaultProvider.Provider.ClassType )
                                   .Append( " )!).Default;" ).NewLine();
                         sharedPart.Memory.Add( defaultProvider.Provider.ClassType, oGetter );
                     }

@@ -45,8 +45,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             globalServiceProvider = globalConfiguration.BuildServiceProvider();
 
             // HostedServiceLifetimeTrigger constructor.
-            var theEPTM = ((DIContainerHub_CK)globalServiceProvider.GetRequiredService<DIContainerHub>());
-            theEPTM.SetGlobalContainer( globalServiceProvider );
+            DIContainerHub_CK.SetGlobalServices( globalServiceProvider );
 
             // 3 - From now on, on demand (this is lazily initialized), the DIContainers are able to expose their
             //     own DI container.
