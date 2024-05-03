@@ -75,7 +75,8 @@ namespace CK.Setup
             Throw.DebugAssert( t.IsInterface && t.IsVisible &&  (rawKind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco );
             if( (rawKind & CKTypeKind.IsDefiner) != 0 )
             {
-                _definers.Add( t );
+                // Keep IPoco itself exclusion exception here.
+                if( t != typeof(IPoco) ) _definers.Add( t );
                 return null;
             }
             if( !_all.TryGetValue( t, out var p ) )
