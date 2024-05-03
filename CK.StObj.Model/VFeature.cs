@@ -4,7 +4,10 @@ using System;
 namespace CK.Core
 {
     /// <summary>
-    /// Very simple model of a "feature": a non empty name associated to a <see cref="SVersion"/>. 
+    /// Very simple model of a "feature": a non empty name associated to a <see cref="SVersion"/>.
+    /// <para>
+    /// This supports a total order (<see cref="Name"/> is case insensitive).
+    /// </para>
     /// </summary>
     public readonly struct VFeature : IEquatable<VFeature>, IComparable<VFeature>
     {
@@ -40,7 +43,7 @@ namespace CK.Core
         /// <summary>
         /// Gets whether this instance is valid: both <see cref="Name"/> and <see cref="Version"/> are valid.
         /// </summary>
-        public bool IsValid => Name != null;
+        public bool IsValid => _name != null;
 
         /// <summary>
         /// Compares this instance to another: <see cref="Name"/> and descending <see cref="Version"/> are
@@ -55,7 +58,7 @@ namespace CK.Core
                 return other.IsValid ? -1 : 0;
             }
             if( !other.IsValid ) return 1;
-            int cmp = StringComparer.OrdinalIgnoreCase.Compare( Name, other.Name );
+            int cmp = StringComparer.OrdinalIgnoreCase.Compare( _name, other._name );
             return cmp != 0 ? cmp : other.Version.CompareTo( Version );
         }
 
@@ -77,14 +80,14 @@ namespace CK.Core
         /// Returns a hash based on <see cref="Name"/> and <see cref="Version"/>.
         /// </summary>
         /// <returns>The has code.</returns>
-        public override int GetHashCode() => IsValid ? Version.GetHashCode() ^ Name.GetHashCode( StringComparison.Ordinal ) : 0;
+        public override int GetHashCode() => IsValid ? _version.GetHashCode() ^ _name.GetHashCode( StringComparison.Ordinal ) : 0;
 
         /// <summary>
         /// Overridden to return <see cref="Name"/>/<see cref="Version"/> or the empty string
         /// if <see cref="IsValid"/> is false.
         /// </summary>
         /// <returns>A readable string.</returns>
-        public override string ToString() => IsValid ? $"{Name}/{Version}" : String.Empty;
+        public override string ToString() => IsValid ? $"{_name}/{_version}" : string.Empty;
 
         /// <summary>
         /// Simple parse of the "Name/Version" format that may return an invalid
