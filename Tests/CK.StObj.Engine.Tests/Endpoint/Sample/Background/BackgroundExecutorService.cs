@@ -33,6 +33,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             return tcs.Task;
         }
 
+        public Action<IServiceProvider>? CheckBackgroundServices { get; set; }
+
         /// <summary>
         /// Absolutely no protection here. This is JUST for tests!
         /// </summary>
@@ -55,8 +57,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 using( monitor.StartDependentActivity( cmd.CorrelationId, alwaysOpenGroup: true ) )
                 {
                     var data = new BackgroundDIContainerDefinition.Data( cmd.AmbientServiceHub, monitor );
-                    using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
+                    await using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
                     {
+                        CheckBackgroundServices?.Invoke( scope.ServiceProvider );
                         try
                         {
                             ISampleCommandProcessor executor;

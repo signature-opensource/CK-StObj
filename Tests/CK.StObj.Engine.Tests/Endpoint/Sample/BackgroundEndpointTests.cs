@@ -54,6 +54,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             // BackgroundExecutorService is a singleton. We can retrieve it from the root services.
             var backExecutor = endpointServices.GetRequiredService<BackgroundExecutorService>();
+            backExecutor.CheckBackgroundServices = sp =>
+            {
+                var iTenantInfo = sp.GetService( typeof( IFakeTenantInfo  ) );
+                var cTenantInfo = sp.GetService( typeof(FakeTenantInfo) );
+                var ambientHub = sp.GetService( typeof( AmbientServiceHub ) );
+
+                ambientHub.Should().NotBeNull();
+                iTenantInfo.Should().NotBeNull();
+                cTenantInfo.Should().NotBeNull();
+                iTenantInfo.Should().BeSameAs( cTenantInfo );
+            };
             backExecutor.Start();
 
             // Background execution of a request.
