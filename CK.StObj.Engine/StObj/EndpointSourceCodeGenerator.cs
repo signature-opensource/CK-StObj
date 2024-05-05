@@ -195,6 +195,15 @@ namespace CK.Setup
                         services.AddRange( defaults.Skip( idx ).Take( other - idx ) );
                     }
                 }
+                // Intrinsic AmbientServiceHub.
+                if( isFrontEndpoint )
+                {
+                    services.Add( new ServiceDescriptor( typeof( AmbientServiceHub ), sp => new AmbientServiceHub_CK( sp ), ServiceLifetime.Scoped ) );
+                }
+                else
+                {
+                    services.Add( new ServiceDescriptor( typeof( AmbientServiceHub ), ScopeDataHolder.GetAmbientServiceHub, ServiceLifetime.Scoped ) );
+                }
                 return true;
 
                 static IEnumerable<(int, DIContainerHub.AmbientServiceMapping, int)> GetMappingsRange()

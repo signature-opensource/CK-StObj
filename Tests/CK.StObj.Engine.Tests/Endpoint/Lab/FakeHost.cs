@@ -25,8 +25,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         // Mimics the code executed at startup based on the Fake objects.
         public static IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
-                                                                                                        IServiceCollection globalConfiguration,
-                                                                                                        out IServiceProvider? globalServiceProvider )
+                                                                                                              IServiceCollection globalConfiguration,
+                                                                                                              out IServiceProvider? globalServiceProvider )
         {
             // 1 - This is the AddStObjMap work. The StObjMap is from the StObj assembly or it's an embedded map:
             //     anyway, we have an instance.
@@ -37,6 +37,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 globalServiceProvider = null;
                 return null;
             }
+
             // 2 - Once the global DI container is built, the code generated HostedServiceLifetimeTrigger sets the global
             //     container on THE DIContainerHub from its constructor: the HostedServiceLifetimeTrigger
             //     is a regular IHostedService, ISingletonAutoService that takes the global IServiceProvider in its constructor.

@@ -149,6 +149,7 @@ namespace CK.Setup
             {
                 _endpointServices[t] = updated.ToAutoServiceKind();
                 if( (updated & CKTypeKind.IsAmbientService) != 0
+                    && t != typeof( AmbientServiceHub )
                     && !_ambientServices.Contains( t ) )
                 {
                     _ambientServices.Add( t );
@@ -414,7 +415,7 @@ namespace CK.Setup
                                 if( (k & CKTypeKind.IsEndpointService) != 0 )
                                 {
                                     _endpointServices.Add( t, k.ToAutoServiceKind() );
-                                    if( (k & CKTypeKind.IsAmbientService) != 0 )
+                                    if( (k & CKTypeKind.IsAmbientService) != 0 && t != typeof( AmbientServiceHub ) )
                                     {
                                         _ambientServices.Add( t );
                                     }

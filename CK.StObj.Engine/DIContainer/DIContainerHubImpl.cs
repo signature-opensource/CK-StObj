@@ -77,16 +77,12 @@ namespace CK.Setup
             {
                 DIContainerHub.AmbientServiceMapping e = endpointResult.AmbientServiceMappings[i];
                 if( i > 0 ) scope.Append( "," ).NewLine();
-                scope.Append( "new AmbientServiceMapping( " ).AppendTypeOf( e.AmbientServiceType ).Append( "," ).Append( e.MappingIndex ).Append( "," ).Append( e.IsIntrinsic ).Append( ")" );
+                scope.Append( "new AmbientServiceMapping(" ).AppendTypeOf( e.AmbientServiceType ).Append( "," ).Append( e.MappingIndex ).Append( ")" );
             }
             scope.Append( ");" ).NewLine();
 
             var sharedPart = scope.CreatePart();
-            scope.Append( """
-                          _ambientServiceBackendDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
-                          new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( AmbientServiceHub ), CK.StObj.ScopeDataHolder.GetAmbientServiceHub, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
-
-                          """ );
+            scope.Append( "_ambientServiceBackendDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
             foreach( var e in endpointResult.AmbientServiceMappings )
             {
                 if( !sharedPart.Memory.TryGetValue( e.MappingIndex, out var oGetter ) )
@@ -103,11 +99,8 @@ namespace CK.Setup
             }
             scope.Append( "};" ).NewLine();
 
-            scope.Append( """
-                          _ambientServiceEndpointDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
-                          new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( AmbientServiceHub ), sp => new AmbientServiceHub_CK( sp ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
-
-                          """ ).NewLine();
+            sharedPart = scope.CreatePart();
+            scope.Append( "_ambientServiceEndpointDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
             foreach( var e in endpointResult.AmbientServiceMappings )
             {
                 var defaultProvider = endpointResult.DefaultAmbientServiceValueProviders[e.MappingIndex];

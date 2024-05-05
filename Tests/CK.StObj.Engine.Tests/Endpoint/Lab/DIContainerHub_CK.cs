@@ -45,23 +45,20 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
             _containerDefinitions = new DIContainerDefinition[] { new FakeBackDIContainerDefinition_CK() };
             _ambientMappings = ImmutableArray.Create(
-                // Intrinsic.
-                new AmbientServiceMapping( typeof( AmbientServiceHub ), 0, true ),
                 // IFakeTenantInfo is an auto service: the inheritance chain is analyzed, they share the same index.
-                new AmbientServiceMapping( typeof( IFakeTenantInfo ), 1, false ),
-                new AmbientServiceMapping( typeof( FakeTenantInfo ), 1, false ),
+                new AmbientServiceMapping( typeof( IFakeTenantInfo ), 0 ),
+                new AmbientServiceMapping( typeof( FakeTenantInfo ), 0 ),
                 // Not an auto service: autonmous entries.
-                new AmbientServiceMapping( typeof( IFakeAuthenticationInfo ), 2, false ),
-                new AmbientServiceMapping( typeof( FakeAuthenticationInfo ), 3, false ),
+                new AmbientServiceMapping( typeof( IFakeAuthenticationInfo ), 1 ),
+                new AmbientServiceMapping( typeof( FakeAuthenticationInfo ), 2 ),
                 // Single entry.
-                new AmbientServiceMapping( typeof( FakeCultureInfo ), 4, false )
+                new AmbientServiceMapping( typeof( FakeCultureInfo ), 3 )
             );
-            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
-            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetAmbientService( sp, 2 );
-            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetAmbientService( sp, 3 );
-            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetAmbientService( sp, 4 );
+            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetAmbientService( sp, 0 );
+            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
+            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetAmbientService( sp, 2 );
+            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetAmbientService( sp, 3 );
             _ambientServiceBackendDescriptors = new ServiceDescriptor[] {
-                    new ServiceDescriptor( typeof( AmbientServiceHub ), ScopeDataHolder.GetAmbientServiceHub, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeAuthenticationInfo), back1, ServiceLifetime.Scoped ),
@@ -74,7 +71,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Func<IServiceProvider, object> front1 = sp => ((IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
             Func<IServiceProvider, object> front3 = sp => ((IEndpointUbiquitousServiceDefault<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
             _ambientServiceEndpointDescriptors = new ServiceDescriptor[] {
-                    new ServiceDescriptor( typeof( AmbientServiceHub ), sp => new AmbientServiceHub_CK( sp ), ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), front0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeAuthenticationInfo), front1, ServiceLifetime.Scoped ),

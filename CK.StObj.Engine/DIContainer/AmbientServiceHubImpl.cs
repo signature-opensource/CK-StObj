@@ -27,16 +27,11 @@ namespace CK.Setup
                  .Append( "entries = DIContainerHub_CK._ambientMappings;" ).NewLine()
                  .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
-            foreach( var (type, index, isIntrinsic) in mappings )
+            foreach( var (type, index) in mappings )
             {
                 if( current == index ) continue;
                 current = index;
-                if( isIntrinsic )
-                {
-                    scope.Append( "default, // " ).Append( type.Name );
-                }
-                else scope.Append( "new Mapper( Required( services, " ).AppendTypeOf( type ).Append( " ) )," );
-                scope.NewLine();
+                scope.Append( "new Mapper( Required( services, " ).AppendTypeOf( type ).Append( " ) )," ).NewLine();
             }
             scope.Append( "};" ).NewLine()
                  .Append( """

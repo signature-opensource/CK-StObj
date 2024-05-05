@@ -109,8 +109,8 @@ namespace CK.Setup
                 contexts.Add( new DIContainerInfo( d, rName, attr.Kind, scopeDataType ) );
             }
             return new DIContainerAnalysisResult( (IReadOnlyList<DIContainerInfo>?)contexts ?? Array.Empty<DIContainerInfo>(),
-                                       kindDetector.EndpointServices,
-                                       kindDetector.AmbientServices );
+                                                   kindDetector.EndpointServices,
+                                                   kindDetector.AmbientServices );
         }
 
         internal bool BuildAmbientServiceMappingsAndCheckDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services )
@@ -130,8 +130,8 @@ namespace CK.Setup
                 var auto = services.ToLeaf( t );
                 if( auto != null )
                 {
-                    // AmbientServiceHub is intrinsic.
-                    bool isIntrinsic = t == typeof( AmbientServiceHub );
+                    // AmbientServiceHub is excluded from the ambient service list.
+                    Throw.DebugAssert( t != typeof( AmbientServiceHub ) );
                     // We check that if more than one default value provider exists,
                     // they are the same final type.
                     IDIContainerAnalysisResult.AmbientServiceDefault? defaultProvider = null;
@@ -139,36 +139,29 @@ namespace CK.Setup
                     // from most abstract to leaf type here.
                     foreach( var m in auto.UniqueMappings )
                     {
-                        _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( m, current, isIntrinsic ) );
+                        _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( m, current ) );
                         ambientServiceTypes.Remove( m );
-                        if( !isIntrinsic && !FindSameDefaultProvider( monitor, services, m, ref defaultProvider ) )
+                        if( !FindSameDefaultProvider( monitor, services, m, ref defaultProvider ) )
                         {
                             success = false;
                         }
                     }
-                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( auto.ClassType, current, isIntrinsic ) );
+                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( auto.ClassType, current ) );
                     ambientServiceTypes.Remove( auto.ClassType );
-                    if( isIntrinsic )
+                    if( !FindSameDefaultProvider( monitor, services, t, ref defaultProvider ) )
                     {
-                        _ambienDefaults.Add( default );
+                        success = false;
+                    }
+                    else if( !defaultProvider.HasValue )
+                    {
+                        monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
+                                        $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '" )}'. " +
+                                        $"All ambient service must have a default value provider." );
+                        success = false;
                     }
                     else
                     {
-                        if( !FindSameDefaultProvider( monitor, services, t, ref defaultProvider ) )
-                        {
-                            success = false;
-                        }
-                        else if( !defaultProvider.HasValue )
-                        {
-                            monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
-                                           $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '" )}'. " +
-                                           $"All ambient service must have a default value provider." );
-                            success = false;
-                        }
-                        else
-                        {
-                            _ambienDefaults.Add( defaultProvider.Value );
-                        }
+                        _ambienDefaults.Add( defaultProvider.Value );
                     }
                 }
                 else
@@ -182,7 +175,7 @@ namespace CK.Setup
                     {
                         success = false;
                     }
-                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( t, current, false ) );
+                    _ambientMappings.Add( new DIContainerHub.AmbientServiceMapping( t, current ) );
                     ambientServiceTypes.RemoveAt( ambientServiceTypes.Count - 1 );
                 }
                 ++current;

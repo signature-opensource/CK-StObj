@@ -14,7 +14,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             entries = DIContainerHub_CK._ambientMappings;
             return new Mapper[] {
-                default, // AmbientServiceHub
                 new Mapper( Required( services, typeof(IFakeTenantInfo) ) ),
                 new Mapper( Required( services, typeof(IFakeAuthenticationInfo) ) ),
                 new Mapper( Required( services, typeof(FakeAuthenticationInfo) ) ),
