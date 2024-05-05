@@ -402,6 +402,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var ubiqWithCulture = ubiq.CleanClone();
             ubiqWithCulture.IsLocked.Should().BeFalse();
             ubiqWithCulture.Override( new FakeCultureInfo( "en" ) );
+            ubiqWithCulture.IsDirty.Should().BeTrue();
             using var scopedDiffCulture = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithCulture, TestHelper.Monitor ) );
             var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withEnCulture.AuthInfo.UserName.Should().Be( "Bob" );
@@ -410,7 +411,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             // IFakeAuthentication is NOT a IAutoService:
             // We MUST manually handle the registrations... And we can do very bad things!
-            var ubiqWithAlice = ubiq.CleanClone();
+            var ubiqWithAlice = ubiq.CleanClone( restoreInitialValues: true );
             ubiqWithAlice.Override( new FakeAuthenticationInfo( "Alice (class)", 3712 ) );
             ubiqWithAlice.Override( typeof(IFakeAuthenticationInfo), new FakeAuthenticationInfo( "Alice (interface)", 3712 ) );
             using var scopedForAlice = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
@@ -423,24 +424,35 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             // IFakeTenantInfo is an auto service and this is really safer: overriding the class,
             // automatically correctly associates the interface.
-            var ubiqWithTenant = ubiq.CleanClone();
+            var ubiqWithTenant = ubiq.CleanClone( restoreInitialValues: true );
             ubiqWithTenant.IsLocked.Should().BeFalse();
             ubiqWithTenant.Override( new FakeTenantInfo( "AnotherTenant" ) );
             using var scopedDiffTenant = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenant, TestHelper.Monitor ) );
-            var withEnTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-            withEnTenant.AuthInfo.UserName.Should().Be( "Bob" );
-            withEnTenant.CultureInfo.Culture.Should().Be( "fr" );
-            withEnTenant.TenantInfo.Name.Should().Be( "AnotherTenant" );
+            var withTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
+            withTenant.AuthInfo.UserName.Should().Be( "Bob" );
+            withTenant.CultureInfo.Culture.Should().Be( "fr" );
+            withTenant.TenantInfo.Name.Should().Be( "AnotherTenant" );
 
             // And overriding the interface, sets the class.
-            var ubiqWithTenantByI = ubiq.CleanClone();
+            var ubiqWithTenantByI = ubiq.CleanClone( restoreInitialValues: true );
             ubiqWithTenantByI.IsLocked.Should().BeFalse();
             ubiqWithTenantByI.Override( typeof(IFakeTenantInfo), new FakeTenantInfo( "AnotherTenant" ) );
             using var scopedDiffTenantByI = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByI, TestHelper.Monitor ) );
-            var withEnTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-            withEnTenantByI.AuthInfo.UserName.Should().Be( "Bob" );
-            withEnTenantByI.CultureInfo.Culture.Should().Be( "fr" );
-            withEnTenantByI.TenantInfo.Name.Should().Be( "AnotherTenant" );
+            var withTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
+            withTenantByI.AuthInfo.UserName.Should().Be( "Bob" );
+            withTenantByI.CultureInfo.Culture.Should().Be( "fr" );
+            withTenantByI.TenantInfo.Name.Should().Be( "AnotherTenant" );
+
+            var ubiqWithTenantByIAndEn = ubiqWithTenantByI.CleanClone( restoreInitialValues: false );
+            ubiqWithTenantByIAndEn.IsDirty.Should().BeFalse();
+            ubiqWithTenantByIAndEn.Override( new FakeCultureInfo( "en" ) );
+            ubiqWithTenantByIAndEn.IsDirty.Should().BeTrue();
+            using var scopedTenantByIAndEn = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByIAndEn, TestHelper.Monitor ) );
+            var withTenantByIAndEn = scopedTenantByIAndEn.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
+            withTenantByIAndEn.AuthInfo.UserName.Should().Be( "Bob" );
+            withTenantByIAndEn.CultureInfo.Culture.Should().Be( "en" );
+            withTenantByIAndEn.TenantInfo.Name.Should().Be( "AnotherTenant" );
+
         }
 
 

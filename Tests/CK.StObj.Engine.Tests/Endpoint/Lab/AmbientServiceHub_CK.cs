@@ -33,13 +33,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ambientMappings ) { }
 
-        public override AmbientServiceHub CleanClone()
+        public override AmbientServiceHub CleanClone( bool restoreInitialValues = false )
         {
             var c = (Mapper[])_mappers.Clone();
             for( int i = 0; i < c.Length; i++ )
             {
                 ref var m = ref c[i];
-                m.Current = m.Initial;
+                if( restoreInitialValues ) m.Current = m.Initial;
+                else m.Initial = m.Current;
             }
             return new AmbientServiceHub_CK( c );
         }

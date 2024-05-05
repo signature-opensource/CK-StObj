@@ -429,6 +429,7 @@ namespace CK.Setup
                 {
                     using( monitor.OpenInfo( "Calling StObjConstruct." ) )
                     {
+                        Throw.DebugAssert( sortResult.SortedItems != null );
                         foreach( ISortedItem sorted in sortResult.SortedItems )
                         {
                             var m = (MutableItem)sorted.Item;

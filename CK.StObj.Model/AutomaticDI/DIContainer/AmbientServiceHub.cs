@@ -22,7 +22,7 @@ namespace CK.Core
             /// <summary>
             /// Initial service instance.
             /// </summary>
-            public readonly object Initial;
+            public object Initial;
 
             /// <summary>
             /// Current service instance.
@@ -127,7 +127,7 @@ namespace CK.Core
         /// <summary>
         /// Locks these informations: this is called by <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
         /// so that instances cannot be changed anymore (Override throws).
-        /// If this must be reused for another container, use <see cref="CleanClone()"/>.
+        /// If this must be reused for another container, use <see cref="CleanClone(bool)"/>.
         /// </summary>
         public void Lock() => _locked = true;
 
@@ -137,9 +137,11 @@ namespace CK.Core
         public bool IsLocked => _locked;
 
         /// <summary>
-        /// Gets an unlocked clone with no overridden values.
+        /// Gets an unlocked clone.
+        /// By default, the current values becomes the initial ones of the returned clone.
         /// </summary>
-        public abstract AmbientServiceHub CleanClone();
+        /// <param name="restoreInitialValues">Optionally keeps the initial values.</param>
+        public abstract AmbientServiceHub CleanClone( bool restoreInitialValues = false );
 
         /// <summary>
         /// Overrides a ubiquitous resolution with an explicit instance.
