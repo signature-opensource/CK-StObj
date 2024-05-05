@@ -133,7 +133,7 @@ namespace CK.Setup
             internal static bool CheckAndNormalizeAmbientServices( IActivityMonitor monitor, IServiceCollection services, bool isFrontEndpoint )
             {
                 bool success = true;
-                var firstResolutions = new ServiceDescriptor?[DIContainerHub_CK._ubiquitousMappings.Length];
+                var firstResolutions = new ServiceDescriptor?[DIContainerHub_CK._ambientMappings.Length];
                 foreach( var d in services )
                 {
                     if( d.ServiceType == typeof( DIContainerHub ) || d.ServiceType == typeof( AmbientServiceHub ) )
@@ -143,7 +143,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        int idx = DIContainerHub_CK._ubiquitousMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
+                        int idx = DIContainerHub_CK._ambientMappings.IndexOf( m => m.AmbientServiceType == d.ServiceType );
                         if( idx >= 0 )
                         {
                             if( firstResolutions[idx] == null )
@@ -169,7 +169,7 @@ namespace CK.Setup
                         {
                             if( first != null )
                             {
-                                services.AddScoped( DIContainerHub_CK._ubiquitousMappings[i].AmbientServiceType, first );
+                                services.AddScoped( DIContainerHub_CK._ambientMappings[i].AmbientServiceType, first );
                             }
                         }
                         else
@@ -181,7 +181,7 @@ namespace CK.Setup
                                 {
                                     if( firstResolutions[before] == null )
                                     {
-                                        services.AddScoped( DIContainerHub_CK._ubiquitousMappings[before].AmbientServiceType, first );
+                                        services.AddScoped( DIContainerHub_CK._ambientMappings[before].AmbientServiceType, first );
                                     }
                                 }
                             }
@@ -199,13 +199,13 @@ namespace CK.Setup
 
                 static IEnumerable<(int, DIContainerHub.AmbientServiceMapping, int)> GetMappingsRange()
                 {
-                    int len = DIContainerHub_CK._ubiquitousMappings.Length;
+                    int len = DIContainerHub_CK._ambientMappings.Length;
                     for( int i = 0; i < len; )
                     {
-                        var m = DIContainerHub_CK._ubiquitousMappings[i];
+                        var m = DIContainerHub_CK._ambientMappings[i];
                         int start = i;
                         ++i;
-                        while( i < len && DIContainerHub_CK._ubiquitousMappings[i].MappingIndex == m.MappingIndex )
+                        while( i < len && DIContainerHub_CK._ambientMappings[i].MappingIndex == m.MappingIndex )
                         {
                             ++i;
                         }
@@ -660,7 +660,7 @@ namespace CK.Setup
                             }
                             else mappings.Add( d.ServiceType, new Mapping( false, null, d ) );
 
-                            bool isAmbientService = DIContainerHub_CK._ubiquitousMappings.Any( uD => uD.AmbientServiceType == d.ServiceType );
+                            bool isAmbientService = DIContainerHub_CK._ambientMappings.Any( uD => uD.AmbientServiceType == d.ServiceType );
                             if( !isAmbientService )
                             {
                                 if( d.Lifetime == ServiceLifetime.Singleton )

@@ -24,7 +24,7 @@ namespace CK.Setup
             scope.GeneratedByComment( "Constructor initializer" )
                  .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )" )
                  .OpenBlock()
-                 .Append( "entries = DIContainerHub_CK._ubiquitousMappings;" ).NewLine()
+                 .Append( "entries = DIContainerHub_CK._ambientMappings;" ).NewLine()
                  .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
             foreach( var (type, index, isIntrinsic) in mappings )
@@ -52,7 +52,7 @@ namespace CK.Setup
             scope.Append( """
                            internal object At( int index ) => _mappers[index].Current;
 
-                           AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ubiquitousMappings ) { }
+                           AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ambientMappings ) { }
 
                            public override AmbientServiceHub CleanClone()
                            {

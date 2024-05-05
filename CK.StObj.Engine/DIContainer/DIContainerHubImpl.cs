@@ -29,7 +29,7 @@ namespace CK.Setup
 
                 internal static readonly DIContainerDefinition[] _containerDefinitions;
                 internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;
-                internal static readonly ImmutableArray<AmbientServiceMapping> _ubiquitousMappings;
+                internal static readonly ImmutableArray<AmbientServiceMapping> _ambientMappings;
                 internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceEndpointDescriptors;
                 internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceBackendDescriptors;
 
@@ -39,7 +39,7 @@ namespace CK.Setup
                 public override IReadOnlyList<DIContainerDefinition> ContainerDefinitions => _containerDefinitions;
                 public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;
                 public override IReadOnlyList<IDIContainer> Containers => _containers;
-                public override IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings => _ubiquitousMappings;
+                public override IReadOnlyList<AmbientServiceMapping> AmbientServiceMappings => _ambientMappings;
 
                 """ );
 
@@ -72,7 +72,7 @@ namespace CK.Setup
             }
             scope.Append("};").NewLine();
 
-            scope.Append( "_ubiquitousMappings = ImmutableArray.Create<AmbientServiceMapping>( " ).NewLine();
+            scope.Append( "_ambientMappings = ImmutableArray.Create<AmbientServiceMapping>( " ).NewLine();
             for( int i = 0; i < endpointResult.AmbientServiceMappings.Count; i++ )
             {
                 DIContainerHub.AmbientServiceMapping e = endpointResult.AmbientServiceMappings[i];
