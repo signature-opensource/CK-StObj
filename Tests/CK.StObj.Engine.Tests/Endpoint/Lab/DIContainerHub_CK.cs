@@ -35,13 +35,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             _endpointServices = new Dictionary<Type, AutoServiceKind>()
             {
-                { typeof(IActivityMonitor), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IParallelLogger), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(FakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IFakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
-                { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
-                { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IActivityMonitor), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+                { typeof(IParallelLogger), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+                { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+                { typeof(FakeAuthenticationInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+                { typeof(IFakeTenantInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
+                { typeof(FakeTenantInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
+                { typeof(FakeCultureInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
             };
             _containerDefinitions = new DIContainerDefinition[] { new FakeBackDIContainerDefinition_CK() };
             _ambientMappings = ImmutableArray.Create(

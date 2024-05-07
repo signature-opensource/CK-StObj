@@ -11,7 +11,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
     }
 
-    [DIContainerDefinition( DIContainerKind.Backend )]
+    [DIContainerDefinition( DIContainerKind.Background )]
     abstract class FakeBackDIContainerDefinition : DIContainerDefinition<FakeBackDIContainerDefinition.Data>
     {
         // Required definition of the specialized ScopedData type.
@@ -36,7 +36,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // (if you like pain).
         // This enables the endpoint to inject new service types or override registrations of existing
         // services registered in the endpoint container.
-        public override void ConfigureEndpointServices( IServiceCollection services,
+        public override void ConfigureContainerServices( IServiceCollection services,
                                                         Func<IServiceProvider,Data> scopeData,
                                                         IServiceProviderIsService globalServiceExists )
         {

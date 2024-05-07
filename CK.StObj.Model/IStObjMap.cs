@@ -86,7 +86,7 @@ namespace CK.Core
         ///     The global and the common endpoint service collections are then configured with the real objects and auto services.
         ///     </item>
         ///     <item>
-        ///     Existing endpoints are initialized and build their own container, configured by their <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>.
+        ///     Existing endpoints are initialized and build their own container, configured by their <see cref="DIContainerDefinition{TScopeData}.ConfigureContainerServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>.
         ///     </item>
         /// </list>
         /// </summary>

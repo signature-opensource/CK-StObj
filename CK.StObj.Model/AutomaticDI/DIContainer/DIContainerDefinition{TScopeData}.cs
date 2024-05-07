@@ -13,7 +13,7 @@ namespace CK.Core
     /// <typeparam name="TScopeData">
     /// Type of the scoped data that is injected in <see cref="IDIContainerServiceProvider{TScopeData}"/>.
     /// Must be a nested <c>public sealed class Data : IScopedData</c> or <c>public sealed class Data : BackendScopedData</c> for
-    /// <see cref="DIContainerKind.Backend"/> containers.
+    /// <see cref="DIContainerKind.Background"/> containers.
     /// </typeparam>
     [CKTypeDefiner]
     public abstract class DIContainerDefinition<TScopeData> : DIContainerDefinition
@@ -39,7 +39,7 @@ namespace CK.Core
         /// <param name="services">Container to configure.</param>
         /// <param name="scopeData">Accessor to the current scoped data.</param>
         /// <param name="globalServiceExists">Provides a way to detect if a service is available.</param>
-        public abstract void ConfigureEndpointServices( IServiceCollection services,
+        public abstract void ConfigureContainerServices( IServiceCollection services,
                                                         Func<IServiceProvider,TScopeData> scopeData,     
                                                         IServiceProviderIsService globalServiceExists );
     }

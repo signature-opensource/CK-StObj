@@ -9,7 +9,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     /// Ambient services can be overridden in the hub before using its generated <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
     /// method.
     /// </summary>
-    [DIContainerDefinition( DIContainerKind.Backend )]
+    [DIContainerDefinition( DIContainerKind.Background )]
     public abstract class BackgroundDIContainerDefinition : DIContainerDefinition<BackgroundDIContainerDefinition.Data>
     {
         public sealed class Data : BackendScopedData
@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         }
 
-        public override void ConfigureEndpointServices( IServiceCollection services,
+        public override void ConfigureContainerServices( IServiceCollection services,
                                                         Func<IServiceProvider, Data> scopeData,
                                                         IServiceProviderIsService globalServiceExists )
         {

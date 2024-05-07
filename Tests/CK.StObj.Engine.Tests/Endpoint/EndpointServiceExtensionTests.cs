@@ -28,8 +28,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var r = TestHelper.GetSuccessfulResult( c ).EndpointResult;
             Debug.Assert( r != null );
             r.Containers.Should().HaveCount( 0 );
-            r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
+            r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped );
+            r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
         }
 
         [EndpointScopedService( isUbiquitousEndpointInfo: true )]

@@ -19,7 +19,7 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Gets whether this is a <see cref="DIContainerKind.Endpoint"/> or <see cref="DIContainerKind.Backend"/>
+        /// Gets whether this is a <see cref="DIContainerKind.Endpoint"/> or <see cref="DIContainerKind.Background"/>
         /// endpoint.
         /// </summary>
         public DIContainerKind Kind { get; }

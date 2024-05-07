@@ -9,11 +9,11 @@ namespace CK.Core
         /// This kind of containers are called from another container.
         /// <para>
         /// These containers don't need to know all the Ambient services that may exist in a system:
-        /// they are free to configure their instaances or to use the <see cref="IDIContainer.ScopeDataType"/>
+        /// they are free to configure their instances or to use the <see cref="IDIContainer.ScopeDataType"/>
         /// and the caller <see cref="AmbientServiceHub"/> to transfer the calling Ambient services.
         /// </para>
         /// </summary>
-        Backend,
+        Background,
 
         /// <summary>
         /// This kind of containers are called "out of the blue": no existing DI context exists, they must

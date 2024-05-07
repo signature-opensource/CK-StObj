@@ -6,7 +6,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
         public override string Name => "FakeBack";
 
-        public override DIContainerKind Kind => DIContainerKind.Backend;
+        public override DIContainerKind Kind => DIContainerKind.Background;
     }
 
 }

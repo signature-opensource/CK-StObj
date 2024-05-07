@@ -233,7 +233,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // Injected only if there is at least one DIContainer.
         internal static Dictionary<Type, Mapping> CreateInitialMapping( IActivityMonitor monitor,
                                                                         IServiceCollection global,
-                                                                        Func<Type, bool> isEndpointService )
+                                                                        Func<Type, bool> isContainerConfiguredService )
         {
             Dictionary<Type, Mapping> mappings = new Dictionary<Type, Mapping>();
             foreach( var d in global )
@@ -241,7 +241,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 var t = d.ServiceType;
                 // Skip any endpoint service and IHostedService.
                 // There's no need to have the IHostedService multiple service in any other container than the global one.
-                if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
+                if( isContainerConfiguredService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
                 {
                     continue;
                 }
@@ -357,10 +357,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // capture the implementation type.
             foreach( var s in stObjMap.Services.MappingList )
             {
-                bool isEndpointService = (s.AutoServiceKind & AutoServiceKind.IsEndpointService) != 0;
+                bool isContainerConfiguredService = (s.AutoServiceKind & AutoServiceKind.IsContainerConfiguredService) != 0;
                 if( s.IsScoped )
                 {
-                    if( isEndpointService )
+                    if( isContainerConfiguredService )
                     {
                         if( (s.AutoServiceKind & AutoServiceKind.IsAmbientService) == 0 )
                         {
@@ -375,7 +375,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 else
                 {
                     if( s.ClassType == typeof( DIContainerHub ) ) continue;
-                    if( isEndpointService )
+                    if( isContainerConfiguredService )
                     {
                         AddGlobalServiceMapping( global, s, ServiceLifetime.Singleton );
                     }
@@ -443,7 +443,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         internal static object GetAmbientServiceHub( IServiceProvider sp )
         {
             // See below.
-            return Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data ).AmbientServiceHub;
+            return Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data ).AmbientServiceHub!;
         }
 
         internal static object GetAmbientService( IServiceProvider sp, int index )
@@ -456,7 +456,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //      - the BackendScopedData inheritance is checked at setup time for Backend contexts.
             // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
             //   hidden accessor.
-            return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).AmbientServiceHub ).At( index );
+            return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).AmbientServiceHub! ).At( index );
         }
     }
 
@@ -534,7 +534,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateAsyncScope();
-                if( scopedData is DIContainerDefinition.BackendScopedData back ) back.AmbientServiceHub.Lock();
+                if( scopedData is DIContainerDefinition.BackendScopedData back ) CheckAndLockAmbientSeviceHub( back );
                 scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
@@ -542,9 +542,15 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             public IServiceScope CreateScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateScope();
-                if( scopedData is DIContainerDefinition.BackendScopedData back ) back.AmbientServiceHub.Lock();
+                if( scopedData is DIContainerDefinition.BackendScopedData back ) CheckAndLockAmbientSeviceHub( back );
                 scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
+            }
+
+            static void CheckAndLockAmbientSeviceHub( DIContainerDefinition.BackendScopedData back )
+            {
+                Throw.CheckState( "The AmbientServiceHub must be available when creating a Scope.", back.AmbientServiceHub is not null );
+                back.AmbientServiceHub.Lock();
             }
 
             public object? GetService( Type serviceType ) => _serviceProvider.GetService( serviceType );
@@ -572,7 +578,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var endpoint = new ServiceCollection();
 
             // Calls the user configuration.
-            _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
+            _definition.ConfigureContainerServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
             // Normalizes ambient services.
             if( !EndpointHelper.CheckAndNormalizeAmbientServices( monitor, endpoint, _definition.Kind == DIContainerKind.Endpoint ) )
             {
@@ -650,7 +656,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                             {
                                 if( autoMap is IStObjServiceClassDescriptor service )
                                 {
-                                    if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
+                                    if( (service.AutoServiceKind & AutoServiceKind.IsContainerConfiguredService) == 0 )
                                     {
                                         monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
                                         success = false;

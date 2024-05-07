@@ -51,8 +51,8 @@ namespace CK.Setup
         /// <inheritdoc cref="AutoServiceKind.IsRealObject"/>
         IsRealObject = AutoServiceKind.IsRealObject,
 
-        /// <inheritdoc cref="AutoServiceKind.IsEndpointService"/>
-        IsEndpointService = AutoServiceKind.IsEndpointService,
+        /// <inheritdoc cref="AutoServiceKind.IsContainerConfiguredService"/>
+        IsContainerConfiguredService = AutoServiceKind.IsContainerConfiguredService,
 
         /// <inheritdoc cref="AutoServiceKind.IsAmbientService"/>
         IsAmbientService = AutoServiceKind.IsAmbientService,
@@ -85,9 +85,9 @@ namespace CK.Setup
 
         /// <summary>
         /// The <see cref="CKTypeKind.IsAmbientService"/> and its implied flags:
-        /// IsEndpointService | IsScoped
+        /// IsContainerConfiguredService | IsScoped
         /// </summary>
-        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
+        public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
@@ -158,7 +158,7 @@ namespace CK.Setup
             bool isSingleton = (k & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (k & CKTypeKind.IsRealObject) != 0;
             bool isPoco = (k & CKTypeKind.IsPoco) != 0;
-            bool isEndPoint = (k & CKTypeKind.IsEndpointService) != 0;
+            bool isEndPoint = (k & CKTypeKind.IsContainerConfiguredService) != 0;
             bool isMultiple = (k & CKTypeKind.IsMultipleService) != 0;
             bool isAmbient = (k & CKTypeKind.IsAmbientService) != 0;
 

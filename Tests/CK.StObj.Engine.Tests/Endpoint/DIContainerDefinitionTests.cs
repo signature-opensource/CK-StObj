@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services,
+            public override void ConfigureContainerServices( IServiceCollection services,
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
@@ -38,7 +38,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services,
+            public override void ConfigureContainerServices( IServiceCollection services,
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             return new object[] { endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>() }; 
         }
 
-        [DIContainerDefinition( DIContainerKind.Backend )]
+        [DIContainerDefinition( DIContainerKind.Background )]
         public abstract class NoWay1Definition : BackdoorDIContainerDefinition
         {
         }
@@ -118,7 +118,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         }
 
-        [DIContainerDefinition( DIContainerKind.Backend )]
+        [DIContainerDefinition( DIContainerKind.Background )]
         public abstract class Dup1DIContainerDefinition : DIContainerDefinition<Dup1DIContainerDefinition.Data>
         {
             public sealed class Data : BackendScopedData
@@ -130,7 +130,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        [DIContainerDefinition( DIContainerKind.Backend )]
+        [DIContainerDefinition( DIContainerKind.Background )]
         public abstract class Dup2DIContainerDefinition : DIContainerDefinition<Dup1DIContainerDefinition.Data>
         {
             public sealed class Data : BackendScopedData
@@ -181,7 +181,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         }
 
-        [DIContainerDefinition( DIContainerKind.Backend )]
+        [DIContainerDefinition( DIContainerKind.Background )]
         public abstract class BadBackDataDIContainerDefinition : DIContainerDefinition<BadBackDataDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData

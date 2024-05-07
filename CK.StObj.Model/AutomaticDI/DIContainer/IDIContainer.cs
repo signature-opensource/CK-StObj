@@ -21,13 +21,13 @@ namespace CK.Core
         string Name { get; }
 
         /// <summary>
-        /// Gets the singletons services that have been configured by the <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>
+        /// Gets the singletons services that have been configured by the <see cref="DIContainerDefinition{TScopeData}.ConfigureContainerServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>
         /// method that are specific to this container.
         /// </summary>
         IReadOnlyCollection<Type> SpecificSingletonServices { get; }
 
         /// <summary>
-        /// Gets the scoped services that have been configured by the <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>
+        /// Gets the scoped services that have been configured by the <see cref="DIContainerDefinition{TScopeData}.ConfigureContainerServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>
         /// method that are specific to this container.
         /// </summary>
         IReadOnlyCollection<Type> SpecificScopedServices { get; }

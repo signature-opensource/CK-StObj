@@ -33,15 +33,15 @@ namespace CK.Setup
         // The IsProcessService reason is an external definition.
         const CKTypeKind IsProcessServiceReasonExternal = (CKTypeKind)(PrivateStart << 6);
 
-        // The IsEndpoint reason is an external definition.
-        const CKTypeKind IsEndpointServiceReasonExternal = (CKTypeKind)(PrivateStart << 7);
+        // The IsContainerConfigured reason is an external definition.
+        const CKTypeKind IsContainerConfiguredServiceReasonExternal = (CKTypeKind)(PrivateStart << 7);
 
         // The IsMultiple reason is an external definition.
         const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 8);
 
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
-        readonly Dictionary<Type, AutoServiceKind> _endpointServices;
+        readonly Dictionary<Type, AutoServiceKind> _containerConfiguredServices;
         readonly List<Type> _ambientServices;
 
         /// <summary>
@@ -51,19 +51,19 @@ namespace CK.Setup
         public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
-            _endpointServices = new Dictionary<Type, AutoServiceKind>();
+            _containerConfiguredServices = new Dictionary<Type, AutoServiceKind>();
             _typeFilter = typeFilter;
             _ambientServices = new List<Type>();
         }
 
         /// <summary>
-        /// Gets all the types that have been declared as endpoint services.
+        /// Gets all the types that have been declared as container configured services.
         /// <para>
         /// Some of these types may appear only here since totally external types (interfaces or classes)
-        /// can be declared as endpoint services.
+        /// can be declared as container configured services.
         /// </para>
         /// </summary>
-        public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
+        public IReadOnlyDictionary<Type, AutoServiceKind> ContainerConfiguredServices => _containerConfiguredServices;
 
         /// <summary>
         /// Gets the ubiquitous types. These are endpoint services that are available from all endpoints
@@ -74,7 +74,7 @@ namespace CK.Setup
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
         /// <para>
-        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits mus be set
+        /// If the <see cref="AutoServiceKind.IsContainerConfiguredService"/> bit set, one of the lifetime bits mus be set
         /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>).
         /// </para>
         /// <para>
@@ -100,11 +100,11 @@ namespace CK.Setup
             }
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
             bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
-            bool hasEndpoint = (kind & AutoServiceKind.IsEndpointService) != 0;
+            bool hasContainerConfigured = (kind & AutoServiceKind.IsContainerConfiguredService) != 0;
 
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
-            if( hasEndpoint ) k |= IsEndpointServiceReasonExternal;
+            if( hasContainerConfigured ) k |= IsContainerConfiguredServiceReasonExternal;
 
             return SetLifetimeOrProcessType( monitor, t, k );
         }
@@ -145,9 +145,9 @@ namespace CK.Setup
             }
 
             _cache[t] = updated;
-            if( (updated & CKTypeKind.IsEndpointService) != 0 )
+            if( (updated & CKTypeKind.IsContainerConfiguredService) != 0 )
             {
-                _endpointServices[t] = updated.ToAutoServiceKind();
+                _containerConfiguredServices[t] = updated.ToAutoServiceKind();
                 if( (updated & CKTypeKind.IsAmbientService) != 0
                     && t != typeof( AmbientServiceHub )
                     && !_ambientServices.Contains( t ) )
@@ -253,7 +253,7 @@ namespace CK.Setup
                         else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
                         else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | CKTypeKind.IsDefiner;
                         else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsSingleton | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
-                        else if( t == typeof( IAmbientAutoService ) ) k = CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t == typeof( IAmbientAutoService ) ) k = CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
                         else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | CKTypeKind.IsDefiner;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.
@@ -355,11 +355,11 @@ namespace CK.Setup
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                             if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
-                            if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
+                            if( isEndpointSingleton ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsSingleton;
                             if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
                             if( hasDefiner ) k |= CKTypeKind.IsDefiner;
-                            if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
-                            else if( isEndpointScoped ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
+                            if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
+                            else if( isEndpointScoped ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
 
                             // Final check if the type filter has not excluded the type.
                             // We may be IAutoService or a IPoco or... whatever: any combination error will be detected.
@@ -382,11 +382,11 @@ namespace CK.Setup
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
-                                else if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                else if( (k & CKTypeKind.IsContainerConfiguredService) != 0 )
                                 {
                                     if( !isPublic )
                                     {
-                                        k &= ~CKTypeKind.IsEndpointService;
+                                        k &= ~CKTypeKind.IsContainerConfiguredService;
                                         m.Info( $"Type '{t:N}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
                                     }
                                 }
@@ -412,9 +412,9 @@ namespace CK.Setup
                                     }
                                 }
                                 // Registers special services: endpoints and ambient: ignores the processwide singleton services.
-                                if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                if( (k & CKTypeKind.IsContainerConfiguredService) != 0 )
                                 {
-                                    _endpointServices.Add( t, k.ToAutoServiceKind() );
+                                    _containerConfiguredServices.Add( t, k.ToAutoServiceKind() );
                                     if( (k & CKTypeKind.IsAmbientService) != 0 && t != typeof( AmbientServiceHub ) )
                                     {
                                         _ambientServices.Add( t );

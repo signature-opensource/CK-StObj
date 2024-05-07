@@ -71,7 +71,7 @@ namespace CK.Setup
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>.
         /// <para>
-        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits must be set
+        /// If the <see cref="AutoServiceKind.IsContainerConfiguredService"/> bit set, one of the lifetime bits must be set
         /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>).
         /// </para>
         /// <para>

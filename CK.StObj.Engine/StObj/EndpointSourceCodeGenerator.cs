@@ -368,10 +368,10 @@ namespace CK.Setup
                 // capture the implementation type.
                 foreach( var s in stObjMap.Services.MappingList )
                 {
-                    bool isEndpointService = (s.AutoServiceKind & AutoServiceKind.IsEndpointService) != 0;
+                    bool isContainerConfiguredService = (s.AutoServiceKind & AutoServiceKind.IsContainerConfiguredService) != 0;
                     if( s.IsScoped )
                     {
-                        if( isEndpointService )
+                        if( isContainerConfiguredService )
                         {
                             if( (s.AutoServiceKind & AutoServiceKind.IsAmbientService) == 0 )
                             {
@@ -386,7 +386,7 @@ namespace CK.Setup
                     else
                     {
                         if( s.ClassType == typeof( DIContainerHub ) ) continue;
-                        if( isEndpointService )
+                        if( isContainerConfiguredService )
                         {
                             AddGlobalServiceMapping( global, s, ServiceLifetime.Singleton );
                         }
@@ -449,7 +449,7 @@ namespace CK.Setup
             """
             internal static Dictionary<Type, Mapping> CreateInitialMapping( IActivityMonitor monitor,
                                                                             IServiceCollection global,
-                                                                            Func<Type, bool> isEndpointService )
+                                                                            Func<Type, bool> isContainerConfiguredService )
             {
                 Dictionary<Type, Mapping> mappings = new Dictionary<Type, Mapping>();
                 foreach( var d in global )
@@ -457,7 +457,7 @@ namespace CK.Setup
                     var t = d.ServiceType;
                     // Skip any endpoint service and IHostedService.
                     // There's no need to have the IHostedService multiple service in any other container than the global one.
-                    if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
+                    if( isContainerConfiguredService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
                     {
                         continue;
                     }
@@ -624,7 +624,7 @@ namespace CK.Setup
                     var endpoint = new ServiceCollection();
 
                     // Calls the user configuration.
-                    _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
+                    _definition.ConfigureContainerServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
                     // Normalizes ubiquitous services.
                     if( !EndpointHelper.CheckAndNormalizeAmbientServices( monitor, endpoint, _definition.Kind == DIContainerKind.Endpoint ) )
                     {
@@ -702,7 +702,7 @@ namespace CK.Setup
                                     {
                                         if( autoMap is IStObjServiceClassDescriptor service )
                                         {
-                                            if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
+                                            if( (service.AutoServiceKind & AutoServiceKind.IsContainerConfiguredService) == 0 )
                                             {
                                                 monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
                                                 success = false;

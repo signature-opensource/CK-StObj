@@ -47,7 +47,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 }
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services, Func<IServiceProvider, Data> scopeData, IServiceProviderIsService globalServiceExists )
+            public override void ConfigureContainerServices( IServiceCollection services, Func<IServiceProvider, Data> scopeData, IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor>( sp => scopeData( sp )._monitor );
                 services.AddScoped<IParallelLogger>( sp => scopeData( sp )._monitor.ParallelLogger );

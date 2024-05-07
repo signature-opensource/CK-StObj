@@ -49,19 +49,19 @@ namespace CK.Core
         IsRealObject = 1 << 10,
 
         /// <summary>
-        /// The type is a DI service available in some endpoint contexts but not necessarily in all of them.
+        /// The type is a DI service available in some containers but not necessarily in all of them.
         /// <para>
-        /// It is up to each <see cref="DIContainerDefinition{TScopeData}.ConfigureEndpointServices"/> to register
+        /// It is up to each <see cref="DIContainerDefinition{TScopeData}.ConfigureContainerServices"/> to register
         /// an implementation or not for this service.
         /// </para>
         /// </summary>
-        IsEndpointService = 1 << 11,
+        IsContainerConfiguredService = 1 << 11,
 
         /// <summary>
         /// The type is a DI scoped service necessarily available in all contexts that automatically flows from endpoints
         /// to the background context.
         /// <list type="bullet">
-        ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsEndpointService"/></description></item>
+        ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsContainerConfiguredService"/></description></item>
         /// </list>
         /// </summary>
         IsAmbientService = 1 << 14,

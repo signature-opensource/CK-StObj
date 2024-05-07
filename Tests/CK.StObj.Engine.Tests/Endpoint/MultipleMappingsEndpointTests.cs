@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services,
+            public override void ConfigureContainerServices( IServiceCollection services,
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
@@ -61,7 +61,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services,
+            public override void ConfigureContainerServices( IServiceCollection services,
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
@@ -248,7 +248,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services,
+            public override void ConfigureContainerServices( IServiceCollection services,
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
@@ -279,7 +279,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
 
 
-            public override void ConfigureEndpointServices( IServiceCollection services,
+            public override void ConfigureContainerServices( IServiceCollection services,
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {

@@ -76,7 +76,7 @@ namespace CK.Setup
                     return null;
                 }
                 bool isBackData = typeof( DIContainerDefinition.BackendScopedData ).IsAssignableFrom( scopeDataType );
-                if( isBackData != (kind == DIContainerKind.Backend) )
+                if( isBackData != (kind == DIContainerKind.Background) )
                 {
                     if( isBackData )
                     {
@@ -109,7 +109,7 @@ namespace CK.Setup
                 contexts.Add( new DIContainerInfo( d, rName, attr.Kind, scopeDataType ) );
             }
             return new DIContainerAnalysisResult( (IReadOnlyList<DIContainerInfo>?)contexts ?? Array.Empty<DIContainerInfo>(),
-                                                   kindDetector.EndpointServices,
+                                                   kindDetector.ContainerConfiguredServices,
                                                    kindDetector.AmbientServices );
         }
 

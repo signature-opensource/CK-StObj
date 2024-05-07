@@ -29,10 +29,10 @@ namespace CK.Core
 
         /// <summary>
         /// Marker interface for scope data. It is enough for <see cref="DIContainerKind.Endpoint"/> endpoints to
-        /// simply support it, but back endpoints must specialize <see cref="BackendScopedData"/>.
+        /// simply support it, but background containers must specialize <see cref="BackendScopedData"/>.
         /// <para>
         /// A nested <c>public sealed class Data : IScopedData</c> (or <c>public sealed class Data : BackendScopedData</c> for
-        /// back endpoints) must be defined for each endpoint definition: this nested <c>Data</c> type is the key to resolve
+        /// backgrond containers) must be defined: this nested <c>Data</c> type is the key to resolve
         /// the <see cref="IDIContainer{TScopeData}"/> that exposes the final DI container.
         /// </para>
         /// </summary>
@@ -41,13 +41,13 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Required base endpoint scoped data for <see cref="DIContainerKind.Backend"/> endpoints.
+        /// Required base endpoint scoped data for <see cref="DIContainerKind.Background"/> endpoints.
         /// This enables ambient service informations marshalling from the calling context
         /// to the called context.
         /// </summary>
         public class BackendScopedData : IScopedData
         {
-            readonly AmbientServiceHub _ambientServiceHub;
+            AmbientServiceHub? _ambientServiceHub;
 
             /// <summary>
             /// It is required to provide the endpoint definition instance here so that
@@ -60,16 +60,28 @@ namespace CK.Core
             /// methods.
             /// </para>
             /// </summary>
-            protected BackendScopedData( AmbientServiceHub ambientServiceHub )
+            /// <param name="ambientServiceHub">
+            /// An existing capture of the Ambient services that must be used or null if this can (or should be)
+            /// computed at the latest possible moment, before <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/> or
+            /// <see cref="IDIContainerServiceProvider{TScopeData}.CreateAsyncScope(TScopeData)"/> is called.
+            /// </param>
+            protected BackendScopedData( AmbientServiceHub? ambientServiceHub )
             {
-                Throw.CheckNotNullArgument( ambientServiceHub );
                 _ambientServiceHub = ambientServiceHub;
             }
 
             /// <summary>
-            /// Gets the AmbientServiceHub.
+            /// Gets or sets the AmbientServiceHub.
+            /// <para>
+            /// This must be not null when calling <see cref="IDIContainerServiceProvider{TScopeData}.CreateScope(TScopeData)"/> or
+            /// <see cref="IDIContainerServiceProvider{TScopeData}.CreateAsyncScope(TScopeData)"/>.
+            /// </para>
             /// </summary>
-            public AmbientServiceHub AmbientServiceHub => _ambientServiceHub;
+            public AmbientServiceHub? AmbientServiceHub
+            {
+                get => _ambientServiceHub;
+                set => _ambientServiceHub = value;
+            }
         }
 
     }
