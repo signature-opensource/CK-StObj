@@ -54,9 +54,9 @@ namespace CK.Core
             /// the ambient services marshaller can be configured with the existing ambient
             /// endpoint services.
             /// <para>
-            /// Extra parameters can be freely defined (typically the <see cref="IActivityMonitor"/> that must be used in the scope),
-            /// including ones that are ambient services: this is the explicit and type safe way to inject ambient
-            /// informations that is both more explicit and efficient than using <see cref="AmbientServiceHub.Override{T}(T)"/>
+            /// Extra parameters (and their fields) can be freely defined (typically the <see cref="IActivityMonitor"/> that must
+            /// be used in the scope), including ones that are ambient services: this is an explicit and type safe way to inject
+            /// ambient informations that is both more explicit and efficient than using <see cref="AmbientServiceHub.Override{T}(T)"/>
             /// methods.
             /// </para>
             /// </summary>

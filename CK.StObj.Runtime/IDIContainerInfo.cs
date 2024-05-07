@@ -4,7 +4,7 @@ using System;
 namespace CK.Setup
 {
     /// <summary>
-    /// Summarized the vasic information about a <see cref="DIContainerDefinition"/>.
+    /// Summarized the basic information about a <see cref="DIContainerDefinition"/>.
     /// </summary>
     public interface IDIContainerInfo
     {
@@ -14,7 +14,7 @@ namespace CK.Setup
         string Name { get; }
 
         /// <summary>
-        /// Gets the Backend vs. Endpoint kind of this container.
+        /// Gets the Background vs. Endpoint kind of this container.
         /// </summary>
         DIContainerKind Kind { get; }
 

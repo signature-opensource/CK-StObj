@@ -6,7 +6,7 @@ namespace CK.Core
     /// <summary>
     /// The DIContainer is the link between the <see cref="DIContainerDefinition"/> and the
     /// services world. It is available in the global container and provides a dedicated
-    /// service ptrovider for the container.
+    /// service provider for the container.
     /// <para>
     /// This is not intended to be supported by user code: implementations are automatically generated.
     /// </para>
