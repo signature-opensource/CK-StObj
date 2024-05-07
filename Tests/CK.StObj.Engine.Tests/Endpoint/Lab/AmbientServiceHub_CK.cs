@@ -6,6 +6,17 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
     sealed class AmbientServiceHub_CK : CK.Core.AmbientServiceHub
     {
+        static Mapper[]? _default;
+
+        // Don't care of race conditions here.
+        static Mapper[] GetDefault() => System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( (_default ??= BuildFrom( DIContainerHub_CK.GlobalServices )).Clone() );
+
+        // Available to generated code: an unlocked hub with the default values of all ambient services.
+        public AmbientServiceHub_CK()
+            : base( GetDefault(), DIContainerHub_CK._ambientMappings )
+        {
+        }
+
         public AmbientServiceHub_CK( IServiceProvider services ) : base( services )
         {
         }
@@ -13,6 +24,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )
         {
             entries = DIContainerHub_CK._ambientMappings;
+            return BuildFrom( services );
+        }
+
+        static Mapper[] BuildFrom( IServiceProvider services )
+        {
             return new Mapper[] {
                 new Mapper( Required( services, typeof(IFakeTenantInfo) ) ),
                 new Mapper( Required( services, typeof(IFakeAuthenticationInfo) ) ),
@@ -34,13 +50,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         public override AmbientServiceHub CleanClone( bool restoreInitialValues = false )
         {
-            var c = (Mapper[])_mappers.Clone();
-            for( int i = 0; i < c.Length; i++ )
-            {
-                ref var m = ref c[i];
-                if( restoreInitialValues ) m.Current = m.Initial;
-                else m.Initial = m.Current;
-            }
+            var c = System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( _mappers.Clone() );
+            if( restoreInitialValues )
+                for( int i = 0; i < c.Length; i++ )
+                {
+                    ref var m = ref c[i];
+                    m.Current = m.Initial;
+                }
+            else
+                for( int i = 0; i < c.Length; i++ )
+                {
+                    ref var m = ref c[i];
+                    m.Initial = m.Current;
+                }
             return new AmbientServiceHub_CK( c );
         }
     }

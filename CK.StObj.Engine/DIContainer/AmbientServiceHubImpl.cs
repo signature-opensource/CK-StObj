@@ -18,13 +18,55 @@ namespace CK.Setup
         {
             Debug.Assert( scope.FullName == "CK.Core.AmbientServiceHub_CK" );
             scope.Definition.Modifiers |= Modifiers.Sealed;
+            scope.GeneratedByComment()
+                 .Append( """
+                static Mapper[]? _default;
+
+                // Don't care of race conditions here.
+                static Mapper[] GetDefault() => System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( (_default ??= BuildFrom( DIContainerHub_CK.GlobalServices )).Clone() );
+
+                // Available to generated code: an unlocked hub with the default values of all ambient services.
+                public AmbientServiceHub_CK()
+                    : base( GetDefault(), DIContainerHub_CK._ambientMappings )
+                {
+                }
+
+                AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ambientMappings )
+                {
+                }
+
+                protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )
+                {
+                    entries = DIContainerHub_CK._ambientMappings;
+                    return BuildFrom( services );
+                }
+
+                internal object At( int index ) => _mappers[index].Current;
+
+                public override AmbientServiceHub CleanClone( bool restoreInitialValues = false )
+                {
+                    var c = System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( _mappers.Clone() );
+                    if( restoreInitialValues )
+                        for( int i = 0; i < c.Length; i++ )
+                        {
+                            ref var m = ref c[i];
+                            m.Current = m.Initial;
+                        }
+                    else
+                        for( int i = 0; i < c.Length; i++ )
+                        {
+                            ref var m = ref c[i];
+                            m.Initial = m.Current;
+                        }
+                    return new AmbientServiceHub_CK( c );
+                }
+                           
+                """ );
 
             var mappings = c.CurrentRun.EngineMap.EndpointResult.AmbientServiceMappings;
 
-            scope.GeneratedByComment( "Constructor initializer" )
-                 .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<DIContainerHub.AmbientServiceMapping> entries )" )
+            scope.Append( "static Mapper[] BuildFrom( IServiceProvider services )" )
                  .OpenBlock()
-                 .Append( "entries = DIContainerHub_CK._ambientMappings;" ).NewLine()
                  .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
             foreach( var (type, index) in mappings )
@@ -44,24 +86,6 @@ namespace CK.Setup
                           """ )
                .CloseBlock();
 
-            scope.Append( """
-                           internal object At( int index ) => _mappers[index].Current;
-
-                           AmbientServiceHub_CK( Mapper[] mappers ) : base( mappers, DIContainerHub_CK._ambientMappings ) { }
-
-                           public override AmbientServiceHub CleanClone( bool restoreInitialValues = false )
-                           {
-                               var c = (Mapper[])_mappers.Clone();
-                               for( int i = 0; i < c.Length; i++ )
-                               {
-                                   ref var m = ref c[i];
-                                   if( restoreInitialValues ) m.Current = m.Initial;
-                                   else m.Initial = m.Current;
-                               }
-                               return new AmbientServiceHub_CK( c );
-                           }
-                           
-                           """ );
 
             return CSCodeGenerationResult.Success;
         }

@@ -197,7 +197,7 @@ namespace CK.Core
 
         void DoOverride( Type type, object instance )
         {
-            Throw.CheckState( !IsLocked );
+            Throw.CheckState( IsLocked is false );
             int i = GetTypeIndex( type );
             var tInstance = instance.GetType();
             if( tInstance != type )
