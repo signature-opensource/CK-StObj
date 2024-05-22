@@ -261,20 +261,22 @@ namespace CK.Setup
                     bool isInternalInterface = t.IsInterface && !t.IsPublic && !t.IsNestedPublic;
                     if( k == CKTypeKind.None && !isInternalInterface )
                     {
-                        Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                        Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                        Debug.Assert( typeof( EndpointScopedServiceAttribute ).Name == "EndpointScopedServiceAttribute" );
-                        Debug.Assert( typeof( EndpointSingletonServiceAttribute ).Name == "EndpointSingletonServiceAttribute" );
-                        Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
-                        Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
-                        Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                        Debug.Assert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
+                        Throw.DebugAssert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
+                        Throw.DebugAssert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                        Throw.DebugAssert( typeof( ContainerConfiguredScopedServiceAttribute ).Name == "ContainerConfiguredScopedServiceAttribute" );
+                        Throw.DebugAssert( typeof( ContainerConfiguredSingletonServiceAttribute ).Name == "ContainerConfiguredSingletonServiceAttribute" );
+                        Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
+                        Throw.DebugAssert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
+                        Throw.DebugAssert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                        Throw.DebugAssert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
+                        Throw.DebugAssert( typeof( ScopedServiceAttribute ).Name == "ScopedServiceAttribute" );
                         bool hasSuperDefiner = false;
                         bool hasDefiner = false;
                         bool isMultipleInterface = false;
                         bool hasSingletonService = false;
+                        bool hasScopedService = false;
                         bool isExcludedType = false;
-                        bool isEndpointScoped = false;
+                        bool isContainerConfiguredScoped = false;
                         bool isAmbientService = false;
                         bool isEndpointSingleton = false;
 
@@ -297,11 +299,11 @@ namespace CK.Setup
                                 case "ExcludeCKTypeAttribute":
                                     isExcludedType = true;
                                     break;
-                                case "EndpointScopedServiceAttribute":
-                                    isEndpointScoped = true;
+                                case "ContainerConfiguredScopedServiceAttribute":
+                                    isContainerConfiguredScoped = true;
                                     isAmbientService = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
                                     break;
-                                case "EndpointSingletonServiceAttribute":
+                                case "ContainerConfiguredSingletonServiceAttribute":
                                     isEndpointSingleton = true;
                                     break;
                                 case "CKTypeDefinerAttribute":
@@ -312,6 +314,9 @@ namespace CK.Setup
                                     break;
                                 case "SingletonServiceAttribute":
                                     hasSingletonService = true;
+                                    break;
+                                case "ScopedServiceAttribute":
+                                    hasScopedService = true;
                                     break;
                                 case "IsMultipleAttribute" when t.IsInterface:
                                     isMultipleInterface = true;
@@ -355,11 +360,12 @@ namespace CK.Setup
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                             if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
+                            if( hasScopedService ) k |= CKTypeKind.IsScoped;
                             if( isEndpointSingleton ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsSingleton;
                             if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
                             if( hasDefiner ) k |= CKTypeKind.IsDefiner;
                             if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
-                            else if( isEndpointScoped ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
+                            else if( isContainerConfiguredScoped ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
 
                             // Final check if the type filter has not excluded the type.
                             // We may be IAutoService or a IPoco or... whatever: any combination error will be detected.
