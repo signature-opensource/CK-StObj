@@ -67,9 +67,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
             // These declarations are only here as the defaults.
             // In practice they are overridden by the endpoint container definition ConfigureServices.
-            Func<IServiceProvider, object> front0 = sp => ((IEndpointUbiquitousServiceDefault<FakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultTenantProvider ) )!).Default;
-            Func<IServiceProvider, object> front1 = sp => ((IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
-            Func<IServiceProvider, object> front3 = sp => ((IEndpointUbiquitousServiceDefault<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
+            Func<IServiceProvider, object> front0 = sp => ((IAmbientServiceDefaultProvider<FakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultTenantProvider ) )!).Default;
+            Func<IServiceProvider, object> front1 = sp => ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
+            Func<IServiceProvider, object> front3 = sp => ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
             _ambientServiceEndpointDescriptors = new ServiceDescriptor[] {
                     new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), front0, ServiceLifetime.Scoped ),

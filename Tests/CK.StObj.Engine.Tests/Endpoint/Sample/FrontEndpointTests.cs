@@ -89,14 +89,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>
+        public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>
         {
             readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
 
             public IFakeAuthenticationInfo Default => _anonymous;
         }
 
-        public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>
+        public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IAmbientServiceDefaultProvider<FakeAuthenticationInfo>
         {
             readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
 
@@ -108,14 +108,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void Ambient_services_are_painful_when_they_are_not_AutoService()
         {
             {
-                const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>'. " +
+                const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<FakeAuthenticationInfo>'. " +
                                    "Type 'FakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
                                                          typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) );
                 TestHelper.GetFailedResult( c, msg );
             }
             {
-                const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>'. " +
+                const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>'. " +
                                    "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
                                                          typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );

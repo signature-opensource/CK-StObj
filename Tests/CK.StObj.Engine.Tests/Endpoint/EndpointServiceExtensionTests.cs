@@ -10,12 +10,12 @@ namespace CK.StObj.Engine.Tests.Endpoint
     [TestFixture]
     public class EndpointServiceExtensionTests
     {
-        [EndpointScopedService]
+        [ContainerConfiguredScopedService]
         public interface IEPService1
         {
         }
 
-        [EndpointSingletonService]
+        [ContainerConfiguredSingletonService]
         public interface IEPService2 : IAutoService
         {
         }
@@ -32,13 +32,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
             r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
         }
 
-        [EndpointScopedService( isUbiquitousEndpointInfo: true )]
+        [ContainerConfiguredScopedService( isAmbientService: true )]
         public class AmbientThing
         {
             public string? ThingName { get; set; }
         }
 
-        public sealed class DefaultAmbientThingProvider : IEndpointUbiquitousServiceDefault<AmbientThing>
+        public sealed class DefaultAmbientThingProvider : IAmbientServiceDefaultProvider<AmbientThing>
         {
             public AmbientThing Default => new AmbientThing() { ThingName = "I'm the default thing name!" };
         }
@@ -58,7 +58,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
         }
 
-        public sealed class SpecAmbientThingProvider : IEndpointUbiquitousServiceDefault<SpecAmbientThing>
+        public sealed class SpecAmbientThingProvider : IAmbientServiceDefaultProvider<SpecAmbientThing>
         {
             public SpecAmbientThing Default => new SpecAmbientThing() { ThingName = "I'm the default (spec) thing name!" };
         }
@@ -67,11 +67,11 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void specialized_Ambient_service_not_AutoService_cannot_share_the_SpecDefaultProvider()
         {
             var noWay = TestHelper.CreateStObjCollector( typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider ) );
-            TestHelper.GetFailedResult( noWay, "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<EndpointServiceExtensionTests.AmbientThing>'. "
+            TestHelper.GetFailedResult( noWay, "Unable to find an implementation for 'IAmbientServiceDefaultProvider<EndpointServiceExtensionTests.AmbientThing>'. "
                                                + "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
         }
 
-        [EndpointScopedService( isUbiquitousEndpointInfo: true )]
+        [ContainerConfiguredScopedService( isAmbientService: true )]
         public class AutoAmbientThing : IAutoService
         {
             readonly string _name;
@@ -92,7 +92,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             public static SpecAutoAmbientThing Create( string name ) => new SpecAutoAmbientThing( name );
         }
 
-        public sealed class SpecAutoAmbientThingProvider : IEndpointUbiquitousServiceDefault<SpecAutoAmbientThing>
+        public sealed class SpecAutoAmbientThingProvider : IAmbientServiceDefaultProvider<SpecAutoAmbientThing>
         {
             public SpecAutoAmbientThing Default
             {

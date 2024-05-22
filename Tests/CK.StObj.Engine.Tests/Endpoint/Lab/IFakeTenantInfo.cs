@@ -8,8 +8,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     /// and a single IEndpointUbiquitousServiceDefault implementation can exist that will resolve the default
     /// value for all the specialization levels.
     /// </summary>
-    [EndpointScopedService( isUbiquitousEndpointInfo: true )]
-    public interface IFakeTenantInfo : IAutoService
+    public interface IFakeTenantInfo : IAmbientAutoService
     {
         string Name { get; }
     }

@@ -10,7 +10,7 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class BasicEndpointServiceTests
     {
-        [EndpointScopedService]
+        [ContainerConfiguredScopedService]
         public interface IEndpointService1 : IScopedAutoService
         {
         }
@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests.Service
             map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeTrue();
         }
 
-        [EndpointScopedService]
+        [ContainerConfiguredScopedService]
         public class Impossible0 : IRealObject
         {
         }

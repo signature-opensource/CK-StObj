@@ -6,7 +6,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     /// Because IFakeTenantInfo is a IAutoService, this default provider is enough to satisfy
     /// also the default value of FakeTenantInfo.
     /// </summary>
-    public sealed class DefaultTenantProvider : IEndpointUbiquitousServiceDefault<IFakeTenantInfo>
+    public sealed class DefaultTenantProvider : IAmbientServiceDefaultProvider<IFakeTenantInfo>
     {
         public IFakeTenantInfo Default => new FakeTenantInfo( "DefaultTenant" );
     }

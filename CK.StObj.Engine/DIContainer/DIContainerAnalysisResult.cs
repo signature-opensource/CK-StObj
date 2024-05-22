@@ -184,7 +184,7 @@ namespace CK.Setup
 
             static IDIContainerAnalysisResult.AmbientServiceDefault? FindDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services, Type ambientServiceType, bool expected )
             {
-                Type defaultProviderType = typeof( IEndpointUbiquitousServiceDefault<> ).MakeGenericType( ambientServiceType );
+                Type defaultProviderType = typeof( IAmbientServiceDefaultProvider<> ).MakeGenericType( ambientServiceType );
                 var defaultProvider = services.ToLeaf( defaultProviderType );
                 if( defaultProvider == null )
                 {
