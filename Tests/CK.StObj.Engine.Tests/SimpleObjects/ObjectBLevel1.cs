@@ -11,7 +11,7 @@ using CK.Core;
 
 namespace CK.StObj.Engine.Tests.SimpleObjects
 {
-    [StObj( Container = typeof( PackageForABLevel1 ) )]
+    [RealObject( Container = typeof( PackageForABLevel1 ) )]
     public class ObjectBLevel1 : ObjectB
     {
         // Adds monitor parameter otherwise parameter less StObjConstruct are not called.

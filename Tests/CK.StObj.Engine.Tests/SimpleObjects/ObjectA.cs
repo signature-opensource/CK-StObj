@@ -12,7 +12,7 @@ using CK.Core;
 namespace CK.StObj.Engine.Tests.SimpleObjects
 {
 
-    [StObj( Container=typeof(PackageForAB) )] 
+    [RealObject( Container=typeof(PackageForAB) )] 
     public class ObjectA : IAbstractionA
     {
         public int ConstructCount { get; protected set; }

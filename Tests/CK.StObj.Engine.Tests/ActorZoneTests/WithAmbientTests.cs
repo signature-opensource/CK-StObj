@@ -39,7 +39,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         }
 
         [CKTypeDefiner]
-        [StObj( ItemKind = DependentItemKindSpec.Group, TrackAmbientProperties = TrackAmbientPropertiesMode.AddPropertyHolderAsChildren )]
+        [RealObject( ItemKind = DependentItemKindSpec.Group, TrackAmbientProperties = TrackAmbientPropertiesMode.AddPropertyHolderAsChildren )]
         public class SqlDatabase : IRealObject
         {
             readonly string _name;
@@ -127,7 +127,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         #region Basic Package
 
         // We want BasicActor, BasicUser and BasicGroup to be in CK schema since they belong to BasicPackage.
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         [AmbientPropertySet( PropertyName = "Schema", PropertyValue = "CK" )]
         public class BasicPackage : BaseDatabaseObject
         {
@@ -138,17 +138,17 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             public BasicGroup GroupHome { get; private set; }
         }
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicActor : BaseDatabaseObject
         {
         }
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicUser : BaseDatabaseObject
         {
         }
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicGroup : BaseDatabaseObject
         {
             void StObjConstruct( BasicActor actor )
@@ -167,7 +167,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             public new ZoneGroup GroupHome { get { return (ZoneGroup)base.GroupHome; } }
         }
 
-        [StObj( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
         public abstract class ZoneGroup : BasicGroup
         {
             void StObjConstruct( SecurityZone zone )
@@ -176,7 +176,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         }
 
         // This new object in ZonePackage will be in CK schema.
-        [StObj( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
         public abstract class SecurityZone : BaseDatabaseObject
         {
             void StObjConstruct( BasicGroup group )
@@ -191,18 +191,18 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         // This new Package introduces a new Schema: CKAuth.
         // The objects that are specializations of objects from other packages must stay in CK.
         // But a new object like AuthenticationDetail must be in CKAuth.
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         [AmbientPropertySet( PropertyName = "Schema", PropertyValue = "CKAuth" )]
         public class AuthenticationPackage : BaseDatabaseObject
         {
         }
 
-        [StObj( Container = typeof( AuthenticationPackage ) )]
+        [RealObject( Container = typeof( AuthenticationPackage ) )]
         public class AuthenticationUser : BasicUser
         {
         }
 
-        [StObj( Container = typeof( AuthenticationPackage ) )]
+        [RealObject( Container = typeof( AuthenticationPackage ) )]
         public class AuthenticationDetail : BaseDatabaseObject
         {
         }

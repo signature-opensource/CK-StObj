@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
     public class WithoutAmbientTests
     {
         // This is not how the real SqlDefaultDatabase is implemented: see WithAmbientTests for a more accurate reproduction.
-        [StObj( ItemKind = DependentItemKindSpec.Group,
+        [RealObject( ItemKind = DependentItemKindSpec.Group,
                 Children = new Type[] 
                 { 
                     typeof( BasicPackage ), 
@@ -39,24 +39,24 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         #region Basic Package
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class BasicPackage : IRealObject
         {
         }
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicActor : IRealObject
         {
         }
 
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicUser : IRealObject
         {
         }
 
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicGroup : IRealObject
         {
             void StObjConstruct( BasicActor actor )
@@ -72,7 +72,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         {
         }
 
-        [StObj( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
         public class ZoneGroup : BasicGroup
         {
             void StObjConstruct( ISecurityZone zone )
@@ -84,7 +84,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         {
         }
 
-        [StObj( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
         public class SecurityZone : ISecurityZone
         {
             void StObjConstruct( BasicGroup group )
@@ -96,12 +96,12 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         #region Authentication Package
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class AuthenticationPackage : IRealObject
         {
         }
 
-        [StObj( Container = typeof( AuthenticationPackage ) )]
+        [RealObject( Container = typeof( AuthenticationPackage ) )]
         public class AuthenticationUser : BasicUser
         {
         }

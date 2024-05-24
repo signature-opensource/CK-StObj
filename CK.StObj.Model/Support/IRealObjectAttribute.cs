@@ -6,7 +6,7 @@ namespace CK.Setup
     /// <summary>
     /// Basic support for declarative dependency structure between Real Object types.
     /// </summary>
-    public interface IStObjAttribute
+    public interface IRealObjectAttribute
     {
         /// <summary>
         /// Gets the container of the object.

@@ -160,7 +160,7 @@ namespace CK.StObj.Engine.Tests
                 }
             }
 
-            [StObj( ItemKind = DependentItemKindSpec.Container )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container )]
             public class B : IRealObject
             {
                 [InjectObject]

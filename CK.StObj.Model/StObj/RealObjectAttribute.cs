@@ -3,10 +3,10 @@ using System;
 namespace CK.Core
 {
     /// <summary>
-    /// Default implementation of <see cref="Setup.IStObjAttribute"/>.
+    /// Default implementation of <see cref="Setup.IRealObjectAttribute"/>.
     /// </summary>
     [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
-    public class StObjAttribute : Attribute, Setup.IStObjAttribute
+    public class RealObjectAttribute : Attribute, Setup.IRealObjectAttribute
     {
         /// <inheritdoc />
         public Type? Container { get; set; }

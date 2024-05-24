@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests
         class FromContainerAndThenGeneralization
         {
             [AmbientPropertySet( PropertyName = "OneStringValue", PropertyValue = "OnBaseObject" )]
-            [StObj( ItemKind = DependentItemKindSpec.Container )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container )]
             public class BaseObjectAmbient : IRealObject
             {
                 [AmbientProperty( ResolutionSource = PropertyResolutionSource.FromContainerAndThenGeneralization )]
@@ -48,7 +48,7 @@ namespace CK.StObj.Engine.Tests
             }
 
             [AmbientPropertySet( PropertyName = "OneStringValue", PropertyValue = "OnAnotherContainer" )]
-            [StObj( ItemKind = DependentItemKindSpec.Container )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container )]
             public class AnotherContainer : IRealObject
             {
                 [AmbientProperty]
@@ -133,7 +133,7 @@ namespace CK.StObj.Engine.Tests
 
         class FromGeneralizationAndThenContainer
         {
-            [StObj( ItemKind = DependentItemKindSpec.Container )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container )]
             public class BaseObjectAmbient : IRealObject
             {
                 [AmbientProperty]
@@ -154,20 +154,20 @@ namespace CK.StObj.Engine.Tests
             }
 
             [AmbientPropertySet( PropertyName = "OneStringValue", PropertyValue = "OnAnotherContainer" )]
-            [StObj( ItemKind = DependentItemKindSpec.Container )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container )]
             public class AnotherContainer : IRealObject
             {
                 [AmbientProperty( IsOptional = true )]
                 public string? OneStringValue { get; set; }
             }
 
-            [StObj( ItemKind = DependentItemKindSpec.Container, Container = typeof( ContainerForContainerForBaseObject ) )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container, Container = typeof( ContainerForContainerForBaseObject ) )]
             public class ContainerForBaseObject : IRealObject
             {
             }
 
             [AmbientPropertySet( PropertyName = "OneStringValue", PropertyValue = "On Container of ContainerForBaseObject" )]
-            [StObj( ItemKind = DependentItemKindSpec.Container )]
+            [RealObject( ItemKind = DependentItemKindSpec.Container )]
             public class ContainerForContainerForBaseObject : IRealObject
             {
                 [AmbientProperty( IsOptional = true )]

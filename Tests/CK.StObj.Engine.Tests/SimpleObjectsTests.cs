@@ -288,12 +288,12 @@ namespace CK.StObj.Engine.Tests
 
         #region Buggy & Valid Model
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class C1 : IRealObject
         {
         }
 
-        [StObj( Container = typeof( C1 ), ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( Container = typeof( C1 ), ItemKind = DependentItemKindSpec.Container )]
         public class C2InC1 : IRealObject
         {
         }
@@ -325,7 +325,7 @@ namespace CK.StObj.Engine.Tests
             Assert.That( result.HasFatalError, Is.True );
         }
 
-        [StObj( ItemKind = DependentItemKindSpec.Container, Container = typeof( C2InC1 ), Children = new Type[] { typeof( C1 ) } )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container, Container = typeof( C2InC1 ), Children = new Type[] { typeof( C1 ) } )]
         public class C3ContainsC1 : IRealObject
         {
         }

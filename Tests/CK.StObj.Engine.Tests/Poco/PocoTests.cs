@@ -19,7 +19,7 @@ namespace CK.StObj.Engine.Tests.Poco
     [TestFixture]
     public class PocoTests
     {
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class PackageWithBasicPoco : IRealObject
         {
             void StObjConstruct( IPocoFactory<IBasicPoco> f )

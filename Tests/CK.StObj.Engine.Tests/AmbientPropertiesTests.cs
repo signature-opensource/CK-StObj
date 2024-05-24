@@ -40,14 +40,14 @@ namespace CK.StObj.Engine.Tests
         }
 
         [DirectPropertySet( PropertyName = "OneIntValue", PropertyValue = 3712 )]
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class SimpleObjectDirect : IRealObject
         {
             public int OneIntValue { get; set; }
         }
 
         [AmbientPropertySet( PropertyName = "OneIntValue", PropertyValue = 3712 )]
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class SimpleObjectAmbient : IRealObject
         {
             [AmbientProperty]
@@ -148,14 +148,14 @@ namespace CK.StObj.Engine.Tests
 
         #region Propagation to container's children.
 
-        [StObj( Container = typeof( SimpleObjectDirect ) )]
+        [RealObject( Container = typeof( SimpleObjectDirect ) )]
         public class SimpleObjectInsideDirect : IRealObject
         {
             [AmbientProperty]
             public int OneIntValue { get; set; }
         }
 
-        [StObj( Container = typeof( SimpleObjectAmbient ) )]
+        [RealObject( Container = typeof( SimpleObjectAmbient ) )]
         public class SimpleObjectInsideAmbient : IRealObject
         {
             [AmbientProperty]
@@ -203,12 +203,12 @@ namespace CK.StObj.Engine.Tests
         {
         }
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class C1 : BaseForObject, IRealObject
         {
         }
 
-        [StObj( Container = typeof( C1 ) )]
+        [RealObject( Container = typeof( C1 ) )]
         public class O1InC1 : BaseForObject, IRealObject
         {
         }
@@ -217,7 +217,7 @@ namespace CK.StObj.Engine.Tests
         {
         }
 
-        [StObj( Container = typeof( C2 ) )]
+        [RealObject( Container = typeof( C2 ) )]
         public class O2InC2 : O1InC1
         {
         }
