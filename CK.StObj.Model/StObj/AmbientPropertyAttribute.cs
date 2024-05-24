@@ -24,7 +24,7 @@ namespace CK.Core
         /// <summary>
         /// Gets or sets whether resolving this property is required or not.
         /// Defaults to false (unless explicitly stated, an ambient property MUST be resolved) but when 
-        /// is not explicitly set to true or false on a specialized property its value is given by property 
+        /// not explicitly set to true or false on a specialized property its value is given by property 
         /// definition of the base class. 
         /// </summary>
         public bool IsOptional

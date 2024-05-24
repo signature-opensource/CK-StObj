@@ -23,11 +23,18 @@ namespace CK.Setup
                 static Mapper[]? _default;
 
                 // Don't care of race conditions here.
-                static Mapper[] GetDefault() => System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( (_default ??= BuildFrom( DIContainerHub_CK.GlobalServices )).Clone() );
+                static Mapper[] GetDefault()
+                {
+                    if( _default == null )
+                    {
+                        // Lazy approach: reuse the factories from the ambient service descriptors of the endpoints to instantiate the default values. 
+                        _default = DIContainerHub_CK._ambientServiceEndpointDescriptors.Select( d => new Mapper( d.ImplementationFactory( DIContainerHub_CK.GlobalServices ) ) ).ToArray();
+                    }
+                    return System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( _default.Clone() );
+                }
 
                 // Available to generated code: an unlocked hub with the default values of all ambient services.
-                public AmbientServiceHub_CK()
-                    : base( GetDefault(), DIContainerHub_CK._ambientMappings )
+                public AmbientServiceHub_CK() : base( GetDefault(), DIContainerHub_CK._ambientMappings )
                 {
                 }
 

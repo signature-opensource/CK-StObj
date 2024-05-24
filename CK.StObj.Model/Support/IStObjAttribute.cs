@@ -1,17 +1,10 @@
-#region Proprietary License
-/*----------------------------------------------------------------------------
-* This file (CK.StObj.Model\StObj\Attribute\IStObjAttribute.cs) is part of CK-Database. 
-* Copyright © 2007-2014, Invenietis <http://www.invenietis.com>. All rights reserved. 
-*-----------------------------------------------------------------------------*/
-#endregion
-
 using CK.Core;
 using System;
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Basic support for declarative dependency structure between types.
+    /// Basic support for declarative dependency structure between Real Object types.
     /// </summary>
     public interface IStObjAttribute
     {
