@@ -44,7 +44,7 @@ namespace CK.Core
         /// when overriding a value to automatically sets all the unique mappings to the same value whatever
         /// the type used as the key.
         /// <para>
-        /// This is also used to map to the <see cref="IEndpointUbiquitousServiceDefault{T}"/> that must be used when a
+        /// This is also used to map to the <see cref="IAmbientServiceDefaultProvider{T}"/> that must be used when a
         /// ambient service resolution is not registered by a endpoint.
         /// </para>
         /// </summary>

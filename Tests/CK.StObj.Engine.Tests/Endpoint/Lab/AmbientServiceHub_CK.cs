@@ -8,8 +8,18 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
         static Mapper[]? _default;
 
-        // Don't care of race conditions here.
-        static Mapper[] GetDefault() => System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( (_default ??= BuildFrom( DIContainerHub_CK.GlobalServices )).Clone() );
+        static Mapper[] GetDefault()
+        {
+            // Don't care of race conditions here.
+            _default ??= new Mapper[] {
+                new Mapper( ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default ),
+                new Mapper( ((IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default ),
+                new Mapper( ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultCultureProvider) )!).Default ),
+                new Mapper( ((IAmbientServiceDefaultProvider<IFakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultTenantProvider) )!).Default ),
+            };
+            return System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( _default.Clone() );
+
+        }
 
         // Available to generated code: an unlocked hub with the default values of all ambient services.
         public AmbientServiceHub_CK()

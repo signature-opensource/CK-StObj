@@ -52,7 +52,7 @@ namespace CK.Setup
             public bool IsValid => ProviderType != null;
 
             /// <summary>
-            /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> type that the
+            /// Gets the <see cref="IAmbientServiceDefaultProvider{T}"/> type that the
             /// <see cref="Provider"/> implements.
             /// <para>
             /// <see cref="IsValid"/> MUST be true for this to used.
@@ -71,7 +71,7 @@ namespace CK.Setup
             /// <summary>
             /// Initializes a new default.
             /// </summary>
-            /// <param name="providerType">The <see cref="IEndpointUbiquitousServiceDefault{T}"/> type.</param>
+            /// <param name="providerType">The <see cref="IAmbientServiceDefaultProvider{T}"/> type.</param>
             /// <param name="provider">The service implementation.</param>
             public AmbientServiceDefault( Type providerType, IStObjFinalClass provider )
             {
@@ -81,7 +81,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ambient
+        /// Gets the <see cref="IAmbientServiceDefaultProvider{T}"/> to use for each mapped ambient
         /// service.
         /// </summary>
         IReadOnlyList<AmbientServiceDefault> DefaultAmbientServiceValueProviders { get; }
