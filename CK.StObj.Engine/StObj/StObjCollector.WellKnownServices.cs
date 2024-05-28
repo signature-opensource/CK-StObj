@@ -14,10 +14,8 @@ namespace CK.Setup
             Debug.Assert( !_wellKnownServiceKindRegistered );
             _wellKnownServiceKindRegistered = true;
 
-            // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
-            // It is actually more than that: it is the only ubiquitous endpoint service (with its ParallelLogger) that must be
-            // supported by all endpoints.
-            // Note: The right way to inject a monitor is:
+            // The IActivityMonitor and its ParallelLogger are scoped services that must be
+            // available in all containers. The right way to define them is:
             //
             //    services.AddScoped<IActivityMonitor,ActivityMonitor>();
             //    services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
