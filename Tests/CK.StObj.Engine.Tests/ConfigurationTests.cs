@@ -14,9 +14,9 @@ using System.Diagnostics;
 
 namespace CK.StObj.Engine.Tests
 {
-    public class SampleAspectConfiguration : IStObjEngineAspectConfiguration
+    public class SampleAspectConfiguration : StObjEngineAspectConfiguration
     {
-        public string AspectType => "Sample.AspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
+        public override string AspectType => "Sample.AspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
 
         public SampleAspectConfiguration( XElement e )
         {
@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests
             else Data = (string?)e.Element( "Data" ) ?? "<No Data>";
         }
 
-        public XElement SerializeXml( XElement e )
+        public override XElement SerializeXml( XElement e )
         {
             e.Add( new XAttribute( StObjEngineConfiguration.xVersion, Version ),
                    new XElement( "Data", Data ) );
@@ -43,15 +43,15 @@ namespace CK.StObj.Engine.Tests
         public string Data { get; set; }
     }
 
-    public class AnotherAspectConfiguration : IStObjEngineAspectConfiguration
+    public class AnotherAspectConfiguration : StObjEngineAspectConfiguration
     {
-        public string AspectType => "Sample.AnotherAspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
+        public override string AspectType => "Sample.AnotherAspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
 
         public AnotherAspectConfiguration( XElement e )
         {
         }
 
-        public XElement SerializeXml( XElement e ) => e;
+        public override XElement SerializeXml( XElement e ) => e;
     }
 
 

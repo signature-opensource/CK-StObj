@@ -162,6 +162,11 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Gets the configuration that contains this BinPath in its <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </summary>
+        public StObjEngineConfiguration? Owner { get; internal set; }
+
+        /// <summary>
         /// Gets or sets the name that uniquely identifies this configuration among the others.
         /// When null, an automatically numbered name is generated.
         /// </summary>

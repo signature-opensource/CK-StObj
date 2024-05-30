@@ -141,7 +141,7 @@ namespace CK.Testing
             {
                 GeneratedAssemblyName = assemblyName,
             };
-            config.BinPaths.Add( new BinPathConfiguration()
+            config.AddBinPath( new BinPathConfiguration()
             {
                 CompileOption = compileOption,
                 GenerateSourceFiles = generateSourceFiles,

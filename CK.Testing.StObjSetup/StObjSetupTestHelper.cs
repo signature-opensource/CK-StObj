@@ -93,7 +93,7 @@ namespace CK.Testing
                 GenerateSourceFiles = helper.StObjGenerateSourceFiles,
                 ProjectPath = helper.TestProjectFolder
             };
-            stObjConf.BinPaths.Add( b );
+            stObjConf.AddBinPath( b );
 
             // Consider by default the CKSetup configuration that be not None,
             // but if it is None, set it to Engine: the engine must run even if

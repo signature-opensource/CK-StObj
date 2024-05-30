@@ -11,10 +11,46 @@ namespace CK.Setup
     /// </summary>
     public sealed partial class StObjEngineConfiguration
     {
+        readonly List<BinPathConfiguration> _binPaths;
+        Dictionary<string, StObjEngineAspectConfiguration> _namedAspects;
+        List<StObjEngineAspectConfiguration> _aspects;
+        string? _generatedAssemblyName;
+
         /// <summary>
-        /// Gets the mutable list of all configuration aspects that must participate to setup.
+        /// Gets the list of all configuration aspects that must participate to setup.
         /// </summary>
-        public List<StObjEngineAspectConfiguration> Aspects { get; }
+        public IReadOnlyList<StObjEngineAspectConfiguration> Aspects => _aspects;
+
+        /// <summary>
+        /// Adds an aspect to these <see cref="BinPaths"/>.
+        /// No existing aspect with the same type must exist and the aspect must not belong to
+        /// another configuration otherwise an <see cref="ArgumentException"/> is thrown.
+        /// </summary>
+        /// <param name="aspect">An aspect configuration to add.</param>
+        public void AddAspect( StObjEngineAspectConfiguration aspect )
+        {
+            Throw.CheckArgument( aspect != null && aspect.Owner == null );
+            Throw.CheckArgument( "An aspect of the same type already exists.", !_namedAspects.ContainsKey( aspect.Name ) );
+            aspect.Owner = this;
+            _aspects.Add( aspect );
+            _namedAspects.Add( aspect.Name, aspect );
+        }
+
+        /// <summary>
+        /// Removes an aspect from <see cref="Aspects"/>. Does nothing if the <paramref name="aspect"/>
+        /// does not belong to this configuration.
+        /// </summary>
+        /// <param name="binPath">An aspect configuration to remove.</param>
+        public void RemoveAspect( StObjEngineAspectConfiguration aspect )
+        {
+            Throw.CheckArgument( aspect != null );
+            if( aspect.Owner == this )
+            {
+                _aspects.Remove( aspect );
+                aspect.Owner = null;
+                _namedAspects.Remove( aspect.Name );
+            }
+        }
 
         /// <summary>
         /// Gets or sets the final Assembly name.
@@ -81,11 +117,37 @@ namespace CK.Setup
         public NormalizedPath BasePath { get; set; }
 
         /// <summary>
-        /// Gets a list of binary paths to setup (must not be empty).
+        /// Gets the binary paths to setup (must not be empty).
         /// Their <see cref="BinPathConfiguration.Assemblies"/> or non optional <see cref="BinPathConfiguration.Types"/>
         /// must exist in the current <see cref="AppContext.BaseDirectory"/>.
         /// </summary>
-        public List<BinPathConfiguration> BinPaths { get; }
+        public IReadOnlyList<BinPathConfiguration> BinPaths => _binPaths;
+
+        /// <summary>
+        /// Adds a BinPathConfiguration to these <see cref="BinPaths"/>.
+        /// </summary>
+        /// <param name="binPath">A BinPath configuration to add.</param>
+        public void AddBinPath( BinPathConfiguration binPath )
+        {
+            Throw.CheckArgument( binPath != null && binPath.Owner ==  null );
+            binPath.Owner = this;
+            _binPaths.Add( binPath );
+        }
+
+        /// <summary>
+        /// Removes a BinPathConfiguration from <see cref="BinPaths"/>. Does nothing if the <paramref name="binPath"/>
+        /// does not belong to this configuration.
+        /// </summary>
+        /// <param name="binPath">A BinPath configuration to remove.</param>
+        public void RemoveBinPath( BinPathConfiguration binPath )
+        {
+            Throw.CheckArgument( binPath != null );
+            if( binPath.Owner == this )
+            {
+                _binPaths.Remove( binPath );
+                binPath.Owner = null;
+            }
+        }
 
         /// <summary>
         /// Gets a mutable set of assembly qualified type names that must be excluded from registration.

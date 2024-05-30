@@ -13,21 +13,38 @@ namespace CK.Setup
     {
         readonly string _name;
 
+        /// <summary>
+        /// Initializes an empty aspect.
+        /// </summary>
         protected StObjEngineAspectConfiguration()
         {
             Throw.DebugAssert( "AspectConfiguration".Length == 19 );
             var n = GetType().Name;
             if( n.Length <= 19 || !n.EndsWith( "AspectConfiguration" ) )
             {
-                Throw.InvalidDataException( $"Invalid an aspect configuration type name '{GetType().Name}': it must end with \"AspectConfiguration\"." );
+                Throw.InvalidDataException( $"Invalid aspect configuration type name '{GetType().Name}': it must end with \"AspectConfiguration\"." );
             }
             _name = n.Substring( 0, n.Length - 19 );
+        }
+
+        /// <summary>
+        /// Initializes a new aspect from a <see cref="XElement"/>.
+        /// </summary>
+        /// <param name="e">The xml element.</param>
+        protected StObjEngineAspectConfiguration( XElement e )
+            : this()
+        {
         }
 
         /// <summary>
         /// Gets this aspect name: this is the type name without the "AspectConfiguration" suffix.
         /// </summary>
         public string Name => _name;
+
+        /// <summary>
+        /// Gets the configuration that contains this aspect in its <see cref="StObjEngineConfiguration.Aspects"/>.
+        /// </summary>
+        public StObjEngineConfiguration? Owner { get; internal set; }
 
         /// <summary>
         /// Gets the fully qualified name of the type on the Engine side that implements this aspect.
@@ -43,15 +60,5 @@ namespace CK.Setup
         /// <returns>The <paramref name="e"/> element.</returns>
         public abstract XElement SerializeXml( XElement e );
 
-        /// <summary>
-        /// Factory method for <see cref="BinPathConfiguration.Aspects"/>.
-        /// By default, this aspect doesn't implement BinPath specific configuration: a <see cref="System.IO.InvalidDataException"/> is thrown.
-        /// </summary>
-        /// <param name="e">The element to parse.</param>
-        /// <returns>The BinPath specific configuration.</returns>
-        public virtual BinPathAspectConfiguration CreateBinPathConfiguration( XElement e )
-        {
-            return Throw.InvalidDataException<BinPathAspectConfiguration>( $"Aspect '{Name}' has no BinPath specific configuration." );
-        }
     }
 }

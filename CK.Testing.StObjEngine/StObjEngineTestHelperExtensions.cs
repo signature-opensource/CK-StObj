@@ -49,7 +49,7 @@ namespace CK.Testing
             {
                 GeneratedAssemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" )
             };
-            config.BinPaths.Add( new BinPathConfiguration()
+            config.AddBinPath( new BinPathConfiguration()
             {
                 CompileOption = compileOption,
                 GenerateSourceFiles = generateSourceFiles,

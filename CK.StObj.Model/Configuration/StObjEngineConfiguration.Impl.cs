@@ -9,15 +9,14 @@ namespace CK.Setup
 {
     public sealed partial class StObjEngineConfiguration
     {
-        string? _generatedAssemblyName;
-
         /// <summary>
         /// Initializes a new empty configuration.
         /// </summary>
         public StObjEngineConfiguration()
         {
-            Aspects = new List<IStObjEngineAspectConfiguration>();
-            BinPaths = new List<BinPathConfiguration>();
+            _namedAspects = new Dictionary<string, StObjEngineAspectConfiguration>();
+            _aspects = new List<StObjEngineAspectConfiguration>();
+            _binPaths = new List<BinPathConfiguration>();
             GlobalExcludedTypes = new HashSet<string>();
         }
 
@@ -41,19 +40,26 @@ namespace CK.Setup
             ForceRun = (bool?)e.Element( xForceRun ) ?? false;
             GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
 
-            // BinPaths.
-            BinPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( e ) ).ToList();
-
             // Aspects.
-            Aspects = new List<IStObjEngineAspectConfiguration>();
+            _aspects = new List<StObjEngineAspectConfiguration>();
+            _namedAspects = new Dictionary<string, StObjEngineAspectConfiguration>();
             foreach( var a in e.Elements( xAspect ) )
             {
                 string type = (string)a.AttributeRequired( xType );
                 Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
                 Debug.Assert( tAspect != null );
-                IStObjEngineAspectConfiguration aspect = (IStObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
-                Aspects.Add( aspect );
+                StObjEngineAspectConfiguration aspect = (StObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
+                if( _namedAspects.ContainsKey( aspect.Name ) )
+                {
+                    Throw.InvalidDataException( $"Duplicate aspect configuration found for '{aspect.Name}': at most one configuration aspect per type is allowed." );
+                }
+                _aspects.Add( aspect );
+                _namedAspects.Add( aspect.Name, aspect );
             }
+
+            // BinPaths.
+            _binPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( e ) ).ToList();
+
         }
 
         /// <summary>
