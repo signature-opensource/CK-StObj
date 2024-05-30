@@ -1,16 +1,13 @@
-using System;
 using CK.Core;
 using CK.Setup;
-using CK.StObj.Engine.Tests.SimpleObjects;
-using NUnit.Framework;
-using System.Linq;
 using FluentAssertions;
-
-using static CK.Testing.StObjEngineTestHelper;
-using System.Reflection;
-using Microsoft.Extensions.DependencyInjection;
-using System.Xml.Linq;
+using NUnit.Framework;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
+using static CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -37,10 +34,42 @@ namespace CK.StObj.Engine.Tests
             return e;
         }
 
+        public override BinPathAspectConfiguration CreateBinPathConfiguration() => new SampleBinPathAspectConfiguration();
+
         public int Version { get; } = 2;
 
 
         public string Data { get; set; }
+    }
+
+    public class SampleBinPathAspectConfiguration : BinPathAspectConfiguration
+    {
+        public SampleBinPathAspectConfiguration()
+        {
+            Param = string.Empty;
+            A = string.Empty;
+        }
+
+        public string Param { get; set; }
+        public string A { get; set; }
+        public XElement? XmlData { get; set; }
+
+        public override void InitializeFrom( XElement e )
+        {
+            Param = (string)e.Element( "Param" )!;
+            Throw.CheckData( Param != null );
+            A = (string)e.Attribute( "A" )!;
+            Throw.CheckData( A != null );
+            var d = e.Element( "XmlData" );
+            if( d != null ) XmlData = new XElement( d );
+        }
+
+        protected override void WriteXml( XElement e )
+        {
+            e.Add( new XAttribute( "A", A ),
+                   new XElement( "Param", Param ),
+                   XmlData != null ? new XElement( XmlData ) : null );
+        }
     }
 
     public class AnotherAspectConfiguration : StObjEngineAspectConfiguration
@@ -52,6 +81,23 @@ namespace CK.StObj.Engine.Tests
         }
 
         public override XElement SerializeXml( XElement e ) => e;
+
+        public override BinPathAspectConfiguration CreateBinPathConfiguration() => new AnotherBinPathAspectConfiguration();
+    }
+
+    public class AnotherBinPathAspectConfiguration : BinPathAspectConfiguration
+    {
+        public string? Path { get; set; }
+
+        public override void InitializeFrom( XElement e )
+        {
+            Path = (string?)e.Element( "Path" );
+        }
+
+        protected override void WriteXml( XElement e )
+        {
+            e.Add( new XElement( "Path", Path ) );
+        }
     }
 
 
@@ -62,6 +108,9 @@ namespace CK.StObj.Engine.Tests
 
             <Setup>
               <BasePath>/The/Base/Path</BasePath>
+              <Aspect Type="CK.StObj.Engine.Tests.SampleAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
+              <Aspect Type="CK.StObj.Engine.Tests.AnotherAspectConfiguration, CK.StObj.Engine.Tests">
+              </Aspect>
               <BinPaths>
                 <BinPath Path="../../Relative/To/Base/[Debug|Release]/netcoreapp3.1">
                     <Assemblies>
@@ -82,11 +131,18 @@ namespace CK.StObj.Engine.Tests
                     <OutputPath>Another/Relative</OutputPath>
                     <CompileOption>Parse</CompileOption>
                     <GenerateSourceFiles>True</GenerateSourceFiles>
-                    <AnotherAspect>
-                        <Path>comm/ands</Path>
-                    </AnotherAspect>
-                    <Sample>
-                        <Param>Test</Param>
+                    <Another>
+                        <Path>{BasePath}comm/ands</Path>
+                    </Another>
+                    <Sample A="{OutputPath}InTheOutputPath">
+                        <Param>{ProjectPath}Test</Param>
+                        <XmlData>
+                            <Some>
+                                <Data Touched="{BasePath}InXmlIsland1" />
+                                <Data>{ProjectPath}InXmlIsland2</Data>
+                                <Data>Not touched {ProjectPath} must start the string.</Data>
+                        </Some>
+                        </XmlData>
                     </Sample>
                 </BinPath>
                 <BinPath Path="/Absolute/[Debug|Release]Path/Bin">
@@ -107,10 +163,6 @@ namespace CK.StObj.Engine.Tests
                 <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
                 <Type Name="CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" />
               </GlobalExcludedTypes>
-              <Aspect Type="CK.StObj.Engine.Tests.SampleAspectConfiguration, CK.StObj.Engine.Tests" Version="1">
-              </Aspect>
-              <Aspect Type="CK.StObj.Engine.Tests.AnotherAspectConfiguration, CK.StObj.Engine.Tests">
-              </Aspect>
 
             </Setup>
 
@@ -145,17 +197,14 @@ namespace CK.StObj.Engine.Tests
             t4.Kind.Should().Be( AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton | AutoServiceKind.IsMultipleService );
             t4.Optional.Should().BeTrue();
 
-            var bSample = b1.GetAspectConfiguration<SampleAspectConfiguration>();
+            var bSample = b1.FindAspect<SampleBinPathAspectConfiguration>();
             Debug.Assert( bSample != null );
-            bSample.Element( "Param" )?.Value.Should().Be( "Test" );
-            b1.GetAspectConfiguration( "SampleAspectConfiguration" ).Should().BeSameAs( bSample );
-            b1.GetAspectConfiguration( "SampleConfiguration" ).Should().BeSameAs( bSample );
-            b1.GetAspectConfiguration( "Sample" ).Should().BeSameAs( bSample );
-            b1.GetAspectConfiguration( "SampleAspect" ).Should().BeSameAs( bSample );
+            bSample.Param.Should().Be( "{ProjectPath}Test" );
+            bSample.A.Should().Be( "{OutputPath}InTheOutputPath" );
 
-            var bAnother = b1.GetAspectConfiguration<AnotherAspectConfiguration>();
+            var bAnother = b1.FindAspect<AnotherBinPathAspectConfiguration>();
             Debug.Assert( bAnother != null );
-            bSample.Element( "Path" )?.Value.Should().Be( "comm/ands" );
+            bAnother.Path.Should().Be( "{BasePath}comm/ands" );
 
             b1.ExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
             b1.OutputPath.Should().Be( new NormalizedPath( "Another/Relative" ) );
@@ -173,6 +222,45 @@ namespace CK.StObj.Engine.Tests
             c.Aspects[1].Should().BeAssignableTo<AnotherAspectConfiguration>();
         }
 
+        [Test]
+        public void BasePath_OutputPath_and_ProjectPath_placeholders_in_BinPath_aspects()
+        {
+            StObjEngineConfiguration c = new StObjEngineConfiguration( _config );
+
+            var sample = c.BinPaths[0].FindAspect<SampleBinPathAspectConfiguration>();
+            Throw.DebugAssert( sample != null );
+            sample.Param.Should().Be( "{ProjectPath}Test" );
+            sample.A.Should().Be( "{OutputPath}InTheOutputPath" );
+            sample.XmlData?.ToString().Should().Be( """
+                <XmlData>
+                  <Some>
+                    <Data Touched="{BasePath}InXmlIsland1" />
+                    <Data>{ProjectPath}InXmlIsland2</Data>
+                    <Data>Not touched {ProjectPath} must start the string.</Data>
+                  </Some>
+                </XmlData>
+                """ );
+
+            var another = c.BinPaths[0].FindAspect<AnotherBinPathAspectConfiguration>();
+            Throw.DebugAssert( another != null );
+            another.Path.Should().Be( "{BasePath}comm/ands" );
+
+            RunningStObjEngineConfiguration.CheckAndValidate( TestHelper.Monitor, c );
+
+            sample.Param.Should().Be( "/The/Base/Path/Another/Relative/Test" );
+            sample.A.Should().Be( "/The/Base/Path/Another/Relative/InTheOutputPath" );
+            sample.XmlData?.ToString().Should().Be( """
+                <XmlData>
+                  <Some>
+                    <Data Touched="/The/Base/Path/InXmlIsland1" />
+                    <Data>/The/Base/Path/Another/Relative/InXmlIsland2</Data>
+                    <Data>Not touched {ProjectPath} must start the string.</Data>
+                  </Some>
+                </XmlData>
+                """ );
+
+            another.Path.Should().Be( "/The/Base/Path/comm/ands" );
+        }
 
         [Test]
         public void configuration_to_xml()

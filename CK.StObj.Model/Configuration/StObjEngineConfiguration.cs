@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace CK.Setup
 {
@@ -22,6 +23,20 @@ namespace CK.Setup
         public IReadOnlyList<StObjEngineAspectConfiguration> Aspects => _aspects;
 
         /// <summary>
+        /// Finds an existing aspect or returns null.
+        /// </summary>
+        /// <param name="name">The aspect name.</param>
+        /// <returns>The aspect or null.</returns>
+        public StObjEngineAspectConfiguration? FindAspect( string name ) => _namedAspects.GetValueOrDefault( name );
+
+        /// <summary>
+        /// Finds an existing aspect or returns null.
+        /// </summary>
+        /// <param name="name">The aspect name.</param>
+        /// <returns>The aspect or null.</returns>
+        public T? FindAspect<T>() where T : StObjEngineAspectConfiguration => _aspects.OfType<T>().SingleOrDefault();
+
+        /// <summary>
         /// Adds an aspect to these <see cref="BinPaths"/>.
         /// No existing aspect with the same type must exist and the aspect must not belong to
         /// another configuration otherwise an <see cref="ArgumentException"/> is thrown.
@@ -40,7 +55,7 @@ namespace CK.Setup
         /// Removes an aspect from <see cref="Aspects"/>. Does nothing if the <paramref name="aspect"/>
         /// does not belong to this configuration.
         /// </summary>
-        /// <param name="binPath">An aspect configuration to remove.</param>
+        /// <param name="aspect">An aspect configuration to remove.</param>
         public void RemoveAspect( StObjEngineAspectConfiguration aspect )
         {
             Throw.CheckArgument( aspect != null );
@@ -49,6 +64,10 @@ namespace CK.Setup
                 _aspects.Remove( aspect );
                 aspect.Owner = null;
                 _namedAspects.Remove( aspect.Name );
+                foreach( var b in _binPaths )
+                {
+                    b.RemoveAspect( aspect.Name );
+                }
             }
         }
 
@@ -125,6 +144,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Adds a BinPathConfiguration to these <see cref="BinPaths"/>.
+        /// <see cref="BinPathAspectConfiguration"/> that cannot be bound to an existing <see cref="Aspects"/>
+        /// are removed from the <see cref="BinPathConfiguration.Aspects"/>.
         /// </summary>
         /// <param name="binPath">A BinPath configuration to add.</param>
         public void AddBinPath( BinPathConfiguration binPath )
@@ -132,6 +153,25 @@ namespace CK.Setup
             Throw.CheckArgument( binPath != null && binPath.Owner ==  null );
             binPath.Owner = this;
             _binPaths.Add( binPath );
+            // Remove orphans BinPath configurations or bind them.
+            List<BinPathAspectConfiguration>? toRemove = null; 
+            foreach( var aspect in binPath.Aspects )
+            {
+                var a = FindAspect( aspect.Name );
+                if( a != null ) aspect.AspectConfiguration = a;
+                else
+                {
+                    toRemove ??= new List<BinPathAspectConfiguration>();
+                    toRemove.Add( aspect );
+                }
+            }
+            if( toRemove != null )
+            {
+                foreach( var aspect in toRemove )
+                {
+                    binPath.RemoveAspect( aspect );
+                }
+            }
         }
 
         /// <summary>

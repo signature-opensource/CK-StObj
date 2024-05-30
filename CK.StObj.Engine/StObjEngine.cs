@@ -164,7 +164,10 @@ namespace CK.Setup
         {
             Throw.CheckState( "Run can be called only once.", !_hasRun );
             _hasRun = true;
-            if( !_config.CheckAndValidate( _monitor ) ) return new StObjEngineResult( false, _config );
+            if( !RunningStObjEngineConfiguration.CheckAndValidate( _monitor, _config.Configuration ) )
+            {
+                return new StObjEngineResult( false, _config );
+            }
             if( _ckSetupConfig != null )
             {
                 _config.ApplyCKSetupConfiguration( _monitor, _ckSetupConfig );

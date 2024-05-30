@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -14,7 +15,7 @@ namespace CK.Setup
         readonly string _name;
 
         /// <summary>
-        /// Initializes an empty aspect.
+        /// Initializes an empty aspect configuration.
         /// </summary>
         protected StObjEngineAspectConfiguration()
         {
@@ -22,7 +23,7 @@ namespace CK.Setup
             var n = GetType().Name;
             if( n.Length <= 19 || !n.EndsWith( "AspectConfiguration" ) )
             {
-                Throw.InvalidDataException( $"Invalid aspect configuration type name '{GetType().Name}': it must end with \"AspectConfiguration\"." );
+                Throw.CKException( $"Invalid aspect configuration type name '{GetType().Name}': it must end with \"AspectConfiguration\"." );
             }
             _name = n.Substring( 0, n.Length - 19 );
         }
@@ -60,5 +61,14 @@ namespace CK.Setup
         /// <returns>The <paramref name="e"/> element.</returns>
         public abstract XElement SerializeXml( XElement e );
 
+        /// <summary>
+        /// Factory method for specific <see cref="BinPathAspectConfiguration"/>.
+        /// Not all aspects have such specific configuration: by default this throws a <see cref="System.IO.InvalidDataException"/>.
+        /// </summary>
+        /// <returns>A new empty BinPath specific configuration for this aspect.</returns>
+        public virtual BinPathAspectConfiguration CreateBinPathConfiguration()
+        {
+            return Throw.InvalidDataException<BinPathAspectConfiguration>( $"Aspect '{_name}' doesn't expect BinPath specific configuration. Did you forget to override CreateBinPathConfiguration()?" );
+        }
     }
 }

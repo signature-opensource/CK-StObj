@@ -58,7 +58,7 @@ namespace CK.Setup
             }
 
             // BinPaths.
-            _binPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( e ) ).ToList();
+            _binPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( e, _namedAspects ) ).ToList();
 
         }
 

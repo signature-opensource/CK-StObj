@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -31,11 +32,16 @@ namespace CK.Setup
         /// <summary>
         /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
         /// are rooted and gives automatic numbered names to empty <see cref="BinPathConfiguration.Name"/>.
+        /// <para>
+        /// Any element or attribute value that start with '{BasePath}', '{OutputPath}' and '{ProjectPath}' are evaluated.
+        /// </para>
+        /// <para>
+        /// This method is public to ease tests.
+        /// </para>
         /// </summary>
         /// <returns>True on success, false is something's wrong.</returns>
-        internal bool CheckAndValidate( IActivityMonitor monitor )
+        public static bool CheckAndValidate( IActivityMonitor monitor, StObjEngineConfiguration c )
         {
-            var c = Configuration;
             if( c.BinPaths.Count == 0 )
             {
                 monitor.Error( $"No BinPath defined in the configuration. Nothing can be processed." );
@@ -71,16 +77,13 @@ namespace CK.Setup
                 if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
                 ++idx;
 
-                var foundAspects = c.Aspects.Select( r => b.GetAspectConfiguration( r.GetType() ) ).Where( c => c != null ).Select( c => c! );
-                var aliens = b.AspectConfigurations.Except( foundAspects );
-                if( aliens.Any() )
+                bool hasChanged;
+                foreach( var binPathAspect in b.Aspects )
                 {
-                    monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a.Name.ToString() ).Concatenate()}. Available aspects are: {Configuration.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
-                    return false;
-                }
-                foreach( var a in foundAspects )
-                {
-                    EvalKnownPaths( monitor, b.Name, a.Name.LocalName, a, c.BasePath, b.OutputPath, b.ProjectPath );
+                    hasChanged = false;
+                    var e = binPathAspect.ToXml();
+                    EvalKnownPaths( monitor, b.Name, binPathAspect.Name, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
+                    if( hasChanged ) binPathAspect.InitializeFrom( e );
                 }
             }
             // This must be done after the loop above (Name is set when empty).
@@ -92,45 +95,91 @@ namespace CK.Setup
             }
             return true;
 
-            static void EvalKnownPaths( IActivityMonitor monitor, string binPathName, string aspectName, XElement element, NormalizedPath basePath, NormalizedPath outputPath, NormalizedPath projectPath )
+            static void EvalKnownPaths( IActivityMonitor monitor,
+                                        string binPathName,
+                                        string aspectName,
+                                        XElement element,
+                                        NormalizedPath basePath,
+                                        NormalizedPath outputPath,
+                                        NormalizedPath projectPath,
+                                        ref bool hasChanged )
             {
+                EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, element );
                 foreach( var e in element.Elements() )
                 {
+                    EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, e );
                     if( !e.HasElements )
                     {
-                        Debug.Assert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
-                        string? v = e.Value;
-                        if( v != null && v.Length >= 10 )
+                        if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, e.Value, out string? mapped ) )
                         {
-                            var vS = ReplacePattern( basePath, "{BasePath}", v );
-                            vS = ReplacePattern( outputPath, "{OutputPath}", vS );
-                            vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
-                            if( v != vS )
-                            {
-                                monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
-                                e.Value = vS;
-                            }
+                            e.Value = mapped;
+                            hasChanged = true;
                         }
                     }
                     else
                     {
-                        EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath );
+                        EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath, ref hasChanged );
                     }
                 }
 
-                static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
+                static bool EvalString( IActivityMonitor monitor,
+                                        string binPathName,
+                                        string aspectName,
+                                        NormalizedPath basePath,
+                                        NormalizedPath outputPath,
+                                        NormalizedPath projectPath,
+                                        string? v,
+                                        [NotNullWhen( true )] out string? mapped )
                 {
-                    int len = pattern.Length;
-                    if( v.Length >= len )
+                    if( v != null && v.Length >= 10 )
                     {
-                        NormalizedPath result;
-                        if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
+                        Throw.DebugAssert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
+                        var vS = ReplacePattern( basePath, "{BasePath}", v );
+                        vS = ReplacePattern( outputPath, "{OutputPath}", vS );
+                        vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
+                        if( v != vS )
                         {
-                            if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
-                            result = basePath.Combine( v.Substring( len ) ).ResolveDots();
+                            monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
+                            mapped = vS;
+                            return true;
                         }
                     }
-                    return v;
+                    mapped = null;
+                    return false;
+
+                    static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
+                    {
+                        int len = pattern.Length;
+                        if( v.Length >= len )
+                        {
+                            if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
+                            {
+                                if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
+                                return basePath.Combine( v.Substring( len ) ).ResolveDots();
+                            }
+                        }
+                        return v;
+                    }
+
+                }
+
+                static void EvalAttributes( IActivityMonitor monitor,
+                                           string binPathName,
+                                           string aspectName,
+                                           NormalizedPath basePath,
+                                           NormalizedPath outputPath,
+                                           NormalizedPath projectPath,
+                                           ref bool hasChanged,
+                                           XElement e )
+                {
+                    foreach( var a in e.Attributes() )
+                    {
+                        if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, a.Value, out string? mapped ) )
+                        {
+                            a.Value = mapped;
+                            hasChanged = true;
+                        }
+                    }
                 }
             }
         }
