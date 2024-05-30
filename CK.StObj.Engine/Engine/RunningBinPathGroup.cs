@@ -22,6 +22,8 @@ namespace CK.Setup
         readonly IReadOnlyCollection<BinPathConfiguration> _similarConfigurations;
         readonly GeneratedFileArtifactWithTextSignature? _generatedAssembly;
         readonly GeneratedG0Artifact? _generatedSource;
+        internal StObjCollectorResult? _collectorResult;
+
         SaveSourceLevel _saveSource;
         SHA1Value _runSignature;
         CompileOption _compileOption;
@@ -176,6 +178,9 @@ namespace CK.Setup
 
         /// <inheritdoc />
         public string Names => _names;
+
+        /// <inheritdoc />
+        public IPocoTypeSystemBuilder? PocoTypeSystemBuilder => _collectorResult?.PocoTypeSystemBuilder;
 
         /// <inheritdoc/>
         public IStObjMap? TryLoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true )

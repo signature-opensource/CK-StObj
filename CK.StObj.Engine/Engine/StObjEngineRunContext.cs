@@ -27,6 +27,7 @@ namespace CK.Setup
 
         internal void AddResult( RunningBinPathGroup g, StObjCollectorResult secondaryResult )
         {
+            g._collectorResult = secondaryResult;
             _binPaths.Add( new GenBinPath( this, secondaryResult, g ) );
         }
 
