@@ -201,12 +201,12 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="types">Types to register.</param>
-        public void RegisterTypes( IActivityMonitor monitor, IReadOnlyCollection<Type> types )
+        public void RegisterTypes( IActivityMonitor monitor, IEnumerable<Type> types )
         {
             Throw.CheckNotNullArgument( types );
             using var errorTracker = monitor.OnError( _errorEntries.Add );
             if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
-            DoRegisterTypes( monitor, types, types.Count );
+            DoRegisterTypes( monitor, types );
         }
 
         /// <summary>
@@ -216,39 +216,34 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeNames">Assembly qualified names of the types to register.</param>
-        public void RegisterTypes( IActivityMonitor monitor, IReadOnlyCollection<string> typeNames )
+        public void RegisterTypes( IActivityMonitor monitor, IEnumerable<string> typeNames )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
             if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
             Throw.CheckNotNullArgument( typeNames );
-            DoRegisterTypes( monitor, typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ), typeNames.Count );
+            DoRegisterTypes( monitor, typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ) );
         }
 
-        void DoRegisterTypes( IActivityMonitor monitor, IEnumerable<Type> types, int count )
+        void DoRegisterTypes( IActivityMonitor monitor, IEnumerable<Type> types )
         {
             SafeTypesHandler( monitor,
-                              "Explicitly registering IPoco interfaces, or Real Objects or Service classes",
                               types,
-                              count,
                               ( m, cc, t ) => cc.RegisterType( m, t ), false );
         }
 
         void SafeTypesHandler( IActivityMonitor monitor,
-                               string registrationType,
                                IEnumerable<Type> types,
-                               int count,
                                Action<IActivityMonitor,CKTypeCollector,Type> a,
                                bool defineExternalCall = true )
         {
             Debug.Assert( types != null );
-            if( count == 0 ) return;
             if( defineExternalCall && _cc.RegisteredTypeCount > 0 )
             {
                 monitor.Error( $"External definition lifetime, cardinality or Front services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
             else
             {
-                using( monitor.OpenTrace( $"{registrationType}: handling {count} type(s)." ) )
+                using( monitor.OpenTrace( $"Explicitly registering IPoco interfaces, or Real Objects or Service classes." ) )
                 {
                     try
                     {
