@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Sample.Model;
 
+using CK.Testing;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace Sample.Engine.Tests
@@ -32,9 +33,9 @@ namespace Sample.Engine.Tests
         [Test]
         public void StupidCodeAttribute_works()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ThingService ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var thing = s.GetRequiredService<ThingService>();
+            var c = TestHelper.CreateTypeCollector( typeof( ThingService ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var thing = auto.Services.GetRequiredService<ThingService>();
             thing.GetValue( "ab" ).Should().Be( 2 );
             thing.GetAnotherValue( "abc" ).Should().Be( 9 );
             thing.SaySomething( TestHelper.Monitor ).Should().Be( "Yes!" );

@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -33,11 +34,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<ITest>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Working = Code.Pending; o.NullableWorking = Code.Working; o.Result = Code.None; } );
             o.ToString().Should().Be( @"{""Working"":2,""NullableWorking"":1,""Result"":[""WorkingCode"",0]}" );
         }
@@ -45,11 +46,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<ITest>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Working = Code.Pending; o.NullableWorking = Code.Working; o.Result = Code.None; } );
             var o2 = JsonTestHelper.Roundtrip( directory, o );
 
@@ -83,11 +84,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_with_ulong_underlying_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithULong ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithULong ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithULong>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithULong>>();
             var o = f.Create( o => { o.Code = CodeOnULong.None; o.Result = CodeOnULong.None; } );
             o.ToString().Should().Be( @"{""Code"":""0"",""Result"":[""ULCode"",""0""]}" );
 
@@ -108,11 +109,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_in_list()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithList ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithList ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithList>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithList>>();
             var o = f.Create( o =>
             {
                 o.Codes.Add( Code.Working );

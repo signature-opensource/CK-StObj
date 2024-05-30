@@ -14,7 +14,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the mutable list of all configuration aspects that must participate to setup.
         /// </summary>
-        public List<IStObjEngineAspectConfiguration> Aspects { get; }
+        public List<StObjEngineAspectConfiguration> Aspects { get; }
 
         /// <summary>
         /// Gets or sets the final Assembly name.

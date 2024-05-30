@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -21,11 +22,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithTuple>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithTuple>>();
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
             o.ToString().Should().Be( @"{""Hop"":[""CodeGen!"",3712]}" );
 
@@ -41,11 +42,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_nullable_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithNullableTuple>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithNullableTuple>>();
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
             o.ToString().Should().Be( @"{""Hop"":[""CodeGen!"",3712]}" );
 
@@ -72,11 +73,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void IPoco_collections_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithCollections>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithCollections>>();
             var o = f.Create( o =>
             {
                 o.List.Add( ("C1", 3712) );
@@ -118,11 +119,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void collections_of_records_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithRecord>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithRecord>>();
 
             var g1 = Guid.NewGuid();
             var g2 = Guid.NewGuid();
@@ -147,11 +148,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void collections_of_nullable_records_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithRecordNullable>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithRecordNullable>>();
 
             var g1 = Guid.NewGuid();
             var g2 = Guid.NewGuid();

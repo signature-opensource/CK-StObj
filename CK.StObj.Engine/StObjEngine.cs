@@ -5,6 +5,7 @@ using CK.Core;
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.IO;
+using Microsoft.Extensions.Configuration;
 
 #nullable enable
 
@@ -82,6 +83,7 @@ namespace CK.Setup
         /// </summary>
         public bool Started => _startContext != null;
 
+        [Obsolete]
         sealed class MonoResolver : IStObjCollectorResultResolver
         {
             readonly StObjCollectorResult _result;
@@ -104,6 +106,7 @@ namespace CK.Setup
         /// <param name="result">The collector result.</param>
         /// <param name="config">The configuration.</param>
         /// <returns>True on success, false otherwise.</returns>
+        [Obsolete( "Use the ISet<Type> or RunSingleBinPath( stObjCollectorResult ) instead." )]
         public static StObjEngineResult Run( IActivityMonitor monitor, StObjCollectorResult result, StObjEngineConfiguration config )
         {
             Throw.CheckNotNullArgument( monitor );
@@ -120,20 +123,44 @@ namespace CK.Setup
         /// This is the entry point when run by CKSetup.
         /// </summary>
         /// <returns>True on success, false if an error occurred.</returns>
-        public bool Run() => DoRun( null ).Success;
+        public bool Run() => DoRun( null, null, null ).Success;
 
         /// <summary>
         /// Runs the setup, delegating the obtention of the <see cref="StObjCollectorResult"/> to an external resolver.
         /// </summary>
         /// <param name="resolver">The resolver to use.</param>
         /// <returns>The run result.</returns>
+        [Obsolete( "Use Run( types ) or RunSingleBinPath( stObjCollectorResult ) instead." )]
         public StObjEngineResult Run( IStObjCollectorResultResolver resolver )
         {
             Throw.CheckNotNullArgument( resolver );
-            return DoRun( resolver );
+            return DoRun( null, null, resolver );
         }
 
-        StObjEngineResult DoRun( IStObjCollectorResultResolver? resolver )
+        /// <summary>
+        /// Runs the setup with explicit registered types.
+        /// </summary>
+        /// <param name="types">Explicit types to register.</param>
+        /// <returns>The run result.</returns>
+        public StObjEngineResult Run( ISet<Type> types )
+        {
+            Throw.CheckNotNullArgument( types );
+            return DoRun( types, null, null );
+        }
+
+        /// <summary>
+        /// Runs the setup with explicit registered types.
+        /// </summary>
+        /// <param name="stObjCollectorResult">Already available result.</param>
+        /// <returns>The run result.</returns>
+        public StObjEngineResult RunSingleBinPath( StObjCollectorResult stObjCollectorResult )
+        {
+            Throw.CheckState( _config.Configuration.BinPaths.Count == 1 );
+            Throw.CheckNotNullArgument( stObjCollectorResult );
+            return DoRun( null, stObjCollectorResult, null );
+        }
+
+        StObjEngineResult DoRun( ISet<Type>? types, StObjCollectorResult? stObjCollectorResult, IStObjCollectorResultResolver? obsoleteResolver )
         {
             Throw.CheckState( "Run can be called only once.", !_hasRun );
             _hasRun = true;
@@ -174,7 +201,7 @@ namespace CK.Setup
                                                     ? $"Analyzing types from Unified Working directory '{g.Configuration.Path}'."
                                                     : $"Analyzing types from BinPaths '{g.SimilarConfigurations.Select( b => b.Path.Path ).Concatenate( "', '" )}'." ) )
                         {
-                            StObjCollectorResult? r = resolver?.GetResult( g ) ?? SafeBuildStObj( g );
+                            StObjCollectorResult? r = stObjCollectorResult ?? obsoleteResolver?.GetResult( g ) ?? SafeBuildStObj( g, types );
                             if( r == null )
                             {
                                 _status.Success = false;
@@ -310,7 +337,7 @@ namespace CK.Setup
             }
         }
 
-        StObjCollectorResult? SafeBuildStObj( RunningBinPathGroup group )
+        StObjCollectorResult? SafeBuildStObj( RunningBinPathGroup group, ISet<Type>? types )
         {
             Debug.Assert( _startContext != null, "Work started." );
             bool hasError = false;
@@ -341,6 +368,8 @@ namespace CK.Setup
                             stObjC.SetAutoServiceKind( _monitor, c.Name, c.Kind, c.Optional );
                         }
                     }
+                    // Registers the types provided by code.
+                    if( types != null ) stObjC.RegisterTypes( _monitor, types );
                     // Then registers the types from the assemblies.
                     stObjC.RegisterAssemblyTypes( _monitor, group.Configuration.Assemblies );
                     // Explicitly registers the non optional Types.

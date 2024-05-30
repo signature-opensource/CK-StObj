@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -24,9 +25,9 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void union_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var o = directory.Create<IBasicUnion>();
             o.ToString().Should().Be( @"{""Thing"":[""string"",""""]}", "The first possible default is selected, here it's the string that defaults to empty." );

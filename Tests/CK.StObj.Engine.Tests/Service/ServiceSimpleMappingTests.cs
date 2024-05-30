@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -56,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Service
         // Excluding a [CKTypeDefiner] doesn't "undefine" its specializations. Same as above.
         //
         // Weak exclusion may be renamed into "Type masking" or "Type hiding". This doesn't change the code, the structure of the
-        // program, instead it just says "don't use this type".
+        // program, instead it just says "don't consider this type".
         //
         // # Strong exclusion
         // 
@@ -66,7 +67,7 @@ namespace CK.StObj.Engine.Tests.Service
         // "Strongly" excluding a base class for instance means to remove all impacts of the class on its specializations. Among
         // these impacts there is the IRealObject interface, so to reintroduce some specializations of it we would need to expose a
         // "SetRealObjectKind" method and offer external configuration support like the one for AutoService.
-        // Tedious but feasible...
+        // Tedious and hardly feasible...
         // 
         // Excluding a [CKTypeSuperTypeDefiner] condemns is specializations in the same manner.
         //
@@ -102,11 +103,9 @@ namespace CK.StObj.Engine.Tests.Service
             // Same tests as above but excluding ISBase type: success since
             // ISBase is no more considered a IScopedAutoService.
             {
-                var collector = TestHelper.CreateStObjCollector( t => t != typeof( ISBase ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( ServiceS1Impl ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( ServiceS2Impl ) );
-                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ServiceS1Impl ), typeof( ServiceS2Impl ) );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector, t => t != typeof( ISBase ) ).EngineMap;
+                Throw.DebugAssert( map != null );
 
                 map.Services.Mappings.ContainsKey( typeof( ISBase ) ).Should().BeFalse();
 
@@ -123,8 +122,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_with_single_implementation()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ServiceS1S2Impl ) );
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            var collector = TestHelper.CreateTypeCollector( typeof( ServiceS1S2Impl ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
             map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
@@ -143,8 +142,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_unification_works()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ServiceUnifiedImpl ) );
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var collector = TestHelper.CreateTypeCollector( typeof( ServiceUnifiedImpl ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( collector );
             var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
             interfaces.Should().HaveCount( 1 );
             var iSU = interfaces[0];
@@ -201,12 +200,12 @@ namespace CK.StObj.Engine.Tests.Service
         {
             bool solved = mode == "With Service Chaining";
 
-            var collector = TestHelper.CreateStObjCollector( typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) );
-            if( solved ) collector.RegisterType( TestHelper.Monitor, typeof( ResolveByClassUnification ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) );
+            if( solved ) collector.Add( typeof( ResolveByClassUnification ) );
 
             if( solved )
             {
-                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
 
                 map.Services.Mappings[typeof( IMultiImplService )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
@@ -219,8 +218,8 @@ namespace CK.StObj.Engine.Tests.Service
             }
             else
             {
-                var r = TestHelper.GetFailedResult( collector, "cannot be unified by any of this candidates: " );
-                Debug.Assert( r != null, "We have a (failed) result." );
+                var r = TestHelper.GetFailedCollectorResult( collector, "cannot be unified by any of this candidates: " );
+                Throw.DebugAssert( "We have a (failed) result.", r != null );
 
                 var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
                 interfaces.Should().HaveCount( 1 );
@@ -261,8 +260,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void simple_linked_list_of_service_classes()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ), typeof( S3 ), typeof( S4 ) );
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            var collector = TestHelper.CreateTypeCollector( typeof( S1 ), typeof( S2 ), typeof( S3 ), typeof( S4 ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( S1 ) );
             map.Services.Mappings[typeof( S1 )].ClassType.Should().BeSameAs( typeof( S1 ) );
@@ -295,24 +294,23 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Linked_list_of_service_abstract_classes()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
 
-            var (r, map) = TestHelper.CompileAndLoadStObjMap( collector );
+            var load = TestHelper.RunSingleBinPathAndLoad( collector );
 
-            Debug.Assert( r.EngineMap != null, "No initialization error." );
-            var final = r.EngineMap.Services.Mappings[typeof( ISBase )];
+            var final = load.Map.Services.Mappings[typeof( ISBase )];
             final.FinalType.Should().NotBeSameAs( typeof( AbstractS1 ) );
             final.FinalType.Should().BeAssignableTo( typeof( AbstractS1 ) );
-            r.EngineMap.Services.Mappings[typeof( AbstractS1 )].Should().BeSameAs( final );
+            load.Map.Services.Mappings[typeof( AbstractS1 )].Should().BeSameAs( final );
 
-            r.EngineMap.Services.Mappings[typeof( AbstractS2 )].FinalType.Should().NotBeSameAs( typeof( AbstractS2 ) );
-            r.EngineMap.Services.Mappings[typeof( AbstractS2 )].FinalType.Should().BeAssignableTo( typeof( AbstractS2 ) );
-            r.EngineMap.Services.Mappings[typeof( AbstractS3 )].FinalType.Should().NotBeSameAs( typeof( AbstractS3 ) );
-            r.EngineMap.Services.Mappings[typeof( AbstractS3 )].FinalType.Should().BeAssignableTo( typeof( AbstractS3 ) );
+            load.Map.Services.Mappings[typeof( AbstractS2 )].FinalType.Should().NotBeSameAs( typeof( AbstractS2 ) );
+            load.Map.Services.Mappings[typeof( AbstractS2 )].FinalType.Should().BeAssignableTo( typeof( AbstractS2 ) );
+            load.Map.Services.Mappings[typeof( AbstractS3 )].FinalType.Should().NotBeSameAs( typeof( AbstractS3 ) );
+            load.Map.Services.Mappings[typeof( AbstractS3 )].FinalType.Should().BeAssignableTo( typeof( AbstractS3 ) );
 
             var services = new ServiceCollection();
-            new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).Should().BeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
-            IServiceProvider p = services.BuildServiceProvider();
+            new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( load.Map ).Should().BeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
+            using ServiceProvider p = services.BuildServiceProvider();
 
             var oG = p.GetRequiredService( typeof( ISBase ) );
             oG.GetType().FullName.Should().Be( "CK.StObj.Engine.Tests.Service.ServiceSimpleMappingTests_AbstractS1_CK" );

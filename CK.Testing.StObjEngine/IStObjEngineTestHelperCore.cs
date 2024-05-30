@@ -23,6 +23,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="typeFilter">The type filter to use when types will be added.</param>
         /// <returns>The collector.</returns>
+        [Obsolete( "Use CreateTypeCollector instead." )]
         StObjCollector CreateStObjCollector( Func<Type, bool>? typeFilter = null );
 
         /// <summary>
@@ -31,6 +32,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="types">The types to register.</param>
         /// <returns>The collector.</returns>
+        [Obsolete( "Use CreateTypeCollector instead." )]
         StObjCollector CreateStObjCollector( params Type[] types );
 
         /// <summary>
@@ -38,6 +40,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <returns>The successful collector result.</returns>
+        [Obsolete( "Use GetSuccessfulCollectorResult instead." )]
         StObjCollectorResult GetSuccessfulResult( StObjCollector c );
 
         /// <summary>
@@ -53,6 +56,7 @@ namespace CK.Testing.StObjEngine
         /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
         /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <returns>The failed collector result or null if the error prevented its creation.</returns>
+        [Obsolete( "Use GetFailedCollectorResult instead." )]
         StObjCollectorResult? GetFailedResult( StObjCollector c, string message, params string[] otherMessages );
 
         /// <summary>
@@ -78,6 +82,7 @@ namespace CK.Testing.StObjEngine
         /// <param name="compileOption">Compilation behavior.</param>
         /// <param name="generateSourceFile">True to update the G0.cs file.</param>
         /// <returns>The (successful) collector result and <see cref="StObjEngineResult"/> (that may be in error).</returns>
+        [Obsolete( "Use RunStObjEngine instead." )]
         GenerateCodeResult GenerateCode( StObjCollector c,
                                          Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                          bool generateSourceFile = false,
@@ -91,7 +96,7 @@ namespace CK.Testing.StObjEngine
         /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
-        /// <param name="engineConfigurator">
+        /// <param name="confgureEngine">
         /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
         /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
@@ -104,8 +109,9 @@ namespace CK.Testing.StObjEngine
         /// </para>
         /// </param>
         /// <returns>The (successful) result and the ready-to-use map.</returns>
+        [Obsolete( "Use RunSingleBinPathAndLoad instead." )]
         CompileAndLoadResult CompileAndLoadStObjMap( StObjCollector c,
-                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null );
+                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? confgureEngine = null );
 
         /// <summary>
         /// Fully builds and configures a IServiceProvider after a successful run of the engine and returns all the intermediate results: the (successful) collector
@@ -136,6 +142,7 @@ namespace CK.Testing.StObjEngine
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
+        [Obsolete( "Use CreateSingleBinPathAutomaticServices instead." )]
         AutomaticServicesResult CreateAutomaticServices( StObjCollector c,
                                                          Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                          Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem = null,
@@ -162,29 +169,13 @@ namespace CK.Testing.StObjEngine
         /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configuration.</param>
+        [Obsolete( "Use GetFailedSingleBinPathAutomaticServices instead." )]
         void GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                       string message,
                                                       IEnumerable<string>? otherMessages = null,
                                                       Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                       SimpleServiceContainer? startupServices = null,
                                                       Action<StObjContextRoot.ServiceRegister>? configureServices = null );
-
-        /// <summary>
-        /// Starts any <see cref="IHostedService"/> in <paramref name="services"/>.
-        /// </summary>
-        /// <param name="services">The service provider.</param>
-        /// <param name="cancellation">Optional cancellation token.</param>
-        /// <returns>The <paramref name="services"/>.</returns>
-        Task<ServiceProvider> StartHostedServicesAsync( ServiceProvider services, CancellationToken cancellation = default );
-
-        /// <summary>
-        /// Stops any <see cref="IHostedService"/> in <paramref name="services"/> and optionally disposes the provider.
-        /// </summary>
-        /// <param name="services">The service provider.</param>
-        /// <param name="disposeServices">True to dispose the <paramref name="services"/>.</param>
-        /// <param name="cancellation">Optional cancellation token.</param>
-        /// <returns>The awaitable.</returns>
-        Task StopHostedServicesAsync( ServiceProvider services, bool disposeServices = false, CancellationToken cancellation = default );
 
     }
 }

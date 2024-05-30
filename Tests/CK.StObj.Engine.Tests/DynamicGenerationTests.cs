@@ -1,7 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
-using CK.Testing.StObjEngine;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
@@ -72,13 +72,18 @@ namespace CK.StObj.Engine.Tests
             public static void DoTest()
             {
                 using var container = new SimpleServiceContainer();
+
                 StObjCollector collector = new StObjCollector( container, configurator: new StObjPropertyConfigurator() );
                 collector.RegisterType( TestHelper.Monitor, typeof( B ) );
                 collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-                var (r,map) = TestHelper.CompileAndLoadStObjMap( collector );
+                collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+                StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+                r.HasFatalError.Should().Be( false, "There must be no error." );
+
+                var load = TestHelper.RunSingleBinPathAndLoad( r );
 
                 // Check collector result.
                 {
@@ -97,6 +102,7 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // Check compiled StObjMap.
+                var map = load.Map;
                 {
                     Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
                     Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
@@ -198,7 +204,11 @@ namespace CK.StObj.Engine.Tests
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-                var (r, map) = TestHelper.CompileAndLoadStObjMap( collector );
+                collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+                StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+                r.HasFatalError.Should().Be( false, "There must be no error." );
+
+                var load = TestHelper.RunSingleBinPathAndLoad( r );
 
                 // Check collector result.
                 {
@@ -218,8 +228,8 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // Check generated StObjMap.
+                var map = load.Map;
                 {
-                    Debug.Assert( map != null );
                     Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
                     Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
 
@@ -343,9 +353,8 @@ namespace CK.StObj.Engine.Tests
 
             public void DoTest()
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( AutomaticallyImplemented ) );
-                var map = TestHelper.CompileAndLoadStObjMap( collector ).Map;
-                Debug.Assert( map != null );
+                var collector = TestHelper.CreateTypeCollector( typeof( AutomaticallyImplemented ) );
+                var map = TestHelper.RunSingleBinPathAndLoad( collector ).Map;
 
                 var a = map.GetType().Assembly;
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
@@ -386,9 +395,11 @@ namespace CK.StObj.Engine.Tests
                 var extraServices = new SimpleServiceContainer();
                 extraServices.Add<Func<string>>( () => "Hello World!" );
 
-                StObjCollector collector = new StObjCollector( extraServices );
-                collector.RegisterType( TestHelper.Monitor, typeof( JustForTheAttribute ) );
-                TestHelper.GetSuccessfulResult( collector );
+                StObjCollector c = new StObjCollector( extraServices );
+                c.RegisterType( TestHelper.Monitor, typeof( JustForTheAttribute ) );
+                c.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+                StObjCollectorResult? r = c.GetResult( TestHelper.Monitor );
+                r.HasFatalError.Should().Be( false, "There must be no error." );
             }
 
         }
@@ -456,9 +467,8 @@ namespace CK.StObj.Engine.Tests
             {
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
-                    TestHelper.CompileAndLoadStObjMap( collector ).Map.Should().NotBeNull();
-
+                    var collector = TestHelper.CreateTypeCollector( typeof( S1 ), typeof( S2 ) );
+                    TestHelper.RunSingleBinPathAndLoad( collector );
                     entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                                     .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
                 }

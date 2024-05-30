@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -41,9 +42,9 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void secondary_properties()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var s1 = directory.Create<ISecondary>( s => { s.Power = 3712; s.Name = "Talia"; } );
             var s2 = directory.Create<ISecondary>( s => { s.Power = -1; s.Name = "Olly"; } );
@@ -86,12 +87,12 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void secondary_collections()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ),
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
                                                      typeof( ISecondary ),
                                                      typeof( IOtherSecondary ),
                                                      typeof( IWithCollections ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var s1 = directory.Create<ISecondary>( s => { s.Power = 3712; s.Name = "Talia"; } );
             var s2 = directory.Create<IOtherSecondary>( s => { s.Power = -1; s.Id = "#1"; } );

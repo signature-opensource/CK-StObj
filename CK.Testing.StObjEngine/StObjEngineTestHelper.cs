@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace CK.Testing
 {
+
     /// <summary>
     /// Standard implementation of <see cref="IStObjEngineTestHelperCore"/>.
     /// </summary>
@@ -39,13 +40,14 @@ namespace CK.Testing
             }
         }
 
-        StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( Func<Type, bool>? typeFilter ) => DoCreateStObjCollector( typeFilter );
-
         static StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
         {
             return new StObjCollector( new SimpleServiceContainer(),
                                        typeFilter: typeFilter != null ? new TypeFilter( typeFilter ) : null );
         }
+
+
+        StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( Func<Type, bool>? typeFilter ) => DoCreateStObjCollector( typeFilter );
 
         StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( params Type[] types )
         {
@@ -98,6 +100,7 @@ namespace CK.Testing
             }
         }
 
+        [Obsolete]
         GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollector c,
                                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                                     bool generateSourceFile,
@@ -106,12 +109,14 @@ namespace CK.Testing
             return DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, generateSourceFile, compileOption );
         }
 
+        [Obsolete]
         CompileAndLoadResult IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c,
                                                                                 Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
         {
             return DoCompileAndLoadStObjMap( c, engineConfigurator );
         }
 
+        [Obsolete]
         static CompileAndLoadResult DoCompileAndLoadStObjMap( StObjCollector c,
                                                               Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
         {
@@ -123,6 +128,7 @@ namespace CK.Testing
             return new CompileAndLoadResult( r, map );
         }
 
+        [Obsolete]
         static GenerateCodeResult DoGenerateCode( StObjCollectorResult result,
                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                   bool generateSourceFiles,
@@ -149,6 +155,7 @@ namespace CK.Testing
             return new GenerateCodeResult( result, Setup.StObjEngine.Run( TestHelper.Monitor, result, config ) );
         }
 
+        [Obsolete]
         AutomaticServicesResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
                                                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                                                     Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem,
@@ -164,6 +171,7 @@ namespace CK.Testing
             return new AutomaticServicesResult( loadResult, reg, reg.Services.BuildServiceProvider() );
         }
 
+        [Obsolete]
         void IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                  string message,
                                                                                  IEnumerable<string>? otherMessages,
@@ -194,24 +202,6 @@ namespace CK.Testing
                                                             ? "LoadStObjMap failed."
                                                             : "Code generation failed." );
             }
-        }
-
-        async Task<ServiceProvider> IStObjEngineTestHelperCore.StartHostedServicesAsync( ServiceProvider services, CancellationToken cancellation )
-        {
-            foreach( var service in services.GetServices<IHostedService>() )
-            {
-                await service.StartAsync( cancellation );
-            }
-            return services;
-        }
-
-        async Task IStObjEngineTestHelperCore.StopHostedServicesAsync( ServiceProvider services, bool disposeServices, CancellationToken cancellation )
-        {
-            foreach( var service in services.GetServices<IHostedService>() )
-            {
-                await service.StopAsync( cancellation );
-            }
-            if( disposeServices ) await services.DisposeAsync();
         }
 
         /// <summary>

@@ -1,12 +1,8 @@
 using CK.Core;
-using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -24,11 +20,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithRecord>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithRecord>>();
             var o = f.Create( o =>
             {
                 o.Hop.Name = "Albert";
@@ -48,11 +44,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_nullable_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ) ); ;
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithNullableRecord>>();
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithNullableRecord>>();
             var o = f.Create( o => { o.Hop = new Thing("Hip", 42); } );
             o.ToString().Should().Be( @"{""Hop"":{""Name"":""Hip"",""Count"":42}}" );
 

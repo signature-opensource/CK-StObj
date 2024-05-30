@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -44,9 +45,9 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void ReadAnyJson_tests()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) ); ;
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = services.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             directory.ReadAnyJson( "null" ).Should().BeNull();
             directory.ReadAnyJson( "3712" ).Should().Be( 3712.0 );
@@ -330,7 +331,7 @@ namespace CK.Poco.Exc.Json.Tests
         [TestCase( new int[] { 1, 3712, 42, -1, 57 } )]
         public void roundtrip_and_write_read_any_big( int[] seeds )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ),
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
                                                      typeof( ISomeTypes ),
                                                      typeof( ICommand ),
                                                      typeof( IBatchCommand ),
@@ -344,8 +345,8 @@ namespace CK.Poco.Exc.Json.Tests
                                                      typeof( IDispatchMission ),
                                                      typeof( ISimpleMission ),
                                                      typeof( IPickingMission ) );
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = services.GetRequiredService<PocoDirectory>();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             foreach( var seed in seeds )
             {

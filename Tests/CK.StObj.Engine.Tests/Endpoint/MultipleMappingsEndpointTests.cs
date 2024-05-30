@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CK.Testing;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
@@ -73,75 +74,61 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task single_singleton_Async()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ),
+            var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ),
                                                              typeof( ManyConsumer ),
                                                              typeof( FirstDIContainerDefinition ),
                                                              typeof( SecondDIContainerDefinition ) );
-            var result = TestHelper.CreateAutomaticServices( collector );
-            await TestHelper.StartHostedServicesAsync( result.Services );
-            try
-            {
-                result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            await TestHelper.StartHostedServicesAsync( auto.Services );
+            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
-                var g = result.Services;
-                var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
-                var e2 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
-                using var s1 = e1.GetContainer().CreateScope();
-                using var s2 = e2.GetContainer().CreateScope();
+            var g = auto.Services;
+            var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+            var e2 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
+            using var s1 = e1.GetContainer().CreateScope();
+            using var s2 = e2.GetContainer().CreateScope();
 
-                var mG = g.GetRequiredService<ManyConsumer>();
-                mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>() } );
+            var mG = g.GetRequiredService<ManyConsumer>();
+            mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>() } );
 
-                var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
-                m1.All.Should().BeEquivalentTo( mG.All );
+            var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+            m1.All.Should().BeEquivalentTo( mG.All );
 
-                var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
-                m2.All.Should().BeEquivalentTo( mG.All );
-            }
-            finally
-            {
-                await result.Services.DisposeAsync();
-            }
+            var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
+            m2.All.Should().BeEquivalentTo( mG.All );
         }
 
         [Test]
         public async Task multiple_singletons_Async()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ),
+            var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ),
                                                              typeof( ManySingleton ),
                                                              typeof( ManyAuto2 ),
                                                              typeof( ManySingleton2 ),
                                                              typeof( ManyConsumer ),
                                                              typeof( FirstDIContainerDefinition ),
                                                              typeof( SecondDIContainerDefinition ) );
-            var result = TestHelper.CreateAutomaticServices( collector );
-            await TestHelper.StartHostedServicesAsync( result.Services );
-            try
-            {
-                result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
+            var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            await TestHelper.StartHostedServicesAsync( auto.Services );
+            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
-                var g = result.Services;
-                var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
-                var e2 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
-                using var s1 = e1.GetContainer().CreateScope();
-                using var s2 = e2.GetContainer().CreateScope();
+            var g = auto.Services;
+            var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+            var e2 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
+            using var s1 = e1.GetContainer().CreateScope();
+            using var s2 = e2.GetContainer().CreateScope();
 
-                var mG = g.GetRequiredService<ManyConsumer>();
-                mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>(),
-                                                              g.GetRequiredService<ManySingleton>(),
-                                                              g.GetRequiredService<ManyAuto2>(),
-                                                              g.GetRequiredService<ManySingleton2>() } );
+            var mG = g.GetRequiredService<ManyConsumer>();
+            mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>(),
+                                                            g.GetRequiredService<ManySingleton>(),
+                                                            g.GetRequiredService<ManyAuto2>(),
+                                                            g.GetRequiredService<ManySingleton2>() } );
 
-                var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
-                m1.All.Should().BeEquivalentTo( mG.All );
+            var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+            m1.All.Should().BeEquivalentTo( mG.All );
 
-                var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
-                m2.All.Should().BeEquivalentTo( mG.All );
-            }
-            finally
-            {
-                await result.Services.DisposeAsync();
-            }
+            var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
+            m2.All.Should().BeEquivalentTo( mG.All );
         }
 
         [Test]

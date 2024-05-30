@@ -16,31 +16,6 @@ namespace CK.Core
         /// </summary>
         public readonly struct ServiceRegister
         {
-            enum RegType : byte
-            {
-                None,
-
-                /// <summary>
-                /// The registration maps a type to multiple implementation.
-                /// </summary>
-                Multiple,
-
-                RealObject,
-
-                /// <summary>
-                /// A Type is mapped to an instance or another type.
-                /// </summary>
-                InternalMapping,
-
-                /// <summary>
-                /// A Type is mapped to itself.
-                /// </summary>
-                InternalImplementation,
-
-                PreviouslyRegistered,
-            }
-            readonly Dictionary<Type, RegType> _registered;
-
             /// <summary>
             /// Initializes a new <see cref="ServiceRegister"/>.
             /// </summary>
@@ -58,12 +33,6 @@ namespace CK.Core
                 Monitor = monitor;
                 Services = services;
                 StartupServices = startupServices ?? new SimpleServiceContainer();
-                _registered = new Dictionary<Type, RegType>();
-                foreach( var r in services )
-                {
-                    _registered[r.ServiceType] = RegType.PreviouslyRegistered;
-                }
-                AllowOverride = false;
             }
 
             /// <summary>
@@ -84,12 +53,6 @@ namespace CK.Core
             /// become available to any <see cref="ConfigureServicesMethodName"/> methods through parameter injection.
             /// </summary>
             public SimpleServiceContainer StartupServices { get; }
-
-            /// <summary>
-            /// Gets whether registration can override any existing registration.
-            /// Defaults to false: services must not already exist, they must be registered once and only once.
-            /// </summary>
-            public bool AllowOverride { get; }
 
             /// <summary>
             /// Registers the map, the Real objects, singleton services, scoped services and initialize
@@ -118,187 +81,6 @@ namespace CK.Core
                 }
                 return result;
             }
-
-            /// <summary>
-            /// Registers an existing implementation as a singleton.
-            /// </summary>
-            /// <param name="serviceType">Service type.</param>
-            /// <param name="implementation">Resolved singleton instance.</param>
-            /// <param name="allowMultipleRegistration">
-            /// True to allow the <paramref name="serviceType"/> to already be associated to another mapping.
-            /// False to log an error and return false.
-            /// </param>
-            /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>
-            public bool RegisterSingleton( Type serviceType, object implementation, bool allowMultipleRegistration )
-            {
-                if( !_registered.TryGetValue( serviceType, out var reg )
-                    || (allowMultipleRegistration && (reg == RegType.Multiple || reg == RegType.PreviouslyRegistered)) )
-                {
-                    Monitor.Trace( $"Registering {(allowMultipleRegistration ? "multiple" : "unique")} mapping from '{serviceType}' to provided singleton instance." );
-                    Services.Add( new ServiceDescriptor( serviceType, implementation ) );
-                    if( reg == RegType.None )
-                    {
-                        _registered.Add( serviceType, allowMultipleRegistration
-                                                        ? RegType.Multiple
-                                                        : RegType.InternalMapping );
-                    }
-                    return true;
-                }
-                if( reg == RegType.PreviouslyRegistered )
-                {
-                    Debug.Assert( !allowMultipleRegistration );
-                    Monitor.Warn( $"Skipping unique mapping '{serviceType}' to provided singleton instance since it is already registered in ServiceCollection." );
-                    return true;
-                }
-                if( reg == RegType.Multiple )
-                {
-                    Monitor.Error( $"Invalid unique '{serviceType}' registration to provided singleton instance already registered as a Multiple mapping." );
-                }
-                else
-                {
-                    Monitor.Error( $"Duplicate '{serviceType}' registration in ServiceCollection (singleton instance registration)." );
-                }
-                return false;
-            }
-
-            /// <summary>
-            /// Registers an existing implementation as a singleton.
-            /// </summary>
-            /// <typeparam name="T">Service type.</typeparam>
-            /// <param name="implementation">Resolved singleton instance.</param>
-            public void RegisterSingleton<T>( T implementation ) where T : notnull => RegisterSingleton( typeof( T ), implementation, false );
-
-            /// <summary>
-            /// Registers a type mapping, ensuring that the <paramref name="implementation"/> itself is
-            /// registered.
-            /// </summary>
-            /// <param name="serviceType">Service type.</param>
-            /// <param name="implementation">Implementation type.</param>
-            /// <param name="isScoped">True for scope, false for singletons.</param>
-            /// <param name="allowMultipleRegistration">
-            /// True to allow the <paramref name="serviceType"/> to already be associated to another mapping.
-            /// False to log an error and return false.
-            /// </param>
-            /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>
-            public bool Register( Type serviceType, Type implementation, bool isScoped, bool allowMultipleRegistration )
-            {
-                ServiceLifetime lt = isScoped ? ServiceLifetime.Scoped : ServiceLifetime.Singleton;
-                if( !_registered.TryGetValue( serviceType, out var reg )
-                    || (allowMultipleRegistration && (reg == RegType.Multiple || reg == RegType.PreviouslyRegistered)) )
-                {
-                    // When there is a mapping (the serviceType is not the target implementation), we must register
-                    // a factory here: by registering the implementation, a new instance is created but we want the
-                    // same instance!
-                    if( serviceType != implementation )
-                    {
-                        Monitor.Trace( $"Registering service mapping from '{serviceType}' to type '{implementation}' as {lt}." );
-                        Services.Add( new ServiceDescriptor( serviceType, sp => sp.GetRequiredService( implementation ), lt ) );
-                        if( reg == RegType.None )
-                        {
-                            _registered.Add( serviceType, allowMultipleRegistration ? RegType.Multiple : RegType.InternalMapping );
-                        }
-                    }
-                    // Registering implementation (on itself).
-                    if( !_registered.TryGetValue( implementation, out reg ) )
-                    {
-                        Monitor.Trace( $"Registering service type '{implementation}' as {lt}." );
-                        Services.Add( new ServiceDescriptor( implementation, implementation, lt ) );
-                        _registered.Add( implementation, RegType.InternalImplementation );
-                    }
-                    else if( reg == RegType.PreviouslyRegistered )
-                    {
-                        Monitor.Warn( $"Service type '{implementation}' is already registered in ServiceCollection. {lt} registration skipped." );
-                    }
-                    else if( reg != RegType.InternalImplementation )
-                    {
-                        Monitor.Error( $"Unable to register '{implementation}' on itself ({reg})." );
-                        return false;
-                    }
-                    return true;
-                }
-                if( reg == RegType.PreviouslyRegistered )
-                {
-                    Monitor.Warn( $"Service mapping '{serviceType}' is already registered in ServiceCollection. {lt} registration to '{implementation.Name}' skipped." );
-                    return true;
-                }
-                if( reg == RegType.Multiple )
-                {
-                    Monitor.Error( $"Invalid unique '{serviceType}' registration to '{implementation.Name}': already registered as a Multiple mapping." );
-                }
-                else if( reg != RegType.RealObject
-                         && !(reg == RegType.InternalImplementation && serviceType == implementation) )
-                {
-                    Monitor.Error( $"Duplicate '{serviceType}' registration in ServiceRegister (mapped to {implementation})." );
-                }
-                return false;
-            }
-
-            /// <summary>
-            /// Registers a type mapping, ensuring that the <typeparamref name="TImpl"/> itself is
-            /// registered.
-            /// </summary>
-            /// <typeparam name="T">Service type.</typeparam>
-            /// <typeparam name="TImpl">Implementation type.</typeparam>
-            /// <param name="isScoped">True for scope, false for singletons.</param>
-            /// <param name="allowMultipleRegistration">
-            /// True to allow the <typeparamref name="T"/> to already be associated to another mapping.
-            /// False to log an error and return false.
-            /// </param>
-            /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>
-            public bool Register<T, TImpl>( bool isScoped, bool allowMultipleRegistration ) where TImpl : T => Register( typeof( T ), typeof( TImpl ), isScoped, allowMultipleRegistration );
-
-            /// <summary>
-            /// Registers a factory method.
-            /// </summary>
-            /// <param name="serviceType">Service type.</param>
-            /// <param name="factory">Instance factory.</param>
-            /// <param name="isScoped">True for scope, false for singletons.</param>
-            /// <param name="allowMultipleRegistration">
-            /// True to allow the <paramref name="serviceType"/> to already be associated to another mapping.
-            /// False to log an error and return false.
-            /// </param>
-            /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>
-            public bool Register( Type serviceType, Func<IServiceProvider, object> factory, bool isScoped, bool allowMultipleRegistration )
-            {
-                ServiceLifetime lt = isScoped ? ServiceLifetime.Scoped : ServiceLifetime.Singleton;
-                if( !_registered.TryGetValue( serviceType, out var reg ) || allowMultipleRegistration )
-                {
-                    Monitor.Trace( $"Registering factory method for service '{serviceType}' as {lt}." );
-                    Services.Add( new ServiceDescriptor( serviceType, factory, lt ) );
-                    if( reg != RegType.None )
-                    {
-                        _registered.Add( serviceType, allowMultipleRegistration ? RegType.Multiple : RegType.InternalMapping );
-                    }
-                    return true;
-                }
-                if( reg == RegType.PreviouslyRegistered )
-                {
-                    Monitor.Warn( $"Service '{serviceType}' is already registered in ServiceRegister. Skipping {lt} factory method registration." );
-                    return true;
-                }
-                if( reg == RegType.Multiple )
-                {
-                    Monitor.Error( $"Invalid unique '{serviceType}' registration to a factory method: already registered as a Multiple mapping." );
-                }
-                else
-                {
-                    Monitor.Error( $"Unable to register mapping of '{serviceType}' to a factory method since the type has already been mapped. ServiceRegister checks that registration occur at most once." );
-                }
-                return false;
-            }
-
-            /// <summary>
-            /// Registers a factory method.
-            /// </summary>
-            /// <typeparam name="T">Service type.</typeparam>
-            /// <param name="factory">Instance factory.</param>
-            /// <param name="isScoped">True for scope, false for singletons.</param>
-            /// <param name="allowMultipleRegistration">
-            /// True to allow the <typeparamref name="T"/> to already be associated to another mapping.
-            /// False to log an error and return false.
-            /// </param>
-            /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>
-            public bool Register<T>( Func<IServiceProvider, object> factory, bool isScoped, bool allowMultipleRegistration ) => Register( typeof( T ), factory, isScoped, allowMultipleRegistration );
         }
     }
 }

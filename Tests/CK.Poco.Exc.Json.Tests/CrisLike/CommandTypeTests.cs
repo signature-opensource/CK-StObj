@@ -7,6 +7,7 @@ using System.Diagnostics;
 using FluentAssertions;
 using System.ComponentModel;
 using static CK.Testing.StObjEngineTestHelper;
+using CK.Testing;
 
 namespace CK.Poco.Exc.Json.Tests.CrisLike
 {
@@ -58,16 +59,16 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         [Test]
         public void commands_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ),
-                                                     typeof( ISimpleCommand ),
-                                                     typeof( IPersonCommand ),
-                                                     typeof( IAccountCommand ),
-                                                     typeof( IHaveListOfCommandObject ),
-                                                     typeof( IBatchCommand ),
-                                                     typeof( ICrisResult ),
-                                                     typeof( ICrisResultError ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
+                                                    typeof( ISimpleCommand ),
+                                                    typeof( IPersonCommand ),
+                                                    typeof( IAccountCommand ),
+                                                    typeof( IHaveListOfCommandObject ),
+                                                    typeof( IBatchCommand ),
+                                                    typeof( ICrisResult ),
+                                                    typeof( ICrisResultError ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var person = directory.Create<IPersonCommand>( c =>
             {
@@ -153,16 +154,16 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         [Test]
         public void serialization_with_abstract()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ),
-                                                     typeof( ISimpleCommand ),
-                                                     typeof( ICommandHolder ),
-                                                     typeof( IHaveListOfCommandObject ),
-                                                     typeof( IBatchCommand ),
-                                                     typeof( ICrisResult ),
-                                                     typeof( ICrisResultError ) );
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
+                                                    typeof( ISimpleCommand ),
+                                                    typeof( ICommandHolder ),
+                                                    typeof( IHaveListOfCommandObject ),
+                                                    typeof( IBatchCommand ),
+                                                    typeof( ICrisResult ),
+                                                    typeof( ICrisResultError ) );
 
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var batch = directory.Create<IBatchCommand>( c =>
             {

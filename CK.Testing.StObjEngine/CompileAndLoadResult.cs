@@ -4,7 +4,6 @@ using CK.Core;
 using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
 
 namespace CK.Testing.StObjEngine
 {

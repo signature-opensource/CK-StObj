@@ -276,7 +276,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var result = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
                 {
                     // Here we use ServiceRegistrar that takes care of the registration with logs.
-                    services.Register( typeof( IOfficialHostedService ), typeof( HNot ), isScoped: false, allowMultipleRegistration: true );
+                    services.Services.AddSingleton<IOfficialHostedService,HNot>();
                     //
                     // We could also have used the standard ServiceCollection registration of the mapping:
                     // but without logs nor duplicate registration detection.

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using CK.Testing;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
@@ -38,13 +39,10 @@ namespace CK.StObj.Engine.Tests
         public void ICSCodeGenerator_on_regular_class()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateStObjCollector( typeof( Holder ) );
-            var (r, map) = TestHelper.CompileAndLoadStObjMap( c );
-            Debug.Assert( r.EngineMap != null );
-            r.EngineMap.AllTypesAttributesCache.Values.Select( a => a.Type ).Should().Contain( typeof( Holder ) );
+            var c = TestHelper.CreateTypeCollector( typeof( Holder ) );
+            TestHelper.RunSingleBinPathAndLoad( c );
             CGen.Called.Should().BeTrue();
         }
-
 
         [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
         public static class StaticHolder
@@ -55,8 +53,8 @@ namespace CK.StObj.Engine.Tests
         public void ICodeGenerator_on_static_class()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateStObjCollector( typeof( StaticHolder ) );
-            TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
+            var c = TestHelper.CreateTypeCollector( typeof( StaticHolder ) );
+            TestHelper.RunSingleBinPathAndLoad( c );
             CGen.Called.Should().BeTrue();
         }
 
@@ -69,8 +67,8 @@ namespace CK.StObj.Engine.Tests
         public void ICodeGenerator_on_raw_interface()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateStObjCollector( typeof( RawInterface ) );
-            TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
+            var c = TestHelper.CreateTypeCollector( typeof( RawInterface ) );
+            TestHelper.RunSingleBinPathAndLoad( c );
             CGen.Called.Should().BeTrue();
         }
 
@@ -83,8 +81,8 @@ namespace CK.StObj.Engine.Tests
         public void ICodeGenerator_on_enum()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateStObjCollector( typeof( EvenOnAnEnumItWorks ) );
-            TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
+            var c = TestHelper.CreateTypeCollector( typeof( EvenOnAnEnumItWorks ) );
+            TestHelper.RunSingleBinPathAndLoad( c );
             CGen.Called.Should().BeTrue();
         }
 

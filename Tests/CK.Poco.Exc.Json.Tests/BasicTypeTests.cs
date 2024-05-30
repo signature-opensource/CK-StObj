@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Poco.Exc.Json;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -38,11 +39,11 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void all_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) ); ;
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = services.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var nMax = services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
+            var nMax = auto.Services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
             nMax.PByte = Byte.MaxValue;
             nMax.PSByte = SByte.MaxValue;
             nMax.PShort = Int16.MaxValue;
@@ -60,7 +61,7 @@ namespace CK.Poco.Exc.Json.Tests
             nMax.PTimeSpan = TimeSpan.MaxValue;
             nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
 
-            var nMin = services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
+            var nMin = auto.Services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
             nMin.PByte = Byte.MinValue;
             nMin.PSByte = SByte.MinValue;
             nMin.PShort = Int16.MinValue;
@@ -110,13 +111,13 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void all_nullable_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) ); ;
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = services.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) ); ;
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var nNull = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
+            var nNull = auto.Services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
 
-            var nMax = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
+            var nMax = auto.Services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
             nMax.PByte = Byte.MaxValue;
             nMax.PSByte = SByte.MaxValue;
             nMax.PShort = Int16.MaxValue;
@@ -134,7 +135,7 @@ namespace CK.Poco.Exc.Json.Tests
             nMax.PTimeSpan = TimeSpan.MaxValue;
             nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
 
-            var nMin = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
+            var nMin = auto.Services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
             nMin.PByte = Byte.MinValue;
             nMin.PSByte = SByte.MinValue;
             nMin.PShort = Int16.MinValue;

@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -274,8 +275,14 @@ namespace CK.StObj.Engine.Tests.Service
 
             void ConfigureServices( StObjContextRoot.ServiceRegister register, TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem conf )
             {
-                var impl = conf.AlwaysUseAlice ? typeof( PrivateAlwaysAliceProvider ) : typeof( PrivateAliceOrBobProvider );
-                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true, allowMultipleRegistration: false );
+                if( conf.AlwaysUseAlice )
+                {
+                    register.Services.AddScoped<IAliceOrBobProvider, PrivateAlwaysAliceProvider>();
+                }
+                else
+                {
+                    register.Services.AddScoped<IAliceOrBobProvider, PrivateAliceOrBobProvider>();
+                }
             }
 
             [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]
@@ -286,19 +293,19 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void code_generation_is_so_easy_on_real_objects()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( A ), typeof( B ) );
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
-                sp.GetRequiredService<IBIsRealObject>()
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, startupServices: startupServices );
+                auto.Services.GetRequiredService<IBIsRealObject>()
                     .BCanTalkToYou( TestHelper.Monitor, "Magic!" )
                     .Should().Be( 3172 );
 
-                sp.GetRequiredService<IBIsRealObject>()
-                    .Should().BeSameAs( sp.GetRequiredService<B>() )
-                    .And.BeSameAs( sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
+                auto.Services.GetRequiredService<IBIsRealObject>()
+                    .Should().BeSameAs( auto.Services.GetRequiredService<B>() )
+                    .And.BeSameAs( auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
 
                 entries.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
             }
@@ -317,11 +324,11 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void code_generation_is_also_easy_on_services()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ServiceCanTalk ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( ServiceCanTalk ) );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector ).Services;
-                sp.GetRequiredService<ServiceCanTalk>()
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+                auto.Services.GetRequiredService<ServiceCanTalk>()
                     .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
                     .Should().Be( 3172 );
 
@@ -358,8 +365,8 @@ namespace CK.StObj.Engine.Tests.Service
             //}
             // Failed (while Configuring Services): TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem is missing.
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
-                TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                var collector = TestHelper.CreateTypeCollector( typeof( A ), typeof( B ) );
+                TestHelper.GetFailedSingleBinPathAutomaticServices( collector,
                                                                     "No service for type 'CK.StObj.Engine.Tests.Service.FullServiceTests+TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem' has been registered" );
             }
         }
@@ -367,19 +374,19 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Service_implemented_by_a_real_object_can_be_overridden()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, startupServices: startupServices );
                 // We are using here the ScopedImplementation.
-                var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
+                var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.DoSomething( TestHelper.Monitor );
                 // Just to be sure it's actually a Scoped service.
-                using( var scoped = sp.CreateScope() )
+                using( var scoped = auto.Services.CreateScope() )
                 {
                     scoped.ServiceProvider.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().Should().NotBeSameAs( s );
                 }
@@ -394,16 +401,16 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Initially_registered_StartupServices_may_be_used_as_configurator_or_options()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, startupServices: startupServices );
                 // We are using here the ScopedImplementation.
-                var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
+                var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.Should().BeOfType<ScopedImplementation>();
                 s.DoSomething( TestHelper.Monitor );
 
@@ -417,17 +424,16 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void superseding_a_IRealObject_implemented_service_by_a_wrapper()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
-                using var sp = r.ServiceRegister.Services.BuildServiceProvider();
-                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
-                r.ServiceRegister.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
+                var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, startupServices: startupServices );
+                auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
+                auto.ServiceRegister.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
 
                 entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
                 entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
@@ -439,16 +445,15 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( BDependency ), typeof( A ), typeof( B ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( BDependency ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
-                using var sp = r.ServiceRegister.Services.BuildServiceProvider();
-                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
+                var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, startupServices: startupServices );
+                auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
                 entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
                 entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
@@ -460,14 +465,14 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                TestHelper.GetFailedSingleBinPathAutomaticServices( collector,
                                                                     "But SuperStartupService has been told to fail miserably.",
                                                                     startupServices: startupServices );
 
