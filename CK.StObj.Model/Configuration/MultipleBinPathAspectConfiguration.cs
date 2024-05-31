@@ -48,6 +48,13 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyCollection<MultipleBinPathAspectConfiguration> OtherConfigurations => _exposedOthers;
 
+        /// <summary>
+        /// Gets all the configurations (this one and the <see cref="OtherConfigurations"/>).
+        /// </summary>
+        public IEnumerable<MultipleBinPathAspectConfiguration> AllConfigurations => _head != null
+                                                                                      ? _head.AllConfigurations
+                                                                                      : _configurations.Prepend( this );
+
         void BaseBind( BinPathConfiguration? o, EngineAspectConfiguration? a ) => base.Bind( o, a );
 
         internal override void Bind( BinPathConfiguration? o, EngineAspectConfiguration? a )

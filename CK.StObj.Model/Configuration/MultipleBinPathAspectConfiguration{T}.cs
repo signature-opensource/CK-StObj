@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -43,6 +44,11 @@ namespace CK.Setup
         /// Gets the extra configurations if any.
         /// </summary>
         public new IReadOnlyCollection<TSelf> OtherConfigurations => _exposedOthers;
+
+        /// <summary>
+        /// Gets all the configurations (this one and the <see cref="OtherConfigurations"/>).
+        /// </summary>
+        public new IEnumerable<TSelf> AllConfigurations => base.AllConfigurations.OfType<TSelf>();
 
         /// <summary>
         /// Adds another configuration.
