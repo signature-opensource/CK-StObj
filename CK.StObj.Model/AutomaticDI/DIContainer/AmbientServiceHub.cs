@@ -192,7 +192,7 @@ namespace CK.Core
             {
                 if( _entries[i].AmbientServiceType == t ) return i;
             }
-            return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ambient service." );
+            return Throw.ArgumentException<int>( nameof( t ), $"Type '{t.ToCSharpName()}' must be a Ambient service." );
         }
 
         void DoOverride( Type type, object instance )
@@ -224,7 +224,7 @@ namespace CK.Core
                 {
                     if( !_entries[iImpl].AmbientServiceType.IsAssignableFrom( tInstance ) )
                     {
-                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].AmbientServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
+                        Throw.ArgumentException( nameof(tInstance), $"Instance must be a specialization of '{_entries[iImpl].AmbientServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
                     }
                 }
             }

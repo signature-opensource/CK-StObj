@@ -6,12 +6,12 @@ using System.Diagnostics;
 namespace CK.Setup
 
 {
-    sealed class StObjEngineAspectTrampoline<T>
+    sealed class EngineAspectTrampoline<T>
     {
         readonly T _holder;
         readonly List<Func<IActivityMonitor, T, bool>?> _postActions;
 
-        public StObjEngineAspectTrampoline( T holder )
+        public EngineAspectTrampoline( T holder )
         {
             _holder = holder;
             _postActions = new List<Func<IActivityMonitor, T, bool>?>();

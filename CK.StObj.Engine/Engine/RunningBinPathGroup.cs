@@ -16,7 +16,7 @@ namespace CK.Setup
     {
         readonly string _generatedDllName;
         readonly string _names;
-        readonly StObjEngineConfiguration _engineConfiguration;
+        readonly EngineConfiguration _engineConfiguration;
         readonly BinPathConfiguration _configuration;
         readonly bool _isUnifiedPure;
         readonly IReadOnlyCollection<BinPathConfiguration> _similarConfigurations;
@@ -35,7 +35,7 @@ namespace CK.Setup
             SaveSource
         }
 
-        internal RunningBinPathGroup( StObjEngineConfiguration engineConfiguration,
+        internal RunningBinPathGroup( EngineConfiguration engineConfiguration,
                                       BinPathConfiguration head,
                                       BinPathConfiguration[] similars,
                                       SHA1Value sha )
@@ -52,12 +52,12 @@ namespace CK.Setup
             _names = similars.Select( c => c.Name ).Concatenate();
         }
 
-        internal RunningBinPathGroup( StObjEngineConfiguration engineConfiguration, BinPathConfiguration head, SHA1Value sha )
+        internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathConfiguration head, SHA1Value sha )
             : this( engineConfiguration, head, new[] { head }, sha )
         {
         }
 
-        internal RunningBinPathGroup( StObjEngineConfiguration engineConfiguration, BinPathConfiguration unifiedPure )
+        internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathConfiguration unifiedPure )
         {
             _isUnifiedPure = true;
             _generatedDllName = String.Empty;
@@ -148,7 +148,7 @@ namespace CK.Setup
         }
 
         /// <inheritdoc />
-        public StObjEngineConfiguration EngineConfiguration => _engineConfiguration;
+        public EngineConfiguration EngineConfiguration => _engineConfiguration;
 
         /// <inheritdoc />
         public BinPathConfiguration Configuration => _configuration;

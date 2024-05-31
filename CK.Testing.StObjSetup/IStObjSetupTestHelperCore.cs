@@ -34,7 +34,7 @@ namespace CK.Testing.StObjSetup
 
         /// <summary>
         /// Fires before a Setup must be done.
-        /// Aspect configurations must be added to the <see cref="StObjEngineConfiguration.Aspects"/>.
+        /// Aspect configurations must be added to the <see cref="EngineConfiguration.Aspects"/>.
         /// </summary>
         event EventHandler<StObjSetupRunningEventArgs> StObjSetupRunning;
 
@@ -49,7 +49,7 @@ namespace CK.Testing.StObjSetup
         /// Can be used to skip CKSetup caching based on the SHA1 of the files that needs to be setup.
         /// </param>
         /// <returns>The CKSetup run result.</returns>
-        CKSetupRunResult RunStObjSetup( StObjEngineConfiguration configuration, ForceSetupLevel forceSetup = ForceSetupLevel.None );
+        CKSetupRunResult RunStObjSetup( EngineConfiguration configuration, ForceSetupLevel forceSetup = ForceSetupLevel.None );
 
     }
 }

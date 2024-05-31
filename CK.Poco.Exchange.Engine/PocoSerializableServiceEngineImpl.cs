@@ -153,7 +153,7 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( t );
             _indexes ??= CreateIndexes();
             int idx = _indexes[t.Index >> 1];
-            if( idx == 0 ) Throw.ArgumentException( $"Poco type '{t}' is not serializable." );
+            if( idx == 0 ) Throw.ArgumentException( nameof( t ), $"Poco type '{t}' is not serializable." );
             return t.IsNullable ? -idx : 0;
         }
 

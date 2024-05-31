@@ -7,17 +7,17 @@ namespace CK.Setup
     /// <summary>
     /// Base class for configuration of a Engine Aspect.
     /// Aspect configuration must have a deserialization constructor that takes a XElement.
-    /// It is highly recommended to support a <see cref="StObjEngineConfiguration.xVersion"/> attribute
+    /// It is highly recommended to support a <see cref="EngineConfiguration.xVersion"/> attribute
     /// to ease and secure any configuration evolution. 
     /// </summary>
-    public abstract class StObjEngineAspectConfiguration
+    public abstract class EngineAspectConfiguration
     {
         readonly string _name;
 
         /// <summary>
         /// Initializes an empty aspect configuration.
         /// </summary>
-        protected StObjEngineAspectConfiguration()
+        protected EngineAspectConfiguration()
         {
             Throw.DebugAssert( "AspectConfiguration".Length == 19 );
             var n = GetType().Name;
@@ -32,7 +32,7 @@ namespace CK.Setup
         /// Initializes a new aspect from a <see cref="XElement"/>.
         /// </summary>
         /// <param name="e">The xml element.</param>
-        protected StObjEngineAspectConfiguration( XElement e )
+        protected EngineAspectConfiguration( XElement e )
             : this()
         {
         }
@@ -40,12 +40,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets this aspect name: this is the type name without the "AspectConfiguration" suffix.
         /// </summary>
-        public string Name => _name;
+        public string AspectName => _name;
 
         /// <summary>
-        /// Gets the configuration that contains this aspect in its <see cref="StObjEngineConfiguration.Aspects"/>.
+        /// Gets the configuration that contains this aspect in its <see cref="EngineConfiguration.Aspects"/>.
         /// </summary>
-        public StObjEngineConfiguration? Owner { get; internal set; }
+        public EngineConfiguration? Owner { get; internal set; }
 
         /// <summary>
         /// Gets the fully qualified name of the type on the Engine side that implements this aspect.

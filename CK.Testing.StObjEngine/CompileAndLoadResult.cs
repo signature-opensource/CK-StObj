@@ -8,7 +8,7 @@ using System;
 namespace CK.Testing.StObjEngine
 {
     /// <summary>
-    /// Captures the result of <see cref="IStObjEngineTestHelperCore.CompileAndLoadStObjMap(StObjCollector, Func{StObjEngineConfiguration, StObjEngineConfiguration}?)"/>.
+    /// Captures the result of <see cref="IStObjEngineTestHelperCore.CompileAndLoadStObjMap(StObjCollector, Func{EngineConfiguration, EngineConfiguration}?)"/>.
     /// </summary>
     public sealed class CompileAndLoadResult
     {

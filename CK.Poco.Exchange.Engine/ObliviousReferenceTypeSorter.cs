@@ -41,7 +41,7 @@ namespace CK.Setup
                 || t.Type.IsValueType
                 || !t.IsOblivious )
             {
-                Throw.ArgumentException( $"The type must not be 'object', nor a value type and be the oblivious one: {t}." );
+                Throw.ArgumentException( nameof(t), $"The type must not be 'object', nor a value type and be the oblivious one: {t}." );
             }
             // Finds the first type that can be assigned to the new one:
             // the new one must appear before it.
@@ -52,7 +52,7 @@ namespace CK.Setup
                 {
                     if( existing == t )
                     {
-                        if( throwIfExists ) Throw.ArgumentException( $"The type '{t}' is already registered." );
+                        if( throwIfExists ) Throw.ArgumentException( nameof( t ), $"The type '{t}' is already registered." );
                         return false;
                     }
                     _sorted.Insert( i, t );

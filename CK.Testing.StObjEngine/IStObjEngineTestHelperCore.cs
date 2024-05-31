@@ -68,10 +68,10 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// Optional hook to configure the <see cref="EngineConfiguration"/> or to substitute it by a new one.
         /// <para>
-        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
-        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// Should be used to add <see cref="EngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="EngineConfiguration.BinPaths"/>.
         /// </para>
         /// <para>
         /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
@@ -84,7 +84,7 @@ namespace CK.Testing.StObjEngine
         /// <returns>The (successful) collector result and <see cref="StObjEngineResult"/> (that may be in error).</returns>
         [Obsolete( "Use RunStObjEngine instead." )]
         GenerateCodeResult GenerateCode( StObjCollector c,
-                                         Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                         Func<EngineConfiguration, EngineConfiguration>? engineConfigurator,
                                          bool generateSourceFile = false,
                                          CompileOption compileOption = CompileOption.None );
 
@@ -97,10 +97,10 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="confgureEngine">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// Optional hook to configure the <see cref="EngineConfiguration"/> or to substitute it by a new one.
         /// <para>
-        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
-        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// Should be used to add <see cref="EngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="EngineConfiguration.BinPaths"/>.
         /// </para>
         /// <para>
         /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
@@ -111,7 +111,7 @@ namespace CK.Testing.StObjEngine
         /// <returns>The (successful) result and the ready-to-use map.</returns>
         [Obsolete( "Use RunSingleBinPathAndLoad instead." )]
         CompileAndLoadResult CompileAndLoadStObjMap( StObjCollector c,
-                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? confgureEngine = null );
+                                                     Func<EngineConfiguration, EngineConfiguration>? confgureEngine = null );
 
         /// <summary>
         /// Fully builds and configures a IServiceProvider after a successful run of the engine and returns all the intermediate results: the (successful) collector
@@ -127,10 +127,10 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// Optional hook to configure the <see cref="EngineConfiguration"/> or to substitute it by a new one.
         /// <para>
-        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
-        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// Should be used to add <see cref="EngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="EngineConfiguration.BinPaths"/>.
         /// </para>
         /// <para>
         /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
@@ -144,7 +144,7 @@ namespace CK.Testing.StObjEngine
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
         [Obsolete( "Use CreateSingleBinPathAutomaticServices instead." )]
         AutomaticServicesResult CreateAutomaticServices( StObjCollector c,
-                                                         Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                         Func<EngineConfiguration, EngineConfiguration>? engineConfigurator = null,
                                                          Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem = null,
                                                          SimpleServiceContainer? startupServices = null,
                                                          Action<StObjContextRoot.ServiceRegister>? configureServices = null );
@@ -156,10 +156,10 @@ namespace CK.Testing.StObjEngine
         /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
         /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// Optional hook to configure the <see cref="EngineConfiguration"/> or to substitute it by a new one.
         /// <para>
-        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
-        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// Should be used to add <see cref="EngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="EngineConfiguration.BinPaths"/>.
         /// </para>
         /// <para>
         /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
@@ -173,7 +173,7 @@ namespace CK.Testing.StObjEngine
         void GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                       string message,
                                                       IEnumerable<string>? otherMessages = null,
-                                                      Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                      Func<EngineConfiguration, EngineConfiguration>? engineConfigurator = null,
                                                       SimpleServiceContainer? startupServices = null,
                                                       Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 

@@ -6,15 +6,15 @@ using System.Diagnostics;
 
 namespace CK.Setup
 {
-    sealed class StObjEngineConfigureContext : IStObjEngineConfigureContext
+    sealed class EngineConfigureContext : IStObjEngineConfigureContext
     {
         sealed class Container : SimpleServiceContainer
         {
             readonly SimpleServiceContainer _baseForConfig;
-            readonly StObjEngineConfigureContext _c;
+            readonly EngineConfigureContext _c;
             readonly ISimpleObjectActivator _defaultActivator;
 
-            public Container( StObjEngineConfigureContext c )
+            public Container( EngineConfigureContext c )
             {
                 _c = c;
                 _baseForConfig = new SimpleServiceContainer();
@@ -49,18 +49,18 @@ namespace CK.Setup
 
         readonly IActivityMonitor _monitor;
         readonly IStObjEngineStatus _status;
-        readonly RunningStObjEngineConfiguration _config;
+        readonly RunningEngineConfiguration _config;
         readonly List<IStObjEngineAspect> _aspects;
         readonly Container _container;
         readonly SimpleServiceContainer _configureOnlycontainer;
         readonly StObjEngineConfigurator _configurator;
-        readonly StObjEngineAspectTrampoline<IStObjEngineConfigureContext> _trampoline;
+        readonly EngineAspectTrampoline<IStObjEngineConfigureContext> _trampoline;
 
         List<Type>? _explicitRegisteredTypes;
         bool _canSkipRun;
 
-        internal StObjEngineConfigureContext( IActivityMonitor monitor,
-                                              RunningStObjEngineConfiguration config,
+        internal EngineConfigureContext( IActivityMonitor monitor,
+                                              RunningEngineConfiguration config,
                                               IStObjEngineStatus status,
                                               bool canSkipRun )
         {
@@ -71,7 +71,7 @@ namespace CK.Setup
             _configurator = new StObjEngineConfigurator();
             _container = new Container( this );
             _configureOnlycontainer = new SimpleServiceContainer( _container );
-            _trampoline = new StObjEngineAspectTrampoline<IStObjEngineConfigureContext>( this );
+            _trampoline = new EngineAspectTrampoline<IStObjEngineConfigureContext>( this );
             _canSkipRun = canSkipRun;
         }
 
@@ -91,9 +91,9 @@ namespace CK.Setup
             set => _canSkipRun &= value;
         }
 
-        public RunningStObjEngineConfiguration StObjEngineConfiguration => _config;
+        public RunningEngineConfiguration StObjEngineConfiguration => _config;
 
-        IRunningStObjEngineConfiguration IStObjEngineConfigureContext.StObjEngineConfiguration => _config;
+        IRunningEngineConfiguration IStObjEngineConfigureContext.StObjEngineConfiguration => _config;
 
         internal IReadOnlyList<Type> ExplicitRegisteredTypes => (IReadOnlyList<Type>?)_explicitRegisteredTypes ?? Type.EmptyTypes;
 

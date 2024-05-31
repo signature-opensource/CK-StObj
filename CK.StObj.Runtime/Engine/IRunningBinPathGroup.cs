@@ -17,7 +17,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the root engine configuration.
         /// </summary>
-        StObjEngineConfiguration EngineConfiguration { get; }
+        EngineConfiguration EngineConfiguration { get; }
 
         /// <summary>
         /// Gets the first configuration in the <see cref="SimilarConfigurations"/>.
@@ -48,7 +48,7 @@ namespace CK.Setup
         /// If <see cref="IsUnifiedPure"/> is true, this is always <see cref="SHA1Value.IsZero"/>.
         /// </para>
         /// <para>
-        /// If no <see cref="StObjEngineConfiguration.BaseSHA1"/> has been provided, this is the SHA1 of
+        /// If no <see cref="EngineConfiguration.BaseSHA1"/> has been provided, this is the SHA1 of
         /// the generated source code.
         /// </para>
         /// </summary>

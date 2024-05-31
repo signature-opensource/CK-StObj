@@ -9,9 +9,9 @@ namespace CK.Setup
     /// that takes the configuration object instance.
     /// </para>
     /// <para>
-    /// The configuration object is a <see cref="StObjEngineAspectConfiguration"/> that has been 
-    /// added to the <see cref="StObjEngineConfiguration.Aspects"/> list and 
-    /// whose <see cref="StObjEngineAspectConfiguration.AspectType"/> is the assembly qualified name
+    /// The configuration object is a <see cref="EngineAspectConfiguration"/> that has been 
+    /// added to the <see cref="EngineConfiguration.Aspects"/> list and 
+    /// whose <see cref="EngineAspectConfiguration.AspectType"/> is the assembly qualified name
     /// of the Aspect they configure.
     /// </para>
     /// <para>

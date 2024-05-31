@@ -102,7 +102,7 @@ namespace CK.Testing
 
         [Obsolete]
         GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollector c,
-                                                                    Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                    Func<EngineConfiguration, EngineConfiguration>? engineConfigurator,
                                                                     bool generateSourceFile,
                                                                     CompileOption compileOption )
         {
@@ -111,14 +111,14 @@ namespace CK.Testing
 
         [Obsolete]
         CompileAndLoadResult IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c,
-                                                                                Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
+                                                                                Func<EngineConfiguration, EngineConfiguration>? engineConfigurator )
         {
             return DoCompileAndLoadStObjMap( c, engineConfigurator );
         }
 
         [Obsolete]
         static CompileAndLoadResult DoCompileAndLoadStObjMap( StObjCollector c,
-                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
+                                                              Func<EngineConfiguration, EngineConfiguration>? engineConfigurator )
         {
             // If the embeddedStObjMap must be used, we update the G0.cs file, but if the StObjMap must be loaded from the assembly
             // we avoid updating G0.cs.
@@ -130,23 +130,20 @@ namespace CK.Testing
 
         [Obsolete]
         static GenerateCodeResult DoGenerateCode( StObjCollectorResult result,
-                                                  Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                  Func<EngineConfiguration, EngineConfiguration>? engineConfigurator,
                                                   bool generateSourceFiles,
                                                   CompileOption compileOption )
         {
             Throw.CheckArgument( !result.HasFatalError );
             var assemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" );
 
-            var config = new StObjEngineConfiguration()
+            var config = new EngineConfiguration()
             {
                 GeneratedAssemblyName = assemblyName,
             };
-            config.AddBinPath( new BinPathConfiguration()
-            {
-                CompileOption = compileOption,
-                GenerateSourceFiles = generateSourceFiles,
-                ProjectPath = TestHelper.TestProjectFolder
-            } );
+            config.FirstBinPath.CompileOption = compileOption;
+            config.FirstBinPath.GenerateSourceFiles = generateSourceFiles;
+            config.FirstBinPath.ProjectPath = TestHelper.TestProjectFolder;
             if( engineConfigurator != null )
             {
                 config = engineConfigurator.Invoke( config );
@@ -157,7 +154,7 @@ namespace CK.Testing
 
         [Obsolete]
         AutomaticServicesResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
-                                                                                    Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                    Func<EngineConfiguration, EngineConfiguration>? engineConfigurator,
                                                                                     Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem,
                                                                                     SimpleServiceContainer? startupServices,
                                                                                     Action<StObjContextRoot.ServiceRegister>? configureServices )
@@ -175,7 +172,7 @@ namespace CK.Testing
         void IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                  string message,
                                                                                  IEnumerable<string>? otherMessages,
-                                                                                 Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                 Func<EngineConfiguration, EngineConfiguration>? engineConfigurator,
                                                                                  SimpleServiceContainer? startupServices,
                                                                                  Action<StObjContextRoot.ServiceRegister>? configureServices )
         {

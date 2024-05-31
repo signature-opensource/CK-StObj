@@ -9,32 +9,35 @@ namespace CK.Setup
     /// <summary>
     /// Encapsulates configuration of the StObjEngine.
     /// This configuration is compatible with CKSetup SetupConfiguration object.
+    /// <para>
+    /// There is always at least one <see cref="BinPathConfiguration"/> in <see cref="BinPaths"/>.
+    /// </para>
     /// </summary>
-    public sealed partial class StObjEngineConfiguration
+    public sealed partial class EngineConfiguration
     {
         readonly List<BinPathConfiguration> _binPaths;
-        Dictionary<string, StObjEngineAspectConfiguration> _namedAspects;
-        List<StObjEngineAspectConfiguration> _aspects;
+        Dictionary<string, EngineAspectConfiguration> _namedAspects;
+        List<EngineAspectConfiguration> _aspects;
         string? _generatedAssemblyName;
 
         /// <summary>
         /// Gets the list of all configuration aspects that must participate to setup.
         /// </summary>
-        public IReadOnlyList<StObjEngineAspectConfiguration> Aspects => _aspects;
+        public IReadOnlyList<EngineAspectConfiguration> Aspects => _aspects;
 
         /// <summary>
         /// Finds an existing aspect or returns null.
         /// </summary>
         /// <param name="name">The aspect name.</param>
         /// <returns>The aspect or null.</returns>
-        public StObjEngineAspectConfiguration? FindAspect( string name ) => _namedAspects.GetValueOrDefault( name );
+        public EngineAspectConfiguration? FindAspect( string name ) => _namedAspects.GetValueOrDefault( name );
 
         /// <summary>
         /// Finds an existing aspect or returns null.
         /// </summary>
         /// <param name="name">The aspect name.</param>
         /// <returns>The aspect or null.</returns>
-        public T? FindAspect<T>() where T : StObjEngineAspectConfiguration => _aspects.OfType<T>().SingleOrDefault();
+        public T? FindAspect<T>() where T : EngineAspectConfiguration => _aspects.OfType<T>().SingleOrDefault();
 
         /// <summary>
         /// Adds an aspect to these <see cref="BinPaths"/>.
@@ -42,13 +45,16 @@ namespace CK.Setup
         /// another configuration otherwise an <see cref="ArgumentException"/> is thrown.
         /// </summary>
         /// <param name="aspect">An aspect configuration to add.</param>
-        public void AddAspect( StObjEngineAspectConfiguration aspect )
+        public void AddAspect( EngineAspectConfiguration aspect )
         {
-            Throw.CheckArgument( aspect != null && aspect.Owner == null );
-            Throw.CheckArgument( "An aspect of the same type already exists.", !_namedAspects.ContainsKey( aspect.Name ) );
+            Throw.CheckNotNullArgument( aspect );
+            if( aspect.Owner == this ) return;
+
+            Throw.CheckArgument( aspect.Owner == null );
+            Throw.CheckArgument( "An aspect of the same type already exists.", !_namedAspects.ContainsKey( aspect.AspectName ) );
             aspect.Owner = this;
             _aspects.Add( aspect );
-            _namedAspects.Add( aspect.Name, aspect );
+            _namedAspects.Add( aspect.AspectName, aspect );
         }
 
         /// <summary>
@@ -56,17 +62,17 @@ namespace CK.Setup
         /// does not belong to this configuration.
         /// </summary>
         /// <param name="aspect">An aspect configuration to remove.</param>
-        public void RemoveAspect( StObjEngineAspectConfiguration aspect )
+        public void RemoveAspect( EngineAspectConfiguration aspect )
         {
             Throw.CheckArgument( aspect != null );
             if( aspect.Owner == this )
             {
                 _aspects.Remove( aspect );
                 aspect.Owner = null;
-                _namedAspects.Remove( aspect.Name );
+                _namedAspects.Remove( aspect.AspectName );
                 foreach( var b in _binPaths )
                 {
-                    b.RemoveAspect( aspect.Name );
+                    b.RemoveAspect( aspect.AspectName );
                 }
             }
         }
@@ -89,7 +95,7 @@ namespace CK.Setup
                 {
                     if( FileUtil.IndexOfInvalidFileNameChars( value ) >= 0 )
                     {
-                        Throw.ArgumentException( $"Invalid file character in file name '{value}'." );
+                        Throw.ArgumentException( nameof(value), $"Invalid file character in file name '{value}'." );
                     }
                     Throw.CheckArgument( value == StObjContextRoot.GeneratedAssemblyName || value.StartsWith( StObjContextRoot.GeneratedAssemblyName + '.' ) );
                     _generatedAssemblyName = value;
@@ -136,29 +142,50 @@ namespace CK.Setup
         public NormalizedPath BasePath { get; set; }
 
         /// <summary>
-        /// Gets the binary paths to setup (must not be empty).
-        /// Their <see cref="BinPathConfiguration.Assemblies"/> or non optional <see cref="BinPathConfiguration.Types"/>
-        /// must exist in the current <see cref="AppContext.BaseDirectory"/>.
+        /// Gets the first <see cref="BinPathConfiguration"/> from the <see cref="BinPaths"/>
+        /// that is guaranteed to exist.
+        /// </summary>
+        public BinPathConfiguration FirstBinPath => _binPaths[0];
+
+        /// <summary>
+        /// Gets the binary paths to setup.
+        /// <para>
+        /// There is always at least one <see cref="BinPathConfiguration"/>
+        /// in this list (<see cref="RemoveBinPath(BinPathConfiguration)"/> never removes the single one).
+        /// </para>
         /// </summary>
         public IReadOnlyList<BinPathConfiguration> BinPaths => _binPaths;
 
         /// <summary>
         /// Adds a BinPathConfiguration to these <see cref="BinPaths"/>.
+        /// <para>
+        /// The <paramref name="binPath"/> must not belong to another Engine configuration otherwise
+        /// a <see cref="ArgumentException"/> is thrown.
+        /// </para>
+        /// <para>
         /// <see cref="BinPathAspectConfiguration"/> that cannot be bound to an existing <see cref="Aspects"/>
         /// are removed from the <see cref="BinPathConfiguration.Aspects"/>.
+        /// </para>
         /// </summary>
         /// <param name="binPath">A BinPath configuration to add.</param>
         public void AddBinPath( BinPathConfiguration binPath )
         {
-            Throw.CheckArgument( binPath != null && binPath.Owner ==  null );
+            Throw.CheckNotNullArgument( binPath );
+            if( binPath.Owner == this ) return;
+
+            Throw.CheckArgument( binPath.Owner == null );
             binPath.Owner = this;
             _binPaths.Add( binPath );
             // Remove orphans BinPath configurations or bind them.
             List<BinPathAspectConfiguration>? toRemove = null; 
             foreach( var aspect in binPath.Aspects )
             {
-                var a = FindAspect( aspect.Name );
-                if( a != null ) aspect.AspectConfiguration = a;
+                var a = FindAspect( aspect.AspectName );
+                if( a != null )
+                {
+                    Throw.DebugAssert( aspect.Owner == binPath );
+                    aspect.Bind( binPath, a );
+                }
                 else
                 {
                     toRemove ??= new List<BinPathAspectConfiguration>();
@@ -176,16 +203,20 @@ namespace CK.Setup
 
         /// <summary>
         /// Removes a BinPathConfiguration from <see cref="BinPaths"/>. Does nothing if the <paramref name="binPath"/>
-        /// does not belong to this configuration.
+        /// does not belong to this configuration or if there is only a single BinPath.
         /// </summary>
         /// <param name="binPath">A BinPath configuration to remove.</param>
         public void RemoveBinPath( BinPathConfiguration binPath )
         {
             Throw.CheckArgument( binPath != null );
-            if( binPath.Owner == this )
+            if( binPath.Owner == this && _binPaths.Count > 1 )
             {
                 _binPaths.Remove( binPath );
                 binPath.Owner = null;
+                foreach( var aspect in binPath.Aspects )
+                {
+                    aspect.Bind( binPath, null );
+                }
             }
         }
 

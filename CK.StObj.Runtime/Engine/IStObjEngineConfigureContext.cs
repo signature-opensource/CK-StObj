@@ -18,7 +18,7 @@ namespace CK.Setup
         /// Gets or sets whether the run can be sipped.
         /// This can only transition from true to false (setting it to true if it's false has no effect).
         /// <para>
-        /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
+        /// It's initial value is determined by <see cref="EngineConfiguration.ForceRun"/> and by each
         /// <see cref="IRunningBinPathGroup.GeneratedAssembly"/> and <see cref="IRunningBinPathGroup.GeneratedSource"/>
         /// availability.
         /// </para>
@@ -28,7 +28,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the engine configuration.
         /// </summary>
-        IRunningStObjEngineConfiguration StObjEngineConfiguration { get; }
+        IRunningEngineConfiguration StObjEngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered
@@ -68,7 +68,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the list of already created and configured aspects.
-        /// Recall that the order of the configurations in <see cref="StObjEngineConfiguration.Aspects"/> drives the order of Aspects creation).
+        /// Recall that the order of the configurations in <see cref="EngineConfiguration.Aspects"/> drives the order of Aspects creation).
         /// When <see cref="IStObjEngineAspect.Configure"/> is called, only configured aspects are registered here and available.
         /// </summary>
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }

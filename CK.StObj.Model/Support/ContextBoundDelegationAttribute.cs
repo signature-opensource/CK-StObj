@@ -26,7 +26,7 @@ namespace CK.Setup
         /// Gets the Assembly Qualified Name of the object that will replace this attribute during setup.
         /// <para>
         /// This class must have a public constructor that can accept any service provided by the
-        /// aspects (see <see cref="StObjEngineConfiguration.Aspects"/>), in addition to:
+        /// aspects (see <see cref="EngineConfiguration.Aspects"/>), in addition to:
         /// <list type="bullet">
         ///   <item>a <see cref="MemberInfo"/> that is the decorated member.</item>
         ///   <item>a <see cref="Type"/> that is the Type that owns the decorated member.</item>

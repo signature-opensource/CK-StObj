@@ -2,7 +2,6 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
@@ -33,10 +32,10 @@ namespace CK.Setup
             /// <param name="e">The Xml element.</param>
             public TypeConfiguration( XElement e )
             {
-                Name = (string?)e.Attribute( StObjEngineConfiguration.xName ) ?? e.Value;
-                var k = (string?)e.Attribute( StObjEngineConfiguration.xKind );
+                Name = (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value;
+                var k = (string?)e.Attribute( EngineConfiguration.xKind );
                 if( k != null ) Kind = (AutoServiceKind)Enum.Parse( typeof( AutoServiceKind ), k.Replace( '|', ',' ) );
-                Optional = (bool?)e.Attribute( StObjEngineConfiguration.xOptional ) ?? false;
+                Optional = (bool?)e.Attribute( EngineConfiguration.xOptional ) ?? false;
             }
 
             /// <summary>
@@ -92,21 +91,21 @@ namespace CK.Setup
             ExcludedTypes = new HashSet<string>();
             Types = new List<TypeConfiguration>();
             _aspects = new Dictionary<string, BinPathAspectConfiguration>();
-            AspectConfigurations = new List<XElement>();
         }
 
-        internal BinPathConfiguration( XElement e, Dictionary<string, StObjEngineAspectConfiguration> namedAspects )
+        internal BinPathConfiguration( EngineConfiguration configuration, XElement e, Dictionary<string, EngineAspectConfiguration> namedAspects )
         {
-            Name = (string?)e.Attribute( StObjEngineConfiguration.xName );
-            Path = (string?)e.Attribute( StObjEngineConfiguration.xPath );
-            OutputPath = (string?)e.Element( StObjEngineConfiguration.xOutputPath );
-            ProjectPath = (string?)e.Element( StObjEngineConfiguration.xProjectPath );
+            Owner = configuration;
+            Name = (string?)e.Attribute( EngineConfiguration.xName );
+            Path = (string?)e.Attribute( EngineConfiguration.xPath );
+            OutputPath = (string?)e.Element( EngineConfiguration.xOutputPath );
+            ProjectPath = (string?)e.Element( EngineConfiguration.xProjectPath );
 
             if( e.Element( "SkipCompilation" ) != null )
             {
                 throw new XmlException( @"Element SkipCompilation must be replaced with CompileOption that can be be ""None"", ""Parse"" or ""Compile"". It defaults to ""None""." );
             }
-            CompileOption = e.Element( StObjEngineConfiguration.xCompileOption )?.Value.ToUpperInvariant() switch
+            CompileOption = e.Element( EngineConfiguration.xCompileOption )?.Value.ToUpperInvariant() switch
             {
                 null => CompileOption.None,
                 "NONE" => CompileOption.None,
@@ -115,24 +114,24 @@ namespace CK.Setup
                 _ => throw new XmlException( @"Expected CompileOption to be ""None"", ""Parse"" or ""Compile""." )
             };
 
-            GenerateSourceFiles = (bool?)e.Element( StObjEngineConfiguration.xGenerateSourceFiles ) ?? true;
+            GenerateSourceFiles = (bool?)e.Element( EngineConfiguration.xGenerateSourceFiles ) ?? true;
 
-            Assemblies = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly ) );
-            ExcludedTypes = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType ) );
+            Assemblies = new HashSet<string>( EngineConfiguration.FromXml( e, EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly ) );
+            ExcludedTypes = new HashSet<string>( EngineConfiguration.FromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
 
-            Types = e.Elements( StObjEngineConfiguration.xTypes ).Elements( StObjEngineConfiguration.xType ).Select( c => new TypeConfiguration( c ) ).ToList();
+            Types = e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ).Select( c => new TypeConfiguration( c ) ).ToList();
 
             var allowedNames = new List<string>()
             {
-                StObjEngineConfiguration.xTypes.ToString(),
-                StObjEngineConfiguration.xExcludedTypes.ToString(),
-                StObjEngineConfiguration.xAssemblies.ToString(),
-                StObjEngineConfiguration.xGenerateSourceFiles.ToString(),
-                StObjEngineConfiguration.xCompileOption.ToString(),
-                StObjEngineConfiguration.xProjectPath.ToString(),
-                StObjEngineConfiguration.xOutputPath.ToString(),
-                StObjEngineConfiguration.xPath.ToString(),
-                StObjEngineConfiguration.xName.ToString()
+                EngineConfiguration.xTypes.ToString(),
+                EngineConfiguration.xExcludedTypes.ToString(),
+                EngineConfiguration.xAssemblies.ToString(),
+                EngineConfiguration.xGenerateSourceFiles.ToString(),
+                EngineConfiguration.xCompileOption.ToString(),
+                EngineConfiguration.xProjectPath.ToString(),
+                EngineConfiguration.xOutputPath.ToString(),
+                EngineConfiguration.xPath.ToString(),
+                EngineConfiguration.xName.ToString()
             };
             _aspects = new Dictionary<string, BinPathAspectConfiguration>();
             var aspectConfigurations = e.Elements().Where( e => !allowedNames.Contains( e.Name.LocalName ) ).ToList();
@@ -147,27 +146,18 @@ namespace CK.Setup
                     }
                     Throw.InvalidDataException( $"Unexpected element name '{c.Name.LocalName}'. Expected: '{allowedNames.Concatenate( "', '" )}'{expectedAspects}." );
                 }
-                if( _aspects.ContainsKey( aspectType.Name ) )
+                if( _aspects.ContainsKey( aspectType.AspectName ) )
                 {
                     Throw.InvalidDataException( $"Duplicated element name '{c.Name.LocalName}'. At most one BinPath aspect configuration of a given type can exist." );
                 }
                 var a = aspectType.CreateBinPathConfiguration();
-                Throw.DebugAssert( a.Name == aspectType.Name );
+                if( a.AspectName != aspectType.AspectName )
+                {
+                    Throw.CKException( $"Aspect '{aspectType.AspectName}' created an aspect of type '{a.AspectName}BinPathAspectConfiguration'. The type name should be ''{aspectType.AspectName}BinPathAspectConfiguration''." );
+                }
                 a.InitializeFrom( c );
-                _aspects.Add( a.Name, a );
+                _aspects.Add( a.AspectName, a );
             }
-
-            AspectConfigurations = e.Elements().Where( e => e.Name != StObjEngineConfiguration.xTypes
-                                                            && e.Name != StObjEngineConfiguration.xExcludedTypes
-                                                            && e.Name != StObjEngineConfiguration.xAssemblies
-                                                            && e.Name != StObjEngineConfiguration.xGenerateSourceFiles
-                                                            && e.Name != StObjEngineConfiguration.xCompileOption
-                                                            && e.Name != StObjEngineConfiguration.xProjectPath
-                                                            && e.Name != StObjEngineConfiguration.xOutputPath
-                                                            && e.Name != StObjEngineConfiguration.xPath
-                                                            && e.Name != StObjEngineConfiguration.xName )
-                                               .Select( e => new XElement( e ) )
-                                               .ToList();
         }
 
         /// <summary>
@@ -177,27 +167,27 @@ namespace CK.Setup
         /// <returns>A new element.</returns>
         public XElement ToXml()
         {
-            return new XElement( StObjEngineConfiguration.xBinPath,
-                                    String.IsNullOrWhiteSpace( Name ) ? null : new XAttribute( StObjEngineConfiguration.xName, Name ),
-                                    new XAttribute( StObjEngineConfiguration.xPath, Path ),
-                                    !OutputPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.xOutputPath, OutputPath ) : null,
-                                    !ProjectPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.xProjectPath, ProjectPath ) : null,
-                                    new XElement( StObjEngineConfiguration.xCompileOption, CompileOption.ToString() ),
-                                    GenerateSourceFiles ? null : new XElement( StObjEngineConfiguration.xGenerateSourceFiles, false ),
-                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly, Assemblies ),
-                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType, ExcludedTypes ),
-                                    new XElement( StObjEngineConfiguration.xTypes,
-                                                    Types.Select( t => new XElement( StObjEngineConfiguration.xType,
-                                                                            new XAttribute( StObjEngineConfiguration.xName, t.Name ),
-                                                                            t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
-                                                                            t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) ),
-                                    AspectConfigurations.Select( e => new XElement( e ) ) );
+            return new XElement( EngineConfiguration.xBinPath,
+                                    String.IsNullOrWhiteSpace( Name ) ? null : new XAttribute( EngineConfiguration.xName, Name ),
+                                    new XAttribute( EngineConfiguration.xPath, Path ),
+                                    !OutputPath.IsEmptyPath ? new XElement( EngineConfiguration.xOutputPath, OutputPath ) : null,
+                                    !ProjectPath.IsEmptyPath ? new XElement( EngineConfiguration.xProjectPath, ProjectPath ) : null,
+                                    new XElement( EngineConfiguration.xCompileOption, CompileOption.ToString() ),
+                                    GenerateSourceFiles ? null : new XElement( EngineConfiguration.xGenerateSourceFiles, false ),
+                                    EngineConfiguration.ToXml( EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly, Assemblies ),
+                                    EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, ExcludedTypes ),
+                                    new XElement( EngineConfiguration.xTypes,
+                                                    Types.Select( t => new XElement( EngineConfiguration.xType,
+                                                                            new XAttribute( EngineConfiguration.xName, t.Name ),
+                                                                            t.Kind != AutoServiceKind.None ? new XAttribute( EngineConfiguration.xKind, t.Kind ) : null,
+                                                                            t.Optional ? new XAttribute( EngineConfiguration.xOptional, true ) : null ) ) ),
+                                    _aspects.Values.Select( a => a.ToXml() ) );
         }
 
         /// <summary>
-        /// Gets the configuration that contains this BinPath in its <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// Gets the configuration that contains this BinPath in its <see cref="EngineConfiguration.BinPaths"/>.
         /// </summary>
-        public StObjEngineConfiguration? Owner { get; internal set; }
+        public EngineConfiguration? Owner { get; internal set; }
 
         /// <summary>
         /// Gets or sets the name that uniquely identifies this configuration among the others.
@@ -207,7 +197,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets the path of the directory to setup (this property is shared with CKSetup configuration).
-        /// It can be relative: it will be combined to the <see cref="StObjEngineConfiguration.BasePath"/>.
+        /// It can be relative: it will be combined to the <see cref="EngineConfiguration.BasePath"/>.
         /// <para>
         /// Nothing prevents multiple <see cref="BinPathConfiguration"/> to have the same Path. In such case, <see cref="OutputPath"/>
         /// and/or <see cref="ProjectPath"/> should be set to different directories (otherwise file generation will be in trouble).
@@ -257,7 +247,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets a set of assembly qualified type names that must be excluded from  
         /// registration.
-        /// Note that any type appearing in <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/> will also
+        /// Note that any type appearing in <see cref="EngineConfiguration.GlobalExcludedTypes"/> will also
         /// be excluded.
         /// </summary>
         public HashSet<string> ExcludedTypes { get; }
@@ -284,21 +274,48 @@ namespace CK.Setup
         /// <summary>
         /// Adds an aspect to these <see cref="Aspects"/>.
         /// <para>
-        /// No existing aspect with the same type must exist, the aspect must not belong to
-        /// another configuration and the engine aspect must exist in the <see cref="StObjEngineConfiguration.Aspects"/>
+        /// No existing aspect with the same type must exist (except if it is a <see cref="MultipleBinPathAspectConfiguration"/>), the
+        /// aspect must not belong to another configuration and the engine aspect must exist in the <see cref="EngineConfiguration.Aspects"/>
         /// otherwise an <see cref="ArgumentException"/> is thrown.
         /// </para>
         /// </summary>
         /// <param name="aspect">An aspect configuration to add.</param>
-        public void AddAspect( BinPathAspectConfiguration configuration )
+        public void AddAspect( BinPathAspectConfiguration aspect )
         {
-            Throw.CheckArgument( configuration != null && configuration.Owner == null );
-            Throw.CheckArgument( "A configuration of the same type already exist.", !_aspects.ContainsKey( configuration.Name ) );
-            StObjEngineAspectConfiguration? aspect = null;
-            Throw.CheckArgument( "The StObjEngineAspectConfiguration must exist.", Owner == null || (aspect = Owner.FindAspect( configuration.Name )) != null );
-            configuration.Owner = this;
-            configuration.AspectConfiguration = aspect;
-            _aspects.Add( configuration.Name, configuration );
+            Throw.CheckNotNullArgument( aspect );
+            if( aspect.Owner == this ) return;
+
+            Throw.CheckArgument( aspect.Owner is null );
+
+            EngineAspectConfiguration? engineAspect = Owner?.FindAspect( aspect.AspectName );
+            if( Owner != null && engineAspect == null )
+            {
+                Throw.ArgumentException( nameof( aspect ), $"Unable to add the BinPath aspect configuration. The aspect '{aspect.AspectName}' must exist in the EngineConfiguration.Aspects." );
+            }
+            if( _aspects.TryGetValue( aspect.AspectName, out var existing ) )
+            {
+                if( existing is MultipleBinPathAspectConfiguration multi )
+                {
+                    if( aspect is not MultipleBinPathAspectConfiguration multiConf
+                        || !multi.GetType().IsAssignableFrom( multiConf.GetType() ) )
+                    {
+                        Throw.ArgumentException( nameof( aspect ), $"Aspect configuration named '{aspect.AspectName}' (Type: {aspect.GetType().ToCSharpName()}) is not compatible withe existing type '{multi.GetType().ToCSharpName()}'." );
+                    }
+                    else
+                    {
+                        multi.DoAddOtherConfiguration( multiConf );
+                    }
+                }
+                else
+                {
+                    Throw.ArgumentException( nameof( aspect ), $"An aspect configuration with the same type name '{aspect.AspectName}' already exists and is not a MultipleBinPathAspectConfiguration." );
+                }
+            }
+            else
+            {
+                aspect.Bind( this, engineAspect );
+                _aspects.Add( aspect.AspectName, aspect );
+            }
         }
 
         /// <summary>
@@ -308,12 +325,10 @@ namespace CK.Setup
         /// <param name="configuration">An aspect configuration to remove.</param>
         public void RemoveAspect( BinPathAspectConfiguration configuration )
         {
-            Throw.CheckArgument( configuration != null );
+            Throw.CheckNotNullArgument( configuration );
             if( configuration.Owner == this )
             {
-                configuration.Owner = null;
-                configuration.AspectConfiguration = null;
-                _aspects.Remove( configuration.Name );
+                configuration.HandleOwnRemove( _aspects );
             }
         }
 
@@ -325,69 +340,11 @@ namespace CK.Setup
         public void RemoveAspect( string name )
         {
             var c = _aspects.GetValueOrDefault( name );
-            if( c != null ) RemoveAspect( c );
-        }
-
-        /// <summary>
-        /// Gets a mutable set of <see cref="XElement"/> that are configurations for aspects.
-        /// Element names are the keys here: a "TypeScriptAspectConfiguration" should handle "TypeScript" elements.
-        /// <para>
-        /// See <see cref="GetAspectConfigurationNames(string)"/>.
-        /// </para>
-        /// </summary>
-        public List<XElement> AspectConfigurations { get; }
-
-        /// <summary>
-        /// Helper that attempts to find the first element in <see cref="AspectConfigurations"/> based on aspect type's name.
-        /// See <see cref="GetAspectConfigurationNames(string)"/>.
-        /// </summary>
-        /// <param name="aspect">The aspect's type.</param>
-        /// <returns>The element or null.</returns>
-        public XElement? GetAspectConfiguration( Type aspect ) => GetAspectConfiguration( aspect.Name );
-
-        /// <summary>
-        /// Helper that attempts to find the first element in <see cref="AspectConfigurations"/> based on aspect type's name.
-        /// See <see cref="GetAspectConfigurationNames(string)"/>.
-        /// </summary>
-        /// <typeparam name="T">The aspect's type.</typeparam>
-        /// <returns>The element or null.</returns>
-        public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof( T ).Name );
-
-        /// <summary>
-        /// Helper that attempts to find the first element in <see cref="AspectConfigurations"/> based on an aspect name.
-        /// See <see cref="GetAspectConfigurationNames(string)"/>.
-        /// </summary>
-        /// <param name="aspectName">The name of the aspect.</param>
-        /// <returns>The element or null.</returns>
-        public XElement? GetAspectConfiguration( string aspectName )
-        {
-            var names = GetAspectConfigurationNames( aspectName );
-            return AspectConfigurations.FirstOrDefault( e => names.Contains( e.Name.LocalName ) );
-        }
-
-        /// <summary>
-        /// Helper that derives multiple names based on an aspect name: combinations of "Configurations", "Configuration", "Config" suffixes and "Aspect"
-        /// substring are removed. This helps locating one (or more) aspect configurations in <see cref="AspectConfigurations"/>.
-        /// </summary>
-        /// <param name="aspectName">The name of the aspect.</param>
-        /// <returns>The set of canditate names for the configuration element.</returns>
-        public static ImmutableArray<string> GetAspectConfigurationNames( string aspectName )
-        {
-            var b = ImmutableArray.CreateBuilder<string>( 4 );
-            string? noConf = null;
-            if( aspectName.EndsWith( "Configurations", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 14 );
-            else if( aspectName.EndsWith( "Configuration", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 13 );
-            else if( aspectName.EndsWith( "Config", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 6 );
-            string noAspect = aspectName.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
-            if( noConf != null )
+            if( c != null )
             {
-                string noAspectConf = noConf.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
-                if( noAspectConf != noConf ) b.Add( noAspectConf );
+                c.Bind( null, null );
+                _aspects.Remove( name );
             }
-            if( noAspect != aspectName ) b.Add( noAspect );
-            if( noConf != null ) b.Add( noConf );
-            b.Add( aspectName );
-            return b.Count == 4 ? b.MoveToImmutable() : b.ToImmutable();
         }
     }
 

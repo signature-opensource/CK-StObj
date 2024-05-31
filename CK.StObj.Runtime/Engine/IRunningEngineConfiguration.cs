@@ -6,13 +6,13 @@ namespace CK.Setup
     /// Associates the <see cref="Groups"/> of similar configurations and the mutable
     /// original engine configuration. Note that the original configuration is updated by the engine.
     /// </summary>
-    public interface IRunningStObjEngineConfiguration
+    public interface IRunningEngineConfiguration
     {
         /// <summary>
         /// Gets the engine configuration.
         /// Even if this configuration is technically mutable, it should not be altered.
         /// </summary>
-        StObjEngineConfiguration Configuration { get; }
+        EngineConfiguration Configuration { get; }
 
         /// <summary>
         /// Gets the groups of similar <see cref="BinPathConfiguration"/>.

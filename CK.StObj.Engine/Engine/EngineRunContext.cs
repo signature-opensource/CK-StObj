@@ -6,22 +6,22 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    sealed partial class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
+    sealed partial class EngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
     {
         readonly IActivityMonitor _monitor;
-        readonly StObjEngineConfigureContext _startContext;
+        readonly EngineConfigureContext _startContext;
         readonly List<GenBinPath> _binPaths;
-        readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
-        readonly StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext> _trampolinePostCode;
+        readonly EngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
+        readonly EngineAspectTrampoline<IStObjEnginePostCodeRunContext> _trampolinePostCode;
         readonly Dictionary<string, object> _primaryRunCache;
 
-        public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext )
+        public EngineRunContext( IActivityMonitor monitor, EngineConfigureContext startContext )
         {
             _monitor = monitor;
             _startContext = startContext;
             _binPaths = new List<GenBinPath>();
-            _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
-            _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
+            _trampoline = new EngineAspectTrampoline<IStObjEngineRunContext>( this );
+            _trampolinePostCode = new EngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
             _primaryRunCache = new Dictionary<string, object>();
         }
 

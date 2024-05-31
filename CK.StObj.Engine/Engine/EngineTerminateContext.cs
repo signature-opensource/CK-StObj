@@ -4,17 +4,17 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    sealed class StObjEngineTerminateContext : IStObjEngineTerminateContext
+    sealed class EngineTerminateContext : IStObjEngineTerminateContext
     {
         readonly IActivityMonitor _monitor;
-        readonly StObjEngineRunContext _runContext;
-        readonly StObjEngineAspectTrampoline<IStObjEngineTerminateContext> _trampoline;
+        readonly EngineRunContext _runContext;
+        readonly EngineAspectTrampoline<IStObjEngineTerminateContext> _trampoline;
 
-        public StObjEngineTerminateContext( IActivityMonitor monitor, StObjEngineRunContext runContext )
+        public EngineTerminateContext( IActivityMonitor monitor, EngineRunContext runContext )
         {
             _monitor = monitor;
             _runContext = runContext;
-            _trampoline = new StObjEngineAspectTrampoline<IStObjEngineTerminateContext>( this );
+            _trampoline = new EngineAspectTrampoline<IStObjEngineTerminateContext>( this );
         }
 
         public ISimpleServiceContainer ServiceContainer => _runContext.ServiceContainer;

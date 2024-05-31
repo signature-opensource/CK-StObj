@@ -7,24 +7,32 @@ using System.Xml.Linq;
 
 namespace CK.Setup
 {
-    public sealed partial class StObjEngineConfiguration
+    public sealed partial class EngineConfiguration
     {
         /// <summary>
         /// Initializes a new empty configuration.
         /// </summary>
-        public StObjEngineConfiguration()
+        public EngineConfiguration()
         {
-            _namedAspects = new Dictionary<string, StObjEngineAspectConfiguration>();
-            _aspects = new List<StObjEngineAspectConfiguration>();
+            _namedAspects = new Dictionary<string, EngineAspectConfiguration>();
+            _aspects = new List<EngineAspectConfiguration>();
             _binPaths = new List<BinPathConfiguration>();
+            AddFirstBinPath();
             GlobalExcludedTypes = new HashSet<string>();
         }
 
+        private void AddFirstBinPath()
+        {
+            var first = new BinPathConfiguration();
+            first.Owner = this;
+            _binPaths.Add( first );
+        }
+
         /// <summary>
-        /// Initializes a new <see cref="StObjEngineConfiguration"/> from a <see cref="XElement"/>.
+        /// Initializes a new <see cref="EngineConfiguration"/> from a <see cref="XElement"/>.
         /// </summary>
         /// <param name="e">The xml element.</param>
-        public StObjEngineConfiguration( XElement e )
+        public EngineConfiguration( XElement e )
         {
             Throw.CheckNotNullArgument( e );
 
@@ -41,30 +49,31 @@ namespace CK.Setup
             GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
 
             // Aspects.
-            _aspects = new List<StObjEngineAspectConfiguration>();
-            _namedAspects = new Dictionary<string, StObjEngineAspectConfiguration>();
+            _aspects = new List<EngineAspectConfiguration>();
+            _namedAspects = new Dictionary<string, EngineAspectConfiguration>();
             foreach( var a in e.Elements( xAspect ) )
             {
                 string type = (string)a.AttributeRequired( xType );
                 Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
                 Debug.Assert( tAspect != null );
-                StObjEngineAspectConfiguration aspect = (StObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
-                if( _namedAspects.ContainsKey( aspect.Name ) )
+                EngineAspectConfiguration aspect = (EngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
+                if( _namedAspects.ContainsKey( aspect.AspectName ) )
                 {
-                    Throw.InvalidDataException( $"Duplicate aspect configuration found for '{aspect.Name}': at most one configuration aspect per type is allowed." );
+                    Throw.InvalidDataException( $"Duplicate aspect configuration found for '{aspect.AspectName}': at most one configuration aspect per type is allowed." );
                 }
                 _aspects.Add( aspect );
-                _namedAspects.Add( aspect.Name, aspect );
+                _namedAspects.Add( aspect.AspectName, aspect );
             }
 
             // BinPaths.
-            _binPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( e, _namedAspects ) ).ToList();
+            _binPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( this, e, _namedAspects ) ).ToList();
+            if( _binPaths.Count == 0 ) AddFirstBinPath();
 
         }
 
         /// <summary>
         /// Serializes its content as a <see cref="XElement"/> and returns it.
-        /// The <see cref="StObjEngineConfiguration"/> constructor will be able to read this element back.
+        /// The <see cref="EngineConfiguration"/> constructor will be able to read this element back.
         /// Note that this Xml can also be read as a CKSetup SetupConfiguration (in Shared Configuration Mode).
         /// </summary>
         /// <returns>The Xml element.</returns>
@@ -257,6 +266,11 @@ namespace CK.Setup
         /// The ForceRun element name.
         /// </summary>
         static public readonly XName xForceRun = XNamespace.None + "ForceRun";
+
+        /// <summary>
+        /// An Array element or attribute name.
+        /// </summary>
+        static public readonly XName xArray = XNamespace.None + "Array";
 
         #endregion
 

@@ -9,25 +9,25 @@ using System.Xml.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements <see cref="IRunningStObjEngineConfiguration"/>.
+    /// Implements <see cref="IRunningEngineConfiguration"/>.
     /// </summary>
-    public sealed class RunningStObjEngineConfiguration : IRunningStObjEngineConfiguration
+    public sealed class RunningEngineConfiguration : IRunningEngineConfiguration
     {
         readonly List<RunningBinPathGroup> _binPathGroups;
 
-        internal RunningStObjEngineConfiguration( StObjEngineConfiguration configuration )
+        internal RunningEngineConfiguration( EngineConfiguration configuration )
         {
             _binPathGroups = new List<RunningBinPathGroup>();
             Configuration = configuration;
         }
 
         /// <inheritdoc />
-        public StObjEngineConfiguration Configuration { get; }
+        public EngineConfiguration Configuration { get; }
 
-        /// <inheritdoc cref="IRunningStObjEngineConfiguration.Groups" />
+        /// <inheritdoc cref="IRunningEngineConfiguration.Groups" />
         public IReadOnlyList<RunningBinPathGroup> Groups => _binPathGroups;
 
-        IReadOnlyList<IRunningBinPathGroup> IRunningStObjEngineConfiguration.Groups => _binPathGroups;
+        IReadOnlyList<IRunningBinPathGroup> IRunningEngineConfiguration.Groups => _binPathGroups;
 
         /// <summary>
         /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
@@ -40,7 +40,7 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         /// <returns>True on success, false is something's wrong.</returns>
-        public static bool CheckAndValidate( IActivityMonitor monitor, StObjEngineConfiguration c )
+        public static bool CheckAndValidate( IActivityMonitor monitor, EngineConfiguration c )
         {
             if( c.BinPaths.Count == 0 )
             {
@@ -82,7 +82,7 @@ namespace CK.Setup
                 {
                     hasChanged = false;
                     var e = binPathAspect.ToXml();
-                    EvalKnownPaths( monitor, b.Name, binPathAspect.Name, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
+                    EvalKnownPaths( monitor, b.Name, binPathAspect.AspectName, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
                     if( hasChanged ) binPathAspect.InitializeFrom( e );
                 }
             }
@@ -184,7 +184,7 @@ namespace CK.Setup
             }
         }
 
-        static NormalizedPath MakeAbsolutePath( StObjEngineConfiguration c, NormalizedPath p )
+        static NormalizedPath MakeAbsolutePath( EngineConfiguration c, NormalizedPath p )
         {
             if( !p.IsRooted ) p = c.BasePath.Combine( p );
             p = p.ResolveDots();
@@ -221,22 +221,22 @@ namespace CK.Setup
                     }
                 }
 
-                var binPaths = ckSetupConfig.Elements( StObjEngineConfiguration.xBinPaths ).SingleOrDefault();
-                if( binPaths == null ) Throw.ArgumentException( $"Missing &lt;BinPaths&gt; single element in '{ckSetupConfig}'." );
+                var binPaths = ckSetupConfig.Elements( EngineConfiguration.xBinPaths ).SingleOrDefault();
+                if( binPaths == null ) Throw.ArgumentException( nameof( ckSetupConfig ), $"Missing &lt;BinPaths&gt; single element in '{ckSetupConfig}'." );
 
-                foreach( XElement xB in binPaths.Elements( StObjEngineConfiguration.xBinPath ) )
+                foreach( XElement xB in binPaths.Elements( EngineConfiguration.xBinPath ) )
                 {
                     var assemblies = xB.Descendants()
                                        .Where( e => e.Name == "Model" || e.Name == "ModelDependent" )
                                        .Select( e => e.Value )
                                        .Where( s => s != null );
 
-                    var path = (string?)xB.Attribute( StObjEngineConfiguration.xPath );
-                    if( path == null ) Throw.ArgumentException( $"Missing Path attribute in '{xB}'." );
+                    var path = (string?)xB.Attribute( EngineConfiguration.xPath );
+                    if( path == null ) Throw.ArgumentException( nameof( ckSetupConfig ), $"Missing Path attribute in '{xB}'." );
 
                     var rootedPath = MakeAbsolutePath( Configuration, path );
                     var c = Configuration.BinPaths.SingleOrDefault( b => b.Path == rootedPath );
-                    if( c == null ) Throw.ArgumentException( $"Unable to find one BinPath element with Path '{rootedPath}' in: {Configuration.ToXml()}." );
+                    if( c == null ) Throw.ArgumentException( nameof( ckSetupConfig ), $"Unable to find one BinPath element with Path '{rootedPath}' in: {Configuration.ToXml()}." );
 
                     c.Assemblies.AddRange( assemblies );
                     monitor.Info( $"Added assemblies from CKSetup to BinPath '{rootedPath}':{Environment.NewLine}{assemblies.Concatenate( Environment.NewLine )}." );
@@ -354,11 +354,11 @@ namespace CK.Setup
         /// <summary>
         /// Creates a <see cref="BinPathConfiguration"/> that unifies multiple <see cref="BinPathConfiguration"/>.
         /// This configuration is the one used on the unified working directory.
-        /// This unified configuration doesn't contain any <see cref="BinPathConfiguration.AspectConfigurations"/>.
+        /// This unified configuration doesn't contain any <see cref="BinPathConfiguration.Aspects"/>.
         /// </summary>
         /// <param name="monitor">Monitor for error.</param>
         /// <param name="configurations">Multiple configurations.</param>
-        /// <param name="globalExcludedTypes">Types to exclude: see <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/>.</param>
+        /// <param name="globalExcludedTypes">Types to exclude: see <see cref="EngineConfiguration.GlobalExcludedTypes"/>.</param>
         /// <returns>The unified configuration or null on error.</returns>
         static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
                                                                         IEnumerable<RunningBinPathGroup> configurations,

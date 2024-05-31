@@ -2,25 +2,31 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using static CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
-    public class SampleAspectConfiguration : StObjEngineAspectConfiguration
+    public class SampleAspectConfiguration : EngineAspectConfiguration
     {
         public override string AspectType => "Sample.AspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
 
+        public SampleAspectConfiguration()
+        {
+            Version = 2;
+            Data = string.Empty;
+        }
+
         public SampleAspectConfiguration( XElement e )
         {
-            e.Attribute( StObjEngineConfiguration.xType ).Should().NotBeNull( "The Type attribute has been used to locate this type!" );
+            e.Attribute( EngineConfiguration.xType ).Should().NotBeNull( "The Type attribute has been used to locate this type!" );
 
             // This is how Aspect version should be managed.
-            int version = (int)e.AttributeRequired( StObjEngineConfiguration.xVersion );
+            int version = (int)e.AttributeRequired( EngineConfiguration.xVersion );
             if( version <= 0 || version > Version ) Throw.ArgumentOutOfRangeException( nameof( Version ) );
 
             if( Version == 1 ) Data = "This was not available in version 1.";
@@ -29,7 +35,7 @@ namespace CK.StObj.Engine.Tests
 
         public override XElement SerializeXml( XElement e )
         {
-            e.Add( new XAttribute( StObjEngineConfiguration.xVersion, Version ),
+            e.Add( new XAttribute( EngineConfiguration.xVersion, Version ),
                    new XElement( "Data", Data ) );
             return e;
         }
@@ -72,7 +78,7 @@ namespace CK.StObj.Engine.Tests
         }
     }
 
-    public class AnotherAspectConfiguration : StObjEngineAspectConfiguration
+    public class AnotherAspectConfiguration : EngineAspectConfiguration
     {
         public override string AspectType => "Sample.AnotherAspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
 
@@ -100,10 +106,482 @@ namespace CK.StObj.Engine.Tests
         }
     }
 
+    public class TypeScriptAspectConfiguration : EngineAspectConfiguration
+    {
+        public TypeScriptAspectConfiguration()
+        {
+            GenerateDocumentation = true;
+            LibraryVersions = new Dictionary<string, string>();
+        }
+
+        public bool GenerateDocumentation { get; set; }
+
+        public Dictionary<string, string> LibraryVersions { get; }
+
+
+        public override string AspectType => "The.Actual.Aspect, In.Engine.Package";
+
+        public override XElement SerializeXml( XElement e )
+        {
+            e.Add( new XAttribute( EngineConfiguration.xVersion, "1" ),
+                        GenerateDocumentation == false
+                            ? new XAttribute( "GenerateDocumentation", false )
+                            : null,
+                        LibraryVersions.Count > 0
+                            ? new XElement( "LibraryVersions",
+                                            LibraryVersions.Select( kv => new XElement( "Library",
+                                                new XAttribute( EngineConfiguration.xName, kv.Key ),
+                                                new XAttribute( EngineConfiguration.xVersion, kv.Value ) ) ) )
+                            : null
+                 );
+            return e;
+        }
+
+        public override BinPathAspectConfiguration CreateBinPathConfiguration() => new TypeScriptBinPathAspectConfiguration();
+    }
+
+    public class TypeScriptBinPathAspectConfiguration : MultipleBinPathAspectConfiguration<TypeScriptBinPathAspectConfiguration>
+    {
+        public TypeScriptBinPathAspectConfiguration()
+        {
+            Barrels = new HashSet<NormalizedPath>();
+            TypeFilterName = "TypeScript";
+        }
+
+        public NormalizedPath TargetProjectPath { get; set; }
+        public HashSet<NormalizedPath> Barrels { get; }
+        public string TypeFilterName { get; set; }
+
+        protected override void InitializeOneFrom( XElement e )
+        {
+            TargetProjectPath = e.Attribute( "TargetProjectPath" )?.Value;
+            Barrels.Clear();
+            Barrels.AddRange( e.Elements( "Barrels" )
+                                  .Elements( "Barrel" )
+                                     .Select( c => new NormalizedPath( (string?)c.Attribute( "Path" ) ?? c.Value ) ) );
+
+            TypeFilterName = (string?)e.Attribute( "TypeFilterName" ) ?? "TypeScript";
+        }
+
+        protected override void WriteOneXml( XElement e )
+        {
+            e.Add( new XAttribute( "TargetProjectPath", TargetProjectPath ),
+                   new XElement( "Barrels",
+                                    Barrels.Select( p => new XElement( "Barrel", new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
+                   new XAttribute( "TypeFilterName", TypeFilterName )
+                );
+        }
+    }
+
 
     [TestFixture]
     public class ConfigurationTests
     {
+        [Test]
+        public void StObjEngineConfiguration_and_BinPath_tests()
+        {
+            var c1 = new EngineConfiguration();
+            c1.BinPaths.Should().HaveCount( 1 );
+            c1.FirstBinPath.Owner.Should().BeSameAs( c1 );
+            c1.RemoveBinPath( c1.BinPaths[0] );
+            c1.BinPaths.Should().HaveCount( 1, "Cannot remove the last BinPath." );
+
+            var binPath1 = new BinPathConfiguration();
+            binPath1.Owner.Should().BeNull();
+            c1.RemoveBinPath( binPath1 );
+            c1.BinPaths.Should().HaveCount( 1, "No error when removing a non existing BinPath." );
+
+            c1.AddBinPath( binPath1 );
+            binPath1.Owner.Should().BeSameAs( c1 );
+            c1.BinPaths.Should().HaveCount( 2 );
+
+            var wasC1Default = c1.FirstBinPath;
+            c1.RemoveBinPath( wasC1Default );
+            wasC1Default.Owner.Should().BeNull();
+            c1.BinPaths.Should().HaveCount( 1 );
+
+            c1.AddBinPath( binPath1 );
+            binPath1.Owner.Should().BeSameAs( c1 );
+            c1.BinPaths.Should().HaveCount( 1, "No change (the BinPath was already here)." );
+            c1.FirstBinPath.Should().BeSameAs( binPath1 );
+
+            var c2 = new EngineConfiguration();
+            FluentActions.Invoking( () => c2.AddBinPath( binPath1 ) )
+                .Should().Throw<ArgumentException>()
+                         .WithMessage( "Invalid argument: 'binPath.Owner == null' should be true." );
+        }
+
+        [Test]
+        public void StObjEngineConfiguration_and_Aspect_tests()
+        {
+            var c1 = new EngineConfiguration();
+
+            var aspect = new SampleAspectConfiguration();
+            aspect.Owner.Should().BeNull();
+            c1.AddAspect( aspect );
+            aspect.Owner.Should().BeSameAs( c1 );
+
+            // No 2 aspect of the same type (the same AspectName).
+            FluentActions.Invoking( () => c1.AddAspect( new SampleAspectConfiguration() ) )
+                .Should().Throw<ArgumentException>()
+                         .WithMessage( "An aspect of the same type already exists. (Parameter '!_namedAspects.ContainsKey( aspect.AspectName )')" );
+
+
+            c1.RemoveAspect( aspect );
+            aspect.Owner.Should().BeNull();
+
+            c1.FirstBinPath.Aspects.Should().BeEmpty();
+            var bAspect = new SampleBinPathAspectConfiguration();
+            bAspect.Owner.Should().BeNull();
+            bAspect.AspectConfiguration.Should().BeNull();
+
+            FluentActions.Invoking( () => c1.BinPaths[0].AddAspect( bAspect ) )
+                .Should().Throw<ArgumentException>()
+                         .WithMessage( "Unable to add the BinPath aspect configuration. The aspect 'Sample' must exist in the EngineConfiguration.Aspects. (Parameter 'aspect')" );
+
+            c1.AddAspect( aspect );
+            c1.FirstBinPath.AddAspect( bAspect );
+            bAspect.Owner.Should().BeSameAs( c1.FirstBinPath );
+            bAspect.AspectConfiguration.Should().BeSameAs( aspect );
+
+            c1.FirstBinPath.RemoveAspect( bAspect );
+            bAspect.Owner.Should().BeNull();
+            bAspect.AspectConfiguration.Should().BeNull();
+
+            // Add it again.
+            c1.FirstBinPath.AddAspect( bAspect );
+            bAspect.Owner.Should().BeSameAs( c1.FirstBinPath );
+            bAspect.AspectConfiguration.Should().BeSameAs( aspect );
+            c1.FirstBinPath.Aspects.Should().HaveCount( 1 );
+
+            // Now remove the aspect: the bAspect is detached.
+            c1.RemoveAspect( aspect );
+            c1.FirstBinPath.Aspects.Should().BeEmpty();
+            bAspect.Owner.Should().BeNull();
+            bAspect.AspectConfiguration.Should().BeNull();
+
+            // Restores the state with the aspect and the bAspect.
+            c1.AddAspect( aspect );
+            c1.FirstBinPath.AddAspect( bAspect );
+            bAspect.Owner.Should().BeSameAs( c1.FirstBinPath );
+            bAspect.AspectConfiguration.Should().BeSameAs( aspect );
+
+            // Adds a new BinPath so we can remove the FirstBinPath.
+            c1.AddBinPath( new BinPathConfiguration() );
+            var first = c1.FirstBinPath;
+            c1.RemoveBinPath( first );
+            first.Owner.Should().BeNull();
+
+            bAspect.Owner.Should().BeSameAs( first, "The aspect configuration still belong to the first BinPath." );
+            bAspect.AspectConfiguration.Should().BeNull( "But is it no more bound to any Aspect configuration." );
+
+            var c2 = new EngineConfiguration();
+            // We cannot add the aspect that is currently bound to c1.
+            FluentActions.Invoking( () => c2.AddAspect( aspect ) )
+                .Should().Throw<ArgumentException>()
+                         .WithMessage( "Invalid argument: 'aspect.Owner == null' should be true." );
+            var aspect2 = new SampleAspectConfiguration();
+            c2.AddAspect( aspect2 );
+
+            // If we add this BinPath to another Engine configuration that has the Aspect,
+            // it binds to the configuration aspect instance.
+            c2.AddBinPath( first );
+            bAspect.Owner.Should().BeSameAs( first, "No change." );
+            bAspect.AspectConfiguration.Should().BeSameAs( aspect2, "The Aspect configuration has been bound." );
+
+            c2.RemoveBinPath( first );
+
+            // Adding a BinPath with BinPath aspects to a configuration without the aspect
+            // removes the BinPath aspects that cannot be rebind.
+            var c3 = new EngineConfiguration();
+            c3.AddBinPath( first );
+            first.Owner.Should().BeSameAs( c3 );
+            first.Aspects.Should().BeEmpty();
+            bAspect.Owner.Should().BeNull();
+            bAspect.AspectConfiguration.Should().BeNull();
+        }
+
+        [Test]
+        public void MultipleBinPathAspectConfiguration_add_and_remove_manage_the_composite1()
+        {
+            var c = new EngineConfiguration();
+            c.BinPaths.Should().HaveCount( 1 );
+
+            var aspect = new TypeScriptAspectConfiguration();
+            var bAspect1 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P1" };
+            var bAspect2 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P2" };
+            var bAspect3 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P3" };
+            c.AddAspect( aspect );
+
+            c.FirstBinPath.AddAspect( bAspect1 );
+            c.FirstBinPath.AddAspect( bAspect2 );
+            c.FirstBinPath.AddAspect( bAspect3 );
+            c.FirstBinPath.Aspects.Single().Should().BeSameAs( bAspect1 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+
+            bAspect1.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect2.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect2.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect3.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+
+            c.FirstBinPath.RemoveAspect( bAspect2 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 1 ).And.Contain( bAspect3 );
+
+            bAspect1.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect2.Owner.Should().BeNull();
+            bAspect2.AspectConfiguration.Should().BeNull();
+            bAspect3.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+
+            c.FirstBinPath.RemoveAspect( bAspect1 );
+            c.FirstBinPath.Aspects.Single().Should().BeSameAs( bAspect3 );
+            bAspect3.OtherConfigurations.Should().BeEmpty();
+
+            bAspect1.Owner.Should().BeNull();
+            bAspect1.AspectConfiguration.Should().BeNull();
+            bAspect2.Owner.Should().BeNull();
+            bAspect2.AspectConfiguration.Should().BeNull();
+            bAspect3.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+
+            c.FirstBinPath.RemoveAspect( bAspect3 );
+            c.FirstBinPath.Aspects.Should().BeEmpty();
+
+            bAspect1.Owner.Should().BeNull();
+            bAspect1.AspectConfiguration.Should().BeNull();
+            bAspect2.Owner.Should().BeNull();
+            bAspect2.AspectConfiguration.Should().BeNull();
+            bAspect3.Owner.Should().BeNull();
+            bAspect3.AspectConfiguration.Should().BeNull();
+
+        }
+
+        [Test]
+        public void MultipleBinPathAspectConfiguration_add_and_remove_manage_the_composite2()
+        {
+            var c = new EngineConfiguration();
+            var aspect = new TypeScriptAspectConfiguration();
+            var bAspect1 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P1" };
+            var bAspect2 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P2" };
+            var bAspect3 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P3" };
+            c.AddAspect( aspect );
+            c.FirstBinPath.AddAspect( bAspect1 );
+            c.FirstBinPath.AddAspect( bAspect2 );
+            c.FirstBinPath.AddAspect( bAspect3 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+
+            c.FirstBinPath.RemoveAspect( bAspect1 );
+            bAspect1.Owner.Should().BeNull();
+            bAspect1.AspectConfiguration.Should().BeNull();
+            bAspect1.OtherConfigurations.Should().BeEmpty();
+
+            var newHead = c.FirstBinPath.FindAspect<TypeScriptBinPathAspectConfiguration>();
+            newHead.Should().BeSameAs( bAspect2 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 1 ).And.Contain( bAspect3 ).And.NotContain( bAspect1 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 1 ).And.Contain( bAspect2 ).And.NotContain( bAspect1 );
+
+            c.FirstBinPath.RemoveAspect( bAspect2 );
+            bAspect2.Owner.Should().BeNull();
+            bAspect2.AspectConfiguration.Should().BeNull();
+            bAspect2.OtherConfigurations.Should().BeEmpty();
+
+            newHead = c.FirstBinPath.FindAspect<TypeScriptBinPathAspectConfiguration>();
+            newHead.Should().BeSameAs( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 0 ).And.NotContain( bAspect1 ).And.NotContain( bAspect2 );
+
+            c.FirstBinPath.RemoveAspect( bAspect3 );
+            bAspect3.Owner.Should().BeNull();
+            bAspect3.AspectConfiguration.Should().BeNull();
+            bAspect3.OtherConfigurations.Should().BeEmpty();
+            c.FirstBinPath.Aspects.Should().BeEmpty();
+        }
+
+        [Test]
+        public void MultipleBinPathAspectConfiguration_and_Engine_Aspect()
+        {
+            var c = new EngineConfiguration();
+            var aspect = new TypeScriptAspectConfiguration();
+            var bAspect1 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P1" };
+            var bAspect2 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P2" };
+            var bAspect3 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P3" };
+            c.AddAspect( aspect );
+            c.FirstBinPath.AddAspect( bAspect1 );
+            c.FirstBinPath.AddAspect( bAspect2 );
+            c.FirstBinPath.AddAspect( bAspect3 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+            bAspect1.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect2.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect2.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect3.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+            c.FirstBinPath.Aspects.Should().HaveCount( 1 );
+
+            c.RemoveAspect( aspect );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+            bAspect1.Owner.Should().BeNull();
+            bAspect1.AspectConfiguration.Should().BeNull();
+            bAspect2.Owner.Should().BeNull();
+            bAspect2.AspectConfiguration.Should().BeNull();
+            bAspect3.Owner.Should().BeNull();
+            bAspect3.AspectConfiguration.Should().BeNull();
+            c.FirstBinPath.Aspects.Should().BeEmpty();
+
+            c.AddAspect( aspect );
+            c.FirstBinPath.AddAspect( bAspect2 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+            bAspect1.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect2.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect2.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect3.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+            c.FirstBinPath.Aspects.Should().HaveCount( 1 );
+
+            var bAspect4 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P4" };
+            c.FirstBinPath.AddAspect( bAspect4 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect2 ).And.Contain( bAspect3 ).And.Contain( bAspect4 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect1 ).And.Contain( bAspect3 ).And.Contain( bAspect4 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect1 ).And.Contain( bAspect2 ).And.Contain( bAspect4 );
+            bAspect4.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect1 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect1.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect2.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect2.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect3.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect4.Owner.Should().BeSameAs( c.FirstBinPath );
+            bAspect4.AspectConfiguration.Should().BeSameAs( aspect );
+            c.FirstBinPath.Aspects.Should().HaveCount( 1 );
+
+        }
+
+        [Test]
+        public void MultipleBinPathAspectConfiguration_and_BinPath()
+        {
+            var c = new EngineConfiguration();
+            var bOther = new BinPathConfiguration();
+            c.AddBinPath( bOther );
+
+            var aspect = new TypeScriptAspectConfiguration();
+            var bAspect1 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P1" };
+            var bAspect2 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P2" };
+            var bAspect3 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P3" };
+            c.AddAspect( aspect );
+            bOther.AddAspect( bAspect1 );
+            bOther.AddAspect( bAspect2 );
+            bOther.AddAspect( bAspect3 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+            bAspect1.Owner.Should().BeSameAs( bOther );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect2.Owner.Should().BeSameAs( bOther );
+            bAspect2.AspectConfiguration.Should().BeSameAs( aspect );
+            bAspect3.Owner.Should().BeSameAs( bOther );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect );
+            bOther.Aspects.Should().HaveCount( 1 );
+
+            c.RemoveBinPath( bOther );
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+            bAspect1.Owner.Should().BeSameAs( bOther );
+            bAspect1.AspectConfiguration.Should().BeNull();
+            bAspect2.Owner.Should().BeSameAs( bOther );
+            bAspect2.AspectConfiguration.Should().BeNull();
+            bAspect3.Owner.Should().BeSameAs( bOther );
+            bAspect3.AspectConfiguration.Should().BeNull();
+            bOther.Aspects.Should().HaveCount( 1 );
+
+            var c2 = new EngineConfiguration();
+            var aspect2 = new TypeScriptAspectConfiguration();
+            c2.AddAspect( aspect2 );
+            c2.AddBinPath( bOther );
+
+            bAspect1.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect3 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 2 ).And.Contain( bAspect1 ).And.Contain( bAspect2 );
+            bAspect1.Owner.Should().BeSameAs( bOther );
+            bAspect1.AspectConfiguration.Should().Be( aspect2 );
+            bAspect2.Owner.Should().BeSameAs( bOther );
+            bAspect2.AspectConfiguration.Should().Be( aspect2 );
+            bAspect3.Owner.Should().BeSameAs( bOther );
+            bAspect3.AspectConfiguration.Should().Be( aspect2 );
+            bOther.Aspects.Should().HaveCount( 1 );
+
+            var bAspect4 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P4" };
+            bOther.AddAspect( bAspect4 );
+            bAspect1.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect2 ).And.Contain( bAspect3 ).And.Contain( bAspect4 );
+            bAspect2.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect1 ).And.Contain( bAspect3 ).And.Contain( bAspect4 );
+            bAspect3.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect1 ).And.Contain( bAspect2 ).And.Contain( bAspect4 );
+            bAspect4.OtherConfigurations.Should().HaveCount( 3 ).And.Contain( bAspect1 ).And.Contain( bAspect2 ).And.Contain( bAspect3 );
+            bAspect1.Owner.Should().Be( bOther );
+            bAspect1.AspectConfiguration.Should().BeSameAs( aspect2 );
+            bAspect2.Owner.Should().Be( bOther );
+            bAspect2.AspectConfiguration.Should().BeSameAs( aspect2 );
+            bAspect3.Owner.Should().Be( bOther );
+            bAspect3.AspectConfiguration.Should().BeSameAs( aspect2 );
+            bAspect4.Owner.Should().Be( bOther );
+            bAspect4.AspectConfiguration.Should().BeSameAs( aspect2 );
+            bOther.Aspects.Should().HaveCount( 1 );
+
+        }
+
+        [Test]
+        public void MultipleBinPathAspectConfiguration_Xml()
+        {
+            var c1 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P1", TypeFilterName = "TypeScriptNumber1" };
+            c1.Barrels.Add( "B1" );
+            string x1 = c1.ToXml().ToString();
+            x1.Should().Be( """
+                <TypeScript TargetProjectPath="P1" TypeFilterName="TypeScriptNumber1">
+                  <Barrels>
+                    <Barrel Path="B1" />
+                  </Barrels>
+                </TypeScript>
+                """ );
+            var c1Back = new TypeScriptBinPathAspectConfiguration();
+            c1Back.InitializeFrom( XElement.Parse( x1 ) );
+            c1Back.ToXml().ToString().Should().Be( x1 );
+
+            var c2 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P2", TypeFilterName = "TypeScript2" };
+
+            c1.AddOtherConfiguration( c2 );
+            string x2 = c1.ToXml().ToString();
+            x2.Should().Be( """
+                <TypeScript>
+                  <Array>
+                    <TypeScript TargetProjectPath="P1" TypeFilterName="TypeScriptNumber1">
+                      <Barrels>
+                        <Barrel Path="B1" />
+                      </Barrels>
+                    </TypeScript>
+                    <TypeScript TargetProjectPath="P2" TypeFilterName="TypeScript2">
+                      <Barrels />
+                    </TypeScript>
+                  </Array>
+                </TypeScript>
+                """ );
+            var c2Back = new TypeScriptBinPathAspectConfiguration();
+            c2Back.InitializeFrom( XElement.Parse( x2 ) );
+            c2Back.ToXml().ToString().Should().Be( x2 );
+
+            c2Back.OtherConfigurations.Should().HaveCount( 1 );
+            c2Back.OtherConfigurations.Single().OtherConfigurations.Should().HaveCount( 1 ).And.Contain( c2Back );
+        }
+
         static readonly XElement _config = XElement.Parse( """
 
             <Setup>
@@ -171,7 +649,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void parsing_a_configuration()
         {
-            StObjEngineConfiguration c = new StObjEngineConfiguration( _config );
+            EngineConfiguration c = new EngineConfiguration( _config );
             c.BasePath.Should().Be( new NormalizedPath( "/The/Base/Path" ) );
 
             c.BinPaths.Should().HaveCount( 2 );
@@ -225,7 +703,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void BasePath_OutputPath_and_ProjectPath_placeholders_in_BinPath_aspects()
         {
-            StObjEngineConfiguration c = new StObjEngineConfiguration( _config );
+            EngineConfiguration c = new EngineConfiguration( _config );
 
             var sample = c.BinPaths[0].FindAspect<SampleBinPathAspectConfiguration>();
             Throw.DebugAssert( sample != null );
@@ -245,7 +723,7 @@ namespace CK.StObj.Engine.Tests
             Throw.DebugAssert( another != null );
             another.Path.Should().Be( "{BasePath}comm/ands" );
 
-            RunningStObjEngineConfiguration.CheckAndValidate( TestHelper.Monitor, c );
+            RunningEngineConfiguration.CheckAndValidate( TestHelper.Monitor, c );
 
             sample.Param.Should().Be( "/The/Base/Path/Another/Relative/Test" );
             sample.A.Should().Be( "/The/Base/Path/Another/Relative/InTheOutputPath" );
@@ -265,11 +743,11 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void configuration_to_xml()
         {
-            StObjEngineConfiguration c1 = new StObjEngineConfiguration( _config );
+            EngineConfiguration c1 = new EngineConfiguration( _config );
             var e1 = c1.ToXml();
             e1 = NormalizeWithoutAnyOrder( e1 );
 
-            StObjEngineConfiguration c2 = new StObjEngineConfiguration( e1 );
+            EngineConfiguration c2 = new EngineConfiguration( e1 );
             var e2 = c2.ToXml();
             e2 = NormalizeWithoutAnyOrder( e2 );
 

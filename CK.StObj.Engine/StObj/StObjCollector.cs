@@ -134,7 +134,6 @@ namespace CK.Setup
 
         /// <summary>
         /// Registers types from multiple assemblies.
-        /// Only classes and IPoco interfaces are considered.
         /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>

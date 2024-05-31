@@ -95,7 +95,7 @@ namespace CK.Setup
                     return;
                 }
             }
-            Throw.ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), HashSet<>, List<>, or Dictionary<,>.", nameof( autoType ) );
+            Throw.ArgumentException( nameof( autoType ), $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), HashSet<>, List<>, or Dictionary<,>." );
         }
 
     }

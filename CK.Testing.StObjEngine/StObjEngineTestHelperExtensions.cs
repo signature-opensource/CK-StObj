@@ -33,28 +33,25 @@ namespace CK.Testing
         }
 
         /// <summary>
-        /// Creates a default <see cref="StObjEngineConfiguration"/> with a single BinPath that has its <see cref="BinPathConfiguration.ProjectPath"/> sets
+        /// Creates a default <see cref="EngineConfiguration"/> with a single BinPath that has its <see cref="BinPathConfiguration.ProjectPath"/> sets
         /// to this <see cref="IBasicTestHelper.TestProjectFolder"/>.
         /// <para>
-        /// The <see cref="StObjEngineConfiguration.GeneratedAssemblyName"/> is suffixed with the date time (when using <see cref="CompileOption.Compile"/>).
+        /// The <see cref="EngineConfiguration.GeneratedAssemblyName"/> is suffixed with the date time (when using <see cref="CompileOption.Compile"/>).
         /// </para>
         /// </summary>
         /// <param name="helper">This helper.</param>
         /// <param name="generateSourceFiles">False to not generate source file.</param>
         /// <param name="compileOption">See <see cref="BinPathConfiguration.CompileOption"/>.</param>
         /// <returns>A new single BinPath configuration.</returns>
-        public static StObjEngineConfiguration CreateDefaultEngineConfiguration( this IBasicTestHelper helper, bool generateSourceFiles = true, CompileOption compileOption = CompileOption.Compile )
+        public static EngineConfiguration CreateDefaultEngineConfiguration( this IBasicTestHelper helper, bool generateSourceFiles = true, CompileOption compileOption = CompileOption.Compile )
         {
-            var config = new StObjEngineConfiguration()
+            var config = new EngineConfiguration()
             {
                 GeneratedAssemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" )
             };
-            config.AddBinPath( new BinPathConfiguration()
-            {
-                CompileOption = compileOption,
-                GenerateSourceFiles = generateSourceFiles,
-                ProjectPath = helper.TestProjectFolder
-            } );
+            config.FirstBinPath.CompileOption = compileOption;
+            config.FirstBinPath.GenerateSourceFiles = generateSourceFiles;
+            config.FirstBinPath.ProjectPath = helper.TestProjectFolder;
             return config;
         }
 
@@ -147,7 +144,7 @@ namespace CK.Testing
         /// <param name="configuration">The engine configuration.</param>
         /// <param name="types">Types that will be registered in all BinPath.</param>
         /// <returns>The <see cref="StObjEngineResult"/>.</returns>
-        public static StObjEngineResult RunStObjEngine( this IMonitorTestHelper helper, StObjEngineConfiguration configuration, ISet<Type> types )
+        public static StObjEngineResult RunEngine( this IMonitorTestHelper helper, EngineConfiguration configuration, ISet<Type> types )
         {
             Throw.CheckNotNullArgument( configuration );
             Throw.CheckNotNullArgument( types );
@@ -171,11 +168,11 @@ namespace CK.Testing
         /// Runs the engine, compiles and loads the <see cref="IStObjMap"/> from the generated assembly or gets the embedded map if it exists.
         /// </summary>
         /// <param name="helper"></param>
-        /// <param name="configuration">Engine configuration that must contain a single <see cref="StObjEngineConfiguration.BinPaths"/>.</param>
+        /// <param name="configuration">Engine configuration that must contain a single <see cref="EngineConfiguration.BinPaths"/>.</param>
         /// <param name="types">Types to register in the single BinPath.</param>
         /// <returns>The successful engine result and the ready-to-use map.</returns>
         public static RunAndLoadResult RunSingleBinPathAndLoad( this IMonitorTestHelper helper,
-                                                                StObjEngineConfiguration configuration,
+                                                                EngineConfiguration configuration,
                                                                 ISet<Type> types )
         {
             Throw.CheckNotNullArgument( configuration );
@@ -192,12 +189,12 @@ namespace CK.Testing
         /// Runs the engine, compiles and loads the <see cref="IStObjMap"/> from the generated assembly or gets the embedded map if it exists.
         /// </summary>
         /// <param name="helper"></param>
-        /// <param name="configuration">Engine configuration that must contain a single <see cref="StObjEngineConfiguration.BinPaths"/>.</param>
+        /// <param name="configuration">Engine configuration that must contain a single <see cref="EngineConfiguration.BinPaths"/>.</param>
         /// <param name="types">Types to register in the single BinPath.</param>
         /// <returns>The successful engine result and the ready-to-use map.</returns>
         public static RunAndLoadResult RunSingleBinPathAndLoad( this IMonitorTestHelper helper,
                                                                 StObjCollectorResult stObjCollectorResult,
-                                                                StObjEngineConfiguration? configuration = null )
+                                                                EngineConfiguration? configuration = null )
         {
             Throw.CheckNotNullArgument( stObjCollectorResult );
             Throw.CheckArgument( configuration == null || configuration.BinPaths.Count == 1 );
@@ -249,14 +246,14 @@ namespace CK.Testing
         /// </para>
         /// </summary>
         /// <param name="helper"></param>
-        /// <param name="configuration">Engine configuration that must contain a single <see cref="StObjEngineConfiguration.BinPaths"/>.</param>
+        /// <param name="configuration">Engine configuration that must contain a single <see cref="EngineConfiguration.BinPaths"/>.</param>
         /// <param name="types">Types to register in the single BinPath.</param>
         /// <param name="startupServices">Optional startup services.</param>
         /// <param name="alterPocoTypeSystem">Optional configurator for the <see cref="IPocoTypeSystemBuilder"/>.</param>
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The fully configured service provider.</returns>
         public static AutomaticServices CreateSingleBinPathAutomaticServices( this IMonitorTestHelper helper,
-                                                                              StObjEngineConfiguration configuration,
+                                                                              EngineConfiguration configuration,
                                                                               ISet<Type> types,
                                                                               SimpleServiceContainer? startupServices = null,
                                                                               Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem = null,
@@ -301,14 +298,14 @@ namespace CK.Testing
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
         /// </summary>
         /// <param name="helper">This helper.</param>
-        /// <param name="configuration">Engine configuration that must contain a single <see cref="StObjEngineConfiguration.BinPaths"/>.</param>
+        /// <param name="configuration">Engine configuration that must contain a single <see cref="EngineConfiguration.BinPaths"/>.</param>
         /// <param name="types">Types to register in the single BinPath.</param>
         /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
         /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <param name="startupServices">Optional startup services.</param>
         /// <param name="configureServices">Optional services configuration.</param>
         public static void GetFailedSingleBinPathAutomaticServices( this IMonitorTestHelper helper,
-                                                                    StObjEngineConfiguration configuration,
+                                                                    EngineConfiguration configuration,
                                                                     ISet<Type> types,
                                                                     string message,
                                                                     IEnumerable<string>? otherMessages = null,

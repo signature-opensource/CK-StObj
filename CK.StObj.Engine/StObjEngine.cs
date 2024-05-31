@@ -12,16 +12,16 @@ using Microsoft.Extensions.Configuration;
 namespace CK.Setup
 {
     /// <summary>
-    /// Generic engine that runs a <see cref="StObjEngineConfiguration"/>.
+    /// Generic engine that runs a <see cref="EngineConfiguration"/>.
     /// </summary>
     public sealed class StObjEngine
     {
         readonly IActivityMonitor _monitor;
-        readonly RunningStObjEngineConfiguration _config;
+        readonly RunningEngineConfiguration _config;
         readonly XElement? _ckSetupConfig;
 
         Status? _status;
-        StObjEngineConfigureContext? _startContext;
+        EngineConfigureContext? _startContext;
         bool _hasRun;
 
         sealed class Status : IStObjEngineStatus, IDisposable
@@ -58,21 +58,21 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">Logger that must be used.</param>
         /// <param name="config">Configuration that describes the key aspects of the build.</param>
-        public StObjEngine( IActivityMonitor monitor, StObjEngineConfiguration config )
+        public StObjEngine( IActivityMonitor monitor, EngineConfiguration config )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( config );
             _monitor = monitor;
-            _config = new RunningStObjEngineConfiguration( config );
+            _config = new RunningEngineConfiguration( config );
         }
 
         /// <summary>
-        /// Initializes a new <see cref="StObjEngine"/> from a xml element (see <see cref="StObjEngineConfiguration(XElement)"/>).
+        /// Initializes a new <see cref="StObjEngine"/> from a xml element (see <see cref="EngineConfiguration(XElement)"/>).
         /// </summary>
         /// <param name="monitor">Logger that must be used.</param>
         /// <param name="config">Configuration that describes the key aspects of the build.</param>
         public StObjEngine( IActivityMonitor monitor, XElement config )
-            : this( monitor, new StObjEngineConfiguration( config ) )
+            : this( monitor, new EngineConfiguration( config ) )
         {
             // We are coming from CKSetup: the configuration element has a Engine attribute.
             if( config.Attribute( "Engine" ) != null ) _ckSetupConfig = config;
@@ -98,7 +98,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Helper with a single <see cref="StObjCollectorResult"/> for a configuration.
-        /// If the <paramref name="config"/> has more than one <see cref="StObjEngineConfiguration.BinPaths"/>,
+        /// If the <paramref name="config"/> has more than one <see cref="EngineConfiguration.BinPaths"/>,
         /// they will share the same <see cref="IRunningBinPathGroup"/>: their <see cref="BinPathConfiguration.Path"/> must be the same
         /// otherwise an <see cref="ArgumentException"/> is thrown.
         /// </summary>
@@ -107,7 +107,7 @@ namespace CK.Setup
         /// <param name="config">The configuration.</param>
         /// <returns>True on success, false otherwise.</returns>
         [Obsolete( "Use the ISet<Type> or RunSingleBinPath( stObjCollectorResult ) instead." )]
-        public static StObjEngineResult Run( IActivityMonitor monitor, StObjCollectorResult result, StObjEngineConfiguration config )
+        public static StObjEngineResult Run( IActivityMonitor monitor, StObjCollectorResult result, EngineConfiguration config )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( result );
@@ -164,7 +164,7 @@ namespace CK.Setup
         {
             Throw.CheckState( "Run can be called only once.", !_hasRun );
             _hasRun = true;
-            if( !RunningStObjEngineConfiguration.CheckAndValidate( _monitor, _config.Configuration ) )
+            if( !RunningEngineConfiguration.CheckAndValidate( _monitor, _config.Configuration ) )
             {
                 return new StObjEngineResult( false, _config );
             }
@@ -180,7 +180,7 @@ namespace CK.Setup
             // nothing to do.
             using var _ = _monitor.OpenInfo( "Running StObjEngine setup." );
             _status = new Status( _monitor );
-            _startContext = new StObjEngineConfigureContext( _monitor, _config, _status, canSkipRun );
+            _startContext = new EngineConfigureContext( _monitor, _config, _status, canSkipRun );
             try
             {
                 // Creating and configuring the aspects.
@@ -194,7 +194,7 @@ namespace CK.Setup
                 }
                 if( _status.Success )
                 {
-                    StObjEngineRunContext runCtx = new StObjEngineRunContext( _monitor, _startContext );
+                    EngineRunContext runCtx = new EngineRunContext( _monitor, _startContext );
                     // Creates the StObjCollectorResult for each group of compatible BinPaths
                     // and instantiates a StObjEngineRunContext.GenPath that exposes the engine map and the dynamic assembly
                     // for each of them through IGeneratedBinPath, ICodeGenerationContext and ICSCodeGenerationContext.
@@ -264,7 +264,7 @@ namespace CK.Setup
                         }
                     }
                     // Always runs the aspects Termination.
-                    var termCtx = new StObjEngineTerminateContext( _monitor, runCtx );
+                    var termCtx = new EngineTerminateContext( _monitor, runCtx );
                     termCtx.TerminateAspects( () => _status.Success = false );
                 }
                 return new StObjEngineResult( _status.Success, _config );

@@ -21,12 +21,12 @@ namespace CK.Setup
         /// This is the original configuration object that has been altered
         /// by the engine.
         /// </summary>
-        public StObjEngineConfiguration Configuration { get; }
+        public EngineConfiguration Configuration { get; }
 
-        /// <inheritdoc cref="IRunningStObjEngineConfiguration.Groups"/>.
+        /// <inheritdoc cref="IRunningEngineConfiguration.Groups"/>.
         public IReadOnlyList<IRunningBinPathGroup> Groups { get; }
 
-        internal StObjEngineResult( bool success, IRunningStObjEngineConfiguration c )
+        internal StObjEngineResult( bool success, IRunningEngineConfiguration c )
         {
             Success = success;
             Configuration = c.Configuration;

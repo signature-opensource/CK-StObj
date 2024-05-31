@@ -71,7 +71,7 @@ namespace CK.Setup
             {
                 if( !_typeSet.Contains( type ) )
                 {
-                    Throw.ArgumentException( $"Type '{type}' doesn't belong to the type set." );
+                    Throw.ArgumentException( nameof( type ), $"Type '{type}' doesn't belong to the type set." );
                 }
                 Build( type.NonNullable, out var name, out var nullableName );
                 if( String.IsNullOrWhiteSpace( name ) || String.IsNullOrWhiteSpace( nullableName ) )

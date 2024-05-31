@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer? startupServices = null )
         {
             var map = StObjContextRoot.Load( stobjAssembly, monitor );
-            if( map == null ) Throw.ArgumentException( $"The assembly {stobjAssembly.FullName} was not found or is not a valid generated assembly." );
+            if( map == null ) Throw.ArgumentException( nameof(stobjAssembly), $"The assembly {stobjAssembly.FullName} was not found or is not a valid generated assembly." );
             return AddStObjMap( services, monitor, map, startupServices );
         }
 

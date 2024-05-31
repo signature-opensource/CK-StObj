@@ -8,13 +8,13 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    sealed partial class StObjEngineRunContext
+    sealed partial class EngineRunContext
     {
         internal sealed class GenBinPath : IGeneratedBinPath, ICSCodeGenerationContext
         {
-            readonly StObjEngineRunContext _global;
+            readonly EngineRunContext _global;
 
-            public GenBinPath( StObjEngineRunContext global,
+            public GenBinPath( EngineRunContext global,
                                StObjCollectorResult result,
                                RunningBinPathGroup group )
             {

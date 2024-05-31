@@ -17,7 +17,7 @@ namespace CK.Setup
     {
 
         internal bool GenerateSourceCode( IActivityMonitor monitor,
-                                          StObjEngineRunContext.GenBinPath g,
+                                          EngineRunContext.GenBinPath g,
                                           string? informationalVersion,
                                           IEnumerable<ICSCodeGenerator> aspectsGenerators )
         {

@@ -7,7 +7,7 @@ using System.Text;
 namespace CK.Testing
 {
     /// <summary>
-    /// The result of <see cref="StObjEngine.IStObjEngineTestHelperCore.GenerateCode(StObjCollector, Func{StObjEngineConfiguration, StObjEngineConfiguration}?, bool, CompileOption)"/>
+    /// The result of <see cref="StObjEngine.IStObjEngineTestHelperCore.GenerateCode(StObjCollector, Func{EngineConfiguration, EngineConfiguration}?, bool, CompileOption)"/>
     /// that captures the <see cref="StObjCollectorResult"/> and provides often needed property accessors to the single
     /// running group of the <see cref="EngineResult"/>.
     /// </summary>
