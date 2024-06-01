@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using FluentAssertions;
 using System;
 using System.Collections;
@@ -44,6 +44,35 @@ namespace CK.Testing
         }
 
         /// <summary>
+        /// Adds a type.
+        /// </summary>
+        /// <param name="t">The type to add.</param>
+        /// <returns>This collector (fluent syntax).</returns>
+        public TypeCollector Add( Type t )
+        {
+            _types.Add( t );
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a set of type.
+        /// </summary>
+        /// <param name="types">The types to add.</param>
+        /// <returns>This collector (fluent syntax).</returns>
+        public TypeCollector Add( IEnumerable<Type> types )
+        {
+            _types.AddRange( types );
+            return this;
+        }
+
+        /// <inheritdoc cref="Add(IEnumerable{Type})"/>
+        public TypeCollector Add( params Type[] types )
+        {
+            _types.AddRange( types );
+            return this;
+        }
+
+        /// <summary>
         /// Gets the model dependent assemblies discovered so far.
         /// </summary>
         public IEnumerable<Assembly> ModelDependentAssemblies => _all.Where( kv => kv.Value == AssemblyType.ModelDependent ).Select( kv => kv.Key );
@@ -80,8 +109,7 @@ namespace CK.Testing
 
         }
 
-        /// <inheritdoc />
-        public bool Add( Type item ) => _types.Add( item );
+        bool ISet<Type>.Add( Type item ) => _types.Add( item );
 
         /// <inheritdoc />
         public void ExceptWith( IEnumerable<Type> other ) => _types.ExceptWith( other );

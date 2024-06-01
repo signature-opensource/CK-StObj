@@ -2,16 +2,13 @@ using CK.Core;
 using CK.Setup;
 using CK.Testing.StObjEngine;
 using FluentAssertions;
-using FluentAssertions.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using System.Threading;
-using static CK.Core.CheckedWriteStream;
+using System.Threading.Tasks;
 
 namespace CK.Testing
 {
@@ -25,12 +22,15 @@ namespace CK.Testing
         /// </summary>
         /// <param name="types">The types to register.</param>
         /// <returns>The collector.</returns>
-        public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, params Type[] types )
+        public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, IEnumerable<Type> types )
         {
             var c = new TypeCollector();
             c.AddRange( types );
             return c;
         }
+
+        /// <inheritdoc cref="CreateTypeCollector(IBasicTestHelper, IEnumerable{Type})"/>
+        public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, params Type[] types ) => CreateTypeCollector( helper, (IEnumerable<Type>)types );
 
         /// <summary>
         /// Creates a default <see cref="EngineConfiguration"/> with a single BinPath that has its <see cref="BinPathConfiguration.ProjectPath"/> sets
