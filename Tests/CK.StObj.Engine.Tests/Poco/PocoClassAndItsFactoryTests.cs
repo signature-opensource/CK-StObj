@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using static CK.Testing.StObjEngineTestHelper;
 using FluentAssertions;
 using System.Reflection;
+using CK.Testing;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -24,9 +25,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void poco_knows_its_Factory()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoKnowsItsFactory ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var f = s.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
+            var c = TestHelper.CreateTypeCollector( typeof( IPocoKnowsItsFactory ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var f = auto.Services.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
             var o = f.Create();
             var f2 = ((IPocoGeneratedClass)o).Factory;
             f.Should().BeSameAs( f2 );

@@ -178,7 +178,7 @@ namespace CK.StObj.Engine.Tests
     public class ConfigurationTests
     {
         [Test]
-        public void StObjEngineConfiguration_and_BinPath_tests()
+        public void EngineConfiguration_and_BinPath_tests()
         {
             var c1 = new EngineConfiguration();
             c1.BinPaths.Should().HaveCount( 1 );
@@ -212,7 +212,7 @@ namespace CK.StObj.Engine.Tests
         }
 
         [Test]
-        public void StObjEngineConfiguration_and_Aspect_tests()
+        public void EngineConfiguration_and_Aspect_tests()
         {
             var c1 = new EngineConfiguration();
 

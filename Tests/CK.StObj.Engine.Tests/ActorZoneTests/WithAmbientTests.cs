@@ -314,8 +314,10 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
+            StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+            var map = r.EngineMap;
+            Throw.DebugAssert( "No initialization error.", map != null );
+
             CheckChildren<BasicPackage>( map.StObjs, "BasicActor,BasicUser,BasicGroup" );
             CheckChildren<ZonePackage>( map.StObjs, "SecurityZone,ZoneGroup" );
             CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser,AuthenticationDetail" );

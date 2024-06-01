@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using static CK.StObj.Engine.Tests.SimpleObjectsTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -71,9 +73,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Default_Implementation_Methods_are_supported()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IActualRoot ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IActualRoot ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.DefaultImplementationMethodsTests.IActualRoot" );
             Debug.Assert( fA != null );
             var magic = (IActualRoot)fA.Create();
@@ -106,8 +108,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void homonym_properties_must_all_be_Default_Implementation_Method_or_not_in_a_Family1()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IActualRoot ), typeof( IOnActual ) );
-            TestHelper.GetFailedResult( c, "has a Default Implementation Method (DIM). To be supported, all 'RowCount' properties must be DIM and use the [AutoImplementationClaim] attribute." );
+            var c = TestHelper.CreateTypeCollector( typeof( IActualRoot ), typeof( IOnActual ) );
+            TestHelper.GetFailedCollectorResult( c, "has a Default Implementation Method (DIM). To be supported, all 'RowCount' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
         public interface IFaultyRoot : IPoco
@@ -119,8 +121,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void a_DIM_property_must_use_AutoImplementationClaim_Attribute()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IFaultyRoot ) );
-            TestHelper.GetFailedResult( c, "is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
+            var c = TestHelper.CreateTypeCollector( typeof( IFaultyRoot ) );
+            TestHelper.GetFailedCollectorResult( c, "is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
         }
 
         public interface IEmptyRoot : IPoco { }
@@ -140,8 +142,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void homonym_properties_must_all_be_Default_Implementation_Method_or_not_in_a_Family2()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IEmptyRoot ), typeof( IOther ), typeof( IAnother ) );
-            TestHelper.GetFailedResult( c, "has a Default Implementation Method (DIM). To be supported, all 'ValidDIM' properties must be DIM and use the [AutoImplementationClaim] attribute." );
+            var c = TestHelper.CreateTypeCollector( typeof( IEmptyRoot ), typeof( IOther ), typeof( IAnother ) );
+            TestHelper.GetFailedCollectorResult( c, "has a Default Implementation Method (DIM). To be supported, all 'ValidDIM' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
 
@@ -199,9 +201,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Ignore("Not ready yet.")]
         public void poco_can_have_Abstract_and_DefaultImplementationMethods()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var poco = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var poco = auto.Services.GetRequiredService<PocoDirectory>();
 
             var o = poco.Create<IPocoWithAbstractAndDefaultImplementationMethods>();
 

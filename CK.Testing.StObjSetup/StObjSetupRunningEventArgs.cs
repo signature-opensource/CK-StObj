@@ -23,12 +23,12 @@ namespace CK.Testing.StObjSetup
         }
 
         /// <summary>
-        /// Gets the mutable <see cref="StObjEngineConfiguration"/> to configure.
+        /// Gets the mutable <see cref="EngineConfiguration"/> to configure.
         /// This object is pre configured with the different values of <see cref="IStObjSetupTestHelperCore"/>.
         /// Its <see cref="EngineConfiguration.Aspects"/> is empty: some aspect configurations must be
         /// added.
         /// </summary>
-        public EngineConfiguration StObjEngineConfiguration => _configuration;
+        public EngineConfiguration EngineConfiguration => _configuration;
 
         /// <summary>
         /// Gets or sets the <see cref="CKSetup.ICKSetupDriver.Run"/> forceSetup parameter.

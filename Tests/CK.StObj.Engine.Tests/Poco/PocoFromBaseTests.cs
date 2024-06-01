@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -33,10 +34,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoFromBase ) );
-            var result = TestHelper.CreateAutomaticServices( c );
-            using var s = result.Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IPocoFromBase ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.IPocoFromBase" );
             Debug.Assert( fA != null );
             var a = d.Create<IPocoFromBase>();

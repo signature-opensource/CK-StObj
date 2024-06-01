@@ -397,6 +397,7 @@ namespace CK.StObj.Engine.Tests
 
                 StObjCollector c = new StObjCollector( extraServices );
                 c.RegisterType( TestHelper.Monitor, typeof( JustForTheAttribute ) );
+
                 c.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
                 StObjCollectorResult? r = c.GetResult( TestHelper.Monitor );
                 r.HasFatalError.Should().Be( false, "There must be no error." );

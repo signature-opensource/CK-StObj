@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using static CK.StObj.Engine.Tests.Poco.TypeSystemTests;
 using static CK.Testing.StObjEngineTestHelper;
+using CK.Testing;
 
 namespace CK.StObj.Engine.Tests.CrisLike
 {
@@ -30,8 +31,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
         public void secondaries_are_available()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IUnified1 ) );
-                var r = TestHelper.GetSuccessfulResult( c );
+                var c = TestHelper.CreateTypeCollector( typeof( IUnified1 ) );
+                var r = TestHelper.GetSuccessfulCollectorResult( c );
                 var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
                 var command = ts.FindByType<IPrimaryPocoType>( typeof( IBase ) );
                 Throw.DebugAssert( command != null );
@@ -40,8 +41,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
                 command.SecondaryTypes.Should().HaveCount( 1 ).And.Contain( unified1 );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IUnified2 ), typeof( IUnified1 ) );
-                var r = TestHelper.GetSuccessfulResult( c );
+                var c = TestHelper.CreateTypeCollector( typeof( IUnified2 ), typeof( IUnified1 ) );
+                var r = TestHelper.GetSuccessfulCollectorResult( c );
                 var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
                 var command = ts.FindByType<IPrimaryPocoType>( typeof( IBase ) );
                 Throw.DebugAssert( command != null );
@@ -55,8 +56,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [Test]
         public void incompatible_command_result_detection()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ILeft ), typeof( IRight ), typeof( IUnified1 ), typeof( IUnified2 ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( ILeft ), typeof( IRight ), typeof( IUnified1 ), typeof( IUnified2 ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
 
             var command = ts.FindByType<IPrimaryPocoType>( typeof( IBase ) );
@@ -112,8 +113,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [Test]
         public void multiple_command_result_resolution()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICommandUnifiedWithTheResult ), typeof( IUnifiedResult ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( ICommandUnifiedWithTheResult ), typeof( IUnifiedResult ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
 
             IPocoGenericTypeDefinition? commandWithResultType = ts.FindGenericTypeDefinition( typeof( ICommand<> ) );
@@ -133,8 +134,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [Test]
         public void TypeSet_from_secondary()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICommandUnifiedWithTheResult ), typeof( IUnifiedResult ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( ICommandUnifiedWithTheResult ), typeof( IUnifiedResult ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
 
             var withCommandButNotItsResult = ts.SetManager.EmptyExchangeable.Include( new[] { ts.FindByType( typeof( ICommandUnifiedWithTheResult ) )! } );

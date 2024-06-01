@@ -140,14 +140,18 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
                                                                  typeof( SqlDefaultDatabase ) } );
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-            
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( r != null, "No initialization error." );
 
-            WithAmbientTests.CheckChildren<BasicPackage>( r.StObjs, "BasicActor,BasicUser,BasicGroup" );
-            WithAmbientTests.CheckChildren<ZonePackage>( r.StObjs, "SecurityZone,ZoneGroup" );
-            WithAmbientTests.CheckChildren<SqlDefaultDatabase>( r.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
-            var db = r.StObjs.Obtain<SqlDefaultDatabase>();
+            collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+            r.HasFatalError.Should().Be( false, "There must be no error." );
+
+            var map = r.EngineMap;
+            Throw.DebugAssert( "No initialization error.", map != null );
+
+            WithAmbientTests.CheckChildren<BasicPackage>( map.StObjs, "BasicActor,BasicUser,BasicGroup" );
+            WithAmbientTests.CheckChildren<ZonePackage>( map.StObjs, "SecurityZone,ZoneGroup" );
+            WithAmbientTests.CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
+            var db = map.StObjs.Obtain<SqlDefaultDatabase>();
             Debug.Assert( db != null );
             db.ConnectionString.Should().Be( "The connection String" );
         }

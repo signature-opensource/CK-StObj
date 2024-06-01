@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.StObj.Engine.Tests.CrisLike;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -29,8 +30,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void open_generic_IPoco_is_forbidden()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWantAnInt ) );
-            TestHelper.GetFailedResult( c, "Use the [CKTypeDefiner] attribute to define a generic IPoco." );
+            var c = TestHelper.CreateTypeCollector( typeof( IWantAnInt ) );
+            TestHelper.GetFailedCollectorResult( c, "Use the [CKTypeDefiner] attribute to define a generic IPoco." );
         }
 
         [CKTypeDefiner]
@@ -41,8 +42,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void generic_AbstractTypes_must_expose_the_parameter_type_property()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWillFail ) );
-            TestHelper.GetFailedResult( c,
+            var c = TestHelper.CreateTypeCollector( typeof( IWillFail ) );
+            TestHelper.GetFailedCollectorResult( c,
                 "Generic interface 'CK.StObj.Engine.Tests.Poco.PocoGenericTests.IBuggy<T1,T2>' must define '[AutoImplementationClaim] public static T1 T1Type => default!;' property. This is required for type analysis.",
                 "Generic interface 'CK.StObj.Engine.Tests.Poco.PocoGenericTests.IBuggy<T1,T2>' must define '[AutoImplementationClaim] public static T2 T2Type => default!;' property. This is required for type analysis." );
         }
@@ -52,11 +53,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void generic_AbstractType_parameter_and_argument()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ITopCommand ) );
+            var c = TestHelper.CreateTypeCollector( typeof( ITopCommand ) );
             // We generate the code and compile it to check any error.
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            r.Success.Should().BeTrue();
+            var ts = r.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
+
             var tDef = ts.FindGenericTypeDefinition( typeof( ICommand<> ) );
             Throw.DebugAssert( tDef != null );
             tDef.Type.Should().BeSameAs( typeof( ICommand<> ) );
@@ -81,11 +84,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void MinimalAbstractTypes_considers_generic_parameter_covariance()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IIntCommand ) );
+            var c = TestHelper.CreateTypeCollector( typeof( IIntCommand ) );
             // We generate the code and compile it to check any error.
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            r.Success.Should().BeTrue();
+            var ts = r.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
+
             var cmdNullable = ts.FindByType<ISecondaryPocoType>( typeof( IIntCommand ) );
             Throw.DebugAssert( cmdNullable != null );
             Throw.DebugAssert( cmdNullable.IsNullable );
@@ -142,11 +147,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void commands_with_multiple_returns()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IS5Command ) );
+            var c = TestHelper.CreateTypeCollector( typeof( IS5Command ) );
             // We generate the code and compile it to check any error.
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            r.Success.Should().BeTrue();
+            var ts = r.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
+
             var cmdNullable = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
             Throw.DebugAssert( cmdNullable != null );
             cmdNullable.IsNullable.Should().BeTrue();
@@ -198,21 +205,25 @@ namespace CK.StObj.Engine.Tests.Poco
         public void conflicting_commands_with_multiple_returns()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IS6NoWayCommand1 ) );
+                var c = TestHelper.CreateTypeCollector( typeof( IS6NoWayCommand1 ) );
                 // We generate the code and compile it to check any error.
-                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-                r.EngineResult.Success.Should().BeTrue();
-                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+                r.Success.Should().BeTrue();
+                var ts = r.Groups[0].PocoTypeSystemBuilder;
+                Throw.DebugAssert( ts != null );
+
                 var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
                 Throw.DebugAssert( cmd != null );
                 FluentActions.Invoking( () => GetCommandResult( cmd ) ).Should().Throw<Exception>();
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IS6NoWayCommand2 ) );
+                var c = TestHelper.CreateTypeCollector( typeof( IS6NoWayCommand2 ) );
                 // We generate the code and compile it to check any error.
-                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-                r.EngineResult.Success.Should().BeTrue();
-                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+                r.Success.Should().BeTrue();
+                var ts = r.Groups[0].PocoTypeSystemBuilder;
+                Throw.DebugAssert( ts != null );
+
                 var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
                 Throw.DebugAssert( cmd != null );
                 FluentActions.Invoking( () => GetCommandResult( cmd ) ).Should().Throw<Exception>();
@@ -238,11 +249,13 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             // With only the IS6ExcludeIS5Command, the ITopCommand : ICommand<object> returns an object.
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IS6ExcludeIS5Command ) );
+                var c = TestHelper.CreateTypeCollector( typeof( IS6ExcludeIS5Command ) );
                 // We generate the code and compile it to check any error.
-                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-                r.EngineResult.Success.Should().BeTrue();
-                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+                r.Success.Should().BeTrue();
+                var ts = r.Groups[0].PocoTypeSystemBuilder;
+                Throw.DebugAssert( ts != null );
+
                 var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
                 Throw.DebugAssert( cmd != null );
                 GetCommandResult( cmd ).ToString()
@@ -250,11 +263,13 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             // With IS6ExcludeIS5Command and IS5Command bu no command that return a int, IS5Command is fine.
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
+                var c = TestHelper.CreateTypeCollector( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
                 // We generate the code and compile it to check any error.
-                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-                r.EngineResult.Success.Should().BeTrue();
-                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+                r.Success.Should().BeTrue();
+                var ts = r.Groups[0].PocoTypeSystemBuilder;
+                Throw.DebugAssert( ts != null );
+
                 var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
                 Throw.DebugAssert( cmd != null );
                 GetCommandResult( cmd ).ToString().Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
@@ -262,11 +277,13 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             // With IS6ExcludeIS5Command, IS5Command and a command that return a int, the return cannot be resolved.
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
+                var c = TestHelper.CreateTypeCollector( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
                 // We generate the code and compile it to check any error.
-                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-                r.EngineResult.Success.Should().BeTrue();
-                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+                r.Success.Should().BeTrue();
+                var ts = r.Groups[0].PocoTypeSystemBuilder;
+                Throw.DebugAssert( ts != null );
+
                 var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
                 Throw.DebugAssert( cmd != null );
                 FluentActions.Invoking( () => GetCommandResult( cmd ) ).Should().Throw<Exception>();
@@ -276,11 +293,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void MinimalAbstractTypes_considers_recurse_generic_parameter_covariance()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IS6Command ) );
+            var c = TestHelper.CreateTypeCollector( typeof( IS6Command ) );
             // We generate the code and compile it to check any error.
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            r.Success.Should().BeTrue();
+            var ts = r.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
+
             var cmdNullable = ts.FindByType<ISecondaryPocoType>( typeof( IS6Command ) );
             Throw.DebugAssert( cmdNullable != null );
             Throw.DebugAssert( cmdNullable.IsNullable );
@@ -384,11 +403,12 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void MinimalAbstractTypes_considers_generic_parameter_contravariance()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IObjectInput ) );
+            var c = TestHelper.CreateTypeCollector( typeof( IObjectInput ) );
             // We generate the code and compile it to check any error.
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            r.Success.Should().BeTrue();
+            var ts = r.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
             var cmdNullable = ts.FindByType<ISecondaryPocoType>( typeof( IObjectInput ) );
             Throw.DebugAssert( cmdNullable != null );
             Throw.DebugAssert( cmdNullable.IsNullable );
@@ -439,11 +459,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void MinimalAbstractTypes_considers_recurse_generic_parameter_contravariance()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IExt6Input ) );
+            var c = TestHelper.CreateTypeCollector( typeof( IExt6Input ) );
             // We generate the code and compile it to check any error.
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var r = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            r.Success.Should().BeTrue();
+            var ts = r.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
+
             var cmdNullable = ts.FindByType<IPrimaryPocoType>( typeof( IBaseInput ) );
             Throw.DebugAssert( cmdNullable != null );
             Throw.DebugAssert( cmdNullable.IsNullable );
@@ -497,8 +519,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void registering_purely_abstract_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractCommand ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractCommand ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var pocoBuilder = r.CKTypeResult.PocoTypeSystemBuilder;
             var veryAbstract = pocoBuilder.FindByType<IAbstractPocoType>( typeof( IAbstractCommand ) );
             Throw.DebugAssert( veryAbstract != null );

@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
@@ -91,12 +92,12 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void AllTypes_and_identity_test()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ILinkedListPart ),
+            var c = TestHelper.CreateTypeCollector( typeof( ILinkedListPart ),
                                                      typeof( IPartWithAnonymous ),
                                                      typeof( IPartWithRecAnonymous ),
                                                      typeof( IWithList ),
                                                      typeof( IWithAllBasicTypes ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var builder = r.PocoTypeSystemBuilder;
 
             const int basicTypesCount = 26; // See IWithAllBasicTypes.
@@ -140,9 +141,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void FindByType_finds_AbstractIPoco_and_PocoClass_implementation_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ILinkedListPart ),
+            var c = TestHelper.CreateTypeCollector( typeof( ILinkedListPart ),
                                                      typeof( IWithList ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder;
 
             var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
@@ -176,8 +177,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void an_empty_record_is_valid_in_the_Poco_world()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IValidEmptyRec ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IValidEmptyRec ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.CKTypeResult.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var emptyRec = ts.FindByType( typeof( EmptyRec ) );
             var poco = ts.FindByType( typeof( IValidEmptyRec ) );
@@ -221,8 +222,8 @@ namespace CK.StObj.Engine.Tests.Poco
             t.Should().Be( 0 );
             // Compilation error.
             // t = 1;
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidEmptyEnum ) );
-            TestHelper.GetFailedResult( c, "Enum type 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.EmptyEnum' is empty. Empty enum are not valid in a Poco Type System." );
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidEmptyEnum ) );
+            TestHelper.GetFailedCollectorResult( c, "Enum type 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.EmptyEnum' is empty. Empty enum are not valid in a Poco Type System." );
         }
 
 
@@ -262,11 +263,14 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( typeof( IWithAll ), new[] { "Required", "Optional", "Power" } )]
         public void AbstractPocoField_test( Type impl, string[] names )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractPoco ),
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractPoco ),
                                                      typeof( IWithList ),
                                                      impl );
-            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var engineResult = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
+            engineResult.Success.Should().BeTrue();
+            var ts = engineResult.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
+
             var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );
             Debug.Assert( abs != null );
             abs.Fields.Should().HaveCount( names.Length );

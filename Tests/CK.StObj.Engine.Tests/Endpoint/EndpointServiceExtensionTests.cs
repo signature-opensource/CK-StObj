@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -23,9 +24,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void endpoint_services_are_registered_whether_they_are_IAutoService_or_not()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IEPService1 ),
-                                                     typeof( IEPService2 ) );
-            var r = TestHelper.GetSuccessfulResult( c ).EndpointResult;
+            var c = TestHelper.CreateTypeCollector( typeof( IEPService1 ),
+                                                    typeof( IEPService2 ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c ).EndpointResult;
             Debug.Assert( r != null );
             r.Containers.Should().HaveCount( 0 );
             r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped );
@@ -47,11 +48,11 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void Ambient_service_requires_its_default_value_provider()
         {
-            var noWay = TestHelper.CreateStObjCollector( typeof( AmbientThing ) );
-            TestHelper.GetFailedResult( noWay, "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
+            var noWay = TestHelper.CreateTypeCollector( typeof( AmbientThing ) );
+            TestHelper.GetFailedCollectorResult( noWay, "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
 
-            var c = TestHelper.CreateStObjCollector( typeof( AmbientThing ), typeof( DefaultAmbientThingProvider ) );
-            TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( AmbientThing ), typeof( DefaultAmbientThingProvider ) );
+            TestHelper.GetSuccessfulCollectorResult( c );
         }
 
         public class SpecAmbientThing : AmbientThing
@@ -66,9 +67,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void specialized_Ambient_service_not_AutoService_cannot_share_the_SpecDefaultProvider()
         {
-            var noWay = TestHelper.CreateStObjCollector( typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider ) );
-            TestHelper.GetFailedResult( noWay, "Unable to find an implementation for 'IAmbientServiceDefaultProvider<EndpointServiceExtensionTests.AmbientThing>'. "
-                                               + "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
+            var noWay = TestHelper.CreateTypeCollector( typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider ) );
+            TestHelper.GetFailedCollectorResult( noWay, "Unable to find an implementation for 'IAmbientServiceDefaultProvider<EndpointServiceExtensionTests.AmbientThing>'. "
+                                                        + "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
         }
 
         [ContainerConfiguredScopedService( isAmbientService: true )]
@@ -108,10 +109,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void specialized_Ambient_services_that_are_AutoServices_can_share_the_SpecDefaultProvider()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( SpecAutoAmbientThing ),
-                                                     typeof( AutoAmbientThing ),
-                                                     typeof( SpecAutoAmbientThingProvider ) );
-            TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( SpecAutoAmbientThing ),
+                                                    typeof( AutoAmbientThing ),
+                                                    typeof( SpecAutoAmbientThingProvider ) );
+            TestHelper.GetSuccessfulCollectorResult( c );
         }
 
 

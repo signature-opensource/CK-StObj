@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -54,11 +55,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-            var p = s.GetRequiredService<IPocoFactory<IPoco2>>().Create();
+            var p = auto.Services.GetRequiredService<IPocoFactory<IPoco2>>().Create();
 
             // Thing allows int, decimal, string and List<string> (not nullable!)
             p.Thing = 34;

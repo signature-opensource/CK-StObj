@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -18,8 +19,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Direct_recursion_is_detected()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IDirectError ) );
-            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+            var c = TestHelper.CreateTypeCollector( typeof( IDirectError ) );
+            TestHelper.GetFailedCollectorResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface IDirectErrorWithSetter : IPoco
@@ -30,8 +31,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Direct_recursion_is_detected_even_if_setter_is_used_because_of_initialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IDirectErrorWithSetter ) );
-            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+            var c = TestHelper.CreateTypeCollector( typeof( IDirectErrorWithSetter ) );
+            TestHelper.GetFailedCollectorResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICycleError : IPoco
@@ -47,8 +48,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Indirect_one_level_recursion_is_detected()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICycleError ), typeof( ICycleError1 ) );
-            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+            var c = TestHelper.CreateTypeCollector( typeof( ICycleError ), typeof( ICycleError1 ) );
+            TestHelper.GetFailedCollectorResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICycleErrorWithSetter : IPoco
@@ -64,8 +65,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Indirect_one_level_recursion_is_detected_even_with_setters()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICycleErrorWithSetter ), typeof( ICycleErrorWithSetter1 ) );
-            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+            var c = TestHelper.CreateTypeCollector( typeof( ICycleErrorWithSetter ), typeof( ICycleErrorWithSetter1 ) );
+            TestHelper.GetFailedCollectorResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICommandOne : IPoco
@@ -92,8 +93,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Indirect_one_level_recursion_is_detected_even_with_setters2()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ) );
-            TestHelper.GetFailedResult( c,
+            var c = TestHelper.CreateTypeCollector( typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ) );
+            TestHelper.GetFailedCollectorResult( c,
                 """
                 Detected an instantiation cycle in Poco: 
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.RecursivePocoTests.ICommandOne', field: 'Friend' => 
@@ -124,8 +125,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Indirect_multiple_level_recursion_is_detected()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) );
-            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+            var c = TestHelper.CreateTypeCollector( typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) );
+            TestHelper.GetFailedCollectorResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICycleErrorConsumerIntermediate : IPoco
@@ -147,9 +148,9 @@ namespace CK.StObj.Engine.Tests.Poco
                                 typeof( ICycleErrorB ),
                                 typeof( ICycleErrorC ),
                                 typeof( ICycleErrorD ) };
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
+            TestHelper.GetFailedCollectorResult( TestHelper.CreateTypeCollector( types ), "Detected an instantiation cycle in Poco:" );
             Array.Reverse( types );
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
+            TestHelper.GetFailedCollectorResult( TestHelper.CreateTypeCollector( types ), "Detected an instantiation cycle in Poco:" );
         }
 
         public interface IDirectErrorPrimary : IPoco
@@ -164,8 +165,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Direct_recursion_is_detected_through_secondary()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IDirectErrorPrimary ), typeof( IDirectErrorSecondary ) );
-            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+            var c = TestHelper.CreateTypeCollector( typeof( IDirectErrorPrimary ), typeof( IDirectErrorSecondary ) );
+            TestHelper.GetFailedCollectorResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         #region Real life case that exhibited a stupid bug in initialization cycle detection (PocoCycleAndDefaultVisitor).
@@ -189,8 +190,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void multiple_fields_with_the_same_type_are_not_cycles()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoAuthenticationInfo ), typeof( IPocoUserInfo ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IPocoAuthenticationInfo ), typeof( IPocoUserInfo ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
 
         }
         #endregion

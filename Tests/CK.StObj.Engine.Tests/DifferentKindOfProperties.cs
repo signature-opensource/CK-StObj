@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Diagnostics;
@@ -41,16 +42,16 @@ namespace CK.StObj.Engine.Tests
         public void StObjAndAmbientPropertiesAreIncompatible()
         {
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjB ), typeof( ObjA ) );
-                TestHelper.GetFailedResult( collector, "Property named 'TwoAttributes' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjB' can not be both an Ambient Singleton, an Ambient Property or a StObj property." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ObjB ), typeof( ObjA ) );
+                TestHelper.GetFailedCollectorResult( collector, "Property named 'TwoAttributes' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjB' can not be both an Ambient Singleton, an Ambient Property or a StObj property." );
             }
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjA ), typeof( ObjSpecA ) );
-                TestHelper.GetFailedResult( collector, "[StObjProperty] property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjSpecA.NoProblem' is declared as a '[AmbientProperty]' property by 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjA'. Property names must be distinct." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ObjA ), typeof( ObjSpecA ) );
+                TestHelper.GetFailedCollectorResult( collector, "[StObjProperty] property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjSpecA.NoProblem' is declared as a '[AmbientProperty]' property by 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjA'. Property names must be distinct." );
             }
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjA ), typeof( ObjSpecA2 ) );
-                TestHelper.GetFailedResult( collector, "[StObjProperty] property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjSpecA2.NoProblem' is declared as a '[AmbientProperty]' property by 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjA'. Property names must be distinct." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ObjA ), typeof( ObjSpecA2 ) );
+                TestHelper.GetFailedCollectorResult( collector, "[StObjProperty] property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjSpecA2.NoProblem' is declared as a '[AmbientProperty]' property by 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjA'. Property names must be distinct." );
             }
         }
 
@@ -76,16 +77,16 @@ namespace CK.StObj.Engine.Tests
         public void InvalidStObjProperties()
         {
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( MissingStObjPropertyType ) );
-                TestHelper.GetFailedResult( collector, "StObj property named 'AProperty' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyType' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
+                var collector = TestHelper.CreateTypeCollector( typeof( MissingStObjPropertyType ) );
+                TestHelper.GetFailedCollectorResult( collector, "StObj property named 'AProperty' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyType' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
             }
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( MissingStObjPropertyName ) );
-                TestHelper.GetFailedResult( collector, "Unnamed or whitespace StObj property on 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyName'. Attribute must be configured with a valid PropertyName." );
+                var collector = TestHelper.CreateTypeCollector( typeof( MissingStObjPropertyName ) );
+                TestHelper.GetFailedCollectorResult( collector, "Unnamed or whitespace StObj property on 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyName'. Attribute must be configured with a valid PropertyName." );
             }
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( DuplicateStObjProperty ) );
-                TestHelper.GetFailedResult( collector, "StObj property named 'Albert' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.DuplicateStObjProperty' is defined more than once. It should be declared only once." );
+                var collector = TestHelper.CreateTypeCollector( typeof( DuplicateStObjProperty ) );
+                TestHelper.GetFailedCollectorResult( collector, "StObj property named 'Albert' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.DuplicateStObjProperty' is defined more than once. It should be declared only once." );
             }
         }
 
@@ -100,8 +101,8 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void InjectSingleton_must_not_be_scoped_service()
         {
-            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( InvalidRealObjectProperty ) );
-            TestHelper.GetFailedResult( collector, "Inject Object 'NotAnRealObjectPropertyType' of 'CK.StObj.Engine.Tests.DifferentKindOfProperties+InvalidRealObjectProperty': CK.StObj.Engine.Tests.DifferentKindOfProperties+ScopedService not found." );
+            var collector = TestHelper.CreateTypeCollector( typeof( InvalidRealObjectProperty ) );
+            TestHelper.GetFailedCollectorResult( collector, "Inject Object 'NotAnRealObjectPropertyType' of 'CK.StObj.Engine.Tests.DifferentKindOfProperties+InvalidRealObjectProperty': CK.StObj.Engine.Tests.DifferentKindOfProperties+ScopedService not found." );
         }
 
         #region Covariance support
@@ -146,12 +147,11 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void CovariantPropertiesSupport()
         {
-            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( CB3 ), typeof( CA3 ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( CB3 ), typeof( CA3 ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            Throw.DebugAssert( map != null );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
-            Debug.Assert( r.EngineMap != null, "No initialization error." );
-
-            var cb = r.EngineMap.StObjs.Obtain<CB>()!;
+            var cb = map.StObjs.Obtain<CB>()!;
             Assert.That( cb, Is.InstanceOf<CB3>() );
             Assert.That( cb.A, Is.InstanceOf<CA3>() );
         }
@@ -165,10 +165,8 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void SetterMustExistOnTopDefiner()
         {
-            {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( CMissingSetterOnTopDefiner ), typeof( CA2 ) );
-                TestHelper.GetFailedResult( collector, "Property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+CMissingSetterOnTopDefiner.A' must have a setter (since it is the first declaration of the property)." );
-            }
+            var collector = TestHelper.CreateTypeCollector( typeof( CMissingSetterOnTopDefiner ), typeof( CA2 ) );
+            TestHelper.GetFailedCollectorResult( collector, "Property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+CMissingSetterOnTopDefiner.A' must have a setter (since it is the first declaration of the property)." );
         }
 
         public class CPrivateSetter : IRealObject
@@ -181,8 +179,8 @@ namespace CK.StObj.Engine.Tests
         public void PrivateSetterWorks()
         {
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector(  typeof( CPrivateSetter ), typeof( CA2 ) );
-                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                var collector = TestHelper.CreateTypeCollector(typeof(CPrivateSetter), typeof(CA2));
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
 
                 var c = map.StObjs.Obtain<CPrivateSetter>()!;

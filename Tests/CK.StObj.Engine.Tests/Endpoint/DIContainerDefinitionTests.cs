@@ -1,5 +1,6 @@
 
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -50,10 +51,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void DIContainerHub_exposes_the_DIContainerDefinitions()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var c = TestHelper.CreateTypeCollector(typeof(AppIdentityDIContainerDefinition), typeof(BackdoorDIContainerDefinition));
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
 
-            var manager = s.GetRequiredService<DIContainerHub>();
+            var manager = auto.Services.GetRequiredService<DIContainerHub>();
             manager.ContainerDefinitions.Should().HaveCount( 2 );
             manager.ContainerDefinitions.Should().Contain( e => e is AppIdentityDIContainerDefinition )
                                                 .And.Contain( e => e is BackdoorDIContainerDefinition );
@@ -62,15 +63,15 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void EndpointTypes_are_available_in_containers_as_well_as_the_IEnumerable_of_IEndpoint()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var c = TestHelper.CreateTypeCollector( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
 
             // From the root (singleton) container.
-            var o1 = GetEndpointsAndOtherTrueSingletons( s );
-            var backdoor = s.GetRequiredService<IDIContainer<BackdoorDIContainerDefinition.Data>>();
-            var appIdentity = s.GetRequiredService<IDIContainer<AppIdentityDIContainerDefinition.Data>>();
+            var o1 = GetEndpointsAndOtherTrueSingletons( auto.Services );
+            var backdoor = auto.Services.GetRequiredService<IDIContainer<BackdoorDIContainerDefinition.Data>>();
+            var appIdentity = auto.Services.GetRequiredService<IDIContainer<AppIdentityDIContainerDefinition.Data>>();
 
-            using var sScope = s.CreateScope();
+            using var sScope = auto.Services.CreateScope();
             var o2 = GetEndpointsAndOtherTrueSingletons( sScope.ServiceProvider );
 
             var sB = backdoor.GetContainer();
@@ -112,9 +113,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void DIContainerDefinitions_cannot_be_specialized()
         {
-            var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
-            TestHelper.GetFailedResult( c1 , "DIContainerDefinition type 'DIContainerDefinitionTests.NoWay1Definition' must directly specialize "
-                                             + "DIContainerDefinition<TScopeData> (not 'DIContainerDefinitionTests.BackdoorDIContainerDefinition')." );
+            var c1 = TestHelper.CreateTypeCollector( typeof( NoWay1Definition ) );
+            TestHelper.GetFailedCollectorResult( c1 , "DIContainerDefinition type 'DIContainerDefinitionTests.NoWay1Definition' must directly specialize "
+                                                      + "DIContainerDefinition<TScopeData> (not 'DIContainerDefinitionTests.BackdoorDIContainerDefinition')." );
 
         }
 
@@ -145,8 +146,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void DIContainerDefinitions_cannot_use_the_same_ScopeData_type()
         {
-            var c1 = TestHelper.CreateStObjCollector( typeof( Dup1DIContainerDefinition ), typeof( Dup2DIContainerDefinition ) );
-            TestHelper.GetFailedResult( c1, "The generic parameter of 'DIContainerDefinitionTests.Dup2DIContainerDefinition' must be 'Dup2DIContainerDefinition.Data'." );
+            var c1 = TestHelper.CreateTypeCollector( typeof( Dup1DIContainerDefinition ), typeof( Dup2DIContainerDefinition ) );
+            TestHelper.GetFailedCollectorResult( c1, "The generic parameter of 'DIContainerDefinitionTests.Dup2DIContainerDefinition' must be 'Dup2DIContainerDefinition.Data'." );
         }
 
         [DIContainerDefinition( DIContainerKind.Endpoint )]
@@ -164,8 +165,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             const string msg = "Invalid DIContainerDefinition type 'DIContainerDefinitionTests.BadNameDefinition': "
                                + "DIContainerDefinition type name must end with \"DIContainerDefinition\" (the prefix becomes the container name).";
 
-            var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
-            TestHelper.GetFailedResult( c1, msg );
+            var c1 = TestHelper.CreateTypeCollector( typeof( BadNameDefinition ) );
+            TestHelper.GetFailedCollectorResult( c1, msg );
         }
 
         [DIContainerDefinition( DIContainerKind.Endpoint )]
@@ -196,15 +197,15 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 const string msg = "Type 'DIContainerDefinitionTests.BadFrontDataDIContainerDefinition.Data' must not specialize BackendScopedData, " +
                                     "it must simply support the IScopedData interface because it is a Endpoint DI container.";
 
-                var c = TestHelper.CreateStObjCollector( typeof( BadFrontDataDIContainerDefinition ) );
-                TestHelper.GetFailedResult( c, msg );
+                var c = TestHelper.CreateTypeCollector( typeof( BadFrontDataDIContainerDefinition ) );
+                TestHelper.GetFailedCollectorResult( c, msg );
             }
 
             {
                 const string msg = "Type 'DIContainerDefinitionTests.BadBackDataDIContainerDefinition.Data' must specialize BackendScopedData because it is a Backend DI container.";
 
-                var c = TestHelper.CreateStObjCollector( typeof( BadBackDataDIContainerDefinition ) );
-                TestHelper.GetFailedResult( c, msg );
+                var c = TestHelper.CreateTypeCollector( typeof( BadBackDataDIContainerDefinition ) );
+                TestHelper.GetFailedCollectorResult( c, msg );
             }
         }
 

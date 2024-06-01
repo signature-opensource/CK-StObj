@@ -7,6 +7,7 @@ using NUnit.Framework;
 using CK.Core;
 using System.Linq;
 using System.Diagnostics;
+using CK.Testing;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -58,8 +59,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()
         {
-            var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.ToArray() );
-            var poco = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.PocoDirectory;
+            var c = TestHelper.CreateTypeCollector( TheseValidNestedTypes.ToArray() );
+            var poco = TestHelper.GetSuccessfulCollectorResult( c ).PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null );
 
             poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) } );
@@ -76,8 +77,8 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             // With IFinal1 only: ICommandAuthDeviceId is not here.
             {
-                var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => t != typeof( IFinal2 ) ).ToArray() );
-                var poco = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.PocoDirectory;
+                var c = TestHelper.CreateTypeCollector( TheseValidNestedTypes.Where( t => t != typeof( IFinal2 ) ).ToArray() );
+                var poco = TestHelper.GetSuccessfulCollectorResult( c ).PocoTypeSystemBuilder.PocoDirectory;
                 Debug.Assert( poco != null );
 
                 poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IIndependent ) } );
@@ -90,8 +91,8 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             // Without IPoco at all: no definers are referenced.
             {
-                var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => !t.Name.StartsWith( "IFinal", StringComparison.Ordinal ) ).ToArray() );
-                var poco = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.PocoDirectory;
+                var c = TestHelper.CreateTypeCollector( TheseValidNestedTypes.Where( t => !t.Name.StartsWith( "IFinal", StringComparison.Ordinal ) ).ToArray() );
+                var poco = TestHelper.GetSuccessfulCollectorResult( c ).PocoTypeSystemBuilder.PocoDirectory;
                 Debug.Assert( poco != null );
 
                 poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );

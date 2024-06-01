@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.StObj.Engine.Tests.CrisLike;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -42,16 +43,16 @@ namespace CK.StObj.Engine.Tests.Poco
         public void non_nullable_abstract_IPoco_field_without_writable_is_an_error()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IWithNonNullAbstract ) );
-                TestHelper.GetFailedResult( c, """
+                var c = TestHelper.CreateTypeCollector( typeof( IWithNonNullAbstract ) );
+                TestHelper.GetFailedCollectorResult( c, """
                     Required computable default value is missing in Poco:
                     '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract', field: 'Some' has no default value.
                     No default can be synthesized for non nullable '[AbstractPoco]CK.Core.IPoco'.
                     """ );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IWithNonNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                TestHelper.GetFailedResult( c, """
+                var c = TestHelper.CreateTypeCollector( typeof( IWithNonNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
+                TestHelper.GetFailedCollectorResult( c, """
                     Required computable default value is missing in Poco:
                     '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract2', field: 'Some' has no default value.
                     No default can be synthesized for non nullable '[AbstractPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.ICommand'.
@@ -73,9 +74,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void non_nullable_abstract_IPoco_field_must_have_a_concrete_writable_field()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
-                using var s = TestHelper.CreateAutomaticServices( c ).Services;
-                var d = s.GetRequiredService<PocoDirectory>();
+                var c = TestHelper.CreateTypeCollector( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IResolveSome>();
                 f.Some.V.Should().Be( "Yes!" );
                 var cmd = d.Create<IRealCommand>();
@@ -83,9 +84,9 @@ namespace CK.StObj.Engine.Tests.Poco
                 ((IWithNonNullAbstract)f).Some.Should().BeSameAs( cmd, "Implementations use the same backing field." );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                using var s = TestHelper.CreateAutomaticServices( c ).Services;
-                var d = s.GetRequiredService<PocoDirectory>();
+                var c = TestHelper.CreateTypeCollector( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IResolveSome2>();
                 f.Some.V.Should().Be( "Yes!" );
                 var cmd = d.Create<IRealCommand>( c => c.V = "Changed!" );
@@ -108,16 +109,16 @@ namespace CK.StObj.Engine.Tests.Poco
         public void nullable_abstract_IPoco_field_without_writable_keeps_a_default_null_value()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IWithNullAbstract ) );
-                using var s = TestHelper.CreateAutomaticServices( c ).Services;
-                var d = s.GetRequiredService<PocoDirectory>();
+                var c = TestHelper.CreateTypeCollector( typeof( IWithNullAbstract ) );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IWithNullAbstract>();
                 f.Some.Should().Be( null );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                using var s = TestHelper.CreateAutomaticServices( c ).Services;
-                var d = s.GetRequiredService<PocoDirectory>();
+                var c = TestHelper.CreateTypeCollector( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IWithNullAbstract2>();
                 f.Some.Should().Be( null );
             }
@@ -199,9 +200,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( typeof( (int, string) ), typeof( IAutoAnonymousRecordPrimary2 ), typeof( IAutoAnonymousRecordExtension2 ) )]
         public void auto_initialized_property_can_be_exposed_as_nullable_properties( Type tAutoProperty, Type tPrimary, Type tExtension )
         {
-            var c = TestHelper.CreateStObjCollector( tPrimary, tExtension );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( tPrimary, tExtension );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Find( tPrimary );
             Debug.Assert( f != null );
             f.Should().BeSameAs( d.Find( tExtension ) );
@@ -238,9 +239,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase(typeof( IAutoIAbstract2 ) )]
         public void object_abstract_readonly_property_can_be_nullable_AbstractPoco( Type tPrimary )
         {
-            var c = TestHelper.CreateStObjCollector( tPrimary );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( tPrimary );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Find( tPrimary );
             Debug.Assert( f != null );
             var o = (IHaveNullableAutoProperty)f.Create();
@@ -251,13 +252,13 @@ namespace CK.StObj.Engine.Tests.Poco
         public void record_cannot_be_a_Abstract_Read_Only_Property()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IInvalidAnonymousRecord ) );
-                TestHelper.GetFailedResult( c,
+                var c = TestHelper.CreateTypeCollector( typeof( IInvalidAnonymousRecord ) );
+                TestHelper.GetFailedCollectorResult( c,
                     "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidAnonymousRecord.NoWay' must be a ref property: 'ref (int A,int B) NoWay { get; }'." );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IInvalidNamedRecord ) );
-                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.NoWay' must be a ref property: 'ref CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.Rec NoWay { get; }'." );
+                var c = TestHelper.CreateTypeCollector( typeof( IInvalidNamedRecord ) );
+                TestHelper.GetFailedCollectorResult( c, "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.NoWay' must be a ref property: 'ref CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.Rec NoWay { get; }'." );
             }
         }
 
@@ -287,9 +288,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void abstract_properties_samples()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var impl = d.Create<IImplementThem>();
 
             impl.Object = 3712;

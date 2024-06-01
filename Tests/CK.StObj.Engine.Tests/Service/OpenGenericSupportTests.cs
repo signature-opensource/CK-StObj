@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -35,9 +36,9 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void super_definer_applies_to_final_class()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ClassService ) );
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
+            var collector = TestHelper.CreateTypeCollector( typeof( ClassService ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            Throw.DebugAssert( map != null );
 
             map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
             map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
@@ -59,25 +60,17 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void super_definer_applies_to_final_interface()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ClassFromInterfaceService ) );
-            var r = TestHelper.CreateAutomaticServices( collector );
-            Debug.Assert( r.CollectorResult.EngineMap != null, "No initialization error." );
+            var collector = TestHelper.CreateTypeCollector( typeof( ClassFromInterfaceService ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
 
-            try
-            {
-                r.CollectorResult.EngineMap.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-                r.CollectorResult.EngineMap.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
 
-                r.CollectorResult.EngineMap.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
-                r.CollectorResult.EngineMap.Services.Mappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo(
-                    new[] { typeof( InterfaceService ) } );
+            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
+            auto.LoadResult.Map.Services.Mappings[typeof( ClassFromInterfaceService )].UniqueMappings
+                .Should().BeEquivalentTo( new[] { typeof( InterfaceService ) } );
 
-                r.Services.GetService<InterfaceService>().Should().Be( r.Services.GetService<ClassFromInterfaceService>() );
-            }
-            finally
-            {
-                r.Services.Dispose();
-            }
+            auto.Services.GetService<InterfaceService>().Should().Be( auto.Services.GetService<ClassFromInterfaceService>() );
         }
 
         [IsMultiple]
@@ -100,11 +93,9 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void device_host_model()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( TestHelper.Monitor, typeof( ADeviceHost ) );
-            using var s = TestHelper.CreateAutomaticServices( collector ).Services;
-
-            s.GetService<ADeviceHost>().Should().NotBeNull(); 
+            var collector = TestHelper.CreateTypeCollector( typeof( ADeviceHost ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            auto.Services.GetService<ADeviceHost>().Should().NotBeNull(); 
         }
     }
 }

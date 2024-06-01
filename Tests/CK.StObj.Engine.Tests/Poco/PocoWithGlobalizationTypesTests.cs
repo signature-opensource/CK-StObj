@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -40,9 +41,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void default_for_Globalization_types_are_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithGlobalization ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var p = s.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
+            var c = TestHelper.CreateTypeCollector( typeof( IWithGlobalization ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var p = auto.Services.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
             p.ExtendedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
             p.NormalizedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );

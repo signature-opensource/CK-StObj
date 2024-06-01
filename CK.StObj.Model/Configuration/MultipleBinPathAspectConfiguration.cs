@@ -78,7 +78,7 @@ namespace CK.Setup
         {
             if( other == this ) return;
             Throw.CheckArgument( other != null && other.Owner == null );
-            // The other configuration is not in a StObjEngineConfiguration, it is detached.
+            // The other configuration is not in a EngineConfiguration, it is detached.
             // We silently handle the move across detached configuration in this case.
             if( other._head != null )
             {

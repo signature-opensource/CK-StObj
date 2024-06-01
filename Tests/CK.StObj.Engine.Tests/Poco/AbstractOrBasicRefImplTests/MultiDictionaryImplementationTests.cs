@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -49,11 +50,11 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [TestCase( typeof( IPocoWithDictionaryOfOtherSecondary ) )]
         public void IDictionary_implementation_supports_all_the_required_types( Type type )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                                      typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                                      type );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var p = (IWithDictionary)d.Find( type )!.Create();
 
             p.Dictionary.Should().BeAssignableTo<IDictionary<int, IVerySimplePoco>>()
@@ -98,12 +99,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [Test]
         public void IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
-                                                     typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
-                                                     typeof( IPocoWithDictionaryOfAbstractBase ), typeof( IPocoWithDictionaryOfAbstract1 ),
-                                                     typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithDictionaryOfClosed ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+                                                    typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
+                                                    typeof( IPocoWithDictionaryOfAbstractBase ), typeof( IPocoWithDictionaryOfAbstract1 ),
+                                                    typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithDictionaryOfClosed ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
 
             var pBase = d.Create<IPocoWithDictionaryOfAbstractBase>();
             pBase.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<string, object>>()
@@ -147,9 +148,9 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [Test]
         public void IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBasicRefDic ), typeof( IBasicRefDics ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBasicRefDic ), typeof( IBasicRefDics ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var pBase = d.Create<IBasicRefDics>();
             pBase.StringDic.Should().NotBeNull();
             pBase.ExtendedCultureInfoDic.Should().NotBeNull();

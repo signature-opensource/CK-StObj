@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Serialization;
@@ -41,9 +42,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void intrinsic_from_IList_to_IReadOnlyList()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IActualRootA ), typeof( IActualSubA ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IActualRootA ), typeof( IActualSubA ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var a = d.Create<IActualRootA>();
             a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
@@ -59,9 +60,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void intrinsic_from_concrete_List_to_IReadOnlyList()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var a = d.Create<IActualRootAConcrete>();
             a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
@@ -83,8 +84,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void invalid_abstract_to_concrete()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidActualRootConcrete ), typeof( IActualSubA ) );
-            TestHelper.GetFailedResult( c,
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidActualRootConcrete ), typeof( IActualSubA ) );
+            TestHelper.GetFailedCollectorResult( c,
                 $"Type conflict between:{Environment.NewLine}" +
                 $"IList<PocoCovariantPropertyTests.ISubDefiner> CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IMutableRootDefiner.Lines{Environment.NewLine}" +
                 $"And:{Environment.NewLine}" +

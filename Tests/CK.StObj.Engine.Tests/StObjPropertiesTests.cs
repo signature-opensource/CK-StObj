@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
@@ -35,8 +36,8 @@ namespace CK.StObj.Engine.Tests
         public void OneObject()
         {
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( SimpleContainer ) );
-                var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
+                var collector = TestHelper.CreateTypeCollector( typeof( SimpleContainer ) );
+                var result = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap!.StObjs;
                 result.OrderedStObjs
                       .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
@@ -86,7 +87,7 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( TestHelper.Monitor, typeof( BaseObject ) );
             collector.RegisterType( TestHelper.Monitor, typeof( SpecializedObject ) );
             collector.RegisterType( TestHelper.Monitor, typeof( SpecializedObjectWithExplicitContainer ) );
-            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
+            var result = collector.GetResult( TestHelper.Monitor ).EngineMap!.StObjs;
 
             Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" )!.ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer" ) );

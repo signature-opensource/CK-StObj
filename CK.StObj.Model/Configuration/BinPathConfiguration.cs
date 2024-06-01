@@ -41,8 +41,8 @@ namespace CK.Setup
             /// <summary>
             /// Initializes a new <see cref="TypeConfiguration"/>.
             /// </summary>
-            /// <param name="name">Name of the type.</param>
-            /// <param name="kind">Kind.</param>
+            /// <param name="name">Assembly qualified name of the type.</param>
+            /// <param name="kind">The service kind.</param>
             /// <param name="optional">Whether the type may not exist.</param>
             public TypeConfiguration( string name, AutoServiceKind kind, bool optional )
             {
@@ -243,6 +243,35 @@ namespace CK.Setup
         /// regardless of the <see cref="Assemblies"/>.
         /// </summary>
         public List<TypeConfiguration> Types { get; }
+
+        /// <summary>
+        /// Adds a <see cref="TypeConfiguration"/> to <see cref="Types"/>.
+        /// </summary>
+        /// <param name="type">The type to configure.</param>
+        /// <param name="kind">The kind to set.</param>
+        /// <param name="isOptional">Whether the type may not exist.</param>
+        /// <returns></returns>
+        public BinPathConfiguration AddType( Type type, AutoServiceKind kind, bool isOptional )
+        {
+            Throw.CheckNotNullArgument( type );
+            Throw.CheckArgument( type.AssemblyQualifiedName != null );
+            Types.Add( new TypeConfiguration( type.AssemblyQualifiedName, kind, isOptional ) );
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a <see cref="TypeConfiguration"/> to <see cref="Types"/>.
+        /// </summary>
+        /// <param name="type">The type to configure.</param>
+        /// <param name="kind">The kind to set.</param>
+        /// <param name="isOptional">Whether the type may not exist.</param>
+        /// <returns></returns>
+        public BinPathConfiguration AddType( string name, AutoServiceKind kind, bool isOptional )
+        {
+            Throw.CheckNotNullArgument( name );
+            Types.Add( new TypeConfiguration( name, kind, isOptional ) );
+            return this;
+        }
 
         /// <summary>
         /// Gets a set of assembly qualified type names that must be excluded from  

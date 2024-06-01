@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -50,9 +51,9 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [TestCase( typeof( IPocoWithSetOfReadOnlyCompliantAnonymousRecord ) )]
         public void ISet_implementation_supports_all_the_required_types( Type type )
         {
-            var c = TestHelper.CreateStObjCollector( type );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( type );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var p = (IWithSet)d.Find( type )!.Create();
 
             p.Set.Should().BeAssignableTo<IReadOnlySet<object>>();
@@ -87,9 +88,9 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [Test]
         public void ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var pBase = d.Create<IBasicRefSets>();
             pBase.StringSet.Should().NotBeNull();
             pBase.ExtendedCultureInfoSet.Should().NotBeNull();

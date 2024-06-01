@@ -28,7 +28,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the engine configuration.
         /// </summary>
-        IRunningEngineConfiguration StObjEngineConfiguration { get; }
+        IRunningEngineConfiguration EngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered

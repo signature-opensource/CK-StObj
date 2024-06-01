@@ -103,7 +103,7 @@ namespace CK.Testing
         /// <returns>The failed collector result or null if the error prevented its creation.</returns>
         public static StObjCollectorResult? GetFailedCollectorResult( this IMonitorTestHelper helper, ISet<Type> typeCollector, string message, params string[] otherMessages )
         {
-            var c = new StObjCollector( new SimpleServiceContainer() );
+            var c = new StObjCollector();
             c.RegisterTypes( helper.Monitor, typeCollector );
             if( c.FatalOrErrors.Count != 0 )
             {

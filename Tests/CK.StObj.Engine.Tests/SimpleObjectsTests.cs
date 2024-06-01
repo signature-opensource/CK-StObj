@@ -33,8 +33,8 @@ namespace CK.StObj.Engine.Tests
                             .Where( t => t.IsClass )
                             .Where( t => t.Namespace == "CK.StObj.Engine.Tests.SimpleObjects" );
 
-            var collector = TestHelper.CreateStObjCollector( types.Append( typeof( ObjectALevel1Conflict ) ).ToArray() );
-            TestHelper.GetFailedResult( collector, "Base class 'CK.StObj.Engine.Tests.SimpleObjects.ObjectA' has more than one concrete specialization: 'CK.StObj.Engine.Tests.SimpleObjectsTests.ObjectALevel1Conflict', 'CK.StObj.Engine.Tests.SimpleObjects.ObjectALevel3'." );
+            var collector = TestHelper.CreateTypeCollector( types.Append( typeof( ObjectALevel1Conflict ) ).ToArray() );
+            TestHelper.GetFailedCollectorResult( collector, "Base class 'CK.StObj.Engine.Tests.SimpleObjects.ObjectA' has more than one concrete specialization: 'CK.StObj.Engine.Tests.SimpleObjectsTests.ObjectALevel1Conflict', 'CK.StObj.Engine.Tests.SimpleObjects.ObjectALevel3'." );
         }
 
         public class Auto : IAutoService { }
@@ -53,15 +53,15 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void a_RealObject_that_references_an_auto_service_from_its_StObjConstruct_is_an_error()
         {
-            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( RealThatReferenceAutoIsError ) );
-            TestHelper.GetFailedResult( collector, "StObjConstruct parameter 's' (n°1) for 'CK.StObj.Engine.Tests.SimpleObjectsTests+RealThatReferenceAutoIsError': Unable to resolve non optional." );
+            var collector = TestHelper.CreateTypeCollector( typeof( RealThatReferenceAutoIsError ) );
+            TestHelper.GetFailedCollectorResult( collector, "StObjConstruct parameter 's' (n°1) for 'CK.StObj.Engine.Tests.SimpleObjectsTests+RealThatReferenceAutoIsError': Unable to resolve non optional." );
         }
 
         [Test]
         public void a_RealObject_that_references_an_auto_service_from_an_InjectObject_is_an_error()
         {
-            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( AmbientInject ) );
-            TestHelper.GetFailedResult( collector, "Inject Object 'Service' of 'CK.StObj.Engine.Tests.SimpleObjectsTests+AmbientInject': CK.StObj.Engine.Tests.SimpleObjectsTests+Auto not found." );
+            var collector = TestHelper.CreateTypeCollector( typeof( AmbientInject ) );
+            TestHelper.GetFailedCollectorResult( collector, "Inject Object 'Service' of 'CK.StObj.Engine.Tests.SimpleObjectsTests+AmbientInject': CK.StObj.Engine.Tests.SimpleObjectsTests+Auto not found." );
         }
 
         [Test]
@@ -71,9 +71,9 @@ namespace CK.StObj.Engine.Tests
                             .Where( t => t.IsClass )
                             .Where( t => t.Namespace == "CK.StObj.Engine.Tests.SimpleObjects" );
 
-            StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
+            var collector = TestHelper.CreateTypeCollector( types.ToArray() );
             
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjResult oa = map.StObjs.ToHead( typeof(ObjectA) )!;
@@ -105,9 +105,9 @@ namespace CK.StObj.Engine.Tests
                                               || t.Namespace == "CK.StObj.Engine.Tests.SimpleObjects.WithLevel3")
                                              && t.Name != "ObjectALevel4" );
 
-                StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
+                var collector = TestHelper.CreateTypeCollector( types.ToArray() );
 
-                TestHelper.GetSuccessfulResult( collector );
+                TestHelper.GetSuccessfulCollectorResult( collector );
             }
 
             using( TestHelper.Monitor.OpenInfo( "ObjectALevel4 class (specializes ObjectALevel3 and use IAbstractionBOnLevel2)." ) )
@@ -117,8 +117,8 @@ namespace CK.StObj.Engine.Tests
                                 .Where( t => t.Namespace == "CK.StObj.Engine.Tests.SimpleObjects"
                                              || t.Namespace == "CK.StObj.Engine.Tests.SimpleObjects.WithLevel3" );
 
-                StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
-                TestHelper.GetSuccessfulResult( collector );
+                var collector = TestHelper.CreateTypeCollector( types.ToArray() );
+                TestHelper.GetSuccessfulCollectorResult( collector );
             }
         }
 
@@ -134,8 +134,8 @@ namespace CK.StObj.Engine.Tests
                                              || t.Namespace == "CK.StObj.Engine.Tests.SimpleObjects.WithLevel3"
                                              || t.Name == "ObjectBLevel3_InPackageForAB" );
 
-                StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
-                TestHelper.GetFailedResult( collector, "Cycle detected: ↳ CK.StObj.Engine.Tests.SimpleObjects.ObjectBLevel1 ⊏ CK.StObj.Engine.Tests.SimpleObjects.PackageForABLevel1 ↟ CK.StObj.Engine.Tests.SimpleObjects.PackageForAB ⊐ CK.StObj.Engine.Tests.SimpleObjects.WithLevel3.Cycles.ObjectBLevel3_InPackageForAB ↟ CK.StObj.Engine.Tests.SimpleObjects.WithLevel3.ObjectBLevel2 ↟ CK.StObj.Engine.Tests.SimpleObjects.ObjectBLevel1." );
+                var collector = TestHelper.CreateTypeCollector( types.ToArray() );
+                TestHelper.GetFailedCollectorResult( collector, "Cycle detected: ↳ CK.StObj.Engine.Tests.SimpleObjects.ObjectBLevel1 ⊏ CK.StObj.Engine.Tests.SimpleObjects.PackageForABLevel1 ↟ CK.StObj.Engine.Tests.SimpleObjects.PackageForAB ⊐ CK.StObj.Engine.Tests.SimpleObjects.WithLevel3.Cycles.ObjectBLevel3_InPackageForAB ↟ CK.StObj.Engine.Tests.SimpleObjects.WithLevel3.ObjectBLevel2 ↟ CK.StObj.Engine.Tests.SimpleObjects.ObjectBLevel1." );
             }
         }
 
@@ -173,8 +173,8 @@ namespace CK.StObj.Engine.Tests
         {
             using( TestHelper.Monitor.OpenInfo( "ObjectXNeedsY and ObjectYNeedsX." ) )
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjectXNeedsY ), typeof( ObjectYNeedsX ) );
-                TestHelper.GetFailedResult( collector, "Cycle detected: ↳ CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectXNeedsY ⇀ CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectYNeedsX ⇀ CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectXNeedsY." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ObjectXNeedsY ), typeof( ObjectYNeedsX ) );
+                TestHelper.GetFailedCollectorResult( collector, "Cycle detected: ↳ CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectXNeedsY ⇀ CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectYNeedsX ⇀ CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectXNeedsY." );
             }
         }
 
@@ -183,8 +183,8 @@ namespace CK.StObj.Engine.Tests
         {
             using( TestHelper.Monitor.OpenInfo( "ObjectXNeedsY without ObjectYNeedsX." ) )
             {
-                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjectXNeedsY ) );
-                TestHelper.GetFailedResult( collector, "StObjConstruct parameter 'other' (n°1) for 'CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectXNeedsY': Unable to resolve non optional." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ObjectXNeedsY ) );
+                TestHelper.GetFailedCollectorResult( collector, "StObjConstruct parameter 'other' (n°1) for 'CK.StObj.Engine.Tests.SimpleObjectsTests+ObjectXNeedsY': Unable to resolve non optional." );
             }
         }
 
@@ -195,8 +195,8 @@ namespace CK.StObj.Engine.Tests
             {
                 var types = new[] { typeof( SimpleObjects.LoggerInjection.LoggerInjected ) };
 
-                StObjCollector collector = TestHelper.CreateStObjCollector( types );
-                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                var collector = TestHelper.CreateTypeCollector( types );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
 
                 IStObjResult theObject = map.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) )!;
@@ -272,11 +272,11 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void StObjConstruct_StObjInitialize_RegisterStartupServices_and_ConfigureServices_of_the_hierarchy_are_called()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
-            using var s = TestHelper.CreateAutomaticServices( collector ).Services;
-            s.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
-            s.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
-            var defined = s.GetRequiredService<Defined>();
+            var collector = TestHelper.CreateTypeCollector( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            auto.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
+            auto.Services.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
+            var defined = auto.Services.GetRequiredService<Defined>();
             defined.Dep0.Should().NotBeNull();
             defined.Dep1.Should().NotBeNull();
             defined.Dep2.Should().NotBeNull();
@@ -320,9 +320,8 @@ namespace CK.StObj.Engine.Tests
                                          || t.FullName == "CK.StObj.Engine.Tests.SimpleObjectsTests+C3InC2SpecializeC1" );
 
 
-            StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
-            var result = collector.GetResult( TestHelper.Monitor );
-            Assert.That( result.HasFatalError, Is.True );
+            var collector = TestHelper.CreateTypeCollector( types );
+            TestHelper.GetFailedCollectorResult( collector, "Cycle detected: " );
         }
 
         [RealObject( ItemKind = DependentItemKindSpec.Container, Container = typeof( C2InC1 ), Children = new Type[] { typeof( C1 ) } )]
@@ -344,9 +343,8 @@ namespace CK.StObj.Engine.Tests
                                          || t.FullName == "CK.StObj.Engine.Tests.SimpleObjectsTests+C2InC1"
                                          || t.FullName == "CK.StObj.Engine.Tests.SimpleObjectsTests+C3ContainsC1" );
 
-            StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
-            var result = collector.GetResult( TestHelper.Monitor );
-            Assert.That( result.HasFatalError, Is.True );
+            var collector = TestHelper.CreateTypeCollector( types.ToArray() );
+            TestHelper.GetFailedCollectorResult( collector, "Cycle detected: " );
         }
 
         public class C3RequiresC2SpecializeC1 : C1
@@ -364,10 +362,9 @@ namespace CK.StObj.Engine.Tests
                                         || t.FullName == "CK.StObj.Engine.Tests.SimpleObjectsTests+C2InC1"
                                         || t.FullName == "CK.StObj.Engine.Tests.SimpleObjectsTests+C3RequiresC2SpecializeC1" );
 
-            StObjCollector collector = TestHelper.CreateStObjCollector( types.ToArray() );
-            var result = collector.GetResult( TestHelper.Monitor );
-            Assert.That( result.HasFatalError, Is.False );
-        
+            var collector = TestHelper.CreateTypeCollector( types );
+            TestHelper.GetSuccessfulCollectorResult( collector );
+
         }
         #endregion
 
@@ -379,8 +376,8 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void missing_AutoImplementation_attributes()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( MissingAutoImplementation ) );
-            var m = TestHelper.GetSuccessfulResult( c ).EngineMap;
+            var c = TestHelper.CreateTypeCollector( typeof( MissingAutoImplementation ) );
+            var m = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
             Debug.Assert( m != null );
             m.StObjs.FinalImplementations.Should().NotContain( i => i.FinalImplementation.Implementation is MissingAutoImplementation );
         }

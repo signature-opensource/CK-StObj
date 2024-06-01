@@ -1,4 +1,6 @@
 using CK.Core;
+using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -23,26 +25,20 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void simple_Multiple_services_discovery()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( S1 ), typeof( S2 ) );
 
-            var result = TestHelper.CreateAutomaticServices( collector );
-            try
-            {
-                result.Map.Services.Mappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
-                IStObjServiceClassDescriptor s1 = result.Map.Services.Mappings[typeof( S1 )];
-                IStObjServiceClassDescriptor s2 = result.Map.Services.Mappings[typeof( S2 )];
-                s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IHostedService ) } );
-                s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IHostedService ) } );
-                s1.IsScoped.Should().BeFalse( "Nothing prevents S1 to be singleton." );
-                s2.IsScoped.Should().BeFalse( "Nothing prevents S2 to be singleton." );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
 
-                var hosts = result.Services.GetRequiredService<IEnumerable<IHostedService>>();
-                hosts.Should().HaveCount( 2 );
-            }
-            finally
-            {
-                result.Services.Dispose();
-            }
+            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
+            IStObjServiceClassDescriptor s1 = auto.LoadResult.Map.Services.Mappings[typeof( S1 )];
+            IStObjServiceClassDescriptor s2 = auto.LoadResult.Map.Services.Mappings[typeof( S2 )];
+            s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IHostedService ) } );
+            s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IHostedService ) } );
+            s1.IsScoped.Should().BeFalse( "Nothing prevents S1 to be singleton." );
+            s2.IsScoped.Should().BeFalse( "Nothing prevents S2 to be singleton." );
+
+            var hosts = auto.Services.GetRequiredService<IEnumerable<IHostedService>>();
+            hosts.Should().HaveCount( 2 );
         }
 
         public class TotallyExternalClass { }
@@ -70,16 +66,16 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 // Registering TotallyExternalClass: Its CKTypeKind is None.
-                var collector = TestHelper.CreateStObjCollector( typeof( WontWork1 ), typeof( TotallyExternalClass ) );
-                TestHelper.GetFailedResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
+                var collector = TestHelper.CreateTypeCollector( typeof( WontWork1 ), typeof( TotallyExternalClass ) );
+                TestHelper.GetFailedCollectorResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( WontWork2 ), typeof( AutoServiceImpl ) );
-                TestHelper.GetFailedResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
+                var collector = TestHelper.CreateTypeCollector( typeof( WontWork2 ), typeof( AutoServiceImpl ) );
+                TestHelper.GetFailedCollectorResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( WontWork3 ), typeof( S2 ) );
-                TestHelper.GetFailedResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
+                var collector = TestHelper.CreateTypeCollector( typeof( WontWork3 ), typeof( S2 ) );
+                TestHelper.GetFailedCollectorResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
         }
 
@@ -96,12 +92,12 @@ namespace CK.StObj.Engine.Tests.Service
         public void AutoService_can_depend_on_IEnumerable_of_struct_and_this_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( MayWork ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( MayWork ) );
 
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    using var s = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                    var resolved = s.GetRequiredService<MayWork>();
+                    using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+                    var resolved = auto.Services.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeEmpty();
 
                     entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
@@ -109,18 +105,18 @@ namespace CK.StObj.Engine.Tests.Service
                 }
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( MayWork ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( MayWork ) );
 
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var explicitInstance = new[] { 42, 3712 };
 
-                    using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+                    using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, configureServices: services =>
                     {
                         services.Services.AddSingleton( typeof( IEnumerable<int> ), explicitInstance );
 
-                    } ).Services;
-                    var resolved = s.GetRequiredService<MayWork>();
+                    } );
+                    var resolved = auto.Services.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeSameAs( explicitInstance );
 
                     entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
@@ -156,37 +152,27 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_can_support_IsMultiple_interfaces_but_interfaces_cannot_be_IRealObjects_and_IsMultiple()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( ThatIsNotPossible ) );
-                TestHelper.GetFailedResult( c, "IRealObject interface cannot be marked as a Multiple service" );
+                var c = TestHelper.CreateTypeCollector( typeof( ThatIsNotPossible ) );
+                TestHelper.GetFailedCollectorResult( c, "IRealObject interface cannot be marked as a Multiple service" );
 
-                var c2 = TestHelper.CreateStObjCollector( typeof( ThatIsNotPossible2 ) );
-                TestHelper.GetFailedResult( c2, "IRealObject interface cannot be marked as a Multiple service" );
+                var c2 = TestHelper.CreateTypeCollector( typeof( ThatIsNotPossible2 ) );
+                TestHelper.GetFailedCollectorResult( c2, "IRealObject interface cannot be marked as a Multiple service" );
             }
 
-            var collector = TestHelper.CreateStObjCollector( typeof( UserGoogle ), typeof( UserOffice ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( UserGoogle ), typeof( UserOffice ) );
 
-            var result = TestHelper.CreateAutomaticServices( collector );
-            Debug.Assert( result.CollectorResult.EngineMap != null, "No initialization error." );
-            try
-            {
-                result.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
-                IStObjFinalImplementation g = result.CollectorResult.EngineMap.StObjs.ToHead( typeof( IUserGoogle ) )!.FinalImplementation;
-                IStObjFinalImplementation o = result.CollectorResult.EngineMap.StObjs.ToHead( typeof( UserOffice ) )!.FinalImplementation;
-                g.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
-                o.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
+            IStObjFinalImplementation g = auto.LoadResult.Map.StObjs.ToLeaf( typeof( IUserGoogle ) )!;
+            IStObjFinalImplementation o = auto.LoadResult.Map.StObjs.ToLeaf( typeof( UserOffice ) )!;
+            g.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
+            o.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
 
-                var authProviders = result.Services.GetRequiredService<IEnumerable<IAuthProvider>>();
-                var gS = result.Services.GetRequiredService<IUserGoogle>();
-                var oS = result.Services.GetRequiredService<UserOffice>();
+            var authProviders = auto.Services.GetRequiredService<IEnumerable<IAuthProvider>>();
+            var gS = auto.Services.GetRequiredService<IUserGoogle>();
+            var oS = auto.Services.GetRequiredService<UserOffice>();
 
-                authProviders.Should().BeEquivalentTo( new IAuthProvider[] { gS, oS } );
-
-            }
-            finally
-            {
-                result.Services.Dispose();
-            }
-
+            authProviders.Should().BeEquivalentTo( new IAuthProvider[] { gS, oS } );
         }
 
         public class MulipleConsumer : IAutoService
@@ -203,23 +189,16 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces_on_RealObjects_and_is_Singleton()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ) );
 
-            var result = TestHelper.CreateAutomaticServices( collector );
-            try
-            {
-                result.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
-                result.Map.Services.Mappings[typeof( MulipleConsumer )].IsScoped.Should().BeFalse( "RealObjects are singletons." );
-                var c = result.Services.GetRequiredService<MulipleConsumer>();
-                var g = result.Services.GetRequiredService<IUserGoogle>();
-                var o = result.Services.GetRequiredService<UserOffice>();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
+            auto.LoadResult.Map.Services.Mappings[typeof( MulipleConsumer )].IsScoped.Should().BeFalse( "RealObjects are singletons." );
+            var c = auto.Services.GetRequiredService<MulipleConsumer>();
+            var g = auto.Services.GetRequiredService<IUserGoogle>();
+            var o = auto.Services.GetRequiredService<UserOffice>();
 
-                c.Providers.Should().BeEquivalentTo( new IAuthProvider[] { g, o } );
-            }
-            finally
-            {
-                result.Services.Dispose();
-            }
+            c.Providers.Should().BeEquivalentTo( new IAuthProvider[] { g, o } );
         }
 
         /// <summary>
@@ -237,69 +216,52 @@ namespace CK.StObj.Engine.Tests.Service
         {
             // Here class HNot is a IOfficialHostedService but not a IAutoService and not explicitly registered: it is not automatically registered.
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
-                collector.RegisterType( TestHelper.Monitor, typeof( H1 ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( H2 ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( HNot ) );
+                var config = TestHelper.CreateDefaultEngineConfiguration();
+                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService, false );
 
-                var result = TestHelper.CreateAutomaticServices( collector );
-                try
-                {
-                    result.Map.Services.Mappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );
-                    IStObjServiceClassDescriptor s1 = result.Map.Services.Mappings[typeof( H1 )];
-                    IStObjServiceClassDescriptor s2 = result.Map.Services.Mappings[typeof( H2 )];
+                var collector = TestHelper.CreateTypeCollector( typeof( H1 ), typeof( H2 ), typeof( HNot ) );
 
-                    result.Map.Services.Mappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
-                    s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
-                    s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
-                    s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
-                    s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( config, collector );
 
-                    var hosts = result.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
-                    hosts.Should().HaveCount( 2, "Only H1 and H2 are considered." );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
+                auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );
+                IStObjServiceClassDescriptor s1 = auto.LoadResult.Map.Services.Mappings[typeof( H1 )];
+                IStObjServiceClassDescriptor s2 = auto.LoadResult.Map.Services.Mappings[typeof( H2 )];
+
+                auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
+                s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
+                s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
+                s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
+                s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
+
+                var hosts = auto.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
+                hosts.Should().HaveCount( 2, "Only H1 and H2 are considered." );
             }
             // Here, the HNot totally external service is registered in the ServiceCollection (at runtime):
             // it appears in the IEnumerable<IOfficialHostedService>.
             // Of course, in this case, no lifetime analysis can be done.
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
-                collector.RegisterType( TestHelper.Monitor, typeof( H1 ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( H2 ) );
 
-                var result = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+                var config = TestHelper.CreateDefaultEngineConfiguration();
+                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService, false );
+
+                var collector = TestHelper.CreateTypeCollector( typeof( H1 ), typeof( H2 ) );
+
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( config, collector, configureServices: services =>
                 {
-                    // Here we use ServiceRegistrar that takes care of the registration with logs.
                     services.Services.AddSingleton<IOfficialHostedService,HNot>();
-                    //
-                    // We could also have used the standard ServiceCollection registration of the mapping:
-                    // but without logs nor duplicate registration detection.
-                    // services.Services.AddScoped<IOfficialHostedService, HNot>();
                 } );
-                try
-                {
-                    result.Map.Services.Mappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );
-                    IStObjServiceClassDescriptor s1 = result.Map.Services.Mappings[typeof( H1 )];
-                    IStObjServiceClassDescriptor s2 = result.Map.Services.Mappings[typeof( H2 )];
-                    result.Map.Services.Mappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
-                    s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
-                    s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
-                    s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
-                    s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
 
-                    var hosts = result.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
-                    hosts.Should().HaveCount( 3, "H1, H2 AND HNot are now considered. HNot appear in the DI container." );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
+                auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );
+                IStObjServiceClassDescriptor s1 = auto.LoadResult.Map.Services.Mappings[typeof( H1 )];
+                IStObjServiceClassDescriptor s2 = auto.LoadResult.Map.Services.Mappings[typeof( H2 )];
+                auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
+                s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
+                s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
+                s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
+                s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
+
+                var hosts = auto.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
+                hosts.Should().HaveCount( 3, "H1, H2 AND HNot are now considered. HNot appear in the DI container." );
             }
         }
 
@@ -308,25 +270,22 @@ namespace CK.StObj.Engine.Tests.Service
         {
             // Success: H1 is singleton.
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
-                collector.RegisterType( TestHelper.Monitor, typeof( H1 ) );
-                var result = TestHelper.CreateAutomaticServices( collector );
-                try
-                {
-                    result.Map.Services.Mappings[typeof( H1 )].IsScoped.Should().BeFalse( "IOfficialHostedService makes it Singleton." );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
+                var config = TestHelper.CreateDefaultEngineConfiguration();
+                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton, false );
+
+                var collector = TestHelper.CreateTypeCollector( typeof( H1 ) );
+
+                var result = TestHelper.RunSingleBinPathAndLoad( config, collector );
+                result.Map.Services.Mappings[typeof( H1 )].IsScoped.Should().BeFalse( "IOfficialHostedService makes it Singleton." );
             }
             // Failure: H2 is IScopedAutoService.
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
-                collector.RegisterType( TestHelper.Monitor, typeof( H2 ) );
-                TestHelper.GetFailedResult( collector, "An interface or an implementation cannot be both Scoped and Singleton" );
+                var config = TestHelper.CreateDefaultEngineConfiguration();
+                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton, false );
+
+                var collector =  TestHelper.CreateTypeCollector( typeof( H2 ) );
+
+                TestHelper.GetFailedSingleBinPathAutomaticServices( config, collector, "An interface or an implementation cannot be both Scoped and Singleton" );
             }
         }
 
@@ -351,89 +310,60 @@ namespace CK.StObj.Engine.Tests.Service
         public void IEnumerable_resolves_implementations_lifetimes_by_considering_final_implementations()
         {
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
-                var result = TestHelper.CreateAutomaticServices( collector );
-                try
-                {
-                    result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+                auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
-                    var m = result.Services.GetRequiredService<ManyConsumer>();
-                    m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManySingleton>() } );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
+                var m = auto.Services.GetRequiredService<ManyConsumer>();
+                m.All.Should().BeEquivalentTo( new IMany[] { auto.Services.GetRequiredService<ManyAuto>(), auto.Services.GetRequiredService<ManySingleton>() } );
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManyConsumer ) );
-                var result = TestHelper.CreateAutomaticServices( collector );
-                try
-                {
-                    result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManyConsumer ) );
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
 
-                    var m = result.Services.GetRequiredService<ManyConsumer>();
-                    m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManyScoped>() } );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
+                auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+
+                var m = auto.Services.GetRequiredService<ManyConsumer>();
+                m.All.Should().BeEquivalentTo( new IMany[] { auto.Services.GetRequiredService<ManyAuto>(), auto.Services.GetRequiredService<ManyScoped>() } );
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManySingleton ), typeof( ManyConsumer ) );
-                var result = TestHelper.CreateAutomaticServices( collector );
-                try
-                {
-                    result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+                var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManySingleton ), typeof( ManyConsumer ) );
+                var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+                auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
-                    var m = result.Services.GetRequiredService<ManyConsumer>();
-                    m.All.Should().HaveCount( 3 )
-                                  .And.Contain( result.Services.GetRequiredService<ManyAuto>() )
-                                  .And.Contain( result.Services.GetRequiredService<ManySingleton>() )
-                                  .And.Contain( result.Services.GetRequiredService<ManyScoped>() );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
+                var m = auto.Services.GetRequiredService<ManyConsumer>();
+                m.All.Should().HaveCount( 3 )
+                                .And.Contain( auto.Services.GetRequiredService<ManyAuto>() )
+                                .And.Contain( auto.Services.GetRequiredService<ManySingleton>() )
+                                .And.Contain( auto.Services.GetRequiredService<ManyScoped>() );
             }
         }
 
         [Test]
         public void IEnumerable_Kind_can_be_explicitly_configured_via_SetAutoServiceKind()
         {
-            {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped );
-                collector.RegisterType( TestHelper.Monitor, typeof( ManyAuto ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( ManySingleton ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( ManyConsumer ) );
-                var result = TestHelper.CreateAutomaticServices( collector );
-                try
-                {
-                    result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Could be resolved as Singleton, but Scoped as stated." );
+            var config = TestHelper.CreateDefaultEngineConfiguration();
+            config.FirstBinPath.AddType( typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped, false );
 
-                    var m = result.Services.GetRequiredService<ManyConsumer>();
-                    m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManySingleton>() } );
-                }
-                finally
-                {
-                    result.Services.Dispose();
-                }
-            }
+            var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
+
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( config, collector );
+            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Could be resolved as Singleton, but Scoped as stated." );
+
+            var m = auto.Services.GetRequiredService<ManyConsumer>();
+            m.All.Should().BeEquivalentTo( new IMany[] { auto.Services.GetRequiredService<ManyAuto>(), auto.Services.GetRequiredService<ManySingleton>() } );
         }
 
         [Test]
         public void IEnumerable_cannot_be_SetAutoServiceKind_Singleton_if_the_enumerated_interface_is_Scoped()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton );
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IMany ), AutoServiceKind.IsScoped );
-            collector.RegisterType( TestHelper.Monitor, typeof( ManyAuto ) );
-            collector.RegisterType( TestHelper.Monitor, typeof( ManySingleton ) );
-            collector.RegisterType( TestHelper.Monitor, typeof( ManyConsumer ) );
-            TestHelper.GetFailedResult( collector, "An interface or an implementation cannot be both Scoped and Singleton" );
+            var config = TestHelper.CreateDefaultEngineConfiguration();
+            config.FirstBinPath.AddType( typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton, false )
+                               .AddType( typeof( IMany ), AutoServiceKind.IsScoped, false );
+
+            var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
+
+            TestHelper.GetFailedSingleBinPathAutomaticServices( config, collector, "An interface or an implementation cannot be both Scoped and Singleton" );
         }
 
     }

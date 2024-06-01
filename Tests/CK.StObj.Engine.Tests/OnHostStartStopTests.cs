@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -105,16 +106,15 @@ namespace CK.StObj.Engine.Tests.Service
         public async Task HostedServiceLifetimeTrigger_at_work_Async()
         {
             var allTypes= typeof( OnHostStartStopTests ).GetNestedTypes();
-            var collector = TestHelper.CreateStObjCollector( allTypes );
-            using var services = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+            var collector = TestHelper.CreateTypeCollector( allTypes );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, configureServices: services =>
             {
                 services.Services.AddScoped( sp => TestHelper.Monitor );
                 services.Services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
-            } ).Services;
-            Debug.Assert( services != null );
+            } );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
             {
-                var initializers = services.GetRequiredService<IEnumerable<Microsoft.Extensions.Hosting.IHostedService>>();
+                var initializers = auto.Services.GetRequiredService<IEnumerable<Microsoft.Extensions.Hosting.IHostedService>>();
                 foreach( var i in initializers )
                 {
                     await i.StartAsync( default );

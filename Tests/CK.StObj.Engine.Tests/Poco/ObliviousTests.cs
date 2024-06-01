@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -51,10 +52,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( true )]
         public void oblivious_List( bool revert )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ),
+            var c = TestHelper.CreateTypeCollector( typeof( IVerySimplePoco ),
                                                      typeof( ISecondaryVerySimplePoco ),
                                                      typeof( IProperListDefinition ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder;
 
             if( !revert )
@@ -377,8 +378,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Oblivious_and_Final_Dictionary()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ), typeof( IProperDictionaryDefinition) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IVerySimplePoco ), typeof( IProperDictionaryDefinition) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder;
 
             // Dictionary of Value type for the value (int)
@@ -519,8 +520,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( "ObliviousLast" )]
         public void oblivious_anonymous_record( string mode )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
-            var r = TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IVerySimplePoco ) );
+            var r = TestHelper.GetSuccessfulCollectorResult( c );
             var ts = r.PocoTypeSystemBuilder;
 
             IRecordPocoType? tO = null;

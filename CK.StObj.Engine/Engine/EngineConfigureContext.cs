@@ -91,9 +91,9 @@ namespace CK.Setup
             set => _canSkipRun &= value;
         }
 
-        public RunningEngineConfiguration StObjEngineConfiguration => _config;
+        public RunningEngineConfiguration EngineConfiguration => _config;
 
-        IRunningEngineConfiguration IStObjEngineConfigureContext.StObjEngineConfiguration => _config;
+        IRunningEngineConfiguration IStObjEngineConfigureContext.EngineConfiguration => _config;
 
         internal IReadOnlyList<Type> ExplicitRegisteredTypes => (IReadOnlyList<Type>?)_explicitRegisteredTypes ?? Type.EmptyTypes;
 

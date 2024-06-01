@@ -36,7 +36,8 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void AlsoRegisterTypeAttribute_works_recusively()
         {
-            var c = TestHelper.CreateStObjCollector( typeof(StartingPoint) );
+            var c = new StObjCollector();
+            c.RegisterType( TestHelper.Monitor, typeof( StartingPoint ) );
             var r = c.GetResult( TestHelper.Monitor );
             Throw.DebugAssert( !r.HasFatalError );
             // The nested Poco is registered.

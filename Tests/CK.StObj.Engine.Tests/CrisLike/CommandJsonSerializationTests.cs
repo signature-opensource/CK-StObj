@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Poco.Exc.Json;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -52,16 +53,16 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [Test]
         public void command_json_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ),
-                                                     typeof( CrisCommandDirectoryLike ),
-                                                     typeof( ISimpleCommand ),
-                                                     typeof( IAuthCommand ),
-                                                     typeof( ICriticalCommand ),
-                                                     typeof( IDeviceCommand ),
-                                                     typeof( IFullAuthCommand ),
-                                                     typeof( IFullAuthCommandWithResult ) );
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            Debug.Assert( services != null );
+            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
+                                                    typeof( CrisCommandDirectoryLike ),
+                                                    typeof( ISimpleCommand ),
+                                                    typeof( IAuthCommand ),
+                                                    typeof( ICriticalCommand ),
+                                                    typeof( IDeviceCommand ),
+                                                    typeof( IFullAuthCommand ),
+                                                    typeof( IFullAuthCommandWithResult ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var services = auto.Services;
 
             TestRoundTrip<ISimpleCommand>( services );
             TestRoundTrip<IAuthCommand>( services );

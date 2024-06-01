@@ -134,95 +134,84 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task single_scoped_Async()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManyScoped ),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( FirstDIContainerDefinition ),
-                                                             typeof( SecondDIContainerDefinition ) );
-            var result = TestHelper.CreateAutomaticServices( collector );
-            await TestHelper.StartHostedServicesAsync( result.Services );
-            try
-            {
-                result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+            var collector = TestHelper.CreateTypeCollector( typeof( ManyScoped ),
+                                                            typeof( ManyConsumer ),
+                                                            typeof( FirstDIContainerDefinition ),
+                                                            typeof( SecondDIContainerDefinition ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
 
-                using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
-                using var s1 = e1.GetContainer().CreateScope();
-                using var s2 = e2.GetContainer().CreateScope();
+            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
-                var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
-                mG.All.Should().BeEquivalentTo( new IMany[] { gScoped } );
+            await TestHelper.StartHostedServicesAsync( auto.Services );
 
-                var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var m1Scoped = s1.ServiceProvider.GetRequiredService<ManyScoped>();
-                m1Scoped.Should().NotBeSameAs( gScoped );
-                m1.All.Should().BeEquivalentTo( new IMany[] { m1Scoped } );
+            using var g = auto.Services.CreateScope();
+            var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+            var e2 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
+            using var s1 = e1.GetContainer().CreateScope();
+            using var s2 = e2.GetContainer().CreateScope();
 
-                var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var m2Scoped = s2.ServiceProvider.GetRequiredService<ManyScoped>();
-                m2Scoped.Should().NotBeSameAs( gScoped ).And.NotBeSameAs( m1Scoped );
-                m2.All.Should().BeEquivalentTo( new IMany[] { m2Scoped } );
-            }
-            finally
-            {
-                await result.Services.DisposeAsync();
-            }
+            var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
+            mG.All.Should().BeEquivalentTo( new IMany[] { gScoped } );
+
+            var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var m1Scoped = s1.ServiceProvider.GetRequiredService<ManyScoped>();
+            m1Scoped.Should().NotBeSameAs( gScoped );
+            m1.All.Should().BeEquivalentTo( new IMany[] { m1Scoped } );
+
+            var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var m2Scoped = s2.ServiceProvider.GetRequiredService<ManyScoped>();
+            m2Scoped.Should().NotBeSameAs( gScoped ).And.NotBeSameAs( m1Scoped );
+            m2.All.Should().BeEquivalentTo( new IMany[] { m2Scoped } );
         }
 
         [Test]
         public async Task global_can_register_multiple_services_Async()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManyScoped ),
+            var collector = TestHelper.CreateTypeCollector( typeof( ManyScoped ),
                                                              typeof( ManyScoped2 ),
                                                              typeof( ManyConsumer ),
                                                              typeof( FirstDIContainerDefinition ),
                                                              typeof( SecondDIContainerDefinition ) );
-            var result = TestHelper.CreateAutomaticServices( collector,
-                                                             configureServices: s =>
-                                                             {
-                                                                 s.Services.AddScoped<ManyNothing>();
-                                                                 s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
-                                                             } );
-            await TestHelper.StartHostedServicesAsync( result.Services );
-            try
-            {
-                result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector,
+                                                                              configureServices: s =>
+                                                                              {
+                                                                                 s.Services.AddScoped<ManyNothing>();
+                                                                                 s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+                                                                              } );
+            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
-                using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
-                using var s1 = e1.GetContainer().CreateScope();
-                using var s2 = e2.GetContainer().CreateScope();
+            await TestHelper.StartHostedServicesAsync( auto.Services );
 
-                var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
-                var gScoped1 = g.ServiceProvider.GetRequiredService<ManyScoped2>();
-                var gScoped2 = g.ServiceProvider.GetRequiredService<ManyNothing>();
-                mG.All.Should().Contain( new IMany[] { gScoped, gScoped1, gScoped2 } );
+            using var g = auto.Services.CreateScope();
+            var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
+            var e2 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<SecondDIContainerDefinition.Data>>().Single();
+            using var s1 = e1.GetContainer().CreateScope();
+            using var s2 = e2.GetContainer().CreateScope();
 
-                var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var m1Scoped = s1.ServiceProvider.GetRequiredService<ManyScoped>();
-                var m1Scoped1 = s1.ServiceProvider.GetRequiredService<ManyScoped2>();
-                var m1Scoped2 = s1.ServiceProvider.GetRequiredService<ManyNothing>();
-                m1Scoped.Should().NotBeSameAs( gScoped );
-                m1Scoped1.Should().NotBeSameAs( gScoped1 );
-                m1Scoped2.Should().NotBeSameAs( gScoped2 );
-                m1.All.Should().Contain( new IMany[] { m1Scoped, m1Scoped1, m1Scoped2 } );
+            var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
+            var gScoped1 = g.ServiceProvider.GetRequiredService<ManyScoped2>();
+            var gScoped2 = g.ServiceProvider.GetRequiredService<ManyNothing>();
+            mG.All.Should().Contain( new IMany[] { gScoped, gScoped1, gScoped2 } );
 
-                var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var m2Scoped = s2.ServiceProvider.GetRequiredService<ManyScoped>();
-                var m2Scoped1 = s2.ServiceProvider.GetRequiredService<ManyScoped2>();
-                var m2Scoped2 = s2.ServiceProvider.GetRequiredService<ManyNothing>();
-                m2Scoped.Should().NotBeSameAs( gScoped ).And.NotBeSameAs( m1Scoped );
-                m2Scoped1.Should().NotBeSameAs( gScoped1 ).And.NotBeSameAs( m1Scoped1 );
-                m2Scoped2.Should().NotBeSameAs( gScoped2 ).And.NotBeSameAs( m1Scoped2 );
-                m2.All.Should().Contain( new IMany[] { m2Scoped, m2Scoped1, m2Scoped2 } );
-            }
-            finally
-            {
-                await result.Services.DisposeAsync();
-            }
+            var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var m1Scoped = s1.ServiceProvider.GetRequiredService<ManyScoped>();
+            var m1Scoped1 = s1.ServiceProvider.GetRequiredService<ManyScoped2>();
+            var m1Scoped2 = s1.ServiceProvider.GetRequiredService<ManyNothing>();
+            m1Scoped.Should().NotBeSameAs( gScoped );
+            m1Scoped1.Should().NotBeSameAs( gScoped1 );
+            m1Scoped2.Should().NotBeSameAs( gScoped2 );
+            m1.All.Should().Contain( new IMany[] { m1Scoped, m1Scoped1, m1Scoped2 } );
+
+            var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var m2Scoped = s2.ServiceProvider.GetRequiredService<ManyScoped>();
+            var m2Scoped1 = s2.ServiceProvider.GetRequiredService<ManyScoped2>();
+            var m2Scoped2 = s2.ServiceProvider.GetRequiredService<ManyNothing>();
+            m2Scoped.Should().NotBeSameAs( gScoped ).And.NotBeSameAs( m1Scoped );
+            m2Scoped1.Should().NotBeSameAs( gScoped1 ).And.NotBeSameAs( m1Scoped1 );
+            m2Scoped2.Should().NotBeSameAs( gScoped2 ).And.NotBeSameAs( m1Scoped2 );
+            m2.All.Should().Contain( new IMany[] { m2Scoped, m2Scoped1, m2Scoped2 } );
         }
 
 
@@ -249,10 +238,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_endpoint_services()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
+            var collector = TestHelper.CreateTypeCollector( typeof( ManySingleton ),
                                                              typeof( ManyConsumer ),
                                                              typeof( ManyAsScopedDIContainerDefinition ) );
-            TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+            TestHelper.GetFailedSingleBinPathAutomaticServices( collector,
                                                                 "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
         }
 
@@ -277,36 +266,30 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public async Task endpoints_can_register_multiple_singletons_when_the_multiple_has_been_auto_computed_as_singleton_Async()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton),
+            var collector = TestHelper.CreateTypeCollector( typeof( ManySingleton),
                                                              typeof( ManyConsumer ),
                                                              typeof( ManyAsSingletonDIContainerDefinition ) );
-            var result = TestHelper.CreateAutomaticServices( collector );
-            await TestHelper.StartHostedServicesAsync( result.Services );
-            try
-            {
-                result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            await TestHelper.StartHostedServicesAsync( auto.Services );
 
-                var e = result.Services.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<ManyAsSingletonDIContainerDefinition.Data>>().Single();
-                using var s1 = e.GetContainer().CreateScope();
+            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
 
-                var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
-                var m1Auto = s1.ServiceProvider.GetRequiredService<ManySingleton>();
-                var m1Endpoint = s1.ServiceProvider.GetRequiredService<ManyNothing>();
-                m1.All.Should().Contain( new IMany[] { m1Auto, m1Endpoint } );
-            }
-            finally
-            {
-                await result.Services.DisposeAsync();
-            }
+            var e = auto.Services.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<ManyAsSingletonDIContainerDefinition.Data>>().Single();
+            using var s1 = e.GetContainer().CreateScope();
+
+            var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+            var m1Auto = s1.ServiceProvider.GetRequiredService<ManySingleton>();
+            var m1Endpoint = s1.ServiceProvider.GetRequiredService<ManyNothing>();
+            m1.All.Should().Contain( new IMany[] { m1Auto, m1Endpoint } );
         }
 
         [Test]
         public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_global()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
+            var collector = TestHelper.CreateTypeCollector( typeof( ManySingleton ),
                                                              typeof( ManyConsumer ),
                                                              typeof( ManyAsScopedDIContainerDefinition ) );
-            TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+            TestHelper.GetFailedSingleBinPathAutomaticServices( collector,
                                                                 "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
                                                                 configureServices: s =>
                                                                 {

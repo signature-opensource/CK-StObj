@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -39,8 +40,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void without_SingletonServiceAttribute_scope_lifetime_fails()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( SomeSingletonFailed ), typeof( NotConstructibleServiceNaked ) );
-            TestHelper.GetFailedResult( c, "is marked as IsSingleton but parameter 'c' of type 'NotConstructibleServiceNaked' in constructor is Scoped" );
+            var c = TestHelper.CreateTypeCollector( typeof( SomeSingletonFailed ), typeof( NotConstructibleServiceNaked ) );
+            TestHelper.GetFailedCollectorResult( c, "is marked as IsSingleton but parameter 'c' of type 'NotConstructibleServiceNaked' in constructor is Scoped" );
         }
 
         public class SomeScoped : IScopedAutoService
@@ -53,16 +54,16 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void without_SingletonServiceAttribute_scope_requires_manual_registration()
         {
-            var c1 = TestHelper.CreateStObjCollector( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
-            using var services1 = TestHelper.CreateAutomaticServices( c1 ).Services;
-            services1.Invoking( s => s.GetService<SomeScoped>() ).Should().Throw<InvalidOperationException>();
+            var c1 = TestHelper.CreateTypeCollector( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
+            using var auto1 = TestHelper.CreateSingleBinPathAutomaticServices( c1 );
+            auto1.Services.Invoking( s => s.GetService<SomeScoped>() ).Should().Throw<InvalidOperationException>();
 
-            var c2 = TestHelper.CreateStObjCollector( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
-            using var services2 = TestHelper.CreateAutomaticServices( c2, configureServices: services =>
+            var c2 = TestHelper.CreateTypeCollector( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
+            using var auto2 = TestHelper.CreateSingleBinPathAutomaticServices( c2, configureServices: services =>
             {
                 services.Services.AddScoped( sp => NotConstructibleServiceNaked.Create() );
-            } ).Services;
-            services2.GetService<SomeScoped>().Should().NotBeNull();
+            } );
+            auto2.Services.GetService<SomeScoped>().Should().NotBeNull();
         }
 
         public class SomeSingleton : ISingletonAutoService
@@ -76,12 +77,12 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void SingletonServiceAttribute_enables_services_to_not_have_public_constructor()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
-            using var s = TestHelper.CreateAutomaticServices( c, configureServices: services =>
+            var c = TestHelper.CreateTypeCollector( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
             {
                 services.Services.AddSingleton( sp => NotConstructibleService.Create() );
-            } ).Services;
-            s.GetService<SomeSingleton>().Should().NotBeNull();
+            } );
+            auto.Services.GetService<SomeSingleton>().Should().NotBeNull();
         }
 
     }

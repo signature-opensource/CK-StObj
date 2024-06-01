@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.StObj.Engine.Tests.Poco.Sample;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -32,9 +33,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void default_values_on_simple_field()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IThing ), typeof( IThingHolder ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var h = s.GetRequiredService<IPocoFactory<IThingHolder>>().Create();
+            var c = TestHelper.CreateTypeCollector( typeof( IThing ), typeof( IThingHolder ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();
             h.Value.Should().NotBeNull();
             h.Value.Power.Should().Be( 3712 );
         }

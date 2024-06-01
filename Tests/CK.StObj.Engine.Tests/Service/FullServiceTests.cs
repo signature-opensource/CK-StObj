@@ -341,7 +341,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             //// Successful run: TotallyExternalStartupService is available.
             //{
-            //    var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
+            //    var collector = TestHelper.CreateTypeCollector( typeof( A ), typeof( B ) );
             //    var startupServices = new SimpleServiceContainer();
             //    startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
@@ -504,28 +504,28 @@ namespace CK.StObj.Engine.Tests.Service
         public void ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithValueTypeCtorParameters ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( ServiceWithValueTypeCtorParameters ) );
 
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                    services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+                    using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, null );
+                    auto.Services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
 
                     entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
                                                    && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
                 }
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithValueTypeCtorParameters ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( ServiceWithValueTypeCtorParameters ) );
 
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+                    using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, configureServices: services =>
                     {
                         services.Services.AddSingleton( typeof( bool ), true );
 
-                    } ).Services;
-                    var resolved = s.GetRequiredService<ServiceWithValueTypeCtorParameters>();
+                    } );
+                    var resolved = auto.Services.GetRequiredService<ServiceWithValueTypeCtorParameters>();
                     resolved.RequiredValueType.Should().BeTrue();
 
                     entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
@@ -551,20 +551,20 @@ namespace CK.StObj.Engine.Tests.Service
         public void varying_params_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithVaryingParams ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( ServiceWithVaryingParams ) );
 
-                using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+                auto.Services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
             }
             {
-                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithVaryingParams ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( ServiceWithVaryingParams ) );
 
-                using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, configureServices: services =>
                 {
                     services.Services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
 
-                } ).Services;
-                var resolved = s.GetRequiredService<ServiceWithVaryingParams>();
+                } );
+                var resolved = auto.Services.GetRequiredService<ServiceWithVaryingParams>();
                 resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
             }
 
@@ -573,10 +573,10 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void ValueType_ctor_parameters_with_default_value_are_ignored()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
 
-            using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-            services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            auto.Services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
         }
 
         public interface IPublicService : IAutoService
@@ -603,8 +603,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void internal_interfaces_are_ignored()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( TheService ) );
-            TestHelper.GetSuccessfulResult( collector );
+            var collector = TestHelper.CreateTypeCollector( typeof( TheService ) );
+            TestHelper.GetSuccessfulCollectorResult( collector );
         }
 
 

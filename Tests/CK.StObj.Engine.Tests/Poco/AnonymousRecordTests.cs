@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -24,8 +25,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void writable_anonymous_record_must_be_a_ref_property()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidValueTupleSetter ) );
-            TestHelper.GetFailedResult( c, "' must be a ref property: 'ref (int Count,string Name) Thing { get; }'." );
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidValueTupleSetter ) );
+            TestHelper.GetFailedCollectorResult( c, "' must be a ref property: 'ref (int Count,string Name) Thing { get; }'." );
         }
 
         public interface IWithValueTuple : IPoco
@@ -36,9 +37,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void non_nullable_string_defaults_to_empty_and_DateTime_defaults_to_Util_UtcMinValue()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithValueTuple ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var p = s.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
+            var c = TestHelper.CreateTypeCollector( typeof( IWithValueTuple ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
 
             p.Thing.Count.Should().Be( 0 );
             p.Thing.NotNullableStringDefaultsToEmpty.Should().BeEmpty();
@@ -60,9 +61,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullables_are_let_to_null()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithValueTuple2 ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var p = s.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
+            var c = TestHelper.CreateTypeCollector( typeof( IWithValueTuple2 ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
 
             p.Power.Item1.Should().Be( 0 );
             p.Power.Item2.Should().BeEmpty();
@@ -133,8 +134,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullability_incoherence_is_checked()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
-            TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( INoError ) );
+            TestHelper.GetSuccessfulCollectorResult( c );
 
             CheckError( typeof( INullabilityError0 ) );
             CheckError( typeof( INullabilityError1 ) );
@@ -145,12 +146,12 @@ namespace CK.StObj.Engine.Tests.Poco
 
             static void CheckError( Type tError )
             {
-                var c = TestHelper.CreateStObjCollector( tError );
+                var c = TestHelper.CreateTypeCollector( tError );
                 // Property type conflict between:
                 // (string,(string,int),((string,string),string))& CK.StObj.Engine.Tests.Poco.AnonymousRecordTests.IWithNotNPart0.Thing
                 // And:
                 // (string,(string,int),((string,string),string)?)& CK.StObj.Engine.Tests.Poco.AnonymousRecordTests.IWithN.Thing
-                TestHelper.GetFailedResult( c, "(string,(string,int),((string,string),string)?)& " );
+                TestHelper.GetFailedCollectorResult( c, "(string,(string,int),((string,string),string)?)& " );
             }
         }
 
@@ -183,9 +184,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void long_value_tuples_are_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithLongTuple ) );
-            var result = TestHelper.CreateAutomaticServices( c );
-            var ts = result.CollectorResult.CKTypeResult.PocoTypeSystemBuilder;
+            var c = TestHelper.CreateTypeCollector( typeof( IWithLongTuple ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var ts = auto.LoadResult.EngineResult.Groups[0].PocoTypeSystemBuilder;
+            Throw.DebugAssert( ts != null );
 
             var tPoco = ts.FindByType<IPrimaryPocoType>( typeof( IWithLongTuple ) );
             Debug.Assert( tPoco != null );
@@ -193,8 +195,7 @@ namespace CK.StObj.Engine.Tests.Poco
             tA.Fields.Count.Should().Be( 20 );
 
             // Just to test the code generation.
-            using var s = result.Services;
-            var p = s.GetRequiredService<IPocoFactory<IWithLongTuple>>().Create();
+            var p = auto.Services.GetRequiredService<IPocoFactory<IWithLongTuple>>().Create();
             var tuple = (ITuple)p.Long;
             for( int i = 0; i < tuple.Length; i++ )
             {

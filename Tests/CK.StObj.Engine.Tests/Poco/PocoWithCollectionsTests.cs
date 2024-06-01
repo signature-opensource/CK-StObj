@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -28,9 +29,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance()
         {
 
-            var c = TestHelper.CreateStObjCollector( typeof( ISimpleCollections ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var p = s.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
+            var c = TestHelper.CreateTypeCollector( typeof( ISimpleCollections ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
             p.Strings.Should().NotBeNull().And.BeEmpty();
             p.Configurations.Should().NotBeNull().And.BeEmpty();
             p.DistinctValues.Should().NotBeNull().And.BeEmpty();
@@ -49,9 +50,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void non_null_Array_property_are_initialized_to_the_Array_Empty()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithArray ), typeof( IWithArraySetter ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var f = s.GetRequiredService<IPocoFactory<IWithArraySetter>>();
+            var c = TestHelper.CreateTypeCollector( typeof( IWithArray ), typeof( IWithArraySetter ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();
             var p = f.Create();
             p.Array.Should().BeSameAs( Array.Empty<int>() );
             p.Array = new int[] { 1, 2, 3 };
@@ -62,9 +63,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void read_only_Array_property_are_definitely_empty()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithArray ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var f = s.GetRequiredService<IPocoFactory<IWithArray>>();
+            var c = TestHelper.CreateTypeCollector( typeof( IWithArray ) );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
             var p = f.Create();
             p.Array.Should().BeSameAs( Array.Empty<int>() );
         }
@@ -77,8 +78,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void IDictionary_key_cannot_be_nullable_even_if_no_constraint_prevent_it()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalid ) );
-            TestHelper.GetFailedResult( c, "IDictionary<string,bool>' key cannot be nullable. Nullable type 'string?' cannot be a key." );
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalid ) );
+            TestHelper.GetFailedCollectorResult( c, "IDictionary<string,bool>' key cannot be nullable. Nullable type 'string?' cannot be a key." );
         }
 
         public interface IInvalidAbstractCollectionInside : IPoco
@@ -89,8 +90,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Abstract_collections_only_at_the_top()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidAbstractCollectionInside ) );
-            TestHelper.GetFailedResult( c,
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidAbstractCollectionInside ) );
+            TestHelper.GetFailedCollectorResult( c,
                 "Invalid collection 'IList<int>' in Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidAbstractCollectionInside.NoWay'." );
         }
 
@@ -107,8 +108,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void List_Poco_field_with_auto_instantiation_is_invalid()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidConcreteList ) );
-            TestHelper.GetFailedResult( c,
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidConcreteList ) );
+            TestHelper.GetFailedCollectorResult( c,
                 "Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidConcreteList.NoWay' is a concrete List read only property. " +
                 "It must either have a setter { get; set; } or be abstract: 'IList<int> NoWay { get; }'." );
         }
@@ -116,8 +117,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void List_Poco_field_with_setter_is_valid()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IValidConcreteList ) );
-            TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IValidConcreteList ) );
+            TestHelper.GetSuccessfulCollectorResult( c );
         }
 
     }

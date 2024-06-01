@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -58,11 +59,11 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [TestCase( typeof( IPocoWithListOfAbstract ) )]
         public void IList_implementation_supports_all_the_required_types( Type type )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
-                                                     typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
-                                                     type );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+                                                    typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
+                                                    type );
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var p = (IWithList)d.Find( type )!.Create();
 
             p.List.Should()
@@ -115,12 +116,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [Test]
         public void IList_implementation_of_Abstract_is_natively_covariant()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                                      typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                                      typeof( IPocoWithListOfAbstractBase ), typeof( IPocoWithListOfAbstract1 ),
                                                      typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithListOfClosed ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
 
             var pBase = d.Create<IPocoWithListOfAbstractBase>();
             pBase.List.Should().BeAssignableTo<IReadOnlyList<object>>()
@@ -151,8 +152,8 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public void as_usual_writable_type_is_invariant()
         {
             // ISecondaryVerySimplePoco is required for IAbstractBase and IAbstract1 to be actually registered. 
-            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IInvalid ), typeof( ISecondaryVerySimplePoco ) );
-            TestHelper.GetFailedResult( c,
+            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IInvalid ), typeof( ISecondaryVerySimplePoco ) );
+            TestHelper.GetFailedCollectorResult( c,
                 $"Property type conflict between:{Environment.NewLine}" +
                 $"IList<CommonTypes.IAbstract1> CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests.IInvalid.List{Environment.NewLine}" +
                 $"And:{Environment.NewLine}" +

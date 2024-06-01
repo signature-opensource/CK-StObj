@@ -85,7 +85,7 @@ namespace CK.Setup
                 return weaken;
             }
             return new XElement( xConfigurationRoot,
-                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/StObjEngineConfiguration.cs for documentation." ),
+                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/EngineConfiguration.cs for documentation." ),
                         !BasePath.IsEmptyPath ? new XElement( xBasePath, BasePath ) : null,
                         GeneratedAssemblyName != StObjContextRoot.GeneratedAssemblyName ? new XElement( xGeneratedAssemblyName, GeneratedAssemblyName ) : null,
                         TraceDependencySorterInput ? new XElement( xTraceDependencySorterInput, true ) : null,

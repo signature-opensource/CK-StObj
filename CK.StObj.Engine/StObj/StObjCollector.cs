@@ -26,6 +26,14 @@ namespace CK.Setup
         bool _computedResult;
 
         /// <summary>
+        /// Initializes a new default <see cref="StObjCollector"/>.
+        /// </summary>
+        public StObjCollector()
+            : this( new SimpleServiceContainer() )
+        {
+        }
+
+        /// <summary>
         /// Initializes a new <see cref="StObjCollector"/>.
         /// </summary>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
