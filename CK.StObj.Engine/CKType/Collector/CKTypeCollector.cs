@@ -116,6 +116,7 @@ namespace CK.Setup
                     // IPoco property to be handled.
                     // So me must test here to handle definers and have
                     // to get any IAutoImplementor...
+                    // Also, open generics must not be registered, they are discovered from the closed types.
                     //
                     // All this cache stuff HAS to be refactored!
                     //
@@ -123,7 +124,7 @@ namespace CK.Setup
                     bool isPoco = (kind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
                     TypeAttributesCache? typeCache = RegisterRegularType( monitor, type, isPoco );
                     Throw.DebugAssert( "isPoco => type cache (even empty).", !isPoco || typeCache != null );
-                    if( isPoco )
+                    if( isPoco && !type.IsGenericTypeDefinition )
                     {
                         _pocoBuilder.RegisterInterface( monitor, type, kind );
                     }

@@ -72,7 +72,7 @@ namespace CK.Setup
         
         InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t, CKTypeKind rawKind )
         {
-            Throw.DebugAssert( t.IsInterface && t.IsVisible &&  (rawKind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco );
+            Throw.DebugAssert( t.IsInterface && t.IsVisible && !t.IsGenericTypeDefinition && (rawKind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco );
             if( (rawKind & CKTypeKind.IsDefiner) != 0 )
             {
                 // Keep IPoco itself exclusion exception here.
@@ -95,7 +95,7 @@ namespace CK.Setup
             if( bs.Length == 0 ) return null;
             foreach( Type b in bs )
             {
-                if( b == typeof( IPoco ) ) continue;
+                if( b == typeof( IPoco ) || b.IsGenericTypeDefinition ) continue;
                 // Attempts to register the base if and only if it is not a definer and it is a public interface.
                 if( !b.IsVisible ) continue;
                 var rawKind = _kindDetector.GetRawKind( monitor, b );
