@@ -295,15 +295,38 @@ namespace CK.Setup
 
         /// <summary>
         /// Finds an existing aspect or returns null.
+        /// <para>
+        /// Whether <typeparamref name="T"/> is a <see cref="MultipleBinPathAspectConfiguration{TSelf}"/> or not
+        /// doesn't matter: if at least one exists, it will be returned (with its <see cref="MultipleBinPathAspectConfiguration{TSelf}.OtherConfigurations"/>).
+        /// </para>
         /// </summary>
         /// <param name="name">The aspect name.</param>
         /// <returns>The aspect or null.</returns>
         public T? FindAspect<T>() where T : BinPathAspectConfiguration => _aspects.Values.OfType<T>().SingleOrDefault();
 
         /// <summary>
+        /// Ensures that an aspect is registered in <see cref="Aspects"/>.
+        /// <para>
+        /// Whether <typeparamref name="T"/> is a <see cref="MultipleBinPathAspectConfiguration{TSelf}"/> or not
+        /// doesn't matter: if at least one exists, it will be returned (with its <see cref="MultipleBinPathAspectConfiguration{TSelf}.OtherConfigurations"/>).
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The aspect type.</typeparam>
+        /// <returns>The found or created aspect.</returns>
+        public T EnsureAspect<T>() where T : BinPathAspectConfiguration, new()
+        {
+            T? a = FindAspect<T>();
+            if( a == null )
+            {
+                AddAspect( a = new T() );
+            }
+            return a;
+        }
+
+        /// <summary>
         /// Adds an aspect to these <see cref="Aspects"/>.
         /// <para>
-        /// No existing aspect with the same type must exist (except if it is a <see cref="MultipleBinPathAspectConfiguration"/>), the
+        /// No existing aspect with the same type must exist (except if it is a <see cref="MultipleBinPathAspectConfiguration{TSelf}"/>), the
         /// aspect must not belong to another configuration and the engine aspect must exist in the <see cref="EngineConfiguration.Aspects"/>
         /// otherwise an <see cref="ArgumentException"/> is thrown.
         /// </para>

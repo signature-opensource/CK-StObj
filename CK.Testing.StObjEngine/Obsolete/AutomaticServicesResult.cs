@@ -15,6 +15,7 @@ namespace CK.Testing.StObjEngine
     /// <summary>
     /// Captures the result of <see cref="IStObjEngineTestHelperCore.CreateAutomaticServices"/>.
     /// </summary>
+    [Obsolete( "Should be AutomaticServices created by CreateSingleBinPathAutomaticServices." )]
     public sealed class AutomaticServicesResult
     {
         /// <summary>

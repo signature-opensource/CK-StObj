@@ -11,6 +11,7 @@ namespace CK.Testing
     /// that captures the <see cref="StObjCollectorResult"/> and provides often needed property accessors to the single
     /// running group of the <see cref="EngineResult"/>.
     /// </summary>
+    [Obsolete( "GenerateCode is obsolete." )]
     public readonly struct GenerateCodeResult
     {
         /// <summary>

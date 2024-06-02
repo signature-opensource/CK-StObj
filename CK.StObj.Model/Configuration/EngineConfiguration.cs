@@ -40,7 +40,22 @@ namespace CK.Setup
         public T? FindAspect<T>() where T : EngineAspectConfiguration => _aspects.OfType<T>().SingleOrDefault();
 
         /// <summary>
-        /// Adds an aspect to these <see cref="BinPaths"/>.
+        /// Ensures that an aspect is registered in <see cref="Aspects"/>.
+        /// </summary>
+        /// <typeparam name="T">The aspect type.</typeparam>
+        /// <returns>The found or created aspect.</returns>
+        public T EnsureAspect<T>() where T : EngineAspectConfiguration, new()
+        {
+            T? a = FindAspect<T>();
+            if( a == null )
+            {
+                AddAspect( a = new T() );
+            }
+            return a;
+        }
+
+        /// <summary>
+        /// Adds an aspect to these <see cref="Aspects"/>.
         /// No existing aspect with the same type must exist and the aspect must not belong to
         /// another configuration otherwise an <see cref="ArgumentException"/> is thrown.
         /// </summary>

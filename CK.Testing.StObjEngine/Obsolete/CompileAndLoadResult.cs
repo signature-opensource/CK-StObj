@@ -10,6 +10,7 @@ namespace CK.Testing.StObjEngine
     /// <summary>
     /// Captures the result of <see cref="IStObjEngineTestHelperCore.CompileAndLoadStObjMap(StObjCollector, Func{EngineConfiguration, EngineConfiguration}?)"/>.
     /// </summary>
+    [Obsolete( "CompileAndLoadStObjMap is obsolete." )]
     public sealed class CompileAndLoadResult
     {
         /// <summary>

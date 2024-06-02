@@ -144,12 +144,17 @@ namespace CK.Setup
                                 {
                                     try
                                     {
-                                        if( !a.Configure( _monitor, this ) ) success = onError();
+                                        if( !a.Configure( _monitor, this ) )
+                                        {
+                                            success = onError();
+                                            _monitor.CloseGroup( "Failed." );
+                                        }
                                     }
                                     catch( Exception ex )
                                     {
                                         success = onError();
                                         _monitor.Error( ex );
+                                        _monitor.CloseGroup( "Failed." );
                                     }
                                 }
                                 if( success )

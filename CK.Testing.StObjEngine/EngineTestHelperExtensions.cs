@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Setup;
-using CK.Testing.StObjEngine;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,7 +14,7 @@ namespace CK.Testing
     /// <summary>
     /// Extends <see cref="IBasicTestHelper"/> or <see cref="IMonitorTestHelper"/> with engine related helpers.
     /// </summary>
-    public static class StObjEngineTestHelperExtensions
+    public static class EngineTestHelperExtensions
     {
         /// <summary>
         /// Creates a new <see cref="TypeCollector"/> and registers the given types into it.
