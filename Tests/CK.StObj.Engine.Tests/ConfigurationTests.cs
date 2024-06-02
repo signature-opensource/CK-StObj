@@ -765,7 +765,7 @@ namespace CK.StObj.Engine.Tests
             Throw.DebugAssert( sample != null );
             sample.Param.Should().Be( "{ProjectPath}Test" );
             sample.A.Should().Be( "{OutputPath}InTheOutputPath" );
-            sample.XmlData?.ToString().Should().Be( """
+            sample.XmlData?.ToString().ReplaceLineEndings().Should().Be( """
                 <XmlData>
                   <Some>
                     <Data Touched="{BasePath}InXmlIsland1" />
@@ -773,7 +773,7 @@ namespace CK.StObj.Engine.Tests
                     <Data>Not touched {ProjectPath} must start the string.</Data>
                   </Some>
                 </XmlData>
-                """ );
+                """.ReplaceLineEndings() );
 
             var another = c.BinPaths[0].FindAspect<AnotherBinPathAspectConfiguration>();
             Throw.DebugAssert( another != null );
@@ -783,7 +783,7 @@ namespace CK.StObj.Engine.Tests
 
             sample.Param.Should().Be( "/The/Base/Path/Another/Relative/Test" );
             sample.A.Should().Be( "/The/Base/Path/Another/Relative/InTheOutputPath" );
-            sample.XmlData?.ToString().Should().Be( """
+            sample.XmlData?.ToString().ReplaceLineEndings().Should().Be( """
                 <XmlData>
                   <Some>
                     <Data Touched="/The/Base/Path/InXmlIsland1" />
@@ -791,7 +791,7 @@ namespace CK.StObj.Engine.Tests
                     <Data>Not touched {ProjectPath} must start the string.</Data>
                   </Some>
                 </XmlData>
-                """ );
+                """.ReplaceLineEndings() );
 
             another.Path.Should().Be( "/The/Base/Path/comm/ands" );
         }
