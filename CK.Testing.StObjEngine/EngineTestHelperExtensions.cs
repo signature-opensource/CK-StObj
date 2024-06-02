@@ -33,6 +33,14 @@ namespace CK.Testing
         public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, params Type[] types ) => CreateTypeCollector( helper, (IEnumerable<Type>)types );
 
         /// <summary>
+        /// Creates a new <see cref="TypeCollector"/> and calls <see cref="TypeCollector.AddModelDependentAssembly(System.Reflection.Assembly)"/>.
+        /// </summary>
+        /// <param name="helper">This helper.</param>
+        /// <param name="root">The types to register.</param>
+        /// <returns>The collector.</returns>
+        public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, System.Reflection.Assembly root ) => new TypeCollector().AddModelDependentAssembly( root );
+
+        /// <summary>
         /// Creates a default <see cref="EngineConfiguration"/> with a single BinPath that has its <see cref="BinPathConfiguration.ProjectPath"/> sets
         /// to this <see cref="IBasicTestHelper.TestProjectFolder"/>.
         /// <para>

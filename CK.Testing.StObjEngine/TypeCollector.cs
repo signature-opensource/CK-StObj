@@ -35,12 +35,17 @@ namespace CK.Testing
         /// <summary>
         /// Adds all public types from <paramref name="root"/> and from its referenced assemblies
         /// only for assembly that are "model dependent".
+        /// <para>
+        /// To include the types of an assembly, simply <see cref="Add(IEnumerable{Type})"/>
+        /// the <see cref="Assembly.ExportedTypes"/>.
+        /// </para>
         /// </summary>
         /// <param name="root">The root assembly from which public types must be collected.</param>
-        /// <returns>True if the root is a model dependent assembly, false otherwise (no types have been added).</returns>
-        public bool AddRootAssembly( Assembly root )
+        /// <returns>This collector (fluent syntax).</returns>
+        public TypeCollector AddModelDependentAssembly( Assembly root )
         {
-            return DoAdd( root ) == AssemblyType.ModelDependent;
+            DoAdd( root );
+            return this;
         }
 
         /// <summary>
