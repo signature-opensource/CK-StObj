@@ -64,6 +64,7 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( config );
             _monitor = monitor;
             _config = new RunningEngineConfiguration( config );
+            Throw.DebugAssert( _config.Configuration.BinPaths.SelectMany( b => b.Aspects.Select( a => (b, a) ) ).All( ba => ba.a.Owner == ba.b ) );
         }
 
         /// <summary>

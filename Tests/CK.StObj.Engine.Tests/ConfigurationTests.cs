@@ -114,6 +114,19 @@ namespace CK.StObj.Engine.Tests
             LibraryVersions = new Dictionary<string, string>();
         }
 
+        public TypeScriptAspectConfiguration( XElement e )
+        {
+            GenerateDocumentation = (bool?)e.Attribute( "GenerateDocumentation" ) ?? true;
+            LibraryVersions = e.Element( "LibraryVersions" )?
+                    .Elements( "Library" )
+                    .Select( e => (e.Attribute( EngineConfiguration.xName )?.Value, e.Attribute( EngineConfiguration.xVersion )?.Value) )
+                    .Where( e => !string.IsNullOrWhiteSpace( e.Item1 ) && !string.IsNullOrWhiteSpace( e.Item2 ) )
+                    .GroupBy( e => e.Item1 )
+                    .ToDictionary( g => g.Key!, g => g.Last().Item2! )
+                  ?? new Dictionary<string, string>();
+
+        }
+
         public bool GenerateDocumentation { get; set; }
 
         public Dictionary<string, string> LibraryVersions { get; }
@@ -580,6 +593,47 @@ namespace CK.StObj.Engine.Tests
 
             c2Back.OtherConfigurations.Should().HaveCount( 1 );
             c2Back.OtherConfigurations.Single().OtherConfigurations.Should().HaveCount( 1 ).And.Contain( c2Back );
+
+            var e = new EngineConfiguration();
+            e.EnsureAspect<TypeScriptAspectConfiguration>();
+            e.FirstBinPath.AddAspect( c2Back );
+
+            var eX = e.ToXml().ToString();
+            eX.Should().Be( """
+                <Setup>
+                  <!--Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/EngineConfiguration.cs for documentation.-->
+                  <GlobalExcludedTypes />
+                  <Aspect Type="CK.StObj.Engine.Tests.TypeScriptAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
+                  <!--BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/BinPathConfiguration.cs for documentation.-->
+                  <BinPaths>
+                    <BinPath Path="">
+                      <CompileOption>None</CompileOption>
+                      <Assemblies />
+                      <ExcludedTypes />
+                      <Types />
+                      <TypeScript>
+                        <Array>
+                          <TypeScript TargetProjectPath="P1" TypeFilterName="TypeScriptNumber1">
+                            <Barrels>
+                              <Barrel Path="B1" />
+                            </Barrels>
+                          </TypeScript>
+                          <TypeScript TargetProjectPath="P2" TypeFilterName="TypeScript2">
+                            <Barrels />
+                          </TypeScript>
+                        </Array>
+                      </TypeScript>
+                    </BinPath>
+                  </BinPaths>
+                </Setup>
+                """ );
+            var eBack = new EngineConfiguration( XElement.Parse( eX ) );
+            eBack.FindAspect<TypeScriptAspectConfiguration>().Should().NotBeNull();
+            eBack.FirstBinPath.Aspects.Should().HaveCount( 1 );
+            var tsConfig = eBack.FirstBinPath.FindAspect<TypeScriptBinPathAspectConfiguration>();
+            Throw.DebugAssert( tsConfig != null );
+            tsConfig.OtherConfigurations.Should().HaveCount( 1 );
+            tsConfig.AllConfigurations.All( c => c.Owner == eBack.FirstBinPath ).Should().BeTrue();
         }
 
         static readonly XElement _config = XElement.Parse( """

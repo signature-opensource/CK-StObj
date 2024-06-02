@@ -156,6 +156,7 @@ namespace CK.Setup
                     Throw.CKException( $"Aspect '{aspectType.AspectName}' created an aspect of type '{a.AspectName}BinPathAspectConfiguration'. The type name should be ''{aspectType.AspectName}BinPathAspectConfiguration''." );
                 }
                 a.InitializeFrom( c );
+                a.Bind( this, aspectType );
                 _aspects.Add( a.AspectName, a );
             }
         }
