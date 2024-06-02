@@ -65,7 +65,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                     typeof( DefaultCultureProvider ),
                                                     typeof( FakeAuthenticationInfo ),
                                                     typeof( DefaultAuthenticationInfoProvider ) );
-            // No services configuration here: the IEndpointUbiquitousServiceDefault<T> must provide
+            // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
             // the defaults.
             using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
 

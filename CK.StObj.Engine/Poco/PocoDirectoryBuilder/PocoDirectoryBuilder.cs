@@ -127,6 +127,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="assembly">The dynamic assembly: its <see cref="IDynamicAssembly.StubModuleBuilder"/> will host the generated stub.</param>
         /// <param name="monitor">Monitor to use.</param>
+        /// <param name="regularTypeCollector">global type collector... This should be refactored.</param>
         /// <returns>The result or null on error.</returns>
         public IPocoDirectory? Build( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypeCollector )
         {

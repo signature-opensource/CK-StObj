@@ -10,9 +10,6 @@ namespace CK.Core
         /// <summary>
         /// Small helper that captures the minimal required context to configure a <see cref="IServiceCollection"/>.
         /// The main method is <see cref="StObjServiceCollectionExtensions.AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/>.
-        /// <para>
-        /// Using this wrapper exposed methods such as <see cref="Register{T, TImpl}(bool, bool)"/> instead of the <see cref="Services"/> directly is more secure.
-        /// </para>
         /// </summary>
         public readonly struct ServiceRegister
         {
@@ -42,8 +39,6 @@ namespace CK.Core
 
             /// <summary>
             /// Gets the target service collection.
-            /// By using this collection directly (and all the available extension methods), the <see cref="AllowOverride"/>
-            /// is not honored: use the Register methods to detect duplicate registrations.
             /// </summary>
             public IServiceCollection Services { get; }
 

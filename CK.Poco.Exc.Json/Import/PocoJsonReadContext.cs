@@ -58,6 +58,7 @@ namespace CK.Poco.Exc.Json
             if( _inner is IDisposable d ) d.Dispose();
         }
 
+        /// <inheritdoc />
         public void ReadMoreData( ref Utf8JsonReader reader ) => _inner?.ReadMoreData( ref reader );
 
         /// <inheritdoc />

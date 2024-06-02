@@ -5,13 +5,16 @@ using System;
 
 namespace CK.Testing
 {
+    /// <summary>
+    /// Captures the result of <see cref="EngineTestHelperExtensions.RunSingleBinPathAndLoad(IMonitorTestHelper, System.Collections.Generic.ISet{Type})"/>.
+    /// </summary>
     public readonly struct AutomaticServices : IDisposable
     {
         readonly RunAndLoadResult _loadResult;
         readonly ServiceProvider _serviceProvider;
         readonly StObjContextRoot.ServiceRegister _serviceRegister;
 
-        public AutomaticServices( RunAndLoadResult r, ServiceProvider serviceProvider, StObjContextRoot.ServiceRegister serviceRegister )
+        internal AutomaticServices( RunAndLoadResult r, ServiceProvider serviceProvider, StObjContextRoot.ServiceRegister serviceRegister )
         {
             _loadResult = r;
             _serviceProvider = serviceProvider;
@@ -34,7 +37,7 @@ namespace CK.Testing
         public StObjContextRoot.ServiceRegister ServiceRegister => _serviceRegister;
 
         /// <summary>
-        /// Disposes the <see cref="ServiceProvider"/>.
+        /// Disposes the encapsulated <see cref="ServiceProvider"/>.
         /// </summary>
         public void Dispose()
         {

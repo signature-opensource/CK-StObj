@@ -48,7 +48,7 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         /// <param name="memberInfoFactory">Required factory that cached nullable reference type information.</param>
-        /// <param name="pocoDirectory">Optional Poco directory (null for test only: <see cref="EmptyPocoDirectory.EmptyPocoDirectory"/> is used).</param>
+        /// <param name="pocoDirectory">Optional Poco directory (null for test only: <see cref="EmptyPocoDirectory.Default"/> is used).</param>
         public PocoTypeSystemBuilder( IExtMemberInfoFactory memberInfoFactory,
                                       IPocoDirectory? pocoDirectory = null )
         {

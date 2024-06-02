@@ -162,7 +162,6 @@ namespace CK.Setup
 
         /// <summary>
         /// Creates a xml element from this <see cref="BinPathConfiguration"/>.
-        /// <see cref="AspectConfigurations"/> are cloned.
         /// </summary>
         /// <returns>A new element.</returns>
         public XElement ToXml()
@@ -262,10 +261,10 @@ namespace CK.Setup
         /// <summary>
         /// Adds a <see cref="TypeConfiguration"/> to <see cref="Types"/>.
         /// </summary>
-        /// <param name="type">The type to configure.</param>
+        /// <param name="name">The assembly qualified name of the type.</param>
         /// <param name="kind">The kind to set.</param>
         /// <param name="isOptional">Whether the type may not exist.</param>
-        /// <returns></returns>
+        /// <returns>This BinPathConfiguration (fluent syntax).</returns>
         public BinPathConfiguration AddType( string name, AutoServiceKind kind, bool isOptional )
         {
             Throw.CheckNotNullArgument( name );
@@ -300,7 +299,6 @@ namespace CK.Setup
         /// doesn't matter: if at least one exists, it will be returned (with its <see cref="MultipleBinPathAspectConfiguration{TSelf}.OtherConfigurations"/>).
         /// </para>
         /// </summary>
-        /// <param name="name">The aspect name.</param>
         /// <returns>The aspect or null.</returns>
         public T? FindAspect<T>() where T : BinPathAspectConfiguration => _aspects.Values.OfType<T>().SingleOrDefault();
 
@@ -374,13 +372,13 @@ namespace CK.Setup
         /// Removes an aspect from <see cref="Aspects"/>. Does nothing if the <paramref name="aspect"/>
         /// does not belong to this configuration.
         /// </summary>
-        /// <param name="configuration">An aspect configuration to remove.</param>
-        public void RemoveAspect( BinPathAspectConfiguration configuration )
+        /// <param name="aspect">An aspect configuration to remove.</param>
+        public void RemoveAspect( BinPathAspectConfiguration aspect )
         {
-            Throw.CheckNotNullArgument( configuration );
-            if( configuration.Owner == this )
+            Throw.CheckNotNullArgument( aspect );
+            if( aspect.Owner == this )
             {
-                configuration.HandleOwnRemove( _aspects );
+                aspect.HandleOwnRemove( _aspects );
             }
         }
 
@@ -388,7 +386,7 @@ namespace CK.Setup
         /// Removes an aspect from <see cref="Aspects"/>. Does nothing if no <paramref name="name"/>
         /// aspect belong to this configuration.
         /// </summary>
-        /// <param name="configuration">An aspect configuration to remove.</param>
+        /// <param name="name">Name of the aspect configuration to remove.</param>
         public void RemoveAspect( string name )
         {
             var c = _aspects.GetValueOrDefault( name );

@@ -21,7 +21,7 @@ namespace CK.Core
         /// on the <see cref="AmbientServiceHub"/>.
         /// <para>
         /// These containers don't need to know all the Ambient services that may exist in a system:
-        /// Non configured Ambient services are automatically configured by using their <see cref="IEndpointUbiquitousServiceDefault{T}"/> companion.
+        /// Non configured Ambient services are automatically configured by using their <see cref="IAmbientServiceDefaultProvider{T}"/> companion.
         /// </para>
         /// </summary>
         Endpoint

@@ -115,7 +115,7 @@ namespace CK.Setup
 
         internal bool BuildAmbientServiceMappingsAndCheckDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services )
         {
-            using var gLog = monitor.OpenInfo( $"Checking IEndpointUbiquitousServiceDefault availability for {_rawAmbientServices.Count} ubiquitous information services and build mappings." );
+            using var gLog = monitor.OpenInfo( $"Checking IAmbientServiceDefaultProvider availability for {_rawAmbientServices.Count} ubiquitous information services and build mappings." );
 
             bool success = true;
             // Use list and not hash set (no volume here).
@@ -154,7 +154,7 @@ namespace CK.Setup
                     }
                     else if( !defaultProvider.HasValue )
                     {
-                        monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
+                        monitor.Error( $"Unable to find an implementation of at least one 'IAmbientServiceDefaultProvider<T>' where T is " +
                                         $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '" )}'. " +
                                         $"All ambient service must have a default value provider." );
                         success = false;

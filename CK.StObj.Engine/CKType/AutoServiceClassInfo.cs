@@ -616,7 +616,7 @@ namespace CK.Setup
                 else
                 {
                     // Ambient services are not automatically resolved but explicitly resolved with a factory function (or found in the AmbientServiceHub
-                    // or set to their default value provided by their IEndpointUbiquitousServiceDefault singleton companion).
+                    // or set to their default value provided by their IAmbientServiceDefaultProvider singleton companion).
                     // They can perfectly have multiple constructors (they are selected/used by the explicit factory methods).
                     // When a single constructor is found, we process it like a regular auto service.
                     // Here there are multiple constructors: we ignore them since unifying their parameters don't make a lot of sense.

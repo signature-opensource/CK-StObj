@@ -1,9 +1,7 @@
 using CK.Poco.Exc.Json;
-using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -134,7 +132,7 @@ namespace CK.Core
 
         #region IPoco.WriteJson to Utf8JsonWriter and PocoJsonWriteContext (relay to generated code), IBufferWriter<byte> and Stream.
 
-        /// <inheritdoc cref="IWriter.WriteJson(Utf8JsonWriter, PocoJsonWriteContext)"/>
+        /// <inheritdoc cref="PocoJsonExportSupport.IWriter.WriteJson(Utf8JsonWriter, PocoJsonWriteContext)"/>
         public static bool WriteJson( this IPoco @this, Utf8JsonWriter writer, PocoJsonWriteContext context )
         {
             Throw.CheckNotNullArgument( @this );

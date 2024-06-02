@@ -35,7 +35,6 @@ namespace CK.Setup
         /// <summary>
         /// Finds an existing aspect or returns null.
         /// </summary>
-        /// <param name="name">The aspect name.</param>
         /// <returns>The aspect or null.</returns>
         public T? FindAspect<T>() where T : EngineAspectConfiguration => _aspects.OfType<T>().SingleOrDefault();
 

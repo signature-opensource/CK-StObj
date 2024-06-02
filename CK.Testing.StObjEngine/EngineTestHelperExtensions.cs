@@ -19,6 +19,7 @@ namespace CK.Testing
         /// <summary>
         /// Creates a new <see cref="TypeCollector"/> and registers the given types into it.
         /// </summary>
+        /// <param name="helper">This helper.</param>
         /// <param name="types">The types to register.</param>
         /// <returns>The collector.</returns>
         public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, IEnumerable<Type> types )
@@ -188,18 +189,21 @@ namespace CK.Testing
         /// Runs the engine, compiles and loads the <see cref="IStObjMap"/> from the generated assembly or gets the embedded map if it exists.
         /// </summary>
         /// <param name="helper"></param>
-        /// <param name="configuration">Engine configuration that must contain a single <see cref="EngineConfiguration.BinPaths"/>.</param>
-        /// <param name="types">Types to register in the single BinPath.</param>
+        /// <param name="engineCollectorResult">Engine collector result to consider.</param>
+        /// <param name="configuration">
+        /// Optional single BinPath engine configuration.
+        /// When null, <see cref="CreateDefaultEngineConfiguration(IBasicTestHelper, bool, CompileOption)"/> is called.
+        /// </param>
         /// <returns>The successful engine result and the ready-to-use map.</returns>
         public static RunAndLoadResult RunSingleBinPathAndLoad( this IMonitorTestHelper helper,
-                                                                StObjCollectorResult stObjCollectorResult,
+                                                                StObjCollectorResult engineCollectorResult,
                                                                 EngineConfiguration? configuration = null )
         {
-            Throw.CheckNotNullArgument( stObjCollectorResult );
+            Throw.CheckNotNullArgument( engineCollectorResult );
             Throw.CheckArgument( configuration == null || configuration.BinPaths.Count == 1 );
             configuration ??= CreateDefaultEngineConfiguration( helper );
             var e = new Setup.StObjEngine( helper.Monitor, configuration );
-            var r = e.RunSingleBinPath( stObjCollectorResult );
+            var r = e.RunSingleBinPath( engineCollectorResult );
             r.Success.Should().BeTrue( "CodeGeneration should work." );
             var map = r.Groups[0].LoadStObjMap( helper.Monitor, embeddedIfPossible: true );
             return new RunAndLoadResult( r, map );
@@ -346,6 +350,7 @@ namespace CK.Testing
         /// <summary>
         /// Starts any <see cref="IHostedService"/> in <paramref name="services"/>.
         /// </summary>
+        /// <param name="helper">This helper.</param>
         /// <param name="services">The service provider.</param>
         /// <param name="cancellation">Optional cancellation token.</param>
         /// <returns>The <paramref name="services"/>.</returns>
@@ -361,6 +366,7 @@ namespace CK.Testing
         /// <summary>
         /// Stops any <see cref="IHostedService"/> in <paramref name="services"/> and optionally disposes the provider if it is disposable.
         /// </summary>
+        /// <param name="helper">This helper.</param>
         /// <param name="services">The service provider.</param>
         /// <param name="disposeServices">True to dispose the <paramref name="services"/>.</param>
         /// <param name="cancellation">Optional cancellation token.</param>

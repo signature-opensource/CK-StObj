@@ -495,7 +495,7 @@ namespace CK.Setup
                     // - first we resolve the ScopeDataHolder type that is necessary a ScopeDataHolder.
                     // - then we know that the _data is necessarily a BackendScopedData because:
                     //      - this method is called only for backend contexts (front endpoints use the registered services or
-                    //        the IEndpointUbiquitousServiceDefault<> singletons to resolve missing Ambient services).
+                    //        the IAmbientServiceDefaultProvider<> singletons to resolve missing Ambient services).
                     //      - the BackendScopedData inheritance is checked at setup time for Backend contexts.
                     // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
                     //   hidden accessor.

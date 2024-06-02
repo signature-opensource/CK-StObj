@@ -90,7 +90,7 @@ namespace CK.Setup
         public const CKTypeKind AmbientServiceFlags = CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
 
         /// <summary>
-        /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
+        /// Simple bit mask on <see cref="CKTypeKind.IsScoped"/> | <see cref="CKTypeKind.IsSingleton"/>.
         /// </summary>
         public const CKTypeKind LifetimeMask = CKTypeKind.IsScoped | CKTypeKind.IsSingleton;
 
@@ -145,7 +145,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the conflicting duplicate status message or null if this CK type kind is valid.
         /// </summary>
-        /// <param name="@this">This kind.</param>
+        /// <param name="this">This kind.</param>
         /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>An error message or null.</returns>
         public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
