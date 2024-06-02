@@ -557,22 +557,22 @@ namespace CK.StObj.Engine.Tests
         {
             var c1 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P1", TypeFilterName = "TypeScriptNumber1" };
             c1.Barrels.Add( "B1" );
-            string x1 = c1.ToXml().ToString();
+            string x1 = c1.ToXml().ToString().ReplaceLineEndings();
             x1.Should().Be( """
                 <TypeScript TargetProjectPath="P1" TypeFilterName="TypeScriptNumber1">
                   <Barrels>
                     <Barrel Path="B1" />
                   </Barrels>
                 </TypeScript>
-                """ );
+                """.ReplaceLineEndings() );
             var c1Back = new TypeScriptBinPathAspectConfiguration();
             c1Back.InitializeFrom( XElement.Parse( x1 ) );
-            c1Back.ToXml().ToString().Should().Be( x1 );
+            c1Back.ToXml().ToString().ReplaceLineEndings().Should().Be( x1 );
 
             var c2 = new TypeScriptBinPathAspectConfiguration() { TargetProjectPath = "P2", TypeFilterName = "TypeScript2" };
 
             c1.AddOtherConfiguration( c2 );
-            string x2 = c1.ToXml().ToString();
+            string x2 = c1.ToXml().ToString().ReplaceLineEndings();
             x2.Should().Be( """
                 <TypeScript>
                   <Array>
@@ -586,10 +586,10 @@ namespace CK.StObj.Engine.Tests
                     </TypeScript>
                   </Array>
                 </TypeScript>
-                """ );
+                """.ReplaceLineEndings() );
             var c2Back = new TypeScriptBinPathAspectConfiguration();
             c2Back.InitializeFrom( XElement.Parse( x2 ) );
-            c2Back.ToXml().ToString().Should().Be( x2 );
+            c2Back.ToXml().ToString().ReplaceLineEndings().Should().Be( x2 );
 
             c2Back.OtherConfigurations.Should().HaveCount( 1 );
             c2Back.OtherConfigurations.Single().OtherConfigurations.Should().HaveCount( 1 ).And.Contain( c2Back );
@@ -598,7 +598,7 @@ namespace CK.StObj.Engine.Tests
             e.EnsureAspect<TypeScriptAspectConfiguration>();
             e.FirstBinPath.AddAspect( c2Back );
 
-            var eX = e.ToXml().ToString();
+            var eX = e.ToXml().ToString().ReplaceLineEndings();
             eX.Should().Be( """
                 <Setup>
                   <!--Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/EngineConfiguration.cs for documentation.-->
@@ -626,8 +626,10 @@ namespace CK.StObj.Engine.Tests
                     </BinPath>
                   </BinPaths>
                 </Setup>
-                """ );
+                """.ReplaceLineEndings() );
             var eBack = new EngineConfiguration( XElement.Parse( eX ) );
+            eBack.ToXml().ToString().ReplaceLineEndings().Should().Be( eX );
+
             eBack.FindAspect<TypeScriptAspectConfiguration>().Should().NotBeNull();
             eBack.FirstBinPath.Aspects.Should().HaveCount( 1 );
             var tsConfig = eBack.FirstBinPath.FindAspect<TypeScriptBinPathAspectConfiguration>();
