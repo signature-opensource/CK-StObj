@@ -1,7 +1,5 @@
 using CK.Core;
-using FluentAssertions;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -86,8 +84,9 @@ namespace CK.Testing
         {
             if( !_all.TryGetValue( assembly, out var t ) )
             {
-                t = GetType( assembly );
                 // Trust the fact that there is no cycle in assembly references.
+                t = GetAssemblyType( assembly );
+                _all.Add( assembly, t );
                 foreach( var d in assembly.GetReferencedAssemblies() )
                 {
                     var dT = DoAdd( Assembly.Load( d ) );
@@ -96,12 +95,15 @@ namespace CK.Testing
                         t = AssemblyType.ModelDependent;
                     }
                 }
-                _all.Add( assembly, t );
-                if( t == AssemblyType.ModelDependent ) _types.AddRange( assembly.ExportedTypes );
+                _all[assembly] = t;
+                if( t == AssemblyType.ModelDependent )
+                {
+                    _types.AddRange( assembly.ExportedTypes );
+                }
             }
             return t;
 
-            static AssemblyType GetType( Assembly a )
+            static AssemblyType GetAssemblyType( Assembly a )
             {
                 bool isModel = false;
                 foreach( var d in a.GetCustomAttributesData() )
@@ -163,10 +165,11 @@ namespace CK.Testing
         /// <inheritdoc />
         public IEnumerator<Type> GetEnumerator() => _types.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_types).GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => _types.GetEnumerator();
 
         bool ICollection<Type>.IsReadOnly => false;
 
 
     }
+
 }
