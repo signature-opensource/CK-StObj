@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -11,7 +12,7 @@ namespace CK.Setup
     /// <summary>
     /// Implements <see cref="IRunningEngineConfiguration"/>.
     /// </summary>
-    public sealed class RunningEngineConfiguration : IRunningEngineConfiguration
+    public sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
     {
         readonly List<RunningBinPathGroup> _binPathGroups;
 
@@ -30,10 +31,9 @@ namespace CK.Setup
         IReadOnlyList<IRunningBinPathGroup> IRunningEngineConfiguration.Groups => _binPathGroups;
 
         /// <summary>
-        /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
-        /// are rooted and gives automatic numbered names to empty <see cref="BinPathConfiguration.Name"/>.
-        /// <para>
-        /// Any element or attribute value that start with '{BasePath}', '{OutputPath}' and '{ProjectPath}' are evaluated.
+        /// Any element or attribute value that start with '{BasePath}', '{OutputPath}' and '{ProjectPath}' are evaluated
+        /// in every <see cref="BinPathAspectConfiguration.ToXml()"/> and if the xml has changed, <see cref="BinPathAspectConfiguration.InitializeFrom(XElement)"/>
+        /// is called to update the bin path aspect configuration.
         /// </para>
         /// <para>
         /// This method is public to ease tests.
@@ -42,153 +42,271 @@ namespace CK.Setup
         /// <returns>True on success, false is something's wrong.</returns>
         public static bool CheckAndValidate( IActivityMonitor monitor, EngineConfiguration c )
         {
-            if( c.BinPaths.Count == 0 )
-            {
-                monitor.Error( $"No BinPath defined in the configuration. Nothing can be processed." );
-                return false;
-            }
-            if( c.BasePath.IsEmptyPath )
-            {
-                c.BasePath = Environment.CurrentDirectory;
-                monitor.Info( $"No BasePath. Using current directory '{c.BasePath}'." );
-            }
-            if( c.GeneratedAssemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
-            {
-                monitor.Info( $"GeneratedAssemblyName should not end with '.dll'. Removing suffix." );
-                c.GeneratedAssemblyName += c.GeneratedAssemblyName.Substring( 0, c.GeneratedAssemblyName.Length - 4 );
-            }
-            int idx = 1;
-            foreach( var b in c.BinPaths )
-            {
-                b.Path = MakeAbsolutePath( c, b.Path );
+            c.BasePath = CheckEnginePaths( monitor, c );
+            if( c.BasePath.IsEmptyPath ) return false;
 
-                if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
-                else b.OutputPath = MakeAbsolutePath( c, b.OutputPath );
+            // Process the BinPaths: setting default Name and setup the AlternativePath for each of them.
+            AlternativePath[] altPaths = AnalyzeBinPaths( c, out var maxAlternativeCount );
 
-                if( b.ProjectPath.IsEmptyPath ) b.ProjectPath = b.OutputPath;
-                else
-                {
-                    b.ProjectPath = MakeAbsolutePath( c, b.ProjectPath );
-                    if( b.ProjectPath.LastPart != "$StObjGen" )
-                    {
-                        b.ProjectPath = b.ProjectPath.AppendPart( "$StObjGen" );
-                    }
-                }
-                if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
-                ++idx;
-
-                bool hasChanged;
-                foreach( var binPathAspect in b.Aspects )
-                {
-                    hasChanged = false;
-                    var e = binPathAspect.ToXml();
-                    EvalKnownPaths( monitor, b.Name, binPathAspect.AspectName, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
-                    if( hasChanged ) binPathAspect.InitializeFrom( e );
-                }
-            }
-            // This must be done after the loop above (Name is set when empty).
+            // Check that BinPath name is unique. This must be done after the loop above (Name is set when empty).
             var byName = c.BinPaths.GroupBy( c => c.Name );
             if( byName.Any( g => g.Count() > 1 ) )
             {
                 monitor.Error( $"BinPath configuration 'Name' must be unique. Duplicates found: {byName.Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
                 return false;
             }
+
+            // Handle [Alter|native] BinPath.Path if there are: all BinPath.Paths are now settled. 
+            if( !ResolveAlternateBinPaths( monitor, c, maxAlternativeCount, altPaths ) )
+            {
+                return false;
+            }
+
+            // Updates the BinPathConfiguration.OutputPath and BinPathConfiguration.ProjectPath to be rooted
+            // and (at least on their BinPath.Path) and process their Xml to handle '{BasePath}', '{OutputPath}' and '{ProjectPath}'
+            // prefixes.
+            FinalizeBinPaths( monitor, c );
             return true;
 
-            static void EvalKnownPaths( IActivityMonitor monitor,
-                                        string binPathName,
-                                        string aspectName,
-                                        XElement element,
-                                        NormalizedPath basePath,
-                                        NormalizedPath outputPath,
-                                        NormalizedPath projectPath,
-                                        ref bool hasChanged )
+            /// <summary>
+            /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
+            /// are rooted.
+            /// </summary>
+            /// <returns>Non empty path on success.</returns>
+            static NormalizedPath CheckEnginePaths( IActivityMonitor monitor, EngineConfiguration c )
             {
-                EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, element );
-                foreach( var e in element.Elements() )
+                // Roots the BasePath.
+                NormalizedPath basePath = c.BasePath;
+                if( basePath.IsEmptyPath )
                 {
-                    EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, e );
-                    if( !e.HasElements )
-                    {
-                        if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, e.Value, out string? mapped ) )
-                        {
-                            e.Value = mapped;
-                            hasChanged = true;
-                        }
-                    }
-                    else
-                    {
-                        EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath, ref hasChanged );
-                    }
+                    basePath = Environment.CurrentDirectory;
+                    monitor.Info( $"Configuration BasePath is empty: using current directory '{basePath}'." );
+                }
+                else if( !basePath.IsRooted )
+                {
+                    basePath = Path.GetFullPath( basePath );
+                    monitor.Info( $"Configuration BasePath changed from '{c.BasePath}' to '{basePath}'." );
+                }
+                // Checks the GeneratedAssemblyName (no error, just a fix).
+                if( c.GeneratedAssemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
+                {
+                    monitor.Info( $"GeneratedAssemblyName should not end with '.dll'. Removing suffix." );
+                    c.GeneratedAssemblyName += c.GeneratedAssemblyName.Substring( 0, c.GeneratedAssemblyName.Length - 4 );
                 }
 
-                static bool EvalString( IActivityMonitor monitor,
-                                        string binPathName,
-                                        string aspectName,
-                                        NormalizedPath basePath,
-                                        NormalizedPath outputPath,
-                                        NormalizedPath projectPath,
-                                        string? v,
-                                        [NotNullWhen( true )] out string? mapped )
-                {
-                    if( v != null && v.Length >= 10 )
-                    {
-                        Throw.DebugAssert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
-                        var vS = ReplacePattern( basePath, "{BasePath}", v );
-                        vS = ReplacePattern( outputPath, "{OutputPath}", vS );
-                        vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
-                        if( v != vS )
-                        {
-                            monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
-                            mapped = vS;
-                            return true;
-                        }
-                    }
-                    mapped = null;
-                    return false;
+                return basePath;
+            }
 
-                    static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
+            static AlternativePath[] AnalyzeBinPaths( EngineConfiguration c, out int maxAlternativeCount )
+            {
+                maxAlternativeCount = 1;
+                var altPaths = new AlternativePath[c.BinPaths.Count];
+                int idx = 0;
+                foreach( var b in c.BinPaths )
+                {
+                    b.Path = MakeAbsolutePath( c, b.Path );
+
+                    var ap = new AlternativePath( b.Path.Path );
+                    if( ap.Count > maxAlternativeCount ) maxAlternativeCount = ap.Count;
+                    altPaths[idx++] = ap;
+
+                    // Use the incremented idx: first name is "BinPath1".
+                    if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
+                }
+                return altPaths;
+            }
+
+            static NormalizedPath MakeAbsolutePath( EngineConfiguration c, NormalizedPath p )
+            {
+                if( !p.IsRooted ) p = c.BasePath.Combine( p );
+                p = p.ResolveDots();
+                return p;
+            }
+
+            // Resolves [sl|ots] in every BinPathConfiguration.Path (the EngineConfiguration.FirstBinPath is driving).
+            static bool ResolveAlternateBinPaths( IActivityMonitor monitor, EngineConfiguration c, int maxAlternativeCount, AlternativePath[] altPaths )
+            {
+                if( maxAlternativeCount > 1 )
+                {
+                    using( monitor.OpenInfo( $"Handling {maxAlternativeCount} possibilities for {c.BinPaths.Count} paths." ) )
                     {
-                        int len = pattern.Length;
-                        if( v.Length >= len )
+                        var primary = altPaths[0];
+                        var alien = altPaths.Skip( 1 ).FirstOrDefault( p => !primary.CanCover( in p ) );
+                        if( alien.IsNotDefault )
                         {
-                            if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
+                            monitor.Error( $"""
+                                            The path '{alien.OrginPath}' must not define alternatives that are NOT defined in the first path '{primary.Path}'.
+                                            The first path drives the alternative analysis.
+                                            """ );
+                            return false;
+                        }
+                        using( monitor.OpenTrace( $"Testing {primary.Count} alternate paths in {primary.Path}." ) )
+                        {
+                            int bestIdx = -1;
+                            NormalizedPath best = new NormalizedPath();
+                            DateTime bestDate = Util.UtcMinValue;
+                            for( int i = 0; i < primary.Count; ++i )
                             {
-                                if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
-                                return basePath.Combine( v.Substring( len ) ).ResolveDots();
+                                NormalizedPath path = primary[i];
+                                var noPub = path.LastPart == "publish" ? path.RemoveLastPart() : path;
+                                if( !Directory.Exists( noPub ) )
+                                {
+                                    monitor.Debug( $"Alternate path '{noPub}' not found." );
+                                    continue;
+                                }
+                                var files = Directory.EnumerateFiles( noPub );
+                                if( files.Any() )
+                                {
+                                    var mostRecent = Directory.EnumerateFiles( noPub ).Max( p => File.GetLastWriteTimeUtc( p ) );
+                                    if( bestDate < mostRecent )
+                                    {
+                                        bestDate = mostRecent;
+                                        best = path;
+                                        bestIdx = i;
+                                    }
+                                }
+                                else monitor.Debug( $"Alternate path '{noPub}' is empty." );
+                            }
+                            if( bestIdx < 0 )
+                            {
+                                monitor.Error( $"Unable to find any file in any of the {primary.Count} paths in {primary.Path}." );
+                                return false;
+                            }
+                            monitor.Info( $"Selected path is n°{bestIdx}: {best} since it has the most recent file change ({bestDate})." );
+                            c.FirstBinPath.Path = best;
+                            for( var iFinal = 1; iFinal < altPaths.Length; ++iFinal )
+                            {
+                                var aP = altPaths[iFinal];
+                                NormalizedPath cap = primary.Cover( bestIdx, aP );
+                                if( aP.OrginPath != cap.Path )
+                                {
+                                    monitor.Trace( $"Path '{altPaths[iFinal].OrginPath}' resolved to '{cap}'." );
+                                    c.BinPaths[iFinal].Path = cap;
+                                }
                             }
                         }
-                        return v;
+                    }
+                }
+                else monitor.Trace( $"No alternative found among the {c.BinPaths.Count} paths." );
+                return true;
+            }
+
+            static void FinalizeBinPaths( IActivityMonitor monitor, EngineConfiguration c )
+            {
+                foreach( var b in c.BinPaths )
+                {
+                    if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
+                    else b.OutputPath = MakeAbsolutePath( c, b.OutputPath );
+
+                    if( b.ProjectPath.IsEmptyPath ) b.ProjectPath = b.OutputPath;
+                    else
+                    {
+                        b.ProjectPath = MakeAbsolutePath( c, b.ProjectPath );
+                        if( b.ProjectPath.LastPart != "$StObjGen" )
+                        {
+                            b.ProjectPath = b.ProjectPath.AppendPart( "$StObjGen" );
+                        }
                     }
 
-                }
-
-                static void EvalAttributes( IActivityMonitor monitor,
-                                           string binPathName,
-                                           string aspectName,
-                                           NormalizedPath basePath,
-                                           NormalizedPath outputPath,
-                                           NormalizedPath projectPath,
-                                           ref bool hasChanged,
-                                           XElement e )
-                {
-                    foreach( var a in e.Attributes() )
+                    bool hasChanged;
+                    foreach( var binPathAspect in b.Aspects )
                     {
-                        if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, a.Value, out string? mapped ) )
+                        hasChanged = false;
+                        var e = binPathAspect.ToXml();
+                        Throw.DebugAssert( b.Name != null );
+                        EvalKnownPaths( monitor, b.Name, binPathAspect.AspectName, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
+                        if( hasChanged ) binPathAspect.InitializeFrom( e );
+                    }
+                }
+                static void EvalKnownPaths( IActivityMonitor monitor,
+                                            string binPathName,
+                                            string aspectName,
+                                            XElement element,
+                                            NormalizedPath basePath,
+                                            NormalizedPath outputPath,
+                                            NormalizedPath projectPath,
+                                            ref bool hasChanged )
+                {
+                    EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, element );
+                    foreach( var e in element.Elements() )
+                    {
+                        EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, e );
+                        if( !e.HasElements )
                         {
-                            a.Value = mapped;
-                            hasChanged = true;
+                            if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, e.Value, out string? mapped ) )
+                            {
+                                e.Value = mapped;
+                                hasChanged = true;
+                            }
+                        }
+                        else
+                        {
+                            EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath, ref hasChanged );
+                        }
+                    }
+
+                    static bool EvalString( IActivityMonitor monitor,
+                                            string binPathName,
+                                            string aspectName,
+                                            NormalizedPath basePath,
+                                            NormalizedPath outputPath,
+                                            NormalizedPath projectPath,
+                                            string? v,
+                                            [NotNullWhen( true )] out string? mapped )
+                    {
+                        if( v != null && v.Length >= 10 )
+                        {
+                            Throw.DebugAssert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
+                            var vS = ReplacePattern( basePath, "{BasePath}", v );
+                            vS = ReplacePattern( outputPath, "{OutputPath}", vS );
+                            vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
+                            if( v != vS )
+                            {
+                                monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
+                                mapped = vS;
+                                return true;
+                            }
+                        }
+                        mapped = null;
+                        return false;
+
+                        static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
+                        {
+                            int len = pattern.Length;
+                            if( v.Length >= len )
+                            {
+                                if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
+                                {
+                                    if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
+                                    return basePath.Combine( v.Substring( len ) ).ResolveDots();
+                                }
+                            }
+                            return v;
+                        }
+
+                    }
+
+                    static void EvalAttributes( IActivityMonitor monitor,
+                                               string binPathName,
+                                               string aspectName,
+                                               NormalizedPath basePath,
+                                               NormalizedPath outputPath,
+                                               NormalizedPath projectPath,
+                                               ref bool hasChanged,
+                                               XElement e )
+                    {
+                        foreach( var a in e.Attributes() )
+                        {
+                            if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, a.Value, out string? mapped ) )
+                            {
+                                a.Value = mapped;
+                                hasChanged = true;
+                            }
                         }
                     }
                 }
-            }
-        }
 
-        static NormalizedPath MakeAbsolutePath( EngineConfiguration c, NormalizedPath p )
-        {
-            if( !p.IsRooted ) p = c.BasePath.Combine( p );
-            p = p.ResolveDots();
-            return p;
+            }
         }
 
         /// <summary>
@@ -197,6 +315,12 @@ namespace CK.Setup
         /// </summary>
         internal void ApplyCKSetupConfiguration( IActivityMonitor monitor, XElement ckSetupConfig )
         {
+            static NormalizedPath MakeAbsolutePath( EngineConfiguration c, NormalizedPath p )
+            {
+                if( !p.IsRooted ) p = c.BasePath.Combine( p );
+                p = p.ResolveDots();
+                return p;
+            }
             Debug.Assert( ckSetupConfig != null );
             using( monitor.OpenInfo( "Applying CKSetup configuration." ) )
             {
@@ -362,7 +486,7 @@ namespace CK.Setup
         /// <returns>The unified configuration or null on error.</returns>
         static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
                                                                         IEnumerable<RunningBinPathGroup> configurations,
-                                                                        IEnumerable<string> globalExcludedTypes )
+                                                                        IEnumerable<Type> globalExcludedTypes )
         {
             var unified = new BinPathConfiguration()
             {

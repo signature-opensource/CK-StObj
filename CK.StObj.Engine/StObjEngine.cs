@@ -280,7 +280,7 @@ namespace CK.Setup
         sealed class TypeFilterFromConfiguration : IStObjTypeFilter
         {
             readonly StObjConfigurationLayer? _firstLayer;
-            readonly HashSet<string> _excludedTypes;
+            readonly HashSet<Type> _excludedTypes;
             readonly bool _isUnifiedPure;
 
             public TypeFilterFromConfiguration( RunningBinPathGroup g, StObjConfigurationLayer? firstLayer )
@@ -306,28 +306,6 @@ namespace CK.Setup
                     }
                     return false;
                 }
-                Throw.DebugAssert( "Since FullName is defined.", t.AssemblyQualifiedName != null );
-                if( _excludedTypes.Contains( t.Name ) )
-                {
-                    monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its Type Name." );
-                    return false;
-                }
-                if( _excludedTypes.Contains( t.FullName ) )
-                {
-                    monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its Type FullName." );
-                    return false;
-                }
-                if( _excludedTypes.Contains( t.AssemblyQualifiedName ) )
-                {
-                    monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its Type AssemblyQualifiedName." );
-                    return false;
-                }
-                if( SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName, out var weaken )
-                    && _excludedTypes.Contains( weaken ) )
-                {
-                    monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its weak type name ({weaken})." );
-                    return false;
-                }
                 // We only care about IPoco and IRealObject. Nothing more.
                 if( _isUnifiedPure )
                 {
@@ -336,6 +314,10 @@ namespace CK.Setup
                     {
                         return false;
                     }
+                }
+                if( _excludedTypes.Contains( t ) )
+                {
+                    return false;
                 }
                 return _firstLayer?.TypeFilter( monitor, t ) ?? true;
             }

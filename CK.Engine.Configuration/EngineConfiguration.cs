@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.Setup
 {
@@ -24,14 +25,53 @@ namespace CK.Setup
         public const string GeneratedAssemblyNamePrefix = "CK.GeneratedAssembly";
 
         readonly List<BinPathConfiguration> _binPaths;
+        readonly HashSet<Type> _globalExcludedTypes;
         Dictionary<string, EngineAspectConfiguration> _namedAspects;
         List<EngineAspectConfiguration> _aspects;
         string? _generatedAssemblyName;
-        private string? _informationalVersion;
-        private bool _revertOrderingNames;
-        private bool _traceDependencySorterInput;
-        private bool _traceDependencySorterOutput;
-        private NormalizedPath _basePath;
+        string? _informationalVersion;
+        NormalizedPath _basePath;
+        bool _revertOrderingNames;
+        bool _traceDependencySorterInput;
+        bool _traceDependencySorterOutput;
+
+        /// <summary>
+        /// Initializes a new empty configuration with a <see cref="FirstBinPath"/>.
+        /// </summary>
+        public EngineConfiguration()
+        {
+            _namedAspects = new Dictionary<string, EngineAspectConfiguration>();
+            _aspects = new List<EngineAspectConfiguration>();
+            _binPaths = new List<BinPathConfiguration>();
+            _globalExcludedTypes = new HashSet<Type>();
+            AddFirstBinPath();
+        }
+
+        void AddFirstBinPath()
+        {
+            var first = new BinPathConfiguration();
+            first.Owner = this;
+            _binPaths.Add( first );
+        }
+
+        /// <summary>
+        /// Helper to load a configuration file.
+        /// If no <see cref="EngineConfiguration.BasePath"/> exists in the file, the absolute <paramref name="path"/>'s directory is set
+        /// as the base path.
+        /// <para>
+        /// The configuration must be valid, absolutely no exceptions are handled here, for instance all <c>&lt;Type&gt;Some.Type, From.Assembly&lt;/Type&gt;</c>
+        /// must be resolved sucessfully.
+        /// </para>
+        /// </summary>
+        /// <param name="path">The path of the xml file to load.</param>
+        /// <returns>A configuration object.</returns>
+        public static EngineConfiguration Load( string path )
+        {
+            path = System.IO.Path.GetFullPath( path );
+            var c = new EngineConfiguration( XElement.Load( path ) );
+            if( c.BasePath.IsEmptyPath ) c.BasePath = System.IO.Path.GetDirectoryName( path );
+            return c;
+        }
 
         /// <summary>
         /// Gets the list of all configuration aspects that must participate to setup.
@@ -251,11 +291,11 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets a mutable set of assembly qualified type names that must be excluded from registration.
+        /// Gets a mutable set of type that must be excluded from registration.
         /// This applies to all <see cref="BinPaths"/>: excluding a type here guaranties its exclusion
         /// from any BinPath.
         /// </summary>
-        public HashSet<string> GlobalExcludedTypes { get; }
+        public HashSet<Type> GlobalExcludedTypes => _globalExcludedTypes;
 
         /// <summary>
         /// Gets or sets a base SHA1 for the StObjMaps (CKSetup sets this to the files signature).

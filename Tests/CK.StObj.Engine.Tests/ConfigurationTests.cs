@@ -646,7 +646,7 @@ namespace CK.StObj.Engine.Tests
               <Aspect Type="CK.StObj.Engine.Tests.AnotherAspectConfiguration, CK.StObj.Engine.Tests">
               </Aspect>
               <BinPaths>
-                <BinPath Path="../../Relative/To/Base/[Debug|Release]/netcoreapp3.1">
+                <BinPath Path="../../Relative/To/Base/Debug/net8.0">
                     <Assemblies>
                         <Assembly>An.Assembly.Name</Assembly>
                         <Assembly Name="Another.Assembly" />
@@ -679,7 +679,7 @@ namespace CK.StObj.Engine.Tests
                         </XmlData>
                     </Sample>
                 </BinPath>
-                <BinPath Path="/Absolute/[Debug|Release]Path/Bin">
+                <BinPath Path="/Absolute/Path/Bin">
                   <Assemblies />
                   <Types />
                   <ExcludedTypes />
@@ -710,7 +710,7 @@ namespace CK.StObj.Engine.Tests
 
             c.BinPaths.Should().HaveCount( 2 );
             var b1 = c.BinPaths[0];
-            b1.Path.Should().Be( new NormalizedPath( "../../Relative/To/Base/[Debug|Release]/netcoreapp3.1" ) );
+            b1.Path.Should().Be( new NormalizedPath( "../../Relative/To/Base/Debug/net8.0" ) );
             b1.Assemblies.Should().BeEquivalentTo( "An.Assembly.Name", "Another.Assembly" );
 
             b1.Types.Should().HaveCount( 4 );
@@ -740,7 +740,7 @@ namespace CK.StObj.Engine.Tests
             Debug.Assert( bAnother != null );
             bAnother.Path.Should().Be( "{BasePath}comm/ands" );
 
-            b1.ExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
+            b1.ExcludedTypes.Should().BeEquivalentTo( new[] { typeof( ActivityMonitor ), typeof( CK.Testing.StObjEngineTestHelper ) } );
             b1.OutputPath.Should().Be( new NormalizedPath( "Another/Relative" ) );
             b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
@@ -750,7 +750,7 @@ namespace CK.StObj.Engine.Tests
             c.TraceDependencySorterInput.Should().BeTrue();
             c.TraceDependencySorterOutput.Should().BeTrue();
             c.RevertOrderingNames.Should().BeTrue();
-            c.GlobalExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
+            c.GlobalExcludedTypes.Should().BeEquivalentTo( new[] { typeof( ActivityMonitor ), typeof( CK.Testing.StObjEngineTestHelper ) } );
             c.Aspects.Should().HaveCount( 2 );
             c.Aspects[0].Should().BeAssignableTo<SampleAspectConfiguration>();
             c.Aspects[1].Should().BeAssignableTo<AnotherAspectConfiguration>();

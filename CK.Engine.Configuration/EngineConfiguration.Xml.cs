@@ -10,25 +10,6 @@ namespace CK.Setup
     public sealed partial class EngineConfiguration
     {
         /// <summary>
-        /// Initializes a new empty configuration.
-        /// </summary>
-        public EngineConfiguration()
-        {
-            _namedAspects = new Dictionary<string, EngineAspectConfiguration>();
-            _aspects = new List<EngineAspectConfiguration>();
-            _binPaths = new List<BinPathConfiguration>();
-            AddFirstBinPath();
-            GlobalExcludedTypes = new HashSet<string>();
-        }
-
-        private void AddFirstBinPath()
-        {
-            var first = new BinPathConfiguration();
-            first.Owner = this;
-            _binPaths.Add( first );
-        }
-
-        /// <summary>
         /// Initializes a new <see cref="EngineConfiguration"/> from a <see cref="XElement"/>.
         /// </summary>
         /// <param name="e">The xml element.</param>
@@ -46,7 +27,7 @@ namespace CK.Setup
             var sha1 = (string?)e.Element( xBaseSHA1 );
             BaseSHA1 = sha1 != null ? SHA1Value.Parse( sha1 ) : SHA1Value.Zero;
             ForceRun = (bool?)e.Element( xForceRun ) ?? false;
-            GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
+            _globalExcludedTypes = new HashSet<Type>( TypesFromXml( e, xGlobalExcludedTypes, xType ) );
 
             // Aspects.
             _aspects = new List<EngineAspectConfiguration>();
@@ -79,11 +60,6 @@ namespace CK.Setup
         /// <returns>The Xml element.</returns>
         public XElement ToXml()
         {
-            static string CleanName( Type t )
-            {
-                SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName!, out string weaken );
-                return weaken;
-            }
             return new XElement( xConfigurationRoot,
                         new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/EngineConfiguration.cs for documentation." ),
                         !BasePath.IsEmptyPath ? new XElement( xBasePath, BasePath ) : null,
@@ -94,20 +70,36 @@ namespace CK.Setup
                         InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
                         !BaseSHA1.IsZero ? new XElement( xBaseSHA1, BaseSHA1.ToString() ) : null,
                         ForceRun ? new XElement( xForceRun, true ) : null,
-                        ToXml( xGlobalExcludedTypes, xType, GlobalExcludedTypes ),
+                        ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( t => CleanName( t ) ) ),
                         Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
                         new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation." ),
                         new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
         }
 
+        static internal string CleanName( Type t )
+        {
+            SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName!, out string weaken );
+            return weaken;
+        }
+        
         static internal XElement ToXml( XName names, XName name, IEnumerable<string> strings )
         {
             return new XElement( names, strings.Select( n => new XElement( name, n ) ) );
         }
 
-        static internal IEnumerable<string> FromXml( XElement e, XName names, XName name )
+        static internal XElement ToXml( XName names, XName name, IEnumerable<Type> types )
+        {
+            return new XElement( names, types.Select( t => new XElement( name, CleanName( t ) ) ) );
+        }
+
+        static internal IEnumerable<string> StringsFromXml( XElement e, XName names, XName name )
         {
             return e.Elements( names ).Elements( name ).Select( c => (string?)c.Attribute( xName ) ?? c.Value );
+        }
+
+        static internal IEnumerable<Type> TypesFromXml( XElement e, XName names, XName name )
+        {
+            return StringsFromXml( e, names, name ).Select( n => SimpleTypeFinder.WeakResolver( n, true )! );
         }
 
         #region Xml centralized names.
