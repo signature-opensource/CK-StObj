@@ -7,10 +7,9 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Encapsulates configuration of the StObjEngine.
-    /// This configuration is compatible with CKSetup SetupConfiguration object.
+    /// Defines the configuration of the CKEngine.
     /// <para>
-    /// There is always at least one <see cref="BinPathConfiguration"/> in <see cref="BinPaths"/>.
+    /// There is always at least one <see cref="BinPathConfiguration"/> in <see cref="BinPaths"/> (the <see cref="FirstBinPath"/>).
     /// </para>
     /// </summary>
     public sealed partial class EngineConfiguration
@@ -28,6 +27,11 @@ namespace CK.Setup
         Dictionary<string, EngineAspectConfiguration> _namedAspects;
         List<EngineAspectConfiguration> _aspects;
         string? _generatedAssemblyName;
+        private string? _informationalVersion;
+        private bool _revertOrderingNames;
+        private bool _traceDependencySorterInput;
+        private bool _traceDependencySorterOutput;
+        private NormalizedPath _basePath;
 
         /// <summary>
         /// Gets the list of all configuration aspects that must participate to setup.
@@ -136,14 +140,14 @@ namespace CK.Setup
         /// Defaults to null (no <see cref="System.Reflection.AssemblyInformationalVersionAttribute"/> should be generated).
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
-        public string? InformationalVersion { get; set; }
+        public string? InformationalVersion { get => _informationalVersion; set => _informationalVersion = value; }
 
         /// <summary>
         /// Gets or sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
         /// Defaults to false.
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
-        public bool RevertOrderingNames { get; set; }
+        public bool RevertOrderingNames { get => _revertOrderingNames; set => _revertOrderingNames = value; }
 
         /// <summary>
         /// Gets or sets whether the dependency graph (the set of IDependentItem) associated
@@ -151,7 +155,7 @@ namespace CK.Setup
         /// Defaults to false.
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
-        public bool TraceDependencySorterInput { get; set; }
+        public bool TraceDependencySorterInput { get => _traceDependencySorterInput; set => _traceDependencySorterInput = value; }
 
         /// <summary>
         /// Gets or sets whether the dependency graph (the set of ISortedItem) associated
@@ -159,13 +163,13 @@ namespace CK.Setup
         /// Defaults to false.
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
-        public bool TraceDependencySorterOutput { get; set; }
+        public bool TraceDependencySorterOutput { get => _traceDependencySorterOutput; set => _traceDependencySorterOutput = value; }
 
         /// <summary>
         /// Gets or sets an optional base path that applies to relative <see cref="BinPaths"/>.
         /// When null or empty, the current directory is used.
         /// </summary>
-        public NormalizedPath BasePath { get; set; }
+        public NormalizedPath BasePath { get => _basePath; set => _basePath = value; }
 
         /// <summary>
         /// Gets the first <see cref="BinPathConfiguration"/> from the <see cref="BinPaths"/>

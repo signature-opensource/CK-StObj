@@ -144,12 +144,12 @@ namespace CK.Core
         public abstract AmbientServiceHub CleanClone( bool restoreInitialValues = false );
 
         /// <summary>
-        /// Overrides a ubiquitous resolution with an explicit instance.
+        /// Overrides a a resolved service instance.
         /// <para>
         /// This throws a <see cref="InvalidOperationException"/> if <see cref="IsLocked"/> is true.
         /// </para>
         /// </summary>
-        /// <typeparam name="T">The instance type. Must be a endpoint ubiquitous type.</typeparam>
+        /// <typeparam name="T">The instance type that must be an Ambient service type.</typeparam>
         /// <param name="instance">The instance that must replace the default instance from the originating container.</param>
         public void Override<T>( T instance ) where T : class
         {
