@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -8,7 +9,8 @@ namespace CK.Setup
     public sealed class CachedAssembly
     {
         readonly Assembly _assembly;
-        readonly AssemblyName _assemblyName;
+        readonly string _assemblyName;
+        readonly string _assemblyFullName;
 
         // Initialized on demand.
         ImmutableArray<CustomAttributeData> _customAttributes;
@@ -20,8 +22,10 @@ namespace CK.Setup
 
         internal CachedAssembly( Assembly assembly, AssemblyName assemblyName, CKAssemblyKind initialKind )
         {
+            Throw.DebugAssert( assemblyName.Name != null );
             _assembly = assembly;
-            _assemblyName = assemblyName;
+            _assemblyName = assemblyName.Name;
+            _assemblyFullName = assemblyName.FullName;
             _kind = initialKind;
             _ckAssemblies = ImmutableHashSet<CachedAssembly>.Empty;
             if( initialKind == CKAssemblyKind.None )
@@ -52,12 +56,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets this assembly's simple name.
         /// </summary>
-        public string Name => _assemblyName.Name ?? string.Empty;
+        public string Name => _assemblyName;
 
         /// <summary>
         /// Gets this assembly's full name.
         /// </summary>
-        public string FullName => _assemblyName.FullName;
+        public string FullName => _assemblyFullName;
 
         /// <summary>
         /// Gets the exported types of this assembly.

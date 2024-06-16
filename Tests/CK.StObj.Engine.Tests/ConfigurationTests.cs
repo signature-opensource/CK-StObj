@@ -606,7 +606,7 @@ namespace CK.StObj.Engine.Tests
                   <Aspect Type="CK.StObj.Engine.Tests.TypeScriptAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
                   <!--BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation.-->
                   <BinPaths>
-                    <BinPath Path="">
+                    <BinPath Path="" DiscoverAssembliesFromPath="false">
                       <CompileOption>None</CompileOption>
                       <Assemblies />
                       <ExcludedTypes />

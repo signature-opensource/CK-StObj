@@ -7,6 +7,7 @@ using System.Xml;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// Describes a folder that the CKEngine must process.
     /// </summary>
@@ -23,6 +24,7 @@ namespace CK.Setup
         NormalizedPath _projectPath;
         CompileOption _compileOption;
         bool _generateSourceFiles;
+        bool _discoverAssembliesFromPath;
 
         /// <summary>
         /// Initializes a new empty <see cref="BinPathConfiguration"/>.
@@ -85,10 +87,18 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets a set of assembly names that must be processed for setup (only assemblies that appear in this list will be considered).
-        /// Note that when using CKSetup, this list can be left empty: it is automatically filled with the "model" and "model dependent"
+        /// This can be left empty if <see cref="DiscoverAssembliesFromPath"/> is true.
         /// assemblies.
         /// </summary>
         public HashSet<string> Assemblies => _assemblies;
+
+        /// <summary>
+        /// Gets or sets whether the dlls is the <see cref="Path"/> should be processed by the setup.
+        /// <para>
+        /// Defaults to false: only <see cref="Types"/> and existing <see cref="Assemblies"/> are considered.
+        /// </para>
+        /// </summary>
+        public bool DiscoverAssembliesFromPath { get => _discoverAssembliesFromPath; set => _discoverAssembliesFromPath = value; }
 
         /// <summary>
         /// Gets a set of <see cref="TypeConfiguration"/> that must be registered explicitly regardless of the <see cref="Assemblies"/>.

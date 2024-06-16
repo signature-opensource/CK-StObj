@@ -4,6 +4,7 @@ using System.Linq;
 using System.Xml.Linq;
 using System.Xml;
 using System;
+using System.Runtime.Loader;
 
 namespace CK.Setup
 {
@@ -33,6 +34,7 @@ namespace CK.Setup
             GenerateSourceFiles = (bool?)e.Element( EngineConfiguration.xGenerateSourceFiles ) ?? true;
 
             _assemblies = new HashSet<string>( EngineConfiguration.StringsFromXml( e, EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly ) );
+            _discoverAssembliesFromPath = (bool?)e.Attribute( EngineConfiguration.xDiscoverAssembliesFromPath ) ?? false;
             _excludedTypes = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
 
             _types = new HashSet<TypeConfiguration>( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ).Select( e => new TypeConfiguration( e ) ) );
@@ -88,6 +90,7 @@ namespace CK.Setup
                                     String.IsNullOrWhiteSpace( Name )
                                         ? null
                                         : new XAttribute( EngineConfiguration.xName, Name ),
+                                    new XAttribute( EngineConfiguration.xDiscoverAssembliesFromPath, DiscoverAssembliesFromPath ),
                                     !OutputPath.IsEmptyPath
                                         ? new XElement( EngineConfiguration.xOutputPath, OutputPath )
                                         : null,

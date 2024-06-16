@@ -90,13 +90,17 @@ namespace CK.Setup
                     basePath = Path.GetFullPath( basePath );
                     monitor.Info( $"Configuration BasePath changed from '{c.BasePath}' to '{basePath}'." );
                 }
-                // Checks the GeneratedAssemblyName (no error, just a fix).
+                // Checks the GeneratedAssemblyName (no error, just a fix) and normalize BaseSHA1 to Zero.
                 if( c.GeneratedAssemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
                 {
                     monitor.Info( $"GeneratedAssemblyName should not end with '.dll'. Removing suffix." );
                     c.GeneratedAssemblyName += c.GeneratedAssemblyName.Substring( 0, c.GeneratedAssemblyName.Length - 4 );
                 }
-
+                if( c.BaseSHA1.IsZero || c.BaseSHA1 == SHA1Value.Empty )
+                {
+                    c.BaseSHA1 = SHA1Value.Zero;
+                    monitor.Info( $"Zero or Empty BaseSHA1, the generated code source SHA1 will be used." );
+                }
                 return basePath;
             }
 
@@ -385,15 +389,9 @@ namespace CK.Setup
             // Lets be optimistic (and if an error occurred the returned false will skip the run anyway).
             // If ForceRun is true, we'll always run. This flag can only transition from true to false.
             canSkipRun = !Configuration.ForceRun;
-            if( Configuration.BaseSHA1.IsZero || Configuration.BaseSHA1 == SHA1Value.Empty )
-            {
-                Configuration.BaseSHA1 = SHA1Value.Zero;
-                monitor.Info( $"Zero or Empty BaseSHA1, the generated code source SHA1 will be used." );
-            }
             if( Configuration.BinPaths.Count == 1 )
             {
                 var b = Configuration.BinPaths[0];
-                b.ExcludedTypes.AddRange( Configuration.GlobalExcludedTypes );
                 _binPathGroups.Add( new RunningBinPathGroup( Configuration, b, Configuration.BaseSHA1 ) );
                 monitor.Trace( $"No unification required (single BinPath)." );
             }
@@ -411,12 +409,6 @@ namespace CK.Setup
 
         bool InitializeMultipleBinPaths( IActivityMonitor monitor )
         {
-            // Propagates root excluded types to all bin paths.
-            foreach( var f in Configuration.BinPaths )
-            {
-                f.ExcludedTypes.AddRange( Configuration.GlobalExcludedTypes );
-            }
-
             // Starts by grouping actual BinPaths by similarity.
             foreach( var g in Configuration.BinPaths.GroupBy( Util.FuncIdentity, SimilarBinPathComparer.Default ) )
             {
@@ -498,7 +490,7 @@ namespace CK.Setup
         /// <returns>The unified configuration or null on error.</returns>
         static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
                                                                         IEnumerable<RunningBinPathGroup> configurations,
-                                                                        IEnumerable<Type> globalExcludedTypes )
+                                                                        HashSet<Type> globalExcludedTypes )
         {
             var unified = new BinPathConfiguration()
             {

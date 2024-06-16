@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -102,6 +104,7 @@ namespace CK.Setup
             return StringsFromXml( e, names, name ).Select( n => SimpleTypeFinder.WeakResolver( n, true )! );
         }
 
+
         #region Xml centralized names.
 
         /// <summary>
@@ -123,6 +126,11 @@ namespace CK.Setup
         /// The Assemblies element name.
         /// </summary>
         static public readonly XName xAssemblies = XNamespace.None + "Assemblies";
+
+        /// <summary>
+        /// The DiscoverAssembliesFromPath element name.
+        /// </summary>
+        static public readonly XName xDiscoverAssembliesFromPath = XNamespace.None + "DiscoverAssembliesFromPath";
 
         /// <summary>
         /// The Assembly element name.

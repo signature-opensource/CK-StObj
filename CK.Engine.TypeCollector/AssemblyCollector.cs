@@ -141,9 +141,9 @@ namespace CK.Setup
 
         CachedAssembly DoAdd( IActivityMonitor monitor, Assembly assembly, AssemblyName assemblyName, bool allowEngine )
         {
-            if( assemblyName.Name == null || assemblyName.FullName == null )
+            if( string.IsNullOrWhiteSpace( assemblyName.Name ) || string.IsNullOrWhiteSpace( assemblyName.FullName ) )
             {
-                Throw.CheckArgument( "Invalid assembly: the AssemmblyName.Name or assemblyName.FullName is null.", assemblyName.Name != null && assemblyName.FullName != null );
+                Throw.ArgumentException( "Invalid assembly: the AssemmblyName.Name or assemblyName.FullName is null, empty or whitespace." );
             }
             if( !_assemblies.TryGetValue( assembly, out var cached ) )
             {
