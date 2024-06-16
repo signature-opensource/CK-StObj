@@ -42,9 +42,9 @@ namespace CK.Setup
             bool isDefiner = false;
             foreach( var d in CustomAttributes )
             {
-                if( d.AttributeType.Name == "IsModelDependentAttribute" ) return CKAssemblyKind.CKAssembly;
-                if( d.AttributeType.Name == "IsModelAttribute" ) isDefiner = true;
-                if( d.AttributeType.Name == "IsSetupDependencyAttribute" ) return CKAssemblyKind.CKEngine;
+                if( d.AttributeType.Name == nameof( IsCKAssemblyAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelDependentAttribute" ) return CKAssemblyKind.CKAssembly;
+                if( d.AttributeType.Name == nameof( IsCKAssemblyDefinerAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelAttribute" ) isDefiner = true;
+                if( d.AttributeType.Name == nameof( IsCKEngineAttribute ) || /*Legacy*/d.AttributeType.Name == "IsSetupDependencyAttribute" ) return CKAssemblyKind.CKEngine;
             }
             return isDefiner ? CKAssemblyKind.CKAssemblyDefiner : CKAssemblyKind.None;
         }

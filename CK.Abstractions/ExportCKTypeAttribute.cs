@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// Exposes one or more type from a referenced assembly that has been hidden by <see cref="ExcludeCKAssemblyAttribute"/>.
     /// <para>
