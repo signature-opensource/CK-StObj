@@ -85,9 +85,9 @@ namespace CK.Setup
                 return weaken;
             }
             return new XElement( xConfigurationRoot,
-                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/EngineConfiguration.cs for documentation." ),
+                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/EngineConfiguration.cs for documentation." ),
                         !BasePath.IsEmptyPath ? new XElement( xBasePath, BasePath ) : null,
-                        GeneratedAssemblyName != StObjContextRoot.GeneratedAssemblyName ? new XElement( xGeneratedAssemblyName, GeneratedAssemblyName ) : null,
+                        GeneratedAssemblyName != GeneratedAssemblyNamePrefix ? new XElement( xGeneratedAssemblyName, GeneratedAssemblyName ) : null,
                         TraceDependencySorterInput ? new XElement( xTraceDependencySorterInput, true ) : null,
                         TraceDependencySorterOutput ? new XElement( xTraceDependencySorterOutput, true ) : null,
                         RevertOrderingNames ? new XElement( xRevertOrderingNames, true ) : null,
@@ -96,7 +96,7 @@ namespace CK.Setup
                         ForceRun ? new XElement( xForceRun, true ) : null,
                         ToXml( xGlobalExcludedTypes, xType, GlobalExcludedTypes ),
                         Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
-                        new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/BinPathConfiguration.cs for documentation." ),
+                        new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation." ),
                         new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
         }
 

@@ -135,7 +135,7 @@ namespace CK.Testing
                                                   CompileOption compileOption )
         {
             Throw.CheckArgument( !result.HasFatalError );
-            var assemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" );
+            var assemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.Now.ToString( ".yyMdHmsffff" );
 
             var config = new EngineConfiguration()
             {

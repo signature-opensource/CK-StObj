@@ -24,4 +24,7 @@
       <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
     </Content>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Engine.Configuration\CK.Engine.Configuration.csproj" />
+  </ItemGroup>
 </Project>

@@ -56,15 +56,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FAEAD54B
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibWithSampleModel.Tests", "Tests\StObjSetupTesting\Tests\LibWithSampleModel.Tests\LibWithSampleModel.Tests.csproj", "{104904DA-469B-41EF-93E2-4C571AF95E29}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Poco.Exchange", "CK.Poco.Exchange\CK.Poco.Exchange.csproj", "{036A9A57-F097-4836-9274-B7AB9A4CFB30}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exchange", "CK.Poco.Exchange\CK.Poco.Exchange.csproj", "{036A9A57-F097-4836-9274-B7AB9A4CFB30}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Poco.Exc.Json", "CK.Poco.Exc.Json\CK.Poco.Exc.Json.csproj", "{9C7C3C30-6498-41F0-8838-6E67D4C5A270}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exc.Json", "CK.Poco.Exc.Json\CK.Poco.Exc.Json.csproj", "{9C7C3C30-6498-41F0-8838-6E67D4C5A270}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Poco.Exc.Json.Engine", "CK.Poco.Exc.Json.Engine\CK.Poco.Exc.Json.Engine.csproj", "{FE06BF59-EB44-4E4B-87E5-9B0ADF26F9E5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exc.Json.Engine", "CK.Poco.Exc.Json.Engine\CK.Poco.Exc.Json.Engine.csproj", "{FE06BF59-EB44-4E4B-87E5-9B0ADF26F9E5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Poco.Exc.Json.Tests", "Tests\CK.Poco.Exc.Json.Tests\CK.Poco.Exc.Json.Tests.csproj", "{08D062CE-2DED-4827-9334-C5C1553B7749}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exc.Json.Tests", "Tests\CK.Poco.Exc.Json.Tests\CK.Poco.Exc.Json.Tests.csproj", "{08D062CE-2DED-4827-9334-C5C1553B7749}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Poco.Exchange.Engine", "CK.Poco.Exchange.Engine\CK.Poco.Exchange.Engine.csproj", "{C1AEB1CE-204C-495C-A7EA-AFFE01BDE82D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exchange.Engine", "CK.Poco.Exchange.Engine\CK.Poco.Exchange.Engine.csproj", "{C1AEB1CE-204C-495C-A7EA-AFFE01BDE82D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Engine.Configuration", "CK.Engine.Configuration\CK.Engine.Configuration.csproj", "{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -292,6 +294,18 @@ Global
 		{C1AEB1CE-204C-495C-A7EA-AFFE01BDE82D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{C1AEB1CE-204C-495C-A7EA-AFFE01BDE82D}.Release|x86.ActiveCfg = Release|Any CPU
 		{C1AEB1CE-204C-495C-A7EA-AFFE01BDE82D}.Release|x86.Build.0 = Release|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Debug|x86.Build.0 = Debug|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Release|x86.ActiveCfg = Release|Any CPU
+		{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

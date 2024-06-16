@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <code>
         /// using( CK.Core.WeakAssemblyNameResolver.TemporaryInstall() )
         /// {
-        ///     services.AddStObjMap( "CK.StObj.AutoAssembly" );
+        ///     services.AddStObjMap( "CK.GeneratedAssembly" );
         /// }
         /// </code>
         /// Note that there SHOULD NOT be any conflicts. This workaround may be necessary but hides a conflict of version dependencies

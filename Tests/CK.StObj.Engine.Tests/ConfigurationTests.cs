@@ -601,10 +601,10 @@ namespace CK.StObj.Engine.Tests
             var eX = e.ToXml().ToString().ReplaceLineEndings();
             eX.Should().Be( """
                 <Setup>
-                  <!--Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/EngineConfiguration.cs for documentation.-->
+                  <!--Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/EngineConfiguration.cs for documentation.-->
                   <GlobalExcludedTypes />
                   <Aspect Type="CK.StObj.Engine.Tests.TypeScriptAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
-                  <!--BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/BinPathConfiguration.cs for documentation.-->
+                  <!--BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation.-->
                   <BinPaths>
                     <BinPath Path="">
                       <CompileOption>None</CompileOption>
@@ -688,7 +688,7 @@ namespace CK.StObj.Engine.Tests
                   <GenerateSourceFiles>True</GenerateSourceFiles>
                 </BinPath>
               </BinPaths>
-              <GeneratedAssemblyName>CK.StObj.AutoAssembly.Not the default</GeneratedAssemblyName>
+              <GeneratedAssemblyName>CK.GeneratedAssembly.Not the default</GeneratedAssemblyName>
               <InformationalVersion>This will be in the generated Assembly.</InformationalVersion>
               <TraceDependencySorterInput>True</TraceDependencySorterInput>
               <TraceDependencySorterOutput>True</TraceDependencySorterOutput>
@@ -745,7 +745,7 @@ namespace CK.StObj.Engine.Tests
             b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
 
-            c.GeneratedAssemblyName.Should().Be( "CK.StObj.AutoAssembly.Not the default" );
+            c.GeneratedAssemblyName.Should().Be( "CK.GeneratedAssembly.Not the default" );
             c.InformationalVersion.Should().Be( "This will be in the generated Assembly." );
             c.TraceDependencySorterInput.Should().BeTrue();
             c.TraceDependencySorterOutput.Should().BeTrue();

@@ -40,9 +40,8 @@ namespace CK.Setup
                                       BinPathConfiguration[] similars,
                                       SHA1Value sha )
         {
-            Throw.DebugAssert( engineConfiguration.GeneratedAssemblyName != null && engineConfiguration.GeneratedAssemblyName.StartsWith( StObjContextRoot.GeneratedAssemblyName ) );
             Throw.DebugAssert( similars != null && similars.Length > 0 && similars[0] == head );
-            _generatedDllName = $"{engineConfiguration.GeneratedAssemblyName}-{head.Name}.dll";
+            _generatedDllName = $"{engineConfiguration.GeneratedAssemblyName}.{head.Name}.dll";
             _engineConfiguration = engineConfiguration;
             _configuration = head;
             _similarConfigurations = similars;
@@ -102,7 +101,7 @@ namespace CK.Setup
                 // with a StObjCollector (the set of types) that is specific and with no way to have any clue about
                 // their "content" (even for two consecutive identical set of types, their code, attributes or the
                 // code of the generators may have changed between 2 runs).
-                // In this usage, the goal is to correctly manage the G0.cs and CK.StObj.AutoAssembly files.
+                // In this usage, the goal is to correctly manage the G0.cs and CK.GeneratedAssembly files.
                 //
                 // The behavior here is tailored for CK.Testing.StObjEngine and by its API.
                 // If the source code is not required, we require it here so that the SHA1 can be computed based on

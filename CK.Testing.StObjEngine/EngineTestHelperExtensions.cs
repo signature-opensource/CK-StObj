@@ -55,7 +55,7 @@ namespace CK.Testing
         {
             var config = new EngineConfiguration()
             {
-                GeneratedAssemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" )
+                GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yyMdHmsffff" )
             };
             config.FirstBinPath.CompileOption = compileOption;
             config.FirstBinPath.GenerateSourceFiles = generateSourceFiles;

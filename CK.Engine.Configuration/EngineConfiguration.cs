@@ -15,6 +15,15 @@ namespace CK.Setup
     /// </summary>
     public sealed partial class EngineConfiguration
     {
+        /// <summary>
+        /// Default generated assembly name.
+        /// <para>
+        /// The <see cref="GeneratedAssemblyName"/> is either "CK.GeneratedAssembly" or starts
+        /// with "CK.GeneratedAssembly.".
+        /// </para>
+        /// </summary>
+        public const string GeneratedAssemblyNamePrefix = "CK.GeneratedAssembly";
+
         readonly List<BinPathConfiguration> _binPaths;
         Dictionary<string, EngineAspectConfiguration> _namedAspects;
         List<EngineAspectConfiguration> _aspects;
@@ -93,8 +102,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets the final Assembly name.
-        /// It must be <see cref="StObjContextRoot.GeneratedAssemblyName"/> (the default "CK.StObj.AutoAssembly") or
-        /// start with "CK.StObj.AutoAssembly.".
+        /// It must be <see cref="GeneratedAssemblyNamePrefix"/> (the default "CK.GeneratedAssembly") or
+        /// start with "CK.GeneratedAssembly.".
         /// <para>
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </para>
@@ -102,7 +111,7 @@ namespace CK.Setup
         [AllowNull]
         public string GeneratedAssemblyName
         {
-            get => _generatedAssemblyName ?? StObjContextRoot.GeneratedAssemblyName;
+            get => _generatedAssemblyName ?? GeneratedAssemblyNamePrefix;
             set
             {
                 if( !String.IsNullOrWhiteSpace( value ) )
@@ -111,7 +120,10 @@ namespace CK.Setup
                     {
                         Throw.ArgumentException( nameof(value), $"Invalid file character in file name '{value}'." );
                     }
-                    Throw.CheckArgument( value == StObjContextRoot.GeneratedAssemblyName || value.StartsWith( StObjContextRoot.GeneratedAssemblyName + '.' ) );
+                    Throw.CheckArgument( value == GeneratedAssemblyNamePrefix
+                                         || (value.Length > GeneratedAssemblyNamePrefix.Length + 2
+                                             && value[GeneratedAssemblyNamePrefix.Length] == '.'
+                                             && value.StartsWith( GeneratedAssemblyNamePrefix )) );
                     _generatedAssemblyName = value;
                 }
                 else _generatedAssemblyName = null;
