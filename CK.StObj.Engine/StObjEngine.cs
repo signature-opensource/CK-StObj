@@ -165,7 +165,7 @@ namespace CK.Setup
         {
             Throw.CheckState( "Run can be called only once.", !_hasRun );
             _hasRun = true;
-            if( !RunningEngineConfiguration.CheckAndValidate( _monitor, _config.Configuration ) )
+            if( !RunningEngineConfiguration.PrepareConfiguration( _monitor, _config.Configuration ) )
             {
                 return new StObjEngineResult( false, _config );
             }
@@ -349,9 +349,7 @@ namespace CK.Setup
                     {
                         foreach( var c in group.Configuration.Types )
                         {
-                            // When c.Kind is None, !Optional is challenged.
-                            // The Type is always resolved.
-                            stObjC.SetAutoServiceKind( _monitor, c.Name, c.Kind, c.Optional );
+                            if( c.Kind != AutoServiceKind.None ) stObjC.SetAutoServiceKind( _monitor, c.Type, c.Kind );
                         }
                     }
                     // Registers the types provided by code.
@@ -359,7 +357,7 @@ namespace CK.Setup
                     // Then registers the types from the assemblies.
                     stObjC.RegisterAssemblyTypes( _monitor, group.Configuration.Assemblies );
                     // Explicitly registers the non optional Types.
-                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( _monitor, group.Configuration.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
+                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( _monitor, group.Configuration.Types.Select( tc => tc.Type ) );
                     // Finally, registers the code based explicitly registered types.
                     foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( _monitor, t );
                 }

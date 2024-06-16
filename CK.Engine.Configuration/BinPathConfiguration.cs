@@ -14,7 +14,7 @@ namespace CK.Setup
     {
         readonly Dictionary<string,BinPathAspectConfiguration> _aspects;
         readonly HashSet<string> _assemblies;
-        readonly List<TypeConfiguration> _types;
+        readonly HashSet<TypeConfiguration> _types;
         readonly HashSet<Type> _excludedTypes;
         EngineConfiguration? _owner;
         string? _name;
@@ -33,7 +33,7 @@ namespace CK.Setup
             GenerateSourceFiles = true;
             _assemblies = new HashSet<string>();
             _excludedTypes = new HashSet<Type>();
-            _types = new List<TypeConfiguration>();
+            _types = new HashSet<TypeConfiguration>();
             _aspects = new Dictionary<string, BinPathAspectConfiguration>();
         }
 
@@ -91,40 +91,9 @@ namespace CK.Setup
         public HashSet<string> Assemblies => _assemblies;
 
         /// <summary>
-        /// Gets a set of <see cref="TypeConfiguration"/> that must be configured explicitly.
-        /// Type names that appear here with <see cref="TypeConfiguration.Optional"/> set to false are registered
-        /// regardless of the <see cref="Assemblies"/>.
+        /// Gets a set of <see cref="TypeConfiguration"/> that must be registered explicitly regardless of the <see cref="Assemblies"/>.
         /// </summary>
-        public List<TypeConfiguration> Types => _types;
-
-        /// <summary>
-        /// Adds a <see cref="TypeConfiguration"/> to <see cref="Types"/>.
-        /// </summary>
-        /// <param name="type">The type to configure.</param>
-        /// <param name="kind">The kind to set.</param>
-        /// <param name="isOptional">Whether the type may not exist.</param>
-        /// <returns></returns>
-        public BinPathConfiguration AddType( Type type, AutoServiceKind kind, bool isOptional = false )
-        {
-            Throw.CheckNotNullArgument( type );
-            Throw.CheckArgument( type.AssemblyQualifiedName != null );
-            Types.Add( new TypeConfiguration( type.AssemblyQualifiedName, kind, isOptional ) );
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a <see cref="TypeConfiguration"/> to <see cref="Types"/>.
-        /// </summary>
-        /// <param name="name">The assembly qualified name of the type.</param>
-        /// <param name="kind">The kind to set.</param>
-        /// <param name="isOptional">Whether the type may not exist.</param>
-        /// <returns>This BinPathConfiguration (fluent syntax).</returns>
-        public BinPathConfiguration AddType( string name, AutoServiceKind kind, bool isOptional )
-        {
-            Throw.CheckNotNullArgument( name );
-            Types.Add( new TypeConfiguration( name, kind, isOptional ) );
-            return this;
-        }
+        public HashSet<TypeConfiguration> Types => _types;
 
         /// <summary>
         /// Gets a set of types that must be excluded from registration.

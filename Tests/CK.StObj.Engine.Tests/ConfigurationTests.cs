@@ -652,11 +652,9 @@ namespace CK.StObj.Engine.Tests
                         <Assembly Name="Another.Assembly" />
                     </Assemblies>
                     <Types>
-                        <Type Name="CK.Core.IActivityMonitor, CK.ActivityMonitor" Kind="IsScoped" />
-                        <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" Kind="IsMultipleService|IsSingleton" Optional="True" />
-                        <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" Kind="IsSingleton" Optional="True" />
-                        <!-- This is invalid but not at the configuration parsing level. -->
-                        <Type Name="StrangeService, StrangeAssembly" Kind="IsScoped|IsSingleton|IsMultipleService" Optional="True" />
+                        <Type Kind="IsScoped">CK.Core.IActivityMonitor, CK.ActivityMonitor</Type>
+                        <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" Kind="IsMultipleService|IsSingleton" />
+                        <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" Kind="IsSingleton" />
                     </Types>
                     <ExcludedTypes>
                         <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
@@ -713,23 +711,13 @@ namespace CK.StObj.Engine.Tests
             b1.Path.Should().Be( new NormalizedPath( "../../Relative/To/Base/Debug/net8.0" ) );
             b1.Assemblies.Should().BeEquivalentTo( "An.Assembly.Name", "Another.Assembly" );
 
-            b1.Types.Should().HaveCount( 4 );
-            var t1 = b1.Types[0];
-            t1.Name.Should().Be( "CK.Core.IActivityMonitor, CK.ActivityMonitor" );
+            b1.Types.Should().HaveCount( 3 );
+            var t1 = b1.Types.Single( tc => tc.Type == typeof(IActivityMonitor) );
             t1.Kind.Should().Be( AutoServiceKind.IsScoped );
-            t1.Optional.Should().BeFalse();
-            var t2 = b1.Types[1];
-            t2.Name.Should().Be( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" );
+            var t2 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
             t2.Kind.Should().Be( AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
-            t2.Optional.Should().BeTrue();
-            var t3 = b1.Types[2];
-            t3.Name.Should().Be( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" );
+            var t3 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Options.IOptions<> ) ); ;
             t3.Kind.Should().Be( AutoServiceKind.IsSingleton );
-            t3.Optional.Should().BeTrue();
-            var t4 = b1.Types[3];
-            t4.Name.Should().Be( "StrangeService, StrangeAssembly" );
-            t4.Kind.Should().Be( AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton | AutoServiceKind.IsMultipleService );
-            t4.Optional.Should().BeTrue();
 
             var bSample = b1.FindAspect<SampleBinPathAspectConfiguration>();
             Debug.Assert( bSample != null );
@@ -779,7 +767,7 @@ namespace CK.StObj.Engine.Tests
             Throw.DebugAssert( another != null );
             another.Path.Should().Be( "{BasePath}comm/ands" );
 
-            RunningEngineConfiguration.CheckAndValidate( TestHelper.Monitor, c );
+            RunningEngineConfiguration.PrepareConfiguration( TestHelper.Monitor, c );
 
             sample.Param.Should().Be( "/The/Base/Path/Another/Relative/Test" );
             sample.A.Should().Be( "/The/Base/Path/Another/Relative/InTheOutputPath" );

@@ -217,7 +217,7 @@ namespace CK.StObj.Engine.Tests.Service
             // Here class HNot is a IOfficialHostedService but not a IAutoService and not explicitly registered: it is not automatically registered.
             {
                 var config = TestHelper.CreateDefaultEngineConfiguration();
-                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService, false );
+                config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService ) );
 
                 var collector = TestHelper.CreateTypeCollector( typeof( H1 ), typeof( H2 ), typeof( HNot ) );
 
@@ -242,7 +242,7 @@ namespace CK.StObj.Engine.Tests.Service
             {
 
                 var config = TestHelper.CreateDefaultEngineConfiguration();
-                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService, false );
+                config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService ) );
 
                 var collector = TestHelper.CreateTypeCollector( typeof( H1 ), typeof( H2 ) );
 
@@ -271,7 +271,7 @@ namespace CK.StObj.Engine.Tests.Service
             // Success: H1 is singleton.
             {
                 var config = TestHelper.CreateDefaultEngineConfiguration();
-                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton, false );
+                config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton ) );
 
                 var collector = TestHelper.CreateTypeCollector( typeof( H1 ) );
 
@@ -281,9 +281,9 @@ namespace CK.StObj.Engine.Tests.Service
             // Failure: H2 is IScopedAutoService.
             {
                 var config = TestHelper.CreateDefaultEngineConfiguration();
-                config.FirstBinPath.AddType( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton, false );
+                config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton ) );
 
-                var collector =  TestHelper.CreateTypeCollector( typeof( H2 ) );
+                var collector = TestHelper.CreateTypeCollector( typeof( H2 ) );
 
                 TestHelper.GetFailedSingleBinPathAutomaticServices( config, collector, "An interface or an implementation cannot be both Scoped and Singleton" );
             }
@@ -343,7 +343,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void IEnumerable_Kind_can_be_explicitly_configured_via_SetAutoServiceKind()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.AddType( typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped, false );
+            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped ) );
 
             var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
 
@@ -358,8 +358,8 @@ namespace CK.StObj.Engine.Tests.Service
         public void IEnumerable_cannot_be_SetAutoServiceKind_Singleton_if_the_enumerated_interface_is_Scoped()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.AddType( typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton, false )
-                               .AddType( typeof( IMany ), AutoServiceKind.IsScoped, false );
+            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton ) );
+            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IMany ), AutoServiceKind.IsScoped ) );
 
             var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
 

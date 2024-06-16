@@ -40,7 +40,7 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         /// <returns>True on success, false is something's wrong.</returns>
-        public static bool CheckAndValidate( IActivityMonitor monitor, EngineConfiguration c )
+        public static bool PrepareConfiguration( IActivityMonitor monitor, EngineConfiguration c )
         {
             c.BasePath = CheckEnginePaths( monitor, c );
             if( c.BasePath.IsEmptyPath ) return false;
@@ -63,9 +63,12 @@ namespace CK.Setup
             }
 
             // Updates the BinPathConfiguration.OutputPath and BinPathConfiguration.ProjectPath to be rooted
-            // and (at least on their BinPath.Path) and process their Xml to handle '{BasePath}', '{OutputPath}' and '{ProjectPath}'
-            // prefixes.
+            // and (at least on their BinPath.Path), process their Xml to handle '{BasePath}', '{OutputPath}' and '{ProjectPath}'
+            // prefixes and handles types:
+            // - Propagate GlobalExcludedTypes to each BinPath ExcludedTypes.
+            // - Removes BinPath Types that appears in their ExcludedTypes (warn on them).
             FinalizeBinPaths( monitor, c );
+
             return true;
 
             /// <summary>
@@ -195,6 +198,15 @@ namespace CK.Setup
             {
                 foreach( var b in c.BinPaths )
                 {
+                    b.ExcludedTypes.AddRange( c.GlobalExcludedTypes );
+                    foreach( var tc in b.Types )
+                    {
+                        if( b.ExcludedTypes.Remove( tc.Type ) )
+                        {
+                            monitor.Warn( $"BinPath '{b.Name}' Types contains '{tc.Type}' ({tc.Kind}) that is excluded. It is removed and will be ignored." );
+                        }
+                    }
+
                     if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
                     else b.OutputPath = MakeAbsolutePath( c, b.OutputPath );
 
@@ -497,25 +509,21 @@ namespace CK.Setup
                 GenerateSourceFiles = false
             };
             Debug.Assert( unified.CompileOption == CompileOption.None );
-            // Assemblies and types are the union of the assemblies and types of the bin paths.
+            // Assemblies are the union of the assemblies of the bin paths.
             unified.Assemblies.AddRange( configurations.SelectMany( b => b.Configuration.Assemblies ) );
-
-            var fusion = new Dictionary<string, BinPathConfiguration.TypeConfiguration>();
-            foreach( var c in configurations.SelectMany( b => b.Configuration.Types ) )
-            {
-                if( fusion.TryGetValue( c.Name, out var exists ) )
-                {
-                    if( !c.Optional ) exists.Optional = false;
-                    if( exists.Kind != c.Kind )
-                    {
-                        monitor.Error( $"Invalid Type configuration across BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
-                        return null;
-                    }
-                }
-                else fusion.Add( c.Name, new BinPathConfiguration.TypeConfiguration( c.Name, c.Kind, c.Optional ) );
-            }
-            unified.Types.AddRange( fusion.Values );
+            // Excluded types are only the global ones.
             unified.ExcludedTypes.AddRange( globalExcludedTypes );
+
+            // Unified is only interested in IPoco and IRealObject (kind is useless).
+            // The BinPath Types that also appear in their BinPath ExcludedTypes have already been filtered out,
+            // we don't need to remove them.
+            Throw.DebugAssert( configurations.All( c => c.Configuration.Types.Select( tc => tc.Type )
+                                                                             .Any( t => c.Configuration.ExcludedTypes.Contains( t ) ) is false ) );
+
+            var all = configurations.SelectMany( b => b.Configuration.Types.Select( tc => tc.Type ) )
+                                    .Where( t => typeof( IPoco ).IsAssignableFrom( t ) || typeof( IRealObject ).IsAssignableFrom( t ) )
+                                    .Select( t => new BinPathConfiguration.TypeConfiguration( t ) );
+            unified.Types.AddRange( all );
             return unified;
         }
 

@@ -4,10 +4,6 @@ namespace CK.Core
 {
     /// <summary>
     /// Detailed flags that categorizes service types used by the Automatic DI.
-    /// This is a subset of a more complex enumeration defined and used by the engine but
-    /// due to the hybrid nature of the DI configuration, these flags need to be known by
-    /// the generated code that configures the DI containers: this is why they are exposed
-    /// at the Model level.
     /// </summary>
     [Flags]
     public enum AutoServiceKind
@@ -43,7 +39,7 @@ namespace CK.Core
         /// A <see cref="IRealObject"/> is a true singleton.
         /// <list type="bullet">
         ///     <item><term>Implies</term><description><see cref="IsSingleton"/></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsMultipleService"/></description></item>
+        ///     <item><term>Rejects</term><description><see cref="IsMultipleService"/> and <see cref="IsContainerConfiguredService"/></description></item>
         /// </list>
         /// </summary>
         IsRealObject = 1 << 10,
@@ -51,8 +47,8 @@ namespace CK.Core
         /// <summary>
         /// The type is a DI service available in some containers but not necessarily in all of them.
         /// <para>
-        /// It is up to each <see cref="DIContainerDefinition{TScopeData}.ConfigureContainerServices"/> to register
-        /// an implementation or not for this service.
+        /// It is up to each DIContainerDefinition to register an implementation or not for this service
+        /// in its ConfigureContainerServices method.
         /// </para>
         /// </summary>
         IsContainerConfiguredService = 1 << 11,

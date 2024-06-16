@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,14 +23,11 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
-        [TestCase( true )]
-        [TestCase( false )]
-        public void simple_front_only_registration( bool isOptional )
+        [Test]
+        public void simple_front_only_registration()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.AddType( "CK.StObj.Engine.Tests.Service.SetAutoServiceKindTests+IService, CK.StObj.Engine.Tests",
-                                         AutoServiceKind.IsScoped | AutoServiceKind.IsMultipleService,
-                                         isOptional );
+            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IService ), AutoServiceKind.IsScoped | AutoServiceKind.IsMultipleService ) );
 
             var collector = TestHelper.CreateTypeCollector( typeof( TheService ) );
 
@@ -75,9 +73,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void base_singleton_interface_definition_can_coexist_with_specializations()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.AddType( "CK.StObj.Engine.Tests.Service.SetAutoServiceKindTests+IConfiguration, CK.StObj.Engine.Tests",
-                                         AutoServiceKind.IsSingleton,
-                                         false );
+            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IConfiguration ), AutoServiceKind.IsSingleton ) );
 
             var collector = TestHelper.CreateTypeCollector( typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist1 ), typeof( ThisShouldCoexist2 ) );
 

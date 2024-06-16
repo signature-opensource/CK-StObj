@@ -35,7 +35,7 @@ namespace CK.Setup
             _assemblies = new HashSet<string>( EngineConfiguration.StringsFromXml( e, EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly ) );
             _excludedTypes = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
 
-            _types = e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ).Select( c => new TypeConfiguration( c ) ).ToList();
+            _types = new HashSet<TypeConfiguration>( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ).Select( e => new TypeConfiguration( e ) ) );
 
             var allowedNames = new List<string>()
             {
@@ -84,19 +84,28 @@ namespace CK.Setup
         public XElement ToXml()
         {
             return new XElement( EngineConfiguration.xBinPath,
-                                    String.IsNullOrWhiteSpace( Name ) ? null : new XAttribute( EngineConfiguration.xName, Name ),
                                     new XAttribute( EngineConfiguration.xPath, Path ),
-                                    !OutputPath.IsEmptyPath ? new XElement( EngineConfiguration.xOutputPath, OutputPath ) : null,
-                                    !ProjectPath.IsEmptyPath ? new XElement( EngineConfiguration.xProjectPath, ProjectPath ) : null,
+                                    String.IsNullOrWhiteSpace( Name )
+                                        ? null
+                                        : new XAttribute( EngineConfiguration.xName, Name ),
+                                    !OutputPath.IsEmptyPath
+                                        ? new XElement( EngineConfiguration.xOutputPath, OutputPath )
+                                        : null,
+                                    !ProjectPath.IsEmptyPath
+                                        ? new XElement( EngineConfiguration.xProjectPath, ProjectPath )
+                                        : null,
                                     new XElement( EngineConfiguration.xCompileOption, CompileOption.ToString() ),
-                                    GenerateSourceFiles ? null : new XElement( EngineConfiguration.xGenerateSourceFiles, false ),
+                                    GenerateSourceFiles
+                                        ? null
+                                        : new XElement( EngineConfiguration.xGenerateSourceFiles, false ),
                                     EngineConfiguration.ToXml( EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly, Assemblies ),
                                     EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, ExcludedTypes ),
                                     new XElement( EngineConfiguration.xTypes,
                                                     Types.Select( t => new XElement( EngineConfiguration.xType,
-                                                                            new XAttribute( EngineConfiguration.xName, t.Name ),
-                                                                            t.Kind != AutoServiceKind.None ? new XAttribute( EngineConfiguration.xKind, t.Kind ) : null,
-                                                                            t.Optional ? new XAttribute( EngineConfiguration.xOptional, true ) : null ) ) ),
+                                                                                     t.Kind != AutoServiceKind.None
+                                                                                            ? new XAttribute( EngineConfiguration.xKind, t.Kind )
+                                                                                            : null,
+                                                                                     EngineConfiguration.CleanName( t.Type ) ) ) ),
                                     _aspects.Values.Select( a => a.ToXml() ) );
         }
     }
