@@ -207,7 +207,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets an optional base path that applies to relative <see cref="BinPaths"/>.
-        /// When null or empty, the current directory is used.
+        /// When empty, the current directory is used. When this configuration is the result of a <see cref="Load(string)"/>,
+        /// the file's directory is the initial base path.
         /// </summary>
         public NormalizedPath BasePath { get => _basePath; set => _basePath = value; }
 

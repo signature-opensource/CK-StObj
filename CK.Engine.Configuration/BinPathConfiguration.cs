@@ -93,9 +93,12 @@ namespace CK.Setup
         public HashSet<string> Assemblies => _assemblies;
 
         /// <summary>
-        /// Gets or sets whether the dlls is the <see cref="Path"/> should be processed by the setup.
+        /// Gets or sets whether the dlls in the <see cref="Path"/> should be processed by the setup.
         /// <para>
         /// Defaults to false: only <see cref="Types"/> and existing <see cref="Assemblies"/> are considered.
+        /// </para>
+        /// <para>
+        /// Settings this to true is useful only if Assemblies is empty (explicitly defined assemblies always have the priority). 
         /// </para>
         /// </summary>
         public bool DiscoverAssembliesFromPath { get => _discoverAssembliesFromPath; set => _discoverAssembliesFromPath = value; }

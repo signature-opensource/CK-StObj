@@ -65,7 +65,6 @@ namespace CK.Core
         /// <summary>
         /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
         /// <list type="bullet">
-        ///     <item><term>Implies</term><description></description></item>
         ///     <item><term>Rejects</term><description><see cref="IsRealObject"/></description></item>
         /// </list>
         /// </summary>

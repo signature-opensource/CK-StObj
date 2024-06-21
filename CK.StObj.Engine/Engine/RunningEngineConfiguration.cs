@@ -16,7 +16,7 @@ namespace CK.Setup
     {
         readonly List<RunningBinPathGroup> _binPathGroups;
 
-        internal RunningEngineConfiguration( EngineConfiguration configuration )
+        public RunningEngineConfiguration( EngineConfiguration configuration )
         {
             _binPathGroups = new List<RunningBinPathGroup>();
             Configuration = configuration;
@@ -31,6 +31,9 @@ namespace CK.Setup
         IReadOnlyList<IRunningBinPathGroup> IRunningEngineConfiguration.Groups => _binPathGroups;
 
         /// <summary>
+        /// Resolves the [alt|ernative] slots that may appear in the <see cref="BinPathConfiguration.Path"/>:
+        /// each path is updated and rooted.
+        /// <para>
         /// Any element or attribute value that start with '{BasePath}', '{OutputPath}' and '{ProjectPath}' are evaluated
         /// in every <see cref="BinPathAspectConfiguration.ToXml()"/> and if the xml has changed, <see cref="BinPathAspectConfiguration.InitializeFrom(XElement)"/>
         /// is called to update the bin path aspect configuration.
@@ -384,15 +387,14 @@ namespace CK.Setup
             }
         }
 
-        internal bool Initialize( IActivityMonitor monitor, out bool canSkipRun )
+        internal bool CreateRunningBinPathGroups( IActivityMonitor monitor, out bool canSkipRun )
         {
             // Lets be optimistic (and if an error occurred the returned false will skip the run anyway).
             // If ForceRun is true, we'll always run. This flag can only transition from true to false.
             canSkipRun = !Configuration.ForceRun;
             if( Configuration.BinPaths.Count == 1 )
             {
-                var b = Configuration.BinPaths[0];
-                _binPathGroups.Add( new RunningBinPathGroup( Configuration, b, Configuration.BaseSHA1 ) );
+                _binPathGroups.Add( new RunningBinPathGroup( Configuration, Configuration.FirstBinPath, Configuration.BaseSHA1 ) );
                 monitor.Trace( $"No unification required (single BinPath)." );
             }
             else
@@ -462,21 +464,15 @@ namespace CK.Setup
             public bool Equals( BinPathConfiguration? x, BinPathConfiguration? y )
             {
                 Debug.Assert( x != null && y != null );
-                bool s = x.Types.Count == y.Types.Count
-                         && x.Assemblies.SetEquals( y.Assemblies )
-                         && x.ExcludedTypes.SetEquals( y.ExcludedTypes );
-                if( s )
-                {
-                    var one = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
-                    var two = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
-                    s = one.SequenceEqual( two );
-                }
-                return s;
+                return x.Assemblies.SetEquals( y.Assemblies )
+                       && x.ExcludedTypes.SetEquals( y.ExcludedTypes )
+                       && x.Types.SetEquals( y.Types );
             }
 
+            // Useless but fulfills the equality contract.
             public int GetHashCode( BinPathConfiguration b ) => b.ExcludedTypes.Count
-                                                                        + b.Types.Count * 59
-                                                                        + b.Assemblies.Count * 117;
+                                                                + b.Types.Count * 79
+                                                                + b.Assemblies.Count * 117;
         }
 
         /// <summary>

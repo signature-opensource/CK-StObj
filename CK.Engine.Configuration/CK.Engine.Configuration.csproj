@@ -9,4 +9,8 @@
     <PackageReference Include="CK.Core" Version="19.0.1--0007-develop" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Abstractions\CK.Abstractions.csproj" />
+  </ItemGroup>
+
 </Project>

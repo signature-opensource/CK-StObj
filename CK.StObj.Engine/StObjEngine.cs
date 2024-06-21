@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace CK.Setup
 {
+
+
     /// <summary>
     /// Generic engine that runs a <see cref="EngineConfiguration"/>.
     /// </summary>
@@ -173,13 +175,13 @@ namespace CK.Setup
             {
                 _config.ApplyCKSetupConfiguration( _monitor, _ckSetupConfig );
             }
-            if( !_config.Initialize( _monitor, out bool canSkipRun ) )
+            if( !_config.CreateRunningBinPathGroups( _monitor, out bool canSkipRun ) )
             {
                 return new StObjEngineResult( false, _config );
             }
-            // If canSkipRun is true here it means that regarding the 2 core generated artifacts, there is
-            // nothing to do.
-            using var _ = _monitor.OpenInfo( "Running StObjEngine setup." );
+            // If canSkipRun is true here it means that regarding the 2 core generated
+            // artifacts (G0.cs and GeneratedAssembmy), there is nothing to do.
+            using var _ = _monitor.OpenInfo( "Running Engine." );
             _status = new Status( _monitor );
             _startContext = new EngineConfigureContext( _monitor, _config, _status, canSkipRun );
             try

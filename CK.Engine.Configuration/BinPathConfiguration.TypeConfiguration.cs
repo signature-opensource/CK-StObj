@@ -10,7 +10,7 @@ namespace CK.Setup
         /// Models the &lt;Type&gt; elements that are children of &lt;Types&gt;.
         /// </summary>
         /// <param name="Type">The type</param>
-        /// <param name="Kind">The type kind. <see cref="AutoServiceKind.None"/> has no effect.</param>
+        /// <param name="Kind">The type kind. <see cref="AutoServiceKind.None"/> only ensures that the type is registered.</param>
         public sealed record TypeConfiguration( Type Type, AutoServiceKind Kind = AutoServiceKind.None )
         {
             /// <summary>
