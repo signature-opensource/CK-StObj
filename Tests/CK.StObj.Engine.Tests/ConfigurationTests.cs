@@ -713,11 +713,11 @@ namespace CK.StObj.Engine.Tests
 
             b1.Types.Should().HaveCount( 3 );
             var t1 = b1.Types.Single( tc => tc.Type == typeof(IActivityMonitor) );
-            t1.Kind.Should().Be( AutoServiceKind.IsScoped );
+            t1.Kind.Should().Be( ConfigurableAutoServiceKind.IsScoped );
             var t2 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
-            t2.Kind.Should().Be( AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
+            t2.Kind.Should().Be( ConfigurableAutoServiceKind.IsMultipleService | ConfigurableAutoServiceKind.IsSingleton );
             var t3 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Options.IOptions<> ) ); ;
-            t3.Kind.Should().Be( AutoServiceKind.IsSingleton );
+            t3.Kind.Should().Be( ConfigurableAutoServiceKind.IsSingleton );
 
             var bSample = b1.FindAspect<SampleBinPathAspectConfiguration>();
             Debug.Assert( bSample != null );

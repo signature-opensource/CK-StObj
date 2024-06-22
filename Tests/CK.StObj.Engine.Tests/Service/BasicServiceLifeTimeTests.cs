@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
@@ -81,7 +82,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_that_depends_on_external_that_is_defined_as_a_singleton_is_fine()
         {
             var collector = new Setup.StObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
             collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
             var r = collector.GetResult( TestHelper.Monitor );
             r.HasFatalError.Should().BeFalse();
@@ -91,7 +92,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_that_depends_on_external_that_is_defined_as_a_Scoped_is_an_error()
         {
             var collector = new Setup.StObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsScoped );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsScoped );
             collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
             var r = collector.GetResult( TestHelper.Monitor );
             collector.FatalOrErrors.Any( m => m.Contains( "s marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." ) )
@@ -191,7 +192,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void an_auto_service_that_depends_on_all_kind_of_singletons_is_singleton()
         {
             var collector = new Setup.StObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
             collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAllKindOfSingleton ) );
             collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnExternal ) );
             collector.RegisterType( TestHelper.Monitor, typeof( SampleRealObject ) );
@@ -230,10 +231,10 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_service_that_depends_on_all_kind_of_singletons_is_singleton( string mode )
         {
             var collector = new Setup.StObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
             if( mode == "WithSingletonLifetimeOnExternalService" )
             {
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOtherExternalService ), AutoServiceKind.IsSingleton );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOtherExternalService ), ConfigurableAutoServiceKind.IsSingleton );
             }
             collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService ) );
             collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnExternal ) );
@@ -256,7 +257,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void SetAutoServiceKind_a_class_does_not_mean_registering_it()
         {
             var collector = new Setup.StObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), ConfigurableAutoServiceKind.IsScoped );
             collector.RegisterType( TestHelper.Monitor, typeof( CBase1 ) );
             var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
             Throw.DebugAssert( map != null );

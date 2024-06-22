@@ -351,7 +351,7 @@ namespace CK.Setup
                     {
                         foreach( var c in group.Configuration.Types )
                         {
-                            if( c.Kind != AutoServiceKind.None ) stObjC.SetAutoServiceKind( _monitor, c.Type, c.Kind );
+                            if( c.Kind != ConfigurableAutoServiceKind.None ) stObjC.SetAutoServiceKind( _monitor, c.Type, c.Kind );
                         }
                     }
                     // Registers the types provided by code.

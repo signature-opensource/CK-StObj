@@ -48,7 +48,9 @@ namespace CK.Setup
             c.BasePath = CheckEnginePaths( monitor, c );
             if( c.BasePath.IsEmptyPath ) return false;
 
-            // Process the BinPaths: setting default Name and setup the AlternativePath for each of them.
+            // Process the BinPaths:
+            // - Setting default Name
+            // - Setup the AlternativePath for each of them.
             AlternativePath[] altPaths = AnalyzeBinPaths( c, out var maxAlternativeCount );
 
             // Check that BinPath name is unique. This must be done after the loop above (Name is set when empty).
@@ -65,9 +67,13 @@ namespace CK.Setup
                 return false;
             }
 
-            // Updates the BinPathConfiguration.OutputPath and BinPathConfiguration.ProjectPath to be rooted
-            // and (at least on their BinPath.Path), process their Xml to handle '{BasePath}', '{OutputPath}' and '{ProjectPath}'
-            // prefixes and handles types:
+            // For each BinPathConfiguration:
+            // - Any OutputPath empty is set to its Path or is made absolute.
+            // - Any ProjectPath empty is set to the OutputPath or is made absolute. Ensures that it ends with "/$StObjGen".
+            // - Process BinPath Xml to handle '{BasePath}', '{OutputPath}' and '{ProjectPath}' prefixes.
+            // - DiscoverAssembliesFromPath:
+            //   - When true and non empty Assemblies, it is set to false.
+            //   - When false and no Assemblies and no Types, it is set to true.
             // - Propagate GlobalExcludedTypes to each BinPath ExcludedTypes.
             // - Removes BinPath Types that appears in their ExcludedTypes (warn on them).
             FinalizeBinPaths( monitor, c );
@@ -205,15 +211,6 @@ namespace CK.Setup
             {
                 foreach( var b in c.BinPaths )
                 {
-                    b.ExcludedTypes.AddRange( c.GlobalExcludedTypes );
-                    foreach( var tc in b.Types )
-                    {
-                        if( b.ExcludedTypes.Remove( tc.Type ) )
-                        {
-                            monitor.Warn( $"BinPath '{b.Name}' Types contains '{tc.Type}' ({tc.Kind}) that is excluded. It is removed and will be ignored." );
-                        }
-                    }
-
                     if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
                     else b.OutputPath = MakeAbsolutePath( c, b.OutputPath );
 
@@ -236,6 +233,33 @@ namespace CK.Setup
                         EvalKnownPaths( monitor, b.Name, binPathAspect.AspectName, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
                         if( hasChanged ) binPathAspect.InitializeFrom( e );
                     }
+
+                    // Handles DiscoverAssembliesFromPath.
+                    if( b.DiscoverAssembliesFromPath )
+                    {
+                        if( b.Assemblies.Count > 0 )
+                        {
+                            monitor.Warn( $"BinPath '{b.Name}' has DiscoverAssembliesFromPath but contains {b.Assemblies.Count} Assemblies. Setting DiscoverAssembliesFromPath to false." );
+                            b.DiscoverAssembliesFromPath = false;
+                        }
+                    }
+                    else if( b.Assemblies.Count == 0 && b.Types.Count == 0 )
+                    {
+                        monitor.Info( $"BinPath '{b.Name}' contains no Assemblies and no Types: setting DiscoverAssembliesFromPath to true." );
+                        b.DiscoverAssembliesFromPath = true;
+                    }
+
+                    // Handles types
+                    b.ExcludedTypes.AddRange( c.GlobalExcludedTypes );
+
+                    foreach( var tc in b.Types )
+                    {
+                        if( b.ExcludedTypes.Remove( tc.Type ) )
+                        {
+                            monitor.Warn( $"BinPath '{b.Name}' Types contains '{tc.Type}' ({tc.Kind}) that is excluded. It is removed and will be ignored." );
+                        }
+                    }
+
                 }
                 static void EvalKnownPaths( IActivityMonitor monitor,
                                             string binPathName,

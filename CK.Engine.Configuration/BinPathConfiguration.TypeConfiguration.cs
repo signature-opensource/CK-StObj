@@ -10,8 +10,8 @@ namespace CK.Setup
         /// Models the &lt;Type&gt; elements that are children of &lt;Types&gt;.
         /// </summary>
         /// <param name="Type">The type</param>
-        /// <param name="Kind">The type kind. <see cref="AutoServiceKind.None"/> only ensures that the type is registered.</param>
-        public sealed record TypeConfiguration( Type Type, AutoServiceKind Kind = AutoServiceKind.None )
+        /// <param name="Kind">The type kind. <see cref="ConfigurableAutoServiceKind.None"/> only ensures that the type is registered.</param>
+        public sealed record TypeConfiguration( Type Type, ConfigurableAutoServiceKind Kind = ConfigurableAutoServiceKind.None )
         {
             /// <summary>
             /// Initializes a new <see cref="TypeConfiguration"/> from a Xml element.
@@ -29,10 +29,10 @@ namespace CK.Setup
                 return SimpleTypeFinder.WeakResolver( (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value, throwOnError: true )!;
             }
 
-            static AutoServiceKind ReadKind( XElement e )
+            static ConfigurableAutoServiceKind ReadKind( XElement e )
             {
                 var k = (string?)e.Attribute( EngineConfiguration.xKind );
-                return k != null ? (AutoServiceKind)Enum.Parse( typeof( AutoServiceKind ), k.Replace( '|', ',' ) ) : AutoServiceKind.None;
+                return k != null ? (ConfigurableAutoServiceKind)Enum.Parse( typeof( ConfigurableAutoServiceKind ), k.Replace( '|', ',' ) ) : ConfigurableAutoServiceKind.None;
             }
         }
     }

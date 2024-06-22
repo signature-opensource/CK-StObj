@@ -196,7 +196,7 @@ namespace CK.Engine.TypeCollector
         public IReadOnlySet<CachedAssembly> PFeatures => _pFeatures;
 
         /// <summary>
-        /// Gets whether this assembly has been been discovered by the <see cref="AssemblyCollector"/> or is
+        /// Gets whether this assembly has been been discovered by the <see cref="BinPath"/> or is
         /// an assembly that comes from a type registration in <see cref="TypeCollector"/>.
         /// </summary>
         public bool IsInitialAssembly => _isInitialAssembly;

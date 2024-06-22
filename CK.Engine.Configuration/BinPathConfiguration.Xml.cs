@@ -105,7 +105,7 @@ namespace CK.Setup
                                     EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, ExcludedTypes ),
                                     new XElement( EngineConfiguration.xTypes,
                                                     Types.Select( t => new XElement( EngineConfiguration.xType,
-                                                                                     t.Kind != AutoServiceKind.None
+                                                                                     t.Kind != ConfigurableAutoServiceKind.None
                                                                                             ? new XAttribute( EngineConfiguration.xKind, t.Kind )
                                                                                             : null,
                                                                                      EngineConfiguration.CleanName( t.Type ) ) ) ),

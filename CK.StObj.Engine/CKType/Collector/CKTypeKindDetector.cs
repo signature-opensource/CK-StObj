@@ -86,10 +86,10 @@ namespace CK.Setup
         /// <param name="t">The type to register.</param>
         /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>The type kind on success, null on error (errors - included combination ones - are logged).</returns>
-        public CKTypeKind? SetAutoServiceKind( IActivityMonitor monitor, Type t, AutoServiceKind kind )
+        public CKTypeKind? SetAutoServiceKind( IActivityMonitor monitor, Type t, ConfigurableAutoServiceKind kind )
         {
             Throw.CheckNotNullArgument( t );
-            Throw.CheckArgument( kind != AutoServiceKind.None );
+            Throw.CheckArgument( kind != ConfigurableAutoServiceKind.None );
 
             CKTypeKind k = (CKTypeKind)kind;
             string? error = k.GetCombinationError( t.IsClass );
@@ -98,9 +98,9 @@ namespace CK.Setup
                 monitor.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t:C}'." );
                 return null;
             }
-            bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
-            bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
-            bool hasContainerConfigured = (kind & AutoServiceKind.IsContainerConfiguredService) != 0;
+            bool hasLifetime = (kind & (ConfigurableAutoServiceKind.IsScoped | ConfigurableAutoServiceKind.IsSingleton)) != 0;
+            bool hasMultiple = (kind & ConfigurableAutoServiceKind.IsMultipleService) != 0;
+            bool hasContainerConfigured = (kind & ConfigurableAutoServiceKind.IsContainerConfiguredService) != 0;
 
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;

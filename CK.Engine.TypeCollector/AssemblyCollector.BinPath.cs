@@ -1,0 +1,495 @@
+using CK.Core;
+using CK.Setup;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
+using System.Security.Cryptography;
+
+namespace CK.Engine.TypeCollector
+{
+    public sealed partial class AssemblyCollector
+    {
+        /// <summary>
+        /// </summary>
+        public sealed class BinPath
+        {
+            readonly AssemblyCollector _appContext;
+            readonly List<BinPathConfiguration> _configurations;
+            readonly NormalizedPath _path;
+            readonly bool _isAppContextFolder;
+            // The head assemblies are mapped to true when explicitly added.
+            readonly Dictionary<CachedAssembly, bool> _heads;
+
+            DateTime _maxFileTime = Util.UtcMinValue;
+            readonly IncrementalHash _hasher;
+            // Null when unknwon, true when ExplicitAdd is used, false for AddBinPath.
+            bool? _explicitMode;
+            // Success is set to false at the first error.
+            bool _success;
+
+            internal BinPath( AssemblyCollector appContext, BinPathConfiguration configuration )
+            {
+                _appContext = appContext;
+                _configurations = new List<BinPathConfiguration> { configuration };
+                _path = configuration.Path;
+                _heads = new Dictionary<CachedAssembly, bool>();
+                _maxFileTime = Util.UtcMinValue;
+                _hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
+                _isAppContextFolder = configuration.Path == _appContext.AppContextBaseDirectory;
+                _success = true;
+            }
+
+            ///// <summary>
+            ///// Post registration assemblies: called by the TypeCollector.
+            ///// </summary>
+            ///// <param name="assembly">The type's assembly to obtain.</param>
+            ///// <returns>The cached assembly.</returns>
+            //internal CachedAssembly EnsureAssembly( Assembly assembly )
+            //{
+            //    Throw.DebugAssert( !assembly.IsDynamic );
+            //    if( !_assemblies.TryGetValue( assembly, out var c ) )
+            //    {
+            //        GetAssemblyNames( assembly.GetName(), out var assemblyName, out var assemblyFullName );
+            //        // AssemblyKind.None will trigger the detection of [IsPFeature], [IsPFeatureDefiner] and [IsCKEngine].
+            //        c = DoCreateAndCache( assembly, assemblyName, assemblyFullName, AssemblyKind.None, null );
+            //    }
+            //    return c;
+            //}
+
+            /// <summary>
+            /// Gets whether no error occurred so far.
+            /// </summary>
+            public bool Success => _success;
+
+            /// <summary>
+            /// Gets the set of configurations that shares identical assembly related configurations
+            /// </summary>
+            public IReadOnlyCollection<BinPathConfiguration> Configurations => _configurations;
+
+            internal void AddConfiguration( BinPathConfiguration configuration ) => _configurations.Add( configuration );
+
+            /// <summary>
+            /// Gets this BinPath path shared by all <see cref="Configurations"/>.
+            /// </summary>
+            public NormalizedPath Path => _path;
+
+            /// <summary>
+            /// Gets whether this BinPath is the <see cref="AppContext.BaseDirectory"/>.
+            /// </summary>
+            public bool IsAppContextFolder => _isAppContextFolder;
+
+            internal bool DiscoverFolder( IActivityMonitor monitor )
+            {
+                Throw.DebugAssert( "AddBinPath can be called only once.", _explicitMode is null );
+                _explicitMode = false;
+                foreach( var f in Directory.EnumerateFiles( _path, "*.dll" ) )
+                {
+                    LoadAssembly( monitor, f, out var _ );
+                }
+                return _success;
+            }
+
+            public bool AddExplicit( IActivityMonitor monitor, string assemblyName )
+            {
+                Throw.DebugAssert( !string.IsNullOrWhiteSpace( assemblyName ) );
+                Throw.DebugAssert( !assemblyName.EndsWith( "*.dll", StringComparison.OrdinalIgnoreCase ) );
+                Throw.DebugAssert( "AddBinPath has been called.", _explicitMode is null or true );
+                _explicitMode = true;
+
+                var existingFilePath = _path.AppendPart( assemblyName + ".dll" );
+                if( !File.Exists( existingFilePath ) )
+                {
+                    monitor.Error( $"Failed to register assembly: file '{assemblyName}.dll' not found in the bin path '{_path}'." );
+                    return _success = false;
+                }
+                if( LoadAssembly( monitor, existingFilePath, out var cachedAssembly ) )
+                {
+                    Throw.DebugAssert( cachedAssembly != null );
+                    // Explictly adding an engine is a configuration error.
+                    if( cachedAssembly.Kind == AssemblyKind.CKEngine )
+                    {
+                        monitor.Error( $"Assembly '{cachedAssembly.Name}' is a CKEngine. Engine assemblies cannot be added to an AssemblyCollector." );
+                        return _success = false;
+                    }
+                    // In explicit mode, all added assemblies are de facto head assemblies.
+                    if( cachedAssembly.Kind == AssemblyKind.PFeature )
+                    {
+                        _heads[cachedAssembly] = true;
+                    }
+                    else
+                    {
+                        monitor.Warn( $"Assembly '{cachedAssembly.Name}' is not a PFeature but '{cachedAssembly.Kind}'. Ignored." );
+                    }
+                }
+                return _success;
+            }
+
+            /// <summary>
+            /// Get the current set of "head" assemblies.
+            /// </summary>
+            /// <returns>The set of "head" assemblies.</returns>
+            public IReadOnlyCollection<CachedAssembly> HeadAssemblies => _heads.Keys;
+
+            ///// <summary>
+            ///// Closes the work on the assemblies. On success, the <see cref="TypeCollector"/> takes the lead from now on.
+            ///// <para>
+            ///// When called multiple times, the same TypeCollector is returned (always null if the first call failed).
+            ///// </para>
+            ///// </summary>
+            ///// <param name="monitor">The monitor to use.</param>
+            ///// <returns>The type collector or null on error.</returns>
+            //public TypeCollector? CloseRegistration( IActivityMonitor monitor )
+            //{
+            //    if( _closedRegistration ) return _typeCollector;
+            //    _closedRegistration = true;
+            //    // 99% of the types will be registered from the CachedAssembly.AllVisibleTypes,
+            //    // so we can avoid 99% of lookup to find the CachedAssembly from the Type.Assembly.
+            //    var c = new Dictionary<Type, CachedAssembly?>();
+            //    bool success = true;
+            //    foreach( var h in _heads.Keys )
+            //    {
+            //        success &= CollectTypes( monitor, h, c );
+            //    }
+            //    return _typeCollector = success ? TypeCollector.Create( monitor, this, c ) : null;
+
+            //    static bool CollectTypes( IActivityMonitor monitor, CachedAssembly assembly, Dictionary<Type, CachedAssembly?> c )
+            //    {
+            //        bool success = true;
+            //        foreach( var sub in assembly.PFeatures )
+            //        {
+            //            success &= CollectTypes( monitor, sub, c );
+            //        }
+            //        foreach( var t in assembly.AllVisibleTypes )
+            //        {
+            //            c.Add( t, assembly );
+            //        }
+            //        // Don't merge the 2 loops here!
+            //        // We must first handle the Add and then the Remove.
+            //        // 1 - Add types.
+            //        List<Type>? changed = null;
+            //        foreach( var a in assembly.CustomAttributes )
+            //        {
+            //            if( a.AttributeType == typeof( RegisterCKTypeAttribute ) )
+            //            {
+            //                var ctorArgs = a.ConstructorArguments;
+            //                // Filters out null thanks to is.
+            //                if( ctorArgs[0].Value is Type t )
+            //                {
+            //                    success &= HandleType( monitor, c, ref changed, true, t );
+            //                }
+            //                // Maximal precautions: filters out any potential null.
+            //                if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
+            //                {
+            //                    foreach( var o in others )
+            //                    {
+            //                        if( o == null ) continue;
+            //                        success &= HandleType( monitor, c, ref changed, true, o );
+            //                    }
+            //                }
+            //            }
+            //        }
+            //        if( success && changed != null )
+            //        {
+            //            monitor.Info( $"Assembly '{assembly.Name}' explicitly registers {changed.Count} types: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
+            //            changed.Clear();
+            //        }
+            //        // 2 - Remove types.
+            //        foreach( var a in assembly.CustomAttributes )
+            //        {
+            //            if( a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) )
+            //            {
+            //                var ctorArgs = a.ConstructorArguments;
+            //                if( ctorArgs[0].Value is Type t )
+            //                {
+            //                    success &= HandleType( monitor, c, ref changed, false, t );
+            //                }
+            //                if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
+            //                {
+            //                    foreach( var o in others )
+            //                    {
+            //                        if( o == null ) continue;
+            //                        success &= HandleType( monitor, c, ref changed, false, o );
+            //                    }
+            //                }
+            //            }
+            //        }
+            //        if( success && changed != null )
+            //        {
+            //            monitor.Info( $"Assembly '{assembly.Name}' explicitly removed {changed.Count} types from registration: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
+            //        }
+            //        return success;
+
+            //        static bool HandleType( IActivityMonitor monitor, Dictionary<Type, CachedAssembly?> c, ref List<Type>? changed, bool add, Type t )
+            //        {
+            //            var invalid = TypeCollector.GetTypeInvalidity( t, false );
+            //            if( invalid != null )
+            //            {
+            //                monitor.Error( $"Invalid [assembly:{(add ? "Register" : "Exclude")}CKTypeAttribute( typeof({t:N}) )]: type {invalid}." );
+            //                return false;
+            //            }
+            //            if( add ? c.TryAdd( t, null ) : c.Remove( t ) )
+            //            {
+            //                changed ??= new List<Type>();
+            //                changed.Add( t );
+            //            }
+            //            return true;
+            //        }
+            //    }
+            //}
+
+
+            // For AddBinPath an assembly load error is just a warning. In this mode this may return true with a
+            // null out result (and we don't care of the result in this mode).
+            // In Explicit mode, a true return implies a non null out result.
+            //
+            // > Called by AddExplicit and AddBinPath.
+            bool LoadAssembly( IActivityMonitor monitor, NormalizedPath existingFilePath, out CachedAssembly? result )
+            {
+                Throw.DebugAssert( _explicitMode.HasValue );
+                if( HandleFile( monitor, existingFilePath, out NormalizedPath appContextFullPath, out DateTime existingFileTime ) )
+                {
+                    try
+                    {
+                        var a = AssemblyLoadContext.Default.LoadFromAssemblyPath( appContextFullPath );
+                        result = DoAdd( monitor, a, a.GetName(), existingFileTime );
+                        Throw.DebugAssert( result != null );
+                        return true;
+                    }
+                    catch( Exception ex )
+                    {
+                        if( _explicitMode.Value )
+                        {
+                            monitor.Error( $"Error while loading '{existingFilePath.LastPart}'.", ex );
+                            result = null;
+                            return _success = false;
+                        }
+                        monitor.Warn( $"Failed to load '{existingFilePath.LastPart}' from '{_appContext.AppContextBaseDirectory}'. Ignored.", ex );
+                        result = null;
+                        return true;
+                    }
+                }
+                Throw.DebugAssert( !_success );
+                result = null;
+                return false;
+            }
+
+            // Called by LoadAssembly once the assembly has been loaded.
+            // On success, LoadAssembly calls DoAdd.
+            bool HandleFile( IActivityMonitor monitor, NormalizedPath existingFile, out NormalizedPath appContextFullPath, out DateTime existingFileTime )
+            {
+                existingFileTime = File.GetLastWriteTimeUtc( existingFile );
+                if( _isAppContextFolder )
+                {
+                    appContextFullPath = existingFile;
+                }
+                else
+                {
+                    appContextFullPath = _appContext.AppContextBaseDirectory.AppendPart( existingFile.LastPart );
+                    if( !File.Exists( appContextFullPath ) )
+                    {
+                        monitor.Error( $"Assembly cannot be registered: file '{existingFile.LastPart}.dll' is not in AppContext.BaseDirectory ({_appContext.AppContextBaseDirectory})." );
+                        return false;
+                    }
+                    var appContextFileTime = File.GetLastWriteTimeUtc( appContextFullPath );
+                    if( existingFileTime > appContextFileTime )
+                    {
+                        monitor.Error( $"File '{existingFile.LastPart}' is more recent in '{_path}' than in the AppContext.BaseDirectory '{_appContext.AppContextBaseDirectory}'." );
+                        return _success = false;
+                    }
+                }
+                if( _maxFileTime < existingFileTime ) _maxFileTime = existingFileTime;
+                return true;
+            }
+
+            // Called by LoadAssembly.
+            // Calls HandleAssemblyReferences that recursively calls this.
+            CachedAssembly DoAdd( IActivityMonitor monitor,
+                                  Assembly assembly,
+                                  AssemblyName aName,
+                                  DateTime? knownLastWriteTime )
+            {
+                Throw.DebugAssert( _explicitMode != null );
+
+                var cached = _appContext.FindOrCreate( assembly, aName, knownLastWriteTime, out AssemblyKind? initialKind );
+                if( initialKind.HasValue )
+                {
+                    // The cached.Kind Excluded can come from Auto Exclusion via the [ExcludePAssembly( "this" )].
+                    bool mustHandleRefererences = initialKind is AssemblyKind.None && cached.Kind is not AssemblyKind.Excluded;
+                    if( mustHandleRefererences )
+                    {
+                        HandleAssemblyReferences( monitor, cached );
+                    }
+                    else
+                    {
+                        var reason = cached.Kind is AssemblyKind.Excluded ? "Auto excluded" : initialKind.ToString();
+                        monitor.Info( $"Ignoring '{cached.Name}' since it is '{reason}'. None of its referenced assemblies are analyzed." );
+                    }
+                }
+                return cached;
+            }
+
+            // Called by DoAdd and calls DoAdd on referenced assemblies.
+            void HandleAssemblyReferences( IActivityMonitor monitor, CachedAssembly cached )
+            {
+                Throw.DebugAssert( _explicitMode.HasValue );
+                // Resolves the CachedAssemblyReferences and detect the existence of an engine:
+                // this assembly is an Engine as soon as it references an engine.
+                var refNames = cached.Assembly.GetReferencedAssemblies();
+                var rawRefBuilder = ImmutableArray.CreateBuilder<CachedAssembly>( refNames.Length );
+                bool isEngine = cached.Kind is AssemblyKind.CKEngine;
+                bool isPFeature = cached.Kind is AssemblyKind.PFeature;
+                foreach( var name in refNames )
+                {
+                    // Use the AssemblyName to load the references.
+                    var aRef = DoAdd( monitor, Assembly.Load( name ), name, null );
+                    rawRefBuilder.Add( aRef );
+                    if( aRef.Kind == AssemblyKind.CKEngine )
+                    {
+                        if( _explicitMode.Value && !isEngine )
+                        {
+                            // Emits a trace on the first dependency if none has been emitted so far.
+                            // The final message for the root is done by Add.
+                            monitor.Error( $"Assembly '{cached.Name}' is an engine because it references '{aRef.Name}'." );
+                        }
+                        isEngine = true;
+                    }
+                    isPFeature |= aRef.Kind >= AssemblyKind.PFeatureDefiner;
+                }
+                cached._rawReferencedAssembly = rawRefBuilder.MoveToImmutable();
+                // If it is an engine, sets its kind and prevents any referenced PFeature
+                // to be a head unless it has been expcitly added.
+                if( isEngine )
+                {
+                    cached._kind = AssemblyKind.CKEngine;
+                    // An engine is not a PFeature.
+                    isPFeature = false;
+                    foreach( var aRef in cached._rawReferencedAssembly )
+                    {
+                        if( aRef.Kind == AssemblyKind.PFeature
+                            && _heads.TryGetValue( aRef, out var forced )
+                            && !forced )
+                        {
+                            _heads.Remove( aRef );
+                        }
+                    }
+                }
+                // If this assembly is a PFeature, builds the 2 sets of dependencies:
+                // the "all" one and the "curated" ones.
+                HashSet<CachedAssembly>? allPFeatures = null;
+                HashSet<CachedAssembly>? pFeatures = null;
+                if( isPFeature )
+                {
+                    Throw.DebugAssert( cached.Kind is AssemblyKind.None );
+                    cached._kind = AssemblyKind.PFeature;
+                    allPFeatures = new HashSet<CachedAssembly>();
+                    pFeatures = new HashSet<CachedAssembly>();
+                    foreach( var aRef in cached._rawReferencedAssembly )
+                    {
+                        if( aRef.Kind == AssemblyKind.PFeature )
+                        {
+                            // aRef is no more a head unless it has been explictly added.
+                            if( _heads.TryGetValue( aRef, out var forced ) && !forced )
+                            {
+                                _heads.Remove( aRef );
+                            }
+                            // Closure set:
+                            allPFeatures.Add( aRef );
+                            allPFeatures.AddRange( aRef._allPFeatures );
+                            // Curated set: union all here, the [ExcludePFeatureAttribute] of this assembly
+                            // will be applied below.
+                            pFeatures.Add( aRef );
+                            pFeatures.AddRange( aRef.PFeatures );
+                        }
+                    }
+                }
+                // Always process any ExcludePFeature attributes even if this is not a PFeature
+                // to warn on useless attributes.
+                Throw.DebugAssert( cached.Kind is AssemblyKind.None or AssemblyKind.CKEngine or AssemblyKind.PFeature );
+                ProcessExcludePFeatures( monitor, cached, allPFeatures, pFeatures );
+                // Types are handled later and only for PFeatures.
+                // Here we just warn if a non PFeature defines [RegisterCKType] or [ExcludeCKType] attributes.
+                if( cached.Kind is not AssemblyKind.PFeature )
+                {
+                    if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( RegisterCKTypeAttribute ) || a.AttributeType == typeof( ExcludePFeatureAttribute ) ) )
+                    {
+                        monitor.Warn( $"""
+                                  Assembly '{cached.Name}' is '{cached.Kind}' and defines [RegisterCKType] or [ExcludeCKType] attributes, they are ignored.
+                                  Only PFeature assemblies can register/exclude types.
+                                  """ );
+                    }
+                }
+                if( pFeatures != null )
+                {
+                    Throw.DebugAssert( allPFeatures != null && cached._kind is AssemblyKind.PFeature );
+                    cached._pFeatures = pFeatures;
+                    cached._allPFeatures = allPFeatures;
+                    _heads.Add( cached, false );
+                }
+            }
+
+            // Called by HandleAssemblyReferences.
+            void ProcessExcludePFeatures( IActivityMonitor monitor,
+                                           CachedAssembly cached,
+                                           HashSet<CachedAssembly>? allPFeatures,
+                                           HashSet<CachedAssembly>? pFeatures )
+            {
+                // The excluded tuple keeps the "name" but can have a null (never seen) CachedAssembly.
+                var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( ExcludePFeatureAttribute ) )
+                                     .Select( a => (string?)a.ConstructorArguments[0].Value )
+                                     .Select( name => (N: name, A: name != null ? _appContext.Find( name ) : null) );
+                foreach( var (name, a) in excluded )
+                {
+                    if( pFeatures == null )
+                    {
+                        monitor.Warn( $"Ignored [assembly:ExcludePFeature( \"{name}\" )] in assembly '{cached.Name}': this assembly is not a PFeature but '{cached.Kind}'." );
+                    }
+                    else if( a == null )
+                    {
+                        monitor.Warn( $"Useless [assembly:ExcludePFeature( \"{name}\" )] in assembly '{cached.Name}': assembly '{name}' is unknwon." );
+                    }
+                    else if( pFeatures.Remove( a ) )
+                    {
+                        // Success case: the curated set has been updated.
+                        monitor.Info( $"PFeature '{cached.Name}' excludes its referenced assembly '{name}'. The types from '{name}' won't be automatically registered." );
+                    }
+                    else
+                    {
+                        if( a.Kind != AssemblyKind.PFeature )
+                        {
+                            // Warn only if it's not an Excluded or Skipped assembly.
+                            if( a.Kind is not AssemblyKind.Skipped or AssemblyKind.Excluded )
+                            {
+                                monitor.Warn( $"Useless [assembly:ExcludePFeature( \"{name}\" )] in assembly '{cached.Name}': '{name}' is not a PFeature but '{a.Kind}'." );
+                            }
+                        }
+                        else
+                        {
+                            Throw.DebugAssert( allPFeatures != null );
+                            if( !allPFeatures.Contains( a ) )
+                            {
+                                monitor.Warn( $"""
+                                              Useless [assembly:ExcludePFeature( \"{name}\" )] in assembly '{cached.Name}': no such referenced PFeature. Referenced PFeatures are:
+                                              '{allPFeatures.Select( r => r.Name ).Concatenate( "', '" )}'.
+                                              """ );
+                            }
+                            else
+                            {
+                                monitor.Warn( $"""
+                                              Useless [assembly:ExcludePFeature( \"{name}\" )] in assembly '{cached.Name}': the '{name}' assembly has already been excluded by the referenced assemblies:
+                                              '{allPFeatures.Where( r => r._allPFeatures.Contains( a ) && !r.PFeatures.Contains( a ) ).Select( r => r.Name ).Concatenate( "', '" )}'.
+                                              """ );
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
+    }
+}
