@@ -606,7 +606,7 @@ namespace CK.StObj.Engine.Tests
                   <Aspect Type="CK.StObj.Engine.Tests.TypeScriptAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
                   <!--BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation.-->
                   <BinPaths>
-                    <BinPath Path="" DiscoverAssembliesFromPath="false">
+                    <BinPath Name="AutoName" Path="" DiscoverAssembliesFromPath="false">
                       <CompileOption>None</CompileOption>
                       <Assemblies />
                       <ExcludedTypes />
@@ -767,7 +767,7 @@ namespace CK.StObj.Engine.Tests
             Throw.DebugAssert( another != null );
             another.Path.Should().Be( "{BasePath}comm/ands" );
 
-            RunningEngineConfiguration.PrepareConfiguration( TestHelper.Monitor, c );
+            c.NormalizeConfiguration( TestHelper.Monitor ).Should().BeTrue();
 
             sample.Param.Should().Be( "/The/Base/Path/Another/Relative/Test" );
             sample.A.Should().Be( "/The/Base/Path/Another/Relative/InTheOutputPath" );

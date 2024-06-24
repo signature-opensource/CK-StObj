@@ -30,6 +30,8 @@ namespace CK.Setup
             BaseSHA1 = sha1 != null ? SHA1Value.Parse( sha1 ) : SHA1Value.Zero;
             ForceRun = (bool?)e.Element( xForceRun ) ?? false;
             _globalExcludedTypes = new HashSet<Type>( TypesFromXml( e, xGlobalExcludedTypes, xType ) );
+            _globalTypes = new TypeConfigurationSet( e.Elements( xGlobalTypes ) );
+            _excludedAssemblies = new HashSet<string>( StringsFromXml( e, xExcludedAssemblies, xAssembly ) );
 
             // Aspects.
             _aspects = new List<EngineAspectConfiguration>();
@@ -48,10 +50,16 @@ namespace CK.Setup
                 _namedAspects.Add( aspect.AspectName, aspect );
             }
 
-            // BinPaths.
-            _binPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( this, e, _namedAspects ) ).ToList();
+            // BinPaths:
+            _binPaths = new List<BinPathConfiguration>();
+            foreach( var b in e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( this, e, _namedAspects ) ) )
+            {
+                // Aspects have been already handled by BinPathConfiguration constructor.
+                _binPaths.Add( b );
+                // But ensuring the unique name requires the _binPaths list.
+                EnsureUniqueName( b );
+            }
             if( _binPaths.Count == 0 ) AddFirstBinPath();
-
         }
 
         /// <summary>
@@ -73,17 +81,39 @@ namespace CK.Setup
                         !BaseSHA1.IsZero ? new XElement( xBaseSHA1, BaseSHA1.ToString() ) : null,
                         ForceRun ? new XElement( xForceRun, true ) : null,
                         ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( t => CleanName( t ) ) ),
+                        _globalTypes.Count > 0
+                            ? _globalTypes.ToXml( xGlobalTypes )
+                            : null,
+                        _excludedAssemblies.Count > 0
+                            ? ToXml( xExcludedAssemblies, xAssembly, _excludedAssemblies )
+                            : null,
                         Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
                         new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation." ),
                         new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
         }
 
-        static internal string CleanName( Type t )
+        static internal string CleanName( Type type )
         {
-            SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName!, out string weaken );
-            return weaken;
+            if( type.IsGenericType ) return GetShortGenericName( type, false );
+            return $"{type.FullName}, {type.Assembly.GetName().Name}";
+
+            static string GetShortTypeName( Type type, bool inBrackets )
+            {
+                if( type.IsGenericType ) return GetShortGenericName( type, inBrackets );
+                if( inBrackets ) return $"[{type.FullName}, {type.Assembly.GetName().Name}]";
+                return $"{type.FullName}, {type.Assembly.GetName().Name}";
+            }
+
+            static string GetShortGenericName( Type type, bool inBrackets )
+            {
+                string? name = type.Assembly.GetName().Name;
+                if( inBrackets )
+                    return $"[{type.GetGenericTypeDefinition().FullName}[{string.Join( ", ", type.GenericTypeArguments.Select( a => GetShortTypeName( a, true ) ) )}], {name}]";
+                else
+                    return $"{type.GetGenericTypeDefinition().FullName}[{string.Join( ", ", type.GenericTypeArguments.Select( a => GetShortTypeName( a, true ) ) )}], {name}";
+            }
         }
-        
+
         static internal XElement ToXml( XName names, XName name, IEnumerable<string> strings )
         {
             return new XElement( names, strings.Select( n => new XElement( name, n ) ) );
@@ -158,22 +188,22 @@ namespace CK.Setup
         static public readonly XName xExcludedTypes = XNamespace.None + "ExcludedTypes";
 
         /// <summary>
-        /// The ExcludedTypes element name.
+        /// The GlobalExcludedTypes element name.
         /// </summary>
         static public readonly XName xGlobalExcludedTypes = XNamespace.None + "GlobalExcludedTypes";
 
         /// <summary>
-        /// The AvailableStObjMapSignatures element name.
+        /// The GlobalTypes element name.
         /// </summary>
-        static public readonly XName xAvailableStObjMapSignatures = XNamespace.None + "AvailableStObjMapSignatures";
+        static public readonly XName xGlobalTypes = XNamespace.None + "GlobalTypes";
 
         /// <summary>
-        /// The Signature element name.
+        /// The ExcludedAssemblies element name.
         /// </summary>
-        static public readonly XName xSignature = XNamespace.None + "Signature";
+        static public readonly XName xExcludedAssemblies = XNamespace.None + "ExcludedAssemblies";
 
         /// <summary>
-        /// The Type element name.
+        /// The Type attribute or element name.
         /// </summary>
         static public readonly XName xType = XNamespace.None + "Type";
 
@@ -193,7 +223,7 @@ namespace CK.Setup
         static public readonly XName xBinPaths = XNamespace.None + "BinPaths";
 
         /// <summary>
-        /// The Path element name.
+        /// The Path attribute or element name.
         /// </summary>
         static public readonly XName xPath = XNamespace.None + "Path";
 

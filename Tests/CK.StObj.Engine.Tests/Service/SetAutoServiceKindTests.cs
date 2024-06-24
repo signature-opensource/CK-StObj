@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IService ), ConfigurableAutoServiceKind.IsScoped | ConfigurableAutoServiceKind.IsMultipleService ) );
+            config.FirstBinPath.Types.Add( typeof( IService ), ConfigurableAutoServiceKind.IsScoped | ConfigurableAutoServiceKind.IsMultipleService );
 
             var collector = TestHelper.CreateTypeCollector( typeof( TheService ) );
 
@@ -76,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void base_singleton_interface_definition_can_coexist_with_specializations()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IConfiguration ), ConfigurableAutoServiceKind.IsSingleton ) );
+            config.FirstBinPath.Types.Add( typeof( IConfiguration ), ConfigurableAutoServiceKind.IsSingleton );
 
             var collector = TestHelper.CreateTypeCollector( typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist1 ), typeof( ThisShouldCoexist2 ) );
 

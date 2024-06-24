@@ -12,13 +12,15 @@ using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector
 {
-    public sealed partial class AssemblyCollector
+
+    public sealed partial class AssemblyCache
     {
         /// <summary>
+        /// Collects types from one or more similar <see cref="BinPathConfiguration"/>.
         /// </summary>
-        public sealed class BinPath
+        public sealed class BinPathGroup
         {
-            readonly AssemblyCollector _appContext;
+            readonly AssemblyCache _assemblyCache;
             readonly List<BinPathConfiguration> _configurations;
             readonly NormalizedPath _path;
             readonly bool _isAppContextFolder;
@@ -27,39 +29,26 @@ namespace CK.Engine.TypeCollector
 
             DateTime _maxFileTime = Util.UtcMinValue;
             readonly IncrementalHash _hasher;
+            string _groupName;
             // Null when unknwon, true when ExplicitAdd is used, false for AddBinPath.
             bool? _explicitMode;
             // Success is set to false at the first error.
             bool _success;
+            // Non null on success.
+            ConfiguredTypeSet? _result;
 
-            internal BinPath( AssemblyCollector appContext, BinPathConfiguration configuration )
+            internal BinPathGroup( AssemblyCache assemblyCache, BinPathConfiguration configuration )
             {
-                _appContext = appContext;
+                _assemblyCache = assemblyCache;
                 _configurations = new List<BinPathConfiguration> { configuration };
+                _groupName = configuration.Name;
                 _path = configuration.Path;
                 _heads = new Dictionary<CachedAssembly, bool>();
                 _maxFileTime = Util.UtcMinValue;
                 _hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
-                _isAppContextFolder = configuration.Path == _appContext.AppContextBaseDirectory;
+                _isAppContextFolder = configuration.Path == _assemblyCache.AppContextBaseDirectory;
                 _success = true;
             }
-
-            ///// <summary>
-            ///// Post registration assemblies: called by the TypeCollector.
-            ///// </summary>
-            ///// <param name="assembly">The type's assembly to obtain.</param>
-            ///// <returns>The cached assembly.</returns>
-            //internal CachedAssembly EnsureAssembly( Assembly assembly )
-            //{
-            //    Throw.DebugAssert( !assembly.IsDynamic );
-            //    if( !_assemblies.TryGetValue( assembly, out var c ) )
-            //    {
-            //        GetAssemblyNames( assembly.GetName(), out var assemblyName, out var assemblyFullName );
-            //        // AssemblyKind.None will trigger the detection of [IsPFeature], [IsPFeatureDefiner] and [IsCKEngine].
-            //        c = DoCreateAndCache( assembly, assemblyName, assemblyFullName, AssemblyKind.None, null );
-            //    }
-            //    return c;
-            //}
 
             /// <summary>
             /// Gets whether no error occurred so far.
@@ -71,7 +60,12 @@ namespace CK.Engine.TypeCollector
             /// </summary>
             public IReadOnlyCollection<BinPathConfiguration> Configurations => _configurations;
 
-            internal void AddConfiguration( BinPathConfiguration configuration ) => _configurations.Add( configuration );
+            internal void AddConfiguration( BinPathConfiguration configuration )
+            {
+                Throw.DebugAssert( _configurations.Contains( configuration ) is false );
+                _configurations.Add( configuration );
+                _groupName += ", " + configuration.Name;
+            }
 
             /// <summary>
             /// Gets this BinPath path shared by all <see cref="Configurations"/>.
@@ -79,9 +73,41 @@ namespace CK.Engine.TypeCollector
             public NormalizedPath Path => _path;
 
             /// <summary>
+            /// Gets the comma separated configuration names.
+            /// </summary>
+            public string GroupName => _groupName;
+
+            /// <summary>
             /// Gets whether this BinPath is the <see cref="AppContext.BaseDirectory"/>.
             /// </summary>
             public bool IsAppContextFolder => _isAppContextFolder;
+
+            /// <summary>
+            /// Get the current set of "head" assemblies.
+            /// </summary>
+            /// <returns>The set of "head" assemblies.</returns>
+            public IReadOnlyCollection<CachedAssembly> HeadAssemblies => _heads.Keys;
+
+            /// <summary>
+            /// Gets the assembly cache.
+            /// </summary>
+            public IAssemblyCache AssemblyCache => _assemblyCache;
+
+            /// <summary>
+            /// Gets the final types to register from this BinPath.
+            /// <para>
+            /// This must be called only if <see cref="Success"/> is true otherwise an <see cref="InvalidOperationException"/>
+            /// id thrown.
+            /// </para>
+            /// </summary>
+            public IConfiguredTypeSet ConfiguredTypes
+            {
+                get
+                {
+                    Throw.CheckState( Success );
+                    return _result!;
+                }
+            }
 
             internal bool DiscoverFolder( IActivityMonitor monitor )
             {
@@ -94,7 +120,7 @@ namespace CK.Engine.TypeCollector
                 return _success;
             }
 
-            public bool AddExplicit( IActivityMonitor monitor, string assemblyName )
+            internal bool AddExplicit( IActivityMonitor monitor, string assemblyName )
             {
                 Throw.DebugAssert( !string.IsNullOrWhiteSpace( assemblyName ) );
                 Throw.DebugAssert( !assemblyName.EndsWith( "*.dll", StringComparison.OrdinalIgnoreCase ) );
@@ -129,126 +155,123 @@ namespace CK.Engine.TypeCollector
                 return _success;
             }
 
-            /// <summary>
-            /// Get the current set of "head" assemblies.
-            /// </summary>
-            /// <returns>The set of "head" assemblies.</returns>
-            public IReadOnlyCollection<CachedAssembly> HeadAssemblies => _heads.Keys;
+            internal bool CollectTypes( IActivityMonitor monitor )
+            {
+                using var _ = monitor.OpenInfo( $"Collecting types from {_heads.Keys.Count} PFeatures." );
+                var c = new ConfiguredTypeSet();
+                bool success = true;
+                foreach( var h in _heads.Keys )
+                {
+                    success &= CollectTypes( monitor, h, c );
+                }
+                if( success ) _result = c;
+                return success;
 
-            ///// <summary>
-            ///// Closes the work on the assemblies. On success, the <see cref="TypeCollector"/> takes the lead from now on.
-            ///// <para>
-            ///// When called multiple times, the same TypeCollector is returned (always null if the first call failed).
-            ///// </para>
-            ///// </summary>
-            ///// <param name="monitor">The monitor to use.</param>
-            ///// <returns>The type collector or null on error.</returns>
-            //public TypeCollector? CloseRegistration( IActivityMonitor monitor )
-            //{
-            //    if( _closedRegistration ) return _typeCollector;
-            //    _closedRegistration = true;
-            //    // 99% of the types will be registered from the CachedAssembly.AllVisibleTypes,
-            //    // so we can avoid 99% of lookup to find the CachedAssembly from the Type.Assembly.
-            //    var c = new Dictionary<Type, CachedAssembly?>();
-            //    bool success = true;
-            //    foreach( var h in _heads.Keys )
-            //    {
-            //        success &= CollectTypes( monitor, h, c );
-            //    }
-            //    return _typeCollector = success ? TypeCollector.Create( monitor, this, c ) : null;
+                static bool CollectTypes( IActivityMonitor monitor, CachedAssembly assembly, ConfiguredTypeSet c )
+                {
+                    var assemblySourceName = assembly.ToString();
+                    using var _ = monitor.OpenInfo( $"Collecting types from {assemblySourceName}." );
+                    bool success = true;
+                    foreach( var sub in assembly.PFeatures )
+                    {
+                        success &= CollectTypes( monitor, sub, c );
+                    }
+                    c.AddRange( assembly.AllVisibleTypes );
+                    // Don't merge the 2 loops here!
+                    // We must first handle the Add and then the Remove.
+                    // 1 - Add types.
+                    List<Type>? changed = null;
+                    foreach( var a in assembly.CustomAttributes )
+                    {
+                        if( a.AttributeType == typeof( RegisterCKTypeAttribute ) )
+                        {
+                            var ctorArgs = a.ConstructorArguments;
+                            // Constructor (Type, Type[] others):
+                            if( ctorArgs[1].Value is Type?[] others )
+                            {
+                                // Filters out null thanks to "is".
+                                if( ctorArgs[0].Value is Type t )
+                                {
+                                    success &= HandleTypeConfiguration( monitor, c, ref changed, add: true, assemblySourceName, t, ConfigurableAutoServiceKind.None );
+                                }
+                                // Maximal precautions: filters out any potential null.
+                                foreach( var o in others )
+                                {
+                                    if( o == null ) continue;
+                                    success &= HandleTypeConfiguration( monitor, c, ref changed, add: true, assemblySourceName, o, ConfigurableAutoServiceKind.None );
+                                }
+                            }
+                            else if( ctorArgs[1].Value is ConfigurableAutoServiceKind kind )
+                            {
+                                // Filters out null thanks to "is".
+                                if( ctorArgs[0].Value is Type t )
+                                {
+                                    success &= HandleTypeConfiguration( monitor, c, ref changed, add: true, assemblySourceName, t, kind );
+                                }
+                            }
+                        }
+                    }
+                    if( success && changed != null )
+                    {
+                        monitor.Info( $"Assembly '{assembly.Name}' explicitly registers {changed.Count} types: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
+                        changed.Clear();
+                    }
+                    // 2 - Remove types.
+                    foreach( var a in assembly.CustomAttributes )
+                    {
+                        if( a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) )
+                        {
+                            var ctorArgs = a.ConstructorArguments;
+                            if( ctorArgs[0].Value is Type t )
+                            {
+                                success &= HandleTypeConfiguration( monitor, c, ref changed, add: false, assemblySourceName, t, ConfigurableAutoServiceKind.None );
+                            }
+                            if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
+                            {
+                                foreach( var o in others )
+                                {
+                                    if( o == null ) continue;
+                                    success &= HandleTypeConfiguration( monitor, c, ref changed, add: false, assemblySourceName, o, ConfigurableAutoServiceKind.None );
+                                }
+                            }
+                        }
+                    }
+                    if( success && changed != null )
+                    {
+                        monitor.Info( $"Assembly '{assembly.Name}' explicitly removed {changed.Count} types from registration: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
+                    }
+                    return success;
 
-            //    static bool CollectTypes( IActivityMonitor monitor, CachedAssembly assembly, Dictionary<Type, CachedAssembly?> c )
-            //    {
-            //        bool success = true;
-            //        foreach( var sub in assembly.PFeatures )
-            //        {
-            //            success &= CollectTypes( monitor, sub, c );
-            //        }
-            //        foreach( var t in assembly.AllVisibleTypes )
-            //        {
-            //            c.Add( t, assembly );
-            //        }
-            //        // Don't merge the 2 loops here!
-            //        // We must first handle the Add and then the Remove.
-            //        // 1 - Add types.
-            //        List<Type>? changed = null;
-            //        foreach( var a in assembly.CustomAttributes )
-            //        {
-            //            if( a.AttributeType == typeof( RegisterCKTypeAttribute ) )
-            //            {
-            //                var ctorArgs = a.ConstructorArguments;
-            //                // Filters out null thanks to is.
-            //                if( ctorArgs[0].Value is Type t )
-            //                {
-            //                    success &= HandleType( monitor, c, ref changed, true, t );
-            //                }
-            //                // Maximal precautions: filters out any potential null.
-            //                if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
-            //                {
-            //                    foreach( var o in others )
-            //                    {
-            //                        if( o == null ) continue;
-            //                        success &= HandleType( monitor, c, ref changed, true, o );
-            //                    }
-            //                }
-            //            }
-            //        }
-            //        if( success && changed != null )
-            //        {
-            //            monitor.Info( $"Assembly '{assembly.Name}' explicitly registers {changed.Count} types: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
-            //            changed.Clear();
-            //        }
-            //        // 2 - Remove types.
-            //        foreach( var a in assembly.CustomAttributes )
-            //        {
-            //            if( a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) )
-            //            {
-            //                var ctorArgs = a.ConstructorArguments;
-            //                if( ctorArgs[0].Value is Type t )
-            //                {
-            //                    success &= HandleType( monitor, c, ref changed, false, t );
-            //                }
-            //                if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
-            //                {
-            //                    foreach( var o in others )
-            //                    {
-            //                        if( o == null ) continue;
-            //                        success &= HandleType( monitor, c, ref changed, false, o );
-            //                    }
-            //                }
-            //            }
-            //        }
-            //        if( success && changed != null )
-            //        {
-            //            monitor.Info( $"Assembly '{assembly.Name}' explicitly removed {changed.Count} types from registration: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
-            //        }
-            //        return success;
-
-            //        static bool HandleType( IActivityMonitor monitor, Dictionary<Type, CachedAssembly?> c, ref List<Type>? changed, bool add, Type t )
-            //        {
-            //            var invalid = TypeCollector.GetTypeInvalidity( t, false );
-            //            if( invalid != null )
-            //            {
-            //                monitor.Error( $"Invalid [assembly:{(add ? "Register" : "Exclude")}CKTypeAttribute( typeof({t:N}) )]: type {invalid}." );
-            //                return false;
-            //            }
-            //            if( add ? c.TryAdd( t, null ) : c.Remove( t ) )
-            //            {
-            //                changed ??= new List<Type>();
-            //                changed.Add( t );
-            //            }
-            //            return true;
-            //        }
-            //    }
-            //}
+                    static bool HandleTypeConfiguration( IActivityMonitor monitor,
+                                                         ConfiguredTypeSet c,
+                                                         ref List<Type>? changed,
+                                                         bool add,
+                                                         string sourceAssemblyName,
+                                                         Type t,
+                                                         ConfigurableAutoServiceKind kind )
+                    {
+                        var error = TypeConfiguration.GetConfiguredTypeErrorMessage( t, kind );
+                        if( error != null )
+                        {
+                            monitor.Error( $"Invalid [assembly:{(add ? "Register" : "Exclude")}CKTypeAttribute] in {sourceAssemblyName}: type '{t:N}' {error}." );
+                            return false;
+                        }
+                        if( add ? c.Add( monitor, sourceAssemblyName, t, kind ) : c.Remove( t ) )
+                        {
+                            changed ??= new List<Type>();
+                            changed.Add( t );
+                        }
+                        return true;
+                    }
+                }
+            }
 
 
-            // For AddBinPath an assembly load error is just a warning. In this mode this may return true with a
+            // For AddBinPath an assembly load error is just a warning.In this mode this may return true with a
             // null out result (and we don't care of the result in this mode).
             // In Explicit mode, a true return implies a non null out result.
-            //
             // > Called by AddExplicit and AddBinPath.
-            bool LoadAssembly( IActivityMonitor monitor, NormalizedPath existingFilePath, out CachedAssembly? result )
+           bool LoadAssembly( IActivityMonitor monitor, NormalizedPath existingFilePath, out CachedAssembly? result )
             {
                 Throw.DebugAssert( _explicitMode.HasValue );
                 if( HandleFile( monitor, existingFilePath, out NormalizedPath appContextFullPath, out DateTime existingFileTime ) )
@@ -256,7 +279,7 @@ namespace CK.Engine.TypeCollector
                     try
                     {
                         var a = AssemblyLoadContext.Default.LoadFromAssemblyPath( appContextFullPath );
-                        result = DoAdd( monitor, a, a.GetName(), existingFileTime );
+                        result = DoAdd( monitor, a, null, existingFileTime );
                         Throw.DebugAssert( result != null );
                         return true;
                     }
@@ -268,7 +291,7 @@ namespace CK.Engine.TypeCollector
                             result = null;
                             return _success = false;
                         }
-                        monitor.Warn( $"Failed to load '{existingFilePath.LastPart}' from '{_appContext.AppContextBaseDirectory}'. Ignored.", ex );
+                        monitor.Warn( $"Failed to load '{existingFilePath.LastPart}' from '{_assemblyCache.AppContextBaseDirectory}'. Ignored.", ex );
                         result = null;
                         return true;
                     }
@@ -289,16 +312,16 @@ namespace CK.Engine.TypeCollector
                 }
                 else
                 {
-                    appContextFullPath = _appContext.AppContextBaseDirectory.AppendPart( existingFile.LastPart );
+                    appContextFullPath = _assemblyCache.AppContextBaseDirectory.AppendPart( existingFile.LastPart );
                     if( !File.Exists( appContextFullPath ) )
                     {
-                        monitor.Error( $"Assembly cannot be registered: file '{existingFile.LastPart}.dll' is not in AppContext.BaseDirectory ({_appContext.AppContextBaseDirectory})." );
+                        monitor.Error( $"Assembly cannot be registered: file '{existingFile.LastPart}.dll' is not in AppContext.BaseDirectory ({_assemblyCache.AppContextBaseDirectory})." );
                         return false;
                     }
                     var appContextFileTime = File.GetLastWriteTimeUtc( appContextFullPath );
                     if( existingFileTime > appContextFileTime )
                     {
-                        monitor.Error( $"File '{existingFile.LastPart}' is more recent in '{_path}' than in the AppContext.BaseDirectory '{_appContext.AppContextBaseDirectory}'." );
+                        monitor.Error( $"File '{existingFile.LastPart}' is more recent in '{_path}' than in the AppContext.BaseDirectory '{_assemblyCache.AppContextBaseDirectory}'." );
                         return _success = false;
                     }
                 }
@@ -310,12 +333,12 @@ namespace CK.Engine.TypeCollector
             // Calls HandleAssemblyReferences that recursively calls this.
             CachedAssembly DoAdd( IActivityMonitor monitor,
                                   Assembly assembly,
-                                  AssemblyName aName,
+                                  AssemblyName? knownName,
                                   DateTime? knownLastWriteTime )
             {
                 Throw.DebugAssert( _explicitMode != null );
 
-                var cached = _appContext.FindOrCreate( assembly, aName, knownLastWriteTime, out AssemblyKind? initialKind );
+                var cached = _assemblyCache.FindOrCreate( assembly, knownName, knownLastWriteTime, out AssemblyKind? initialKind );
                 if( initialKind.HasValue )
                 {
                     // The cached.Kind Excluded can come from Auto Exclusion via the [ExcludePAssembly( "this" )].
@@ -441,7 +464,7 @@ namespace CK.Engine.TypeCollector
                 // The excluded tuple keeps the "name" but can have a null (never seen) CachedAssembly.
                 var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( ExcludePFeatureAttribute ) )
                                      .Select( a => (string?)a.ConstructorArguments[0].Value )
-                                     .Select( name => (N: name, A: name != null ? _appContext.Find( name ) : null) );
+                                     .Select( name => (N: name, A: name != null ? _assemblyCache.Find( name ) : null) );
                 foreach( var (name, a) in excluded )
                 {
                     if( pFeatures == null )
@@ -489,6 +512,7 @@ namespace CK.Engine.TypeCollector
                 }
             }
 
+            public override string ToString() => $"AssemblyBinPathGoup '{_groupName}'";
         }
 
     }

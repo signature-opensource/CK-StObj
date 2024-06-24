@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +36,51 @@ namespace CK.Setup
             SaveSource
         }
 
+
+        // New way
+        readonly BinPathTypeGroup? _typeGroup;
+
+        internal IConfiguredTypeSet ConfiguredTypes => _typeGroup!.ConfiguredTypes;
+
+        internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
+        {
+            _typeGroup = typeGroup;
+            _engineConfiguration = engineConfiguration;
+            _names = typeGroup.GroupName;
+            if( typeGroup.IsUnifiedPure )
+            {
+                _isUnifiedPure = true;
+                // Legacy unified had a Configuration. Let'es create a stupid empty one
+                // because we already have the types.
+                var unified = new BinPathConfiguration()
+                {
+                    Path = AppContext.BaseDirectory,
+                    OutputPath = AppContext.BaseDirectory,
+                    Name = "(Unified)",
+                    // The root (the Working directory) doesn't want any output by itself.
+                    GenerateSourceFiles = false
+                };
+                Debug.Assert( unified.CompileOption == CompileOption.None );
+                _configuration = unified;
+                _generatedDllName = String.Empty;
+                _similarConfigurations = new[] { unified };
+            }
+            else
+            {
+                _configuration = typeGroup.Configurations[0];
+                _generatedDllName = $"{engineConfiguration.GeneratedAssemblyName}.{_configuration.Name}.dll";
+                _similarConfigurations = typeGroup.Configurations;
+                _runSignature = engineConfiguration.BaseSHA1;
+                _generatedSource = CreateG0( _configuration );
+                _generatedAssembly = CreateAssembly( _configuration );
+            }
+        }
+
+        static GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "G0.cs" ) );
+
+        GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
+
+
         internal RunningBinPathGroup( EngineConfiguration engineConfiguration,
                                       BinPathConfiguration head,
                                       BinPathConfiguration[] similars,
@@ -66,9 +112,6 @@ namespace CK.Setup
             _names = "(Unified)";
         }
 
-        static GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "G0.cs" ) );
-
-        GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
 
         internal bool Initialize( IActivityMonitor monitor, bool forceRun, ref bool canSkipRun )
         {

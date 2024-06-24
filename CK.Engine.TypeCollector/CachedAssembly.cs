@@ -3,6 +3,7 @@ using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 
@@ -122,7 +123,8 @@ namespace CK.Engine.TypeCollector
         public DateTime LastWriteTimeUtc => _lastWriteTime;
 
         /// <summary>
-        /// Gets the visible types of this assembly (cached <see cref="Assembly.GetExportedTypes()"/>).
+        /// Gets the visible classes, interfaces, value types and enums excluding any generic type definitions.
+        /// These are the only kind of types that we need to start a CKomposable setup.
         /// <para>
         /// This is always empty when <see cref="AssemblyKind.Excluded"/> or <see cref="AssemblyKind.Skipped"/>
         /// or when <see cref="IsInitialAssembly"/> is false.
@@ -134,7 +136,9 @@ namespace CK.Engine.TypeCollector
             {
                 if( _allVisibleTypes.IsDefault )
                 {
-                    _allVisibleTypes = _assembly.GetExportedTypes().ToImmutableArray();
+                    _allVisibleTypes = _assembly.GetExportedTypes()
+                                                .Where( t => (t.IsClass || t.IsInterface || t.IsValueType || t.IsEnum) && !t.IsGenericTypeDefinition )
+                                                .ToImmutableArray();
                 }
                 return _allVisibleTypes;
             }
@@ -146,7 +150,8 @@ namespace CK.Engine.TypeCollector
         public AssemblyKind Kind => _kind;
 
         /// <summary>
-        /// Gets the custom attributes data (attributes are not instantiated).
+        /// Gets the custom attributes data. Assembly attributes are not instantiated,
+        /// we exploit only the more efficient CustomAttributeData.
         /// </summary>
         public ImmutableArray<CustomAttributeData> CustomAttributes
         {
@@ -196,9 +201,15 @@ namespace CK.Engine.TypeCollector
         public IReadOnlySet<CachedAssembly> PFeatures => _pFeatures;
 
         /// <summary>
-        /// Gets whether this assembly has been been discovered by the <see cref="BinPath"/> or is
-        /// an assembly that comes from a type registration in <see cref="TypeCollector"/>.
+        /// Gets whether this assembly has been been discovered by the initial registration or is
+        /// an assembly that comes from a later type registration.
         /// </summary>
         public bool IsInitialAssembly => _isInitialAssembly;
+
+        /// <summary>
+        /// Gets "Assembly '<see cref="Name"/>".
+        /// </summary>
+        /// <returns>"Assembly 'Name'"</returns>
+        public override string ToString() => $"Assembly '{Name}'";
     }
 }

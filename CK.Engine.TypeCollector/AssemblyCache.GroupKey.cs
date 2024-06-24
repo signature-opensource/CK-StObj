@@ -5,18 +5,18 @@ using System.Collections.Generic;
 
 namespace CK.Engine.TypeCollector
 {
-    public sealed partial class AssemblyCollector
+    public sealed partial class AssemblyCache
     {
-        internal readonly struct BinPathKey : IEquatable<BinPathKey>
+        internal readonly struct GroupKey : IEquatable<GroupKey>
         {
             readonly BinPathConfiguration _configuration;
 
-            public BinPathKey( BinPathConfiguration configuration )
+            public GroupKey( BinPathConfiguration configuration )
             {
                 _configuration = configuration;
             }
 
-            public bool Equals( BinPathKey y )
+            public bool Equals( GroupKey y )
             {
                 return _configuration.Path == y._configuration.Path
                        && _configuration.DiscoverAssembliesFromPath == y._configuration.DiscoverAssembliesFromPath
@@ -30,7 +30,7 @@ namespace CK.Engine.TypeCollector
                 return HashCode.Combine( _configuration.Path, _configuration.DiscoverAssembliesFromPath, unorderedPoorHash );
             }
 
-            public override bool Equals( object? obj ) => obj is BinPathKey k && Equals( k );
+            public override bool Equals( object? obj ) => obj is GroupKey k && Equals( k );
         }
     }
 }

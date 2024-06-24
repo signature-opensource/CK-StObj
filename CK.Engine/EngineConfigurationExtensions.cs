@@ -1,5 +1,6 @@
 
 using CK.Core;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,12 +15,18 @@ namespace CK.Setup
 
         public static EngineResult Run( this EngineConfiguration configuration, IActivityMonitor monitor )
         {
-            if( !RunningEngineConfiguration.PrepareConfiguration( monitor, configuration ) )
+            if( !configuration.NormalizeConfiguration( monitor ) )
             {
                 return new EngineResult( false, null );
             }
-
-            throw new NotImplementedException();
+            var groups = BinPathTypeGroup.CreateBinPathTypeGroups( monitor, configuration );
+            if( groups == null )
+            {
+                return new EngineResult( false, null );
+            }
+            // Tempoary use of the good old StObjEngine.
+            var engine = new StObjEngine( monitor, configuration, groups );
+            return new EngineResult( engine.NewRun() );
         }
 
     }
