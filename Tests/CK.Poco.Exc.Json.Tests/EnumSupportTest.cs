@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Poco.Exc.Json.Tests.EnumSupportTest;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -34,8 +35,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ITest ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<ITest>>();
@@ -46,8 +49,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_roundtrip()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( ITest ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<ITest>>();
@@ -84,8 +89,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_with_ulong_underlying_type()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithULong ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithULong ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithULong>>();
@@ -109,8 +116,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_in_list()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithList ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithList ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithList>>();

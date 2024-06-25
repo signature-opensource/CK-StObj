@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Poco.Exc.Json;
+using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,8 +40,9 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void all_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var nMax = auto.Services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
@@ -111,8 +113,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void all_nullable_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var nNull = auto.Services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();

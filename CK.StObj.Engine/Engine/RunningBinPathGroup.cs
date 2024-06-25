@@ -215,6 +215,9 @@ namespace CK.Setup
         public string Names => _names;
 
         /// <inheritdoc />
+        public IStObjEngineMap? EngineMap => _collectorResult?.EngineMap;
+
+        /// <inheritdoc />
         public IPocoTypeSystemBuilder? PocoTypeSystemBuilder => _collectorResult?.PocoTypeSystemBuilder;
 
         /// <inheritdoc/>

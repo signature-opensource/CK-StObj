@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -42,8 +43,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void secondary_properties()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var s1 = directory.Create<ISecondary>( s => { s.Power = 3712; s.Name = "Talia"; } );
@@ -87,11 +90,13 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void secondary_collections()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
-                                                     typeof( ISecondary ),
-                                                     typeof( IOtherSecondary ),
-                                                     typeof( IWithCollections ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+                                            typeof( ISecondary ),
+                                            typeof( IOtherSecondary ),
+                                            typeof( IWithCollections ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var s1 = directory.Create<ISecondary>( s => { s.Power = 3712; s.Name = "Talia"; } );

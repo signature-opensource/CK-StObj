@@ -2,29 +2,31 @@ using CK.Core;
 using CK.Testing.StObjEngine;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.ComponentModel;
 
 namespace CK.Testing
 {
+
     /// <summary>
     /// Captures the result of <see cref="EngineTestHelperExtensions.RunSingleBinPathAndLoad(IMonitorTestHelper, System.Collections.Generic.ISet{Type})"/>.
     /// </summary>
     public readonly struct AutomaticServices : IDisposable
     {
-        readonly RunAndLoadResult _loadResult;
+        readonly IStObjMap _map;
         readonly ServiceProvider _serviceProvider;
-        readonly StObjContextRoot.ServiceRegister _serviceRegister;
+        readonly IServiceCollection _serviceCollection;
 
-        internal AutomaticServices( RunAndLoadResult r, ServiceProvider serviceProvider, StObjContextRoot.ServiceRegister serviceRegister )
+        internal AutomaticServices( IStObjMap map, ServiceProvider serviceProvider, IServiceCollection serviceCollection )
         {
-            _loadResult = r;
+            _map = map;
             _serviceProvider = serviceProvider;
-            _serviceRegister = serviceRegister;
+            _serviceCollection = serviceCollection;
         }
 
         /// <summary>
-        /// Gets the map load result.
+        /// Gets the CKomposable map.
         /// </summary>
-        public RunAndLoadResult LoadResult => _loadResult;
+        public IStObjMap Map => _map;
 
         /// <summary>
         /// Gets the configured services.
@@ -32,9 +34,9 @@ namespace CK.Testing
         public IServiceProvider Services => _serviceProvider;
 
         /// <summary>
-        /// Gets the service register.
+        /// Gets the service collection that has been used to build the <see cref="Services"/>.
         /// </summary>
-        public StObjContextRoot.ServiceRegister ServiceRegister => _serviceRegister;
+        public IServiceCollection ServiceCollection => _serviceCollection;
 
         /// <summary>
         /// Disposes the encapsulated <see cref="ServiceProvider"/>.

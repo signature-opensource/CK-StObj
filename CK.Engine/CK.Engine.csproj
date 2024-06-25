@@ -12,7 +12,7 @@
 
   <!-- Hopefully temporary... -->
   <ItemGroup>
-    <ProjectReference Include="..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
+    <ProjectReference Include="..\CK.StObj.Engine\CK.StObj.Engine.csproj" />
   </ItemGroup>
 
 </Project>

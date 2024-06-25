@@ -51,8 +51,10 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [TestCase( typeof( IPocoWithSetOfReadOnlyCompliantAnonymousRecord ) )]
         public void ISet_implementation_supports_all_the_required_types( Type type )
         {
-            var c = TestHelper.CreateTypeCollector( type );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( type );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var p = (IWithSet)d.Find( type )!.Create();
 
@@ -88,8 +90,10 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         [Test]
         public void ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var pBase = d.Create<IBasicRefSets>();
             pBase.StringSet.Should().NotBeNull();

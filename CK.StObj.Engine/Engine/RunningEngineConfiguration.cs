@@ -25,6 +25,7 @@ namespace CK.Setup
 
         IReadOnlyList<IRunningBinPathGroup> IRunningEngineConfiguration.Groups => _binPathGroups;
 
+        // New way
         public RunningEngineConfiguration( EngineConfiguration configuration, IReadOnlyList<BinPathTypeGroup> groups )
         {
             Configuration = configuration;

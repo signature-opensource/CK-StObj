@@ -18,7 +18,7 @@ namespace CK.Engine.TypeCollector
     {
         readonly ImmutableArray<BinPathConfiguration> _configurations;
         readonly string _groupName;
-        readonly ConfiguredTypeSet _configuredTypes;
+        readonly IConfiguredTypeSet _configuredTypes;
         // Regular groups have a BinPathGroup.
         readonly AssemblyCache.BinPathGroup? _assemblyGroup;
         // Unified has the AssemblyCache.
@@ -28,7 +28,7 @@ namespace CK.Engine.TypeCollector
         BinPathTypeGroup( ImmutableArray<BinPathConfiguration> configurations,
                           string groupName,   
                           AssemblyCache.BinPathGroup assemblyGroup,
-                          ConfiguredTypeSet configuredTypes )
+                          IConfiguredTypeSet configuredTypes )
         {
             _configurations = configurations;
             _groupName = groupName;
@@ -38,13 +38,18 @@ namespace CK.Engine.TypeCollector
 
         // Unified group.
         BinPathTypeGroup( IAssemblyCache assemblyCache,
-                          ConfiguredTypeSet configuredTypes )
+                          HashSet<Type> allTypes )
         {
             _configurations = ImmutableArray<BinPathConfiguration>.Empty;
             _groupName = "(Unified)";
             _assemblyCache = assemblyCache;
-            _configuredTypes = configuredTypes;
+            _configuredTypes = new ImmutableConfiguredTypeSet( allTypes );
         }
+
+        /// <summary>
+        /// Gets whether no error occured for this group.
+        /// </summary>
+        public bool Success => _assemblyGroup?.Success ?? true;
 
         /// <summary>
         /// Gets the name of this group: the comma separated <see cref="BinPathConfiguration.Name"/> for regular groups
@@ -87,20 +92,21 @@ namespace CK.Engine.TypeCollector
         public IAssemblyCache AssemblyCache => _assemblyGroup?.AssemblyCache ?? _assemblyCache!;
 
         /// <summary>
-        /// Creates the <see cref="BinPathTypeGroup"/> from a configuration. The first group's types is guaranteed to contain
-        /// all the IRealObject and IPoco of all the groups and it may be a "pure unfied group" (see <see cref="BinPathTypeGroup.IsUnifiedPure"/>).
+        /// Creates one or more <see cref="BinPathTypeGroup"/> from a configuration.
+        /// <para>
+        /// This step cannot fail: A false <see cref="Result.Success"/> comes from the assembly level.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The normalized configuration to handle.</param>
-        /// <returns>The ordered set of groups to setup or null on error.</returns>
-        public static IReadOnlyList<BinPathTypeGroup>? CreateBinPathTypeGroups( IActivityMonitor monitor, EngineConfiguration configuration )
+        /// <returns>The result (<see cref="Result.Success"/> can be false).</returns>
+        public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
         {
             using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
-            var assemblyResult = TypeCollector.AssemblyCache.ProcessEngineConfiguration( monitor, configuration );
-            if( assemblyResult == null ) return null;
+            var assemblyResult = TypeCollector.AssemblyCache.Run( monitor, configuration );
 
-            var result = new List<BinPathTypeGroup>();
-
+            // Always produce the groups even if assemblyResult.Success is false.
+            var groups = new List<BinPathTypeGroup>();
             var rawGroups = assemblyResult.BinPathGroups.Select( g => g.Configurations.GroupBy( b => new GroupKey( g, b ) ) )
                                                          .SelectMany( gType => gType.Select( tG => (Types: tG.Key.AssemblyGroup, Configurations: tG.ToImmutableArray()) ) );
             foreach( var (assemblyGroup, configurations) in rawGroups )
@@ -118,25 +124,20 @@ namespace CK.Engine.TypeCollector
                     Throw.DebugAssert( "Normalized did the job.", TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind ) == null );
                     types.Add( monitor, sourceName, tc.Type, tc.Kind );
                 }
-                // There can be currently no error here. But if we have to handle errors,
-                // this will be a null result.
-                if( result != null )
-                {
-                    var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
-                                                  groupName,
-                                                  assemblyGroup,
-                                                  types );
-                    result.Add( g );
-                }
+                var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
+                                              groupName,
+                                              assemblyGroup,
+                                              types );
+                groups.Add( g );
             }
-            if( result != null )
+            if( assemblyResult.Success )
             {
-                HandleUnifiedBinPath( monitor, configuration, result );
+                HandleUnifiedBinPath( monitor, groups );
             }
-            return result;
+            return new Result( assemblyResult, groups );
         }
 
-        static void HandleUnifiedBinPath( IActivityMonitor monitor, EngineConfiguration configuration, List<BinPathTypeGroup> result )
+        static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result )
         {
             Throw.DebugAssert( result.Count != 0 );
             if( result.Count == 1 )
@@ -179,7 +180,7 @@ namespace CK.Engine.TypeCollector
                 else
                 {
                     monitor.Info( $"Unification is required for {uTypes.Count} IRealObject and IPoco." );
-                    var unified = new BinPathTypeGroup( result[0].AssemblyCache, new ConfiguredTypeSet( uTypes ) );
+                    var unified = new BinPathTypeGroup( result[0].AssemblyCache, uTypes );
                     result.Insert( 0, unified );
                 }
             }

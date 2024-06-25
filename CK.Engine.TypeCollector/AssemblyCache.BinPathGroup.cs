@@ -27,15 +27,14 @@ namespace CK.Engine.TypeCollector
             // The head assemblies are mapped to true when explicitly added.
             readonly Dictionary<CachedAssembly, bool> _heads;
 
-            DateTime _maxFileTime = Util.UtcMinValue;
-            readonly IncrementalHash _hasher;
+            DateTime _maxFileTime;
             string _groupName;
+            // Initially set to ImmutableConfiguredTypeSet.Empty, replaced on success.
+            IConfiguredTypeSet _result;
             // Null when unknwon, true when ExplicitAdd is used, false for AddBinPath.
             bool? _explicitMode;
             // Success is set to false at the first error.
             bool _success;
-            // Non null on success.
-            ConfiguredTypeSet? _result;
 
             internal BinPathGroup( AssemblyCache assemblyCache, BinPathConfiguration configuration )
             {
@@ -45,8 +44,8 @@ namespace CK.Engine.TypeCollector
                 _path = configuration.Path;
                 _heads = new Dictionary<CachedAssembly, bool>();
                 _maxFileTime = Util.UtcMinValue;
-                _hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
                 _isAppContextFolder = configuration.Path == _assemblyCache.AppContextBaseDirectory;
+                _result = ImmutableConfiguredTypeSet.Empty;
                 _success = true;
             }
 
@@ -96,18 +95,15 @@ namespace CK.Engine.TypeCollector
             /// <summary>
             /// Gets the final types to register from this BinPath.
             /// <para>
-            /// This must be called only if <see cref="Success"/> is true otherwise an <see cref="InvalidOperationException"/>
-            /// id thrown.
+            /// When <see cref="Success"/> is false, this is empty.
             /// </para>
             /// </summary>
-            public IConfiguredTypeSet ConfiguredTypes
-            {
-                get
-                {
-                    Throw.CheckState( Success );
-                    return _result!;
-                }
-            }
+            public IConfiguredTypeSet ConfiguredTypes => _result;
+
+            /// <summary>
+            /// Gets the greatest last write time of the files involved in this group.
+            /// </summary>
+            public DateTime MaxFileTime => _maxFileTime; 
 
             internal bool DiscoverFolder( IActivityMonitor monitor )
             {

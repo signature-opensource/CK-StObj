@@ -15,11 +15,6 @@ namespace CK.Setup
         IPocoDirectory PocoDirectory { get; }
 
         /// <summary>
-        /// Gets the "object" (<see cref="PocoTypeKind.Any"/>) type.
-        /// </summary>
-        IPocoType ObjectType { get; }
-
-        /// <summary>
         /// Gets all the registered types by their <see cref="IPocoType.Index"/>.
         /// This contains both nullable and non nullable types.
         /// </summary>

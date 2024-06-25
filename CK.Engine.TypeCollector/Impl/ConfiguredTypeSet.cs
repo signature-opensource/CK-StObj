@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace CK.Engine.TypeCollector
 {
+
     sealed class ConfiguredTypeSet : IConfiguredTypeSet
     {
         readonly HashSet<Type> _allTypes;
@@ -54,7 +55,7 @@ namespace CK.Engine.TypeCollector
                 _allTypes.Add( type );
                 return true;
             }
-            if( _configuredTypes.TryGetConfigurableAutoServiceKind( type, out var exists ) )
+            if( _configuredTypes.AsDictionary.TryGetValue( type, out var exists ) )
             {
                 if( exists == kind ) return false;
                 monitor.Info( $"{sourceName} updated '{type:N}' from '{exists}' to {kind}." );

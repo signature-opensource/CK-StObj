@@ -272,8 +272,10 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void StObjConstruct_StObjInitialize_RegisterStartupServices_and_ConfigureServices_of_the_hierarchy_are_called()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             auto.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
             auto.Services.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
             var defined = auto.Services.GetRequiredService<Defined>();

@@ -23,45 +23,81 @@ namespace CK.Engine.TypeCollector
         // CachedAssembly are indexed by their Assembly and their simple name.
         readonly Dictionary<object, CachedAssembly> _assemblies;
         // BinPaths are indexed by their BinPathKey.
-        readonly Dictionary<GroupKey, BinPathGroup?> _binPaths;
-        readonly IncrementalHash _hasher;
-        List<BinPathGroup>? _result;
+        readonly Dictionary<GroupKey, BinPathGroup> _binPaths;
         bool _registrationClosed;
 
-        /// <summary>
-        /// Initializes a new <see cref="AssemblyCache"/>.
-        /// </summary>
-        /// <param name="assemblyExcluder">Optional filter that can exclude an assembly when returning true.</param>
-        public AssemblyCache( Func<string, bool>? assemblyExcluder = null )
+        /// <inheritdoc />
+        public IReadOnlyCollection<CachedAssembly> Assemblies => _assemblies.Values;
+
+        /// <inheritdoc />
+        public CachedAssembly FindOrCreate( Assembly assembly )
         {
-            _appContextPath = AppContext.BaseDirectory;
-            _assemblyExcluder = assemblyExcluder;
-            _assemblies = new Dictionary<object, CachedAssembly>();
-            _binPaths = new Dictionary<GroupKey, BinPathGroup?>();
-            _hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
-            _result = new List<BinPathGroup>();
+            Throw.CheckArgument( assembly is not null && assembly.IsDynamic is false );
+            Throw.CheckState( _registrationClosed is true );
+            return FindOrCreate( assembly, null, null, out var _ );
+        }
+
+        /// <summary>
+        /// Encapsulates the work of this <see cref="AssemblyCache"/> on an engine configuration.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="configuration">The configuration to process.</param>
+        /// <returns>The result (<see cref="Result.Success"/> can be false).</returns>
+        public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
+        {
+            bool success = true;
+            var c = new AssemblyCache( configuration.ExcludedAssemblies.Contains );
+            foreach( var b in configuration.BinPaths )
+            {
+                success &= c.Register( monitor, b ).Success;
+            }
+            // Any new CachedAssemblyInfo will not be IsInitialAssembly.
+            c._registrationClosed = true;
+            // Dumps a summary.
+            var sb = new StringBuilder( success ? "Successfully analyzed " : "Error while analyzing " );
+            sb.Append( c._binPaths.Count ).AppendLine( " assembly configurations:" );
+            foreach( var b in c._binPaths.Values )
+            {
+                if( b.Success )
+                {
+                    sb.AppendLine( $"- {b.ConfiguredTypes.AllTypes.Count} types for group '{b.GroupName}'." );
+                    sb.AppendLine( $"  From primary PFeatures: '{b.HeadAssemblies.Select( p => p.Name ).Concatenate( "', '" )}'." );
+                }
+                else
+                {
+                    sb.AppendLine( $"- Group '{b.GroupName}' failed." );
+                }
+            }
+            monitor.Log( success ? LogLevel.Info : LogLevel.Error, sb.ToString() );
+            return new Result( success, c, c._binPaths.Values );
         }
 
         /// <summary>
         /// Gets the <see cref="AppContext.BaseDirectory"/> from which assemblies are loaded.
         /// </summary>
-        public NormalizedPath AppContextBaseDirectory => _appContextPath;
+        NormalizedPath AppContextBaseDirectory => _appContextPath;
+
+        /// <summary>
+        /// Initializes a new <see cref="AssemblyCache"/>.
+        /// </summary>
+        /// <param name="assemblyExcluder">Optional filter that can exclude an assembly when returning true.</param>
+        AssemblyCache( Func<string, bool>? assemblyExcluder = null )
+        {
+            _appContextPath = AppContext.BaseDirectory;
+            _assemblyExcluder = assemblyExcluder;
+            _assemblies = new Dictionary<object, CachedAssembly>();
+            _binPaths = new Dictionary<GroupKey, BinPathGroup>();
+        }
 
         /// <summary>
         /// Registers a <see cref="BinPathAspectConfiguration"/>. Configurations are grouped
         /// into <see cref="BinPathGroup"/> when their assembly related configurations are similar.
-        /// <para>
-        /// This is idempotent.
-        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="configuration">The configuration to register.</param>
         /// <returns></returns>
-        public BinPathGroup? Register( IActivityMonitor monitor, BinPathConfiguration configuration )
+        BinPathGroup Register( IActivityMonitor monitor, BinPathConfiguration configuration )
         {
-            Throw.CheckNotNullArgument( configuration );
-            Throw.CheckState( _registrationClosed is false );
-
             var k = new GroupKey( configuration );
             if( !_binPaths.TryGetValue( k, out var binPath ) )
             {
@@ -78,68 +114,19 @@ namespace CK.Engine.TypeCollector
                     if( !success )
                     {
                         monitor.CloseGroup( "Failed." );
-                        _result = null;
-                        binPath = null;
                     }
                     _binPaths.Add( k, binPath );
                 }
             }
-            else if( binPath != null )
+            else 
             {
-                monitor.Info( $"BinPath configuration '{configuration.Name}' is shared with '{binPath.Configurations.First().Name}'." );
+                if( binPath.Success )
+                {
+                    monitor.Info( $"BinPath configuration '{configuration.Name}' is shared with '{binPath.Configurations.First().Name}'." );
+                }
                 binPath.AddConfiguration( configuration );
             }
             return binPath;
-        }
-
-        /// <summary>
-        /// Closes this collector, returning the <see cref="BinPathGroup"/> with their similar assembly related <see cref="BinPathGroup.Configurations"/>.
-        /// <para>
-        /// Depending on the similarity of the types related configurations (<see cref="BinPathConfiguration.ExcludedTypes"/> and <see cref="BinPathConfiguration.Types"/>),
-        /// shared type collector may be used for a <see cref="BinPathGroup"/>.
-        /// </para>
-        /// <para>
-        /// This is idempotent.
-        /// </para>
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <returns>The <see cref="BinPathGroup"/> results ot null on error.</returns>
-        public IReadOnlyCollection<BinPathGroup>? CloseRegistrations( IActivityMonitor monitor )
-        {
-            if( !_registrationClosed )
-            {
-                _registrationClosed = true;
-                if( _result != null )
-                {
-                    if( _binPaths.Count == 0 )
-                    {
-                        monitor.Info( "No assembly registrations, only explicit types will be registered." );
-                    }
-                    else
-                    {
-                        _result.AddRange( _binPaths.Values! );
-                        var sb = new StringBuilder();
-                        sb.Append( "Analyzed " ).Append( _result.Count ).AppendLine( " assembly configurations:" );
-                        foreach( var b in _result )
-                        {
-                            sb.AppendLine( $"- {b.ConfiguredTypes.AllTypes.Count} types for BinPath '{b.GroupName}'." );
-                            sb.AppendLine( $"  From primary PFeatures: '{b.HeadAssemblies.Select( p => p.Name ).Concatenate( "', '" )}'." );
-                        }
-                    }
-                }
-            }
-            return _result;
-        }
-
-        /// <inheritdoc />
-        public IReadOnlyCollection<CachedAssembly> Assemblies => _assemblies.Values;
-
-        /// <inheritdoc />
-        public CachedAssembly FindOrCreate( Assembly assembly )
-        {
-            Throw.CheckArgument( assembly is not null && assembly.IsDynamic is false );
-            Throw.CheckState( _registrationClosed is true );
-            return FindOrCreate( assembly, null, null, out var _ );
         }
 
         CachedAssembly? Find( string name ) => _assemblies.GetValueOrDefault( name );
@@ -209,15 +196,7 @@ namespace CK.Engine.TypeCollector
                                         """ );
             }
             _assemblies.Add( assemblyName, cached );
-            AddHash( _hasher, cached );
             return cached;
-        }
-
-        static void AddHash( IncrementalHash hasher, CachedAssembly assembly )
-        {
-            hasher.AppendData( MemoryMarshal.Cast<char, byte>( assembly.Name.AsSpan() ) );
-            var t = assembly.LastWriteTimeUtc;
-            hasher.AppendData( MemoryMarshal.AsBytes( MemoryMarshal.CreateReadOnlySpan( ref t, 1 ) ) );
         }
     }
 }

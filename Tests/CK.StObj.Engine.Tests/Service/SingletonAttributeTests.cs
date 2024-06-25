@@ -54,15 +54,13 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void without_SingletonServiceAttribute_scope_requires_manual_registration()
         {
-            var c1 = TestHelper.CreateTypeCollector( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
-            using var auto1 = TestHelper.CreateSingleBinPathAutomaticServices( c1 );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ));
+
+            using var auto1 = configuration.Run().CreateAutomaticServices();
             auto1.Services.Invoking( s => s.GetService<SomeScoped>() ).Should().Throw<InvalidOperationException>();
 
-            var c2 = TestHelper.CreateTypeCollector( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
-            using var auto2 = TestHelper.CreateSingleBinPathAutomaticServices( c2, configureServices: services =>
-            {
-                services.Services.AddScoped( sp => NotConstructibleServiceNaked.Create() );
-            } );
+            using var auto2 = configuration.Run().CreateAutomaticServices( configureServices: services => services.AddScoped( sp => NotConstructibleServiceNaked.Create() ) );
             auto2.Services.GetService<SomeScoped>().Should().NotBeNull();
         }
 
@@ -77,10 +75,11 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void SingletonServiceAttribute_enables_services_to_not_have_public_constructor()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( SomeSingleton ), typeof( NotConstructibleService ));
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddSingleton( sp => NotConstructibleService.Create() );
+                services.AddSingleton( sp => NotConstructibleService.Create() );
             } );
             auto.Services.GetService<SomeSingleton>().Should().NotBeNull();
         }

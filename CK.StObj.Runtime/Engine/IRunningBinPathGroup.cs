@@ -88,6 +88,11 @@ namespace CK.Setup
         GeneratedG0Artifact? GeneratedSource { get; }
 
         /// <summary>
+        /// Gets the <see cref="IStObjEngineMap"/> for this BinPath if the run has not been skipped.
+        /// </summary>
+        IStObjEngineMap? EngineMap { get; }
+
+        /// <summary>
         /// Gets the <see cref="IPocoTypeSystemBuilder"/> for this BinPath if the run has not been skipped.
         /// </summary>
         IPocoTypeSystemBuilder? PocoTypeSystemBuilder { get; }

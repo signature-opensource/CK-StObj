@@ -1,45 +1,34 @@
 using CK.Core;
 using CK.Setup;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
-using static CK.Core.CheckedWriteStream;
+using System.Text;
 
 namespace CK.Engine.TypeCollector
 {
     public sealed partial class AssemblyCache
     {
-
         /// <summary>
-        /// Encapsulates the work of this <see cref="AssemblyCache"/> on an engine configuration.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="configuration">The configuration to process.</param>
-        /// <returns>The result or null on error.</returns>
-        public static Result? ProcessEngineConfiguration( IActivityMonitor monitor, EngineConfiguration configuration )
-        {
-            bool success = true;
-            var c = new AssemblyCache( configuration.ExcludedAssemblies.Contains );
-            foreach( var b in configuration.BinPaths )
-            {
-                success &= c.Register( monitor, b ) != null;
-            }
-            var binPaths = c.CloseRegistrations( monitor );
-            return binPaths != null ? new Result( c, binPaths ) : null;
-        }
-
-        /// <summary>
-        /// Result of a successful <see cref="ProcessEngineConfiguration"/>.
+        /// Result of a <see cref="Run"/>.
         /// </summary>
         public sealed class Result : IAssemblyCache
         {
             readonly AssemblyCache _cache;
             readonly IReadOnlyCollection<BinPathGroup> _binPaths;
+            readonly bool _success;
 
-            internal Result( AssemblyCache cache, IReadOnlyCollection<BinPathGroup> binPaths )
+            internal Result( bool success, AssemblyCache cache, IReadOnlyCollection<BinPathGroup> binPaths )
             {
+                _success = success;
                 _cache = cache;
                 _binPaths = binPaths;
             }
+
+            /// <summary>
+            /// Gets whether all <see cref="BinPathGroups"/> are on success.
+            /// </summary>
+            public bool Success => _success;
 
             /// <inheritdoc />
             public IReadOnlyCollection<CachedAssembly> Assemblies => _cache.Assemblies;
@@ -51,6 +40,7 @@ namespace CK.Engine.TypeCollector
             /// Gets the <see cref="BinPathGroup"/> with their similar assembly related <see cref="BinPathGroup.Configurations"/>.
             /// </summary>
             public IReadOnlyCollection<BinPathGroup> BinPathGroups => _binPaths;
+
         }
     }
 }

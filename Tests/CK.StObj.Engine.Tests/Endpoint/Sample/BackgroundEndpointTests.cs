@@ -24,25 +24,26 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [TestCase( "Register both" )]
         public async Task Background_execution_Async( string mode )
         {
-            var c = TestHelper.CreateTypeCollector( typeof( DefaultCommandProcessor ),
-                                                     typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutorService ),
-                                                     typeof( SampleCommandMemory ),
-                                                     typeof( TenantResolutionService ),
-                                                     typeof( FakeTenantInfo ),
-                                                     typeof( DefaultTenantProvider ),
-                                                     typeof( TransactionalCallContextLike ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( DefaultCommandProcessor ),
+                                            typeof( BackgroundDIContainerDefinition ),
+                                            typeof( BackgroundExecutorService ),
+                                            typeof( SampleCommandMemory ),
+                                            typeof( TenantResolutionService ),
+                                            typeof( FakeTenantInfo ),
+                                            typeof( DefaultTenantProvider ),
+                                            typeof( TransactionalCallContextLike ) );
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
-                services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+                services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
+                services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
                 if( mode != "Register FakeTenantInfo" )
                 {
-                    services.Services.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
+                    services.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
                 }
                 if( mode != "Register IFakeTenantInfo" )
                 {
-                    services.Services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
+                    services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
                 }
             } );
 
@@ -99,16 +100,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task IOptions_in_the_background_Async()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( SampleCommandProcessorWithOptions ),
-                                                     typeof( SampleCommandMemory ),
-                                                     typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutorService ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( SampleCommandProcessorWithOptions ),
+                                            typeof( SampleCommandMemory ),
+                                            typeof( BackgroundDIContainerDefinition ),
+                                            typeof( BackgroundExecutorService ) );
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
-                services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
-                OptionsServiceCollectionExtensions.AddOptions( services.Services );
-                services.Services.Configure<SomeCommandProcessingOptions>( o => o.Power = 42 );
+                services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
+                services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+                OptionsServiceCollectionExtensions.AddOptions( services );
+                services.Configure<SomeCommandProcessingOptions>( o => o.Power = 42 );
             } );
 
             await TestHelper.StartHostedServicesAsync( auto.Services );
@@ -130,19 +132,21 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task IOptionsSnapshot_in_the_background_Async()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( SampleCommandProcessorWithOptionsSnapshot ),
-                                                     typeof( SampleCommandMemory ),
-                                                     typeof( BackgroundDIContainerDefinition ),
-                                                     typeof( BackgroundExecutorService ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( SampleCommandProcessorWithOptionsSnapshot ),
+                                            typeof( SampleCommandMemory ),
+                                            typeof( BackgroundDIContainerDefinition ),
+                                            typeof( BackgroundExecutorService ) );
+
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
-                services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+                services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
+                services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
                 
-                OptionsServiceCollectionExtensions.AddOptions( services.Services );
-                services.Services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
+                OptionsServiceCollectionExtensions.AddOptions( services );
+                services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
             } );
 
             await TestHelper.StartHostedServicesAsync( auto.Services );
@@ -175,19 +179,21 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task IOptionsMonitor_in_the_background_Async()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( SampleCommandProcessorWithOptionsMonitor ),
-                                                    typeof( SampleCommandMemory ),
-                                                    typeof( BackgroundDIContainerDefinition ),
-                                                    typeof( BackgroundExecutorService ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( SampleCommandProcessorWithOptionsMonitor ),
+                                            typeof( SampleCommandMemory ),
+                                            typeof( BackgroundDIContainerDefinition ),
+                                            typeof( BackgroundExecutorService ) );
+
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
-                services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+                services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
+                services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
                 
-                OptionsServiceCollectionExtensions.AddOptions( services.Services );
-                services.Services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
+                OptionsServiceCollectionExtensions.AddOptions( services );
+                services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
             } );
 
             await TestHelper.StartHostedServicesAsync( auto.Services );

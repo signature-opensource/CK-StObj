@@ -105,12 +105,12 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public async Task HostedServiceLifetimeTrigger_at_work_Async()
         {
-            var allTypes= typeof( OnHostStartStopTests ).GetNestedTypes();
-            var collector = TestHelper.CreateTypeCollector( allTypes );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector, configureServices: services =>
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( OnHostStartStopTests ).GetNestedTypes() );
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddScoped( sp => TestHelper.Monitor );
-                services.Services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
+                services.AddScoped( sp => TestHelper.Monitor );
+                services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
             } );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
             {

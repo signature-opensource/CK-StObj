@@ -60,6 +60,7 @@ namespace CK.Setup
             var first = new BinPathConfiguration();
             first.Owner = this;
             _binPaths.Add( first );
+            first.Name = "First";
         }
 
         /// <summary>
@@ -238,7 +239,34 @@ namespace CK.Setup
         public IReadOnlyList<BinPathConfiguration> BinPaths => _binPaths;
 
         /// <summary>
+        /// Finds the <see cref="BinPathConfiguration"/> or throws a <see cref="ArgumentException"/> if not found.
+        /// </summary>
+        /// <param name="binPathName">The bin path name. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
+        /// <returns>The BinPath.</returns>
+        public BinPathConfiguration FindRequiredBinPath( string binPathName )
+        {
+            var b = FindBinPath( binPathName );
+            if( b == null )
+            {
+                Throw.ArgumentException( nameof( binPathName ),
+                                         $"""
+                                          Unable to find BinPath named '{binPathName}'. Existing BinPaths are:
+                                          '{_binPaths.Select( b => b.Name ).Concatenate( "', '" )}'.
+                                          """ );
+            }
+            return b;
+        }
+
+        /// <summary>
+        /// Tries to find the <see cref="BinPathConfiguration"/> or returns null.
+        /// </summary>
+        /// <param name="binPathName">The bin path name.</param>
+        /// <returns>The BinPath or null.</returns>
+        public BinPathConfiguration? FindBinPath( string binPathName ) => _binPaths.FirstOrDefault( b => b.Name == binPathName );
+
+        /// <summary>
         /// Adds a BinPathConfiguration to these <see cref="BinPaths"/>.
+        /// The <see cref="BinPathConfiguration.Name"/> is automatically adusted if the name already exists.
         /// <para>
         /// The <paramref name="binPath"/> must not belong to another Engine configuration otherwise
         /// a <see cref="ArgumentException"/> is thrown.
@@ -369,5 +397,12 @@ namespace CK.Setup
         /// Defaults to false.
         /// </summary>
         public bool ForceRun { get; set; }
+
+
+        /// <summary>
+        /// Clones this configuration (via xml).
+        /// </summary>
+        /// <returns>A clone of this configuration.</returns>
+        public EngineConfiguration Clone() => new EngineConfiguration( ToXml() );
     }
 }

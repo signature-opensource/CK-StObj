@@ -16,8 +16,6 @@ namespace CK.Setup
     [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = false )]
     public class ExcludeCKTypeAttribute : Attribute
     {
-        readonly IEnumerable<Type> _types;
-
         /// <summary>
         /// Initializes a new <see cref="ExcludeCKTypeAttribute"/>.
         /// </summary>
@@ -25,12 +23,6 @@ namespace CK.Setup
         /// <param name="otherTypes">Other types to exclude.</param>
         public ExcludeCKTypeAttribute( Type type, params Type[] otherTypes )
         {
-            _types = otherTypes.Prepend( type );
         }
-
-        /// <summary>
-        /// Gets the types that must be exposed from this assembly.
-        /// </summary>
-        public IEnumerable<Type> Types => _types;
     }
 }

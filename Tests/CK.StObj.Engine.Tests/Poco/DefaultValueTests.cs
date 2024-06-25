@@ -33,8 +33,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void default_values_on_simple_field()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IThing ), typeof( IThingHolder ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( IThing ), typeof( IThingHolder ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();
             h.Value.Should().NotBeNull();
             h.Value.Power.Should().Be( 3712 );

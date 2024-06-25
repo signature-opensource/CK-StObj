@@ -3,14 +3,17 @@ using CK.Core;
 using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Linq;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -20,9 +23,56 @@ using static CK.Testing.StObjEngineTestHelper;
 namespace CK.StObj.Engine.Tests
 {
     [TestFixture]
-    [Category( "DynamicGeneration" )]
     public class DynamicGenerationTests
     {
+        #region Aplies to the first 2 texts: this configures "StObjPower" on type name "A" and "ASpec".
+
+        /// <summary>
+        /// Configures the 2 A's StObjPower with "This is the A property." (for A) and "ASpec level property." (for ASpec).
+        /// </summary>
+        class StObjPropertyConfigurator : StObjConfigurationLayer
+        {
+            public override void Configure( IActivityMonitor monitor, IStObjMutableItem o )
+            {
+                if( o.ClassType.Name == "A" ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
+                if( o.ClassType.Name == "ASpec" ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
+                base.Configure( monitor, o );
+            }
+        }
+
+        public sealed class FakeAspect : IStObjEngineAspect
+        {
+            public bool Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context )
+            {
+                context.Configurator.AddLayer( new StObjPropertyConfigurator() );
+                return true;
+            }
+
+            public bool OnSkippedRun( IActivityMonitor monitor ) => true;
+
+            public bool RunPreCode( IActivityMonitor monitor, IStObjEngineRunContext context ) => true;
+
+            public bool RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context ) => true;
+
+            public bool Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context ) => true;
+        }
+
+        public sealed class FakeAspectConfiguration : EngineAspectConfiguration
+        {
+            public override string AspectType => "CK.StObj.Engine.Tests.DynamicGenerationTests+FakeAspect, CK.StObj.Engine.Tests";
+
+            public FakeAspectConfiguration()
+            {
+            }
+
+            public FakeAspectConfiguration( XElement e )
+            {
+            }
+
+            public override XElement SerializeXml( XElement e ) => e;
+        }
+        #endregion
+
         public static class CConstructCalledAndStObjProperties
         {
             public class A : IRealObject
@@ -60,36 +110,32 @@ namespace CK.StObj.Engine.Tests
                 public A TheA { get; private set; }
             }
 
-            class StObjPropertyConfigurator : IStObjStructuralConfigurator
-            {
-                public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
-                {
-                    if( o.ClassType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
-                    if( o.ClassType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
-                }
-            }
-
             public static void DoTest()
             {
-                using var container = new SimpleServiceContainer();
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add( typeof( B ), typeof( ASpec ) );
+                configuration.AddAspect( new FakeAspectConfiguration() );
+                var result = configuration.Run();
 
-                StObjCollector collector = new StObjCollector( container, configurator: new StObjPropertyConfigurator() );
-                collector.RegisterType( TestHelper.Monitor, typeof( B ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
-                collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
-                collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
+                //var container = new SimpleServiceContainer();
+                //var configurator = new StObjPropertyConfigurator();
+                //StObjCollector collector = new StObjCollector( container, configurator: configurator );
+                //collector.RegisterType( TestHelper.Monitor, typeof( B ) );
+                //collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
+                //collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
+                //collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-                collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
-                StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
-                r.HasFatalError.Should().Be( false, "There must be no error." );
+                //collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+                //StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+                //r.HasFatalError.Should().Be( false, "There must be no error." );
 
-                var load = TestHelper.RunSingleBinPathAndLoad( r );
+                result.Status.Should().Be( RunStatus.Succeed );
+
+                var engineMap = result.FirstBinPath.EngineMap;
 
                 // Check collector result.
                 {
-                    Assert.That( r.HasFatalError, Is.False );
-                    Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
-                    IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
+                    IStObjObjectEngineMap stObjs = engineMap.StObjs;
 
                     Assert.That( stObjs.Obtain<B>()!.TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
                     Assert.That( stObjs.Obtain<ASpec>()!.TheB, Is.SameAs( stObjs.Obtain<B>() ) );
@@ -102,7 +148,7 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // Check compiled StObjMap.
-                var map = load.Map;
+                var map = result.FirstBinPath.LoadStObjMap( TestHelper.Monitor );
                 {
                     Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
                     Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
@@ -181,40 +227,22 @@ namespace CK.StObj.Engine.Tests
                 void StObjConstruct( )
                 {
                 }
-
-            }
-
-            /// <summary>
-            /// Configures the 2 A's StObjPower with "This is the A property." (for A) and "ASpec level property." (for ASpec).
-            /// </summary>
-            class StObjPropertyConfigurator : IStObjStructuralConfigurator
-            {
-                public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
-                {
-                    if( o.ClassType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
-                    if( o.ClassType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
-                }
             }
 
             public void DoTest()
             {
-                StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new StObjPropertyConfigurator() );
-                collector.RegisterType( TestHelper.Monitor, typeof( BSpec ) );
-                collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
-                collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
-                collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-                collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
-                StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
-                r.HasFatalError.Should().Be( false, "There must be no error." );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add( typeof( BSpec ), typeof( ASpec ) );
+                configuration.AddAspect( new FakeAspectConfiguration() );
+                var result = configuration.Run();
 
-                var load = TestHelper.RunSingleBinPathAndLoad( r );
+                result.Status.Should().Be( RunStatus.Succeed );
+                var engineMap = result.FirstBinPath.EngineMap;
 
                 // Check collector result.
                 {
-                    Assert.That( r.HasFatalError, Is.False );
-                    Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
-                    IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
+                    IStObjObjectEngineMap stObjs = engineMap.StObjs;
 
                     Assert.That( stObjs.Obtain<B>()!.TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
                     Assert.That( stObjs.Obtain<ASpec>()!.TheB, Is.SameAs( stObjs.Obtain<B>() ) );
@@ -228,7 +256,7 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // Check generated StObjMap.
-                var map = load.Map;
+                var map = result.FirstBinPath.LoadStObjMap( TestHelper.Monitor );
                 {
                     Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
                     Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
@@ -243,7 +271,6 @@ namespace CK.StObj.Engine.Tests
 
                     Assert.That( theA.StObjInitializeOnACalled, Is.True );
                     Assert.That( theA.StObjInitializeOnASpecCalled, Is.True );
-
                 }
             }
 
@@ -353,8 +380,9 @@ namespace CK.StObj.Engine.Tests
 
             public void DoTest()
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( AutomaticallyImplemented ) );
-                var map = TestHelper.RunSingleBinPathAndLoad( collector ).Map;
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add( typeof( AutomaticallyImplemented ) );
+                var map = configuration.Run().LoadMap();
 
                 var a = map.GetType().Assembly;
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
@@ -468,8 +496,9 @@ namespace CK.StObj.Engine.Tests
             {
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    var collector = TestHelper.CreateTypeCollector( typeof( S1 ), typeof( S2 ) );
-                    TestHelper.RunSingleBinPathAndLoad( collector );
+                    var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                    configuration.FirstBinPath.Add( typeof( S1 ), typeof( S2 ) );
+                    configuration.Run().LoadMap();
                     entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                                     .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
                 }

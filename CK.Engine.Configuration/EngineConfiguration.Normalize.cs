@@ -86,15 +86,20 @@ namespace CK.Setup
         ///             </item>
         ///         </list>
         ///     </item>
-        ///    <item>
-        ///    Sorts the <see cref="BinPaths"/> by their <see cref="BinPathConfiguration.Name"/>.
-        ///    </item>
         /// </list>
         /// </summary>
         /// <returns>True on success, false is something's wrong in the configuration.</returns>
         public bool NormalizeConfiguration( IActivityMonitor monitor )
         {
-            if( !Normalize( monitor, this ) ) return false;
+            using( monitor.OpenInfo( $"Normalizing engine configuration:{Environment.NewLine}{ToXml()}" ) )
+            {
+                if( !Normalize( monitor, this ) )
+                {
+                    monitor.CloseGroup( "Failed." );
+                    return false;
+                }
+                monitor.Trace( $"Normalized to:{Environment.NewLine}{ToXml()}" );
+            }
 #if DEBUG
             // Check idempotence and Xml serialization.
             var xml = ToXml();
@@ -323,9 +328,6 @@ namespace CK.Setup
 
             // Process the BinPaths: setup the AlternativePath for each of them.
             AlternativePath[] altPaths = AnalyzeBinPaths( c, out var maxAlternativeCount );
-
-            // Sorts the BinPath by their name.
-            c._binPaths.Sort( ( b1, b2 ) => b1.Name!.CompareTo( b2.Name ) );
 
             bool success = ResolveAlternateBinPaths( monitor, c, maxAlternativeCount, altPaths );
             CheckTypeConfigurationSet( monitor, c.GlobalTypes, c.GlobalExcludedTypes, null, ref success );

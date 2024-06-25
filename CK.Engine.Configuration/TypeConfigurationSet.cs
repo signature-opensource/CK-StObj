@@ -66,22 +66,41 @@ namespace CK.Setup
         /// Adds the <see cref="TypeConfiguration"/>, replacing any existing configuration with the same <see cref="TypeConfiguration.Type"/>.
         /// </summary>
         /// <param name="configuration">The configuration to add.</param>
-        public void Add( TypeConfiguration configuration ) => _types[configuration.Type] = configuration.Kind;
+        /// <returns>This set.</returns>
+        public TypeConfigurationSet Add( TypeConfiguration configuration )
+        {
+            _types[configuration.Type] = configuration.Kind;
+            return this;
+        }
 
         /// <summary>
         /// Adds the type association, replacing any existing configuration with the same <paramref name="type"/>.
         /// </summary>
         /// <param name="type">The type to configure.</param>
         /// <param name="kind">The kind of the type.</param>
-        public void Add( Type type, ConfigurableAutoServiceKind kind ) => _types[type] = kind;
+        /// <returns>This set.</returns>
+        public TypeConfigurationSet Add( Type type, ConfigurableAutoServiceKind kind )
+        {
+            _types[type] = kind;
+            return this;
+        }
 
         /// <summary>
-        /// Gets the kind associated with the specified type.
+        /// Adds that the type whith <see cref="ConfigurableAutoServiceKind.None"/> if it doesn't already
+        /// exist but don't change its <see cref="TypeConfiguration.Kind"/> if it exists.
         /// </summary>
-        /// <param name="type">The type.</param>
-        /// <param name="kind">The configured kind.</param>
-        /// <returns>True if this set contains the type, false otherwise.</returns>
-        public bool TryGetConfigurableAutoServiceKind( Type type, out ConfigurableAutoServiceKind kind ) => _types.TryGetValue( type, out kind );
+        /// <param name="type">The type to add.</param>
+        /// <returns>This set.</returns>
+        public TypeConfigurationSet Add( Type type )
+        {
+            _types.TryAdd( type, ConfigurableAutoServiceKind.None );
+            return this;
+        }
+
+        /// <summary>
+        /// Gets this set as a dictionary.
+        /// </summary>
+        public IDictionary<Type, ConfigurableAutoServiceKind> AsDictionary => _types;
 
         /// <summary>
         /// Merges this set with the other one.
@@ -125,6 +144,7 @@ namespace CK.Setup
 
         public struct Enumerator : IEnumerator<TypeConfiguration>
         {
+            // Don't make this readonly or nothing will work!
             Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator _e;
 
             public Enumerator( Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator e ) => _e = e;
