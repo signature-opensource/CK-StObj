@@ -14,8 +14,11 @@ namespace CK.Setup
         internal TypeConfiguration( XElement e )
             : this( ReadType( e ), ReadKind( e ) )
         {
+            if( e.Attribute( EngineConfiguration.xOptional ) != null )
+            {
+                Throw.InvalidDataException( "Obsolete Optional attribute. Please remove it." );
+            }
             Type = SimpleTypeFinder.WeakResolver( (string?)e.Attribute( EngineConfiguration.xName ) ?? e.Value, throwOnError: true )!;
-            ReadKind( e );
         }
 
         static Type ReadType( XElement e )
