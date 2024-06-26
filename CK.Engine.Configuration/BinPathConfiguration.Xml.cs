@@ -10,10 +10,10 @@ namespace CK.Setup
 {
     public sealed partial class BinPathConfiguration
     {
-        internal BinPathConfiguration( EngineConfiguration configuration, XElement e, Dictionary<string, EngineAspectConfiguration> namedAspects )
+        internal BinPathConfiguration( EngineConfiguration configuration, XElement e, Dictionary<string, EngineAspectConfiguration> namedAspects, int idx )
         {
             _owner = configuration;
-            _name = (string?)e.Attribute( EngineConfiguration.xName ) ?? EngineConfiguration.DefaultBinPathName;
+            _name = (string?)e.Attribute( EngineConfiguration.xName ) ?? (idx == 0 ? "First" : EngineConfiguration.DefaultBinPathName);
             _path = (string?)e.Attribute( EngineConfiguration.xPath );
             _outputPath = (string?)e.Element( EngineConfiguration.xOutputPath );
             _projectPath = (string?)e.Element( EngineConfiguration.xProjectPath );

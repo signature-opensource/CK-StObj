@@ -60,7 +60,7 @@ namespace CK.Engine.TypeCollector
 
         /// <summary>
         /// Gets the name of this group: the comma separated <see cref="BinPathConfiguration.Name"/> for regular groups
-        /// and "(Unified)" when <see cref="IsUnifiedPure"/> is true.
+        /// and "_Unified_" when <see cref="IsUnifiedPure"/> is true.
         /// </summary>
         public string GroupName => _groupName;
 

@@ -52,7 +52,7 @@ namespace CK.Setup
 
             // BinPaths:
             _binPaths = new List<BinPathConfiguration>();
-            foreach( var b in e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( this, e, _namedAspects ) ) )
+            foreach( var b in e.Elements( xBinPaths ).Elements( xBinPath ).Select( (e, idx) => new BinPathConfiguration( this, e, _namedAspects, idx ) ) )
             {
                 // Aspects have been already handled by BinPathConfiguration constructor.
                 _binPaths.Add( b );

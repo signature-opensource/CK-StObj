@@ -56,7 +56,7 @@ namespace CK.Setup
                 {
                     Path = AppContext.BaseDirectory,
                     OutputPath = AppContext.BaseDirectory,
-                    Name = "(Unified)",
+                    Name = "_Unified_",
                     // The root (the Working directory) doesn't want any output by itself.
                     GenerateSourceFiles = false
                 };
@@ -109,7 +109,7 @@ namespace CK.Setup
             _engineConfiguration = engineConfiguration;
             _configuration = unifiedPure;
             _similarConfigurations = new[] { unifiedPure };
-            _names = "(Unified)";
+            _names = "_Unified_";
         }
 
 
