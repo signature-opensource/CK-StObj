@@ -20,6 +20,14 @@ namespace CK.Testing
         /// <returns>The engine result.</returns>
         public static EngineResult Run( this EngineConfiguration configuration )
         {
+            // Temporary workaround: the GeneratedAssemblyName must be based on the Signature
+            // This means that Aspects must be able to impact the Signature in their initialization
+            // easily (Apsects should be refacored with template method).
+            // Future:
+            //  - GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix.Signature[base64Url].dll
+            //  - The code that computes the SHA1 based on the generated code can be removed.
+            //  - Finding an external StObjMap is easy (File.Exists in the AppContext.BaseDirectory). 
+            configuration.GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yMMdHHmsfffff" );
             var r = configuration.Run( TestHelper.Monitor );
             r.Should().NotBeNull( "The configuration is invalid." );
             return r!;

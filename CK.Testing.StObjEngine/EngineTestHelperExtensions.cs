@@ -48,25 +48,19 @@ namespace CK.Testing
         /// Creates a default <see cref="EngineConfiguration"/> with the <see cref="EngineConfiguration.FirstBinPath"/> that has
         /// its <see cref="BinPathConfiguration.Path"/> set to the <see cref="IBasicTestHelper.ClosestSUTProjectFolder"/> and its
         /// <see cref="BinPathConfiguration.ProjectPath"/> sets to this <see cref="IBasicTestHelper.TestProjectFolder"/>.
-        /// <para>
-        /// The <see cref="EngineConfiguration.GeneratedAssemblyName"/> is suffixed with the date time (when using <see cref="CompileOption.Compile"/>).
-        /// </para>
         /// </summary>
         /// <param name="helper">This helper.</param>
         /// <param name="generateSourceFiles">False to not generate source file.</param>
         /// <param name="compileOption">See <see cref="BinPathConfiguration.CompileOption"/>.</param>
-        /// <returns>A new single BinPath configuration.</returns>
+        /// <returns>A default configuration.</returns>
         public static EngineConfiguration CreateDefaultEngineConfiguration( this IBasicTestHelper helper, bool generateSourceFiles = true, CompileOption compileOption = CompileOption.Compile )
         {
-            var config = new EngineConfiguration()
-            {
-                GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yMMdHHmsfffffff" )
-            };
+            var config = new EngineConfiguration();
             var sutFolder = helper.ClosestSUTProjectFolder;
             config.FirstBinPath.Path = sutFolder.Combine( helper.PathToBin );
+            config.FirstBinPath.ProjectPath = helper.TestProjectFolder;
             config.FirstBinPath.CompileOption = compileOption;
             config.FirstBinPath.GenerateSourceFiles = generateSourceFiles;
-            config.FirstBinPath.ProjectPath = helper.TestProjectFolder;
             return config;
         }
 
