@@ -75,7 +75,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task single_singleton_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManyAuto ),
+            configuration.FirstBinPath.AddTypes( typeof( ManyAuto ),
                                             typeof( ManyConsumer ),
                                             typeof( FirstDIContainerDefinition ),
                                             typeof( SecondDIContainerDefinition ));
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task multiple_singletons_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManyAuto ),
+            configuration.FirstBinPath.AddTypes( typeof( ManyAuto ),
                                             typeof( ManySingleton ),
                                             typeof( ManyAuto2 ),
                                             typeof( ManySingleton2 ),
@@ -139,7 +139,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task single_scoped_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManyScoped ),
+            configuration.FirstBinPath.AddTypes( typeof( ManyScoped ),
                                             typeof( ManyConsumer ),
                                             typeof( FirstDIContainerDefinition ),
                                             typeof( SecondDIContainerDefinition ));
@@ -174,7 +174,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task global_can_register_multiple_services_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManyScoped ),
+            configuration.FirstBinPath.AddTypes( typeof( ManyScoped ),
                                             typeof( ManyScoped2 ),
                                             typeof( ManyConsumer ),
                                             typeof( FirstDIContainerDefinition ),
@@ -245,7 +245,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_endpoint_services()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManySingleton ),
+            configuration.FirstBinPath.AddTypes( typeof( ManySingleton ),
                                             typeof( ManyConsumer ),
                                             typeof( ManyAsScopedDIContainerDefinition ) );
             configuration.GetFailedSingleBinPathAutomaticServices( 
@@ -274,7 +274,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task endpoints_can_register_multiple_singletons_when_the_multiple_has_been_auto_computed_as_singleton_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManySingleton),
+            configuration.FirstBinPath.AddTypes( typeof( ManySingleton),
                                             typeof( ManyConsumer ),
                                             typeof( ManyAsSingletonDIContainerDefinition ) );
             using var auto = configuration.Run().CreateAutomaticServices();
@@ -296,7 +296,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_global()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( ManySingleton ),
+            configuration.FirstBinPath.AddTypes( typeof( ManySingleton ),
                                             typeof( ManyConsumer ),
                                             typeof( ManyAsScopedDIContainerDefinition ) );
             configuration.GetFailedSingleBinPathAutomaticServices(

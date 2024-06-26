@@ -42,7 +42,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void default_for_Globalization_types_are_handled()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IWithGlobalization ));
+            configuration.FirstBinPath.AddTypes(typeof( IWithGlobalization ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();

@@ -113,9 +113,9 @@ namespace CK.StObj.Engine.Tests
             public static void DoTest()
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Add( typeof( B ), typeof( ASpec ) );
+                configuration.FirstBinPath.AddTypes( typeof( B ), typeof( ASpec ) );
                 configuration.AddAspect( new FakeAspectConfiguration() );
-                var result = configuration.Run();
+                var result = configuration.RunSuccessfully();
 
                 //var container = new SimpleServiceContainer();
                 //var configurator = new StObjPropertyConfigurator();
@@ -128,8 +128,6 @@ namespace CK.StObj.Engine.Tests
                 //collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
                 //StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
                 //r.HasFatalError.Should().Be( false, "There must be no error." );
-
-                result.Status.Should().Be( RunStatus.Succeed );
 
                 var engineMap = result.FirstBinPath.EngineMap;
 
@@ -148,7 +146,7 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // Check compiled StObjMap.
-                var map = result.FirstBinPath.LoadStObjMap( TestHelper.Monitor );
+                var map = result.FirstBinPath.LoadMap( TestHelper.Monitor );
                 {
                     Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
                     Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
@@ -233,11 +231,9 @@ namespace CK.StObj.Engine.Tests
             {
 
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Add( typeof( BSpec ), typeof( ASpec ) );
+                configuration.FirstBinPath.AddTypes( typeof( BSpec ), typeof( ASpec ) );
                 configuration.AddAspect( new FakeAspectConfiguration() );
-                var result = configuration.Run();
-
-                result.Status.Should().Be( RunStatus.Succeed );
+                var result = configuration.RunSuccessfully();
                 var engineMap = result.FirstBinPath.EngineMap;
 
                 // Check collector result.
@@ -256,7 +252,7 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // Check generated StObjMap.
-                var map = result.FirstBinPath.LoadStObjMap( TestHelper.Monitor );
+                var map = result.FirstBinPath.LoadMap( TestHelper.Monitor );
                 {
                     Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
                     Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
@@ -381,7 +377,7 @@ namespace CK.StObj.Engine.Tests
             public void DoTest()
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Add( typeof( AutomaticallyImplemented ) );
+                configuration.FirstBinPath.AddTypes( typeof( AutomaticallyImplemented ) );
                 var map = configuration.Run().LoadMap();
 
                 var a = map.GetType().Assembly;
@@ -497,7 +493,7 @@ namespace CK.StObj.Engine.Tests
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                    configuration.FirstBinPath.Add( typeof( S1 ), typeof( S2 ) );
+                    configuration.FirstBinPath.AddTypes( typeof( S1 ), typeof( S2 ) );
                     configuration.Run().LoadMap();
                     entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                                     .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );

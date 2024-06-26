@@ -14,8 +14,15 @@ namespace CK.Testing
 {
     /// <summary>
     /// Extends <see cref="IBasicTestHelper"/> or <see cref="IMonitorTestHelper"/> with engine related helpers.
+    /// <para>
+    /// Extends <see cref="EngineConfiguration"/> objects with configuration helper methods and run methods
+    /// like <see cref="RunSuccessfully(EngineConfiguration, bool)"/>.
+    /// <para>
+    /// Extends the CKomposable <see cref="EngineResult"/> with <see cref="IStObjMap"/> load capabilites
+    /// and <see cref="AutomaticServices"/> creation.
+    /// </para>
     /// </summary>
-    public static class EngineTestHelperExtensions
+    public static partial class EngineTestHelperExtensions
     {
         /// <summary>
         /// Creates a new <see cref="TypeCollector"/> and registers the given types into it.
@@ -53,7 +60,7 @@ namespace CK.Testing
         {
             var config = new EngineConfiguration()
             {
-                GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yyMdHmsffff" )
+                GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yMMdHHmsfffffff" )
             };
             var sutFolder = helper.ClosestSUTProjectFolder;
             config.FirstBinPath.Path = sutFolder.Combine( helper.PathToBin );

@@ -38,7 +38,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void non_nullable_string_defaults_to_empty_and_DateTime_defaults_to_Util_UtcMinValue()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IWithValueTuple ));
+            configuration.FirstBinPath.AddTypes(typeof( IWithValueTuple ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
@@ -64,7 +64,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void nullables_are_let_to_null()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IWithValueTuple2 ));
+            configuration.FirstBinPath.AddTypes(typeof( IWithValueTuple2 ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
@@ -189,7 +189,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void long_value_tuples_are_handled()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IWithLongTuple ));
+            configuration.FirstBinPath.AddTypes(typeof( IWithLongTuple ));
             var engineResult = configuration.Run();
 
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;

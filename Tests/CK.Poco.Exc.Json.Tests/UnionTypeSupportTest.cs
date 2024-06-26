@@ -27,7 +27,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void union_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) );
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

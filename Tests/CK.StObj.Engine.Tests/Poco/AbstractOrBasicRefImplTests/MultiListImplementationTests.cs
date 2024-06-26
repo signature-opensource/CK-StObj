@@ -60,7 +60,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public void IList_implementation_supports_all_the_required_types( Type type )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+            configuration.FirstBinPath.AddTypes( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                             typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                             type );
             using var auto = configuration.Run().CreateAutomaticServices();
@@ -119,7 +119,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public void IList_implementation_of_Abstract_is_natively_covariant()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+            configuration.FirstBinPath.AddTypes( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                             typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                             typeof( IPocoWithListOfAbstractBase ), typeof( IPocoWithListOfAbstract1 ),
                                             typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithListOfClosed ) );

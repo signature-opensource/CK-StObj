@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Core.Impl;
 using CK.Engine.TypeCollector;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 
 namespace CK.Setup
@@ -17,6 +18,8 @@ namespace CK.Setup
         }
 
         public RunStatus Status => _typeGroup.Success && _runningGroup != null ? RunStatus.Succeed : RunStatus.Failed;
+
+        public bool IsUnifiedPure => _typeGroup.IsUnifiedPure;
 
         public BinPathTypeGroup TypeGroup => _typeGroup;
 

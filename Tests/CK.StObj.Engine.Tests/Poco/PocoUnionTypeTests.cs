@@ -165,7 +165,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_implementation_guards_the_setter_when_not_nullable()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IPocoWithUnionType ));
+            configuration.FirstBinPath.AddTypes(typeof( IPocoWithUnionType ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -296,7 +296,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IPocoWithUnionTypeNoNullable ) );
+            configuration.FirstBinPath.AddTypes( typeof( IPocoWithUnionTypeNoNullable ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

@@ -183,8 +183,8 @@ namespace CK.Setup
                                                                              List<MultiPassCodeGeneration> secondPass,
                                                                              List<ICSCodeGeneratorWithFinalization> finalGen )
         {
-            Debug.Assert( EngineMap != null );
-            Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
+            Throw.DebugAssert( EngineMap != null );
+            Throw.DebugAssert( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
             var configurationGroup = codeGenContext.CurrentRun.ConfigurationGroup;
             var runSignature = configurationGroup.RunSignature;
 

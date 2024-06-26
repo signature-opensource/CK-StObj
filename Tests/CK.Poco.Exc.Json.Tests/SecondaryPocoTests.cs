@@ -44,7 +44,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void secondary_properties()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -91,7 +91,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void secondary_collections()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ),
                                             typeof( ISecondary ),
                                             typeof( IOtherSecondary ),
                                             typeof( IWithCollections ));

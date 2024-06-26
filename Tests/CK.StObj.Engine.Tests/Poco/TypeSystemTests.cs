@@ -264,11 +264,10 @@ namespace CK.StObj.Engine.Tests.Poco
         public void AbstractPocoField_test( Type impl, string[] names )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IAbstractPoco ),
+            configuration.FirstBinPath.AddTypes( typeof( IAbstractPoco ),
                                             typeof( IWithList ),
                                             impl );
-            var engineResult = configuration.Run();
-            engineResult.Status.Should().Be( RunStatus.Succeed );
+            var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
             var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );

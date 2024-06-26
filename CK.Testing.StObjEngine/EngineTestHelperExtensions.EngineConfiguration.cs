@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace CK.Testing
 {
-    public static class EngineConfigurationExtensions
+    public static partial class EngineTestHelperExtensions
     {
         /// <summary>
         /// Calls the <see cref="CKEngine.Run(EngineConfiguration, IActivityMonitor)"/> on the <see cref="Monitoring.IMonitorTestHelperCore.Monitor"/>.
@@ -23,6 +23,33 @@ namespace CK.Testing
             var r = configuration.Run( TestHelper.Monitor );
             r.Should().NotBeNull( "The configuration is invalid." );
             return r!;
+        }
+
+        /// <summary>
+        /// Calls the <see cref="CKEngine.Run(EngineConfiguration, IActivityMonitor)"/> on the <see cref="Monitoring.IMonitorTestHelperCore.Monitor"/>.
+        /// </summary>
+        /// <param name="configuration">This configuration.</param>
+        /// <param name="allowSkippedRun">False to forbid a <see cref="RunStatus.Skipped"/>.</param>
+        /// <returns>The engine result.</returns>
+        public static EngineResult RunSuccessfully( this EngineConfiguration configuration, bool allowSkippedRun = true )
+        {
+            var r = Run( configuration );
+            if( allowSkippedRun )
+            {
+                if( r.Status is RunStatus.Failed )
+                {
+                    Throw.CKException( $"Engine run failed." );
+                }
+                TestHelper.Monitor.Info( $"Engine status '{r.Status}'." );
+            }
+            else
+            {
+                if( r.Status is not RunStatus.Succeed )
+                {
+                    Throw.CKException( $"Engine run status '{r.Status}'." );
+                }
+            }
+            return r;
         }
 
         /// <summary>
@@ -47,7 +74,7 @@ namespace CK.Testing
                 var engineResult = configuration.Run();
                 if( engineResult.Status == RunStatus.Succeed )
                 {
-                    var map = engineResult.FindRequiredBinPath( binPathName ).TryLoadStObjMap( TestHelper.Monitor );
+                    var map = engineResult.FindRequiredBinPath( binPathName ).TryLoadMap( TestHelper.Monitor );
                     if( map != null )
                     {
                         loadMapSucceed = true;
@@ -67,26 +94,6 @@ namespace CK.Testing
                                                          : engineResult.Status == RunStatus.Succeed
                                                             ? "LoadStObjMap failed."
                                                             : "Code generation failed." );
-            }
-        }
-
-        static void CheckExpectedMessages( IEnumerable<string> fatalOrErrors, string message, IEnumerable<string>? otherMessages )
-        {
-            CheckMessage( fatalOrErrors, message );
-            if( otherMessages != null )
-            {
-                foreach( var m in otherMessages ) CheckMessage( fatalOrErrors, m );
-            }
-
-            static void CheckMessage( IEnumerable<string> fatalOrErrors, string m )
-            {
-                if( !String.IsNullOrEmpty( m ) )
-                {
-                    m = m.ReplaceLineEndings();
-                    var errors = fatalOrErrors.Select( m => m.ReplaceLineEndings() );
-                    errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
-                        .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
-                }
             }
         }
 
@@ -111,10 +118,10 @@ namespace CK.Testing
         /// </summary>
         /// <param name="binPath">This BinPath configuration.</param>
         /// <param name="types">Types to add.</param>
-        public static void Add( this BinPathConfiguration binPath, IEnumerable<Type> types ) => binPath.Types.Add( types );
+        public static void AddTypes( this BinPathConfiguration binPath, IEnumerable<Type> types ) => binPath.Types.Add( types );
 
-        /// <inheritdoc cref="Add(BinPathConfiguration,IEnumerable{Type})"/> 
-        public static void Add( this BinPathConfiguration binPath, params Type[] types ) => binPath.Types.Add( types );
+        /// <inheritdoc cref="AddTypes(BinPathConfiguration,IEnumerable{Type})"/> 
+        public static void AddTypes( this BinPathConfiguration binPath, params Type[] types ) => binPath.Types.Add( types );
 
     }
 }

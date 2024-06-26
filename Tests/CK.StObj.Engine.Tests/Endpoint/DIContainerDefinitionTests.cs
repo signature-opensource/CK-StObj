@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void DIContainerHub_exposes_the_DIContainerDefinitions()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
+            configuration.FirstBinPath.AddTypes( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var manager = auto.Services.GetRequiredService<DIContainerHub>();
@@ -65,7 +65,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void EndpointTypes_are_available_in_containers_as_well_as_the_IEnumerable_of_IEndpoint()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
+            configuration.FirstBinPath.AddTypes( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             // From the root (singleton) container.

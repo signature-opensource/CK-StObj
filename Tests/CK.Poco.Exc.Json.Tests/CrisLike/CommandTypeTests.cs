@@ -62,7 +62,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         public void commands_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ),
                                             typeof( ISimpleCommand ),
                                             typeof( IPersonCommand ),
                                             typeof( IAccountCommand ),
@@ -159,7 +159,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         public void serialization_with_abstract()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ),
                                             typeof( ISimpleCommand ),
                                             typeof( ICommandHolder ),
                                             typeof( IHaveListOfCommandObject ),

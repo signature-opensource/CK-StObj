@@ -105,10 +105,9 @@ namespace CK.StObj.Engine.Tests.Service
             // ISBase is no more considered a IScopedAutoService.
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration( generateSourceFiles: false, compileOption: Setup.CompileOption.None );
-                configuration.FirstBinPath.Add( typeof( ServiceS1Impl ), typeof( ServiceS2Impl ) );
+                configuration.FirstBinPath.AddTypes( typeof( ServiceS1Impl ), typeof( ServiceS2Impl ) );
                 configuration.FirstBinPath.ExcludedTypes.Add( typeof( ISBase ) );
-                var r = configuration.Run();
-                r.Status.Should().Be( Setup.RunStatus.Succeed );
+                var r = configuration.RunSuccessfully();
                 var map = r.FirstBinPath.EngineMap;
 
                 map.Services.Mappings.ContainsKey( typeof( ISBase ) ).Should().BeFalse();
@@ -299,7 +298,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void Linked_list_of_service_abstract_classes()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
+            configuration.FirstBinPath.AddTypes( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
             var map = configuration.Run().LoadMap();
 
             var final = map.Services.Mappings[typeof( ISBase )];

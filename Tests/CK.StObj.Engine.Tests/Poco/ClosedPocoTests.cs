@@ -64,11 +64,11 @@ namespace CK.StObj.Engine.Tests.Poco
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             if( mode == "AllBaseUserAndDocumentCloPocs" )
             {
-                configuration.FirstBinPath.Add( BaseUserAndDocumentCloPocs );
+                configuration.FirstBinPath.AddTypes( BaseUserAndDocumentCloPocs );
             }
             else
             {
-                configuration.FirstBinPath.Add( typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) );
+                configuration.FirstBinPath.AddTypes( typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) );
             }
             var engineResult = configuration.Run();
 
@@ -139,12 +139,12 @@ namespace CK.StObj.Engine.Tests.Poco
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             if( mode == "All commands" )
             {
-                configuration.FirstBinPath.Add( BaseUserAndDocumentCloPocs );
-                configuration.FirstBinPath.Add( typeof( IOther1UserCloPoc ), typeof( IOther2UserCloPoc ), typeof( IUserFinalCloPoc ) );
+                configuration.FirstBinPath.AddTypes( BaseUserAndDocumentCloPocs );
+                configuration.FirstBinPath.AddTypes( typeof( IOther1UserCloPoc ), typeof( IOther2UserCloPoc ), typeof( IUserFinalCloPoc ) );
             }
             else
             {
-                configuration.FirstBinPath.Add( typeof( IUserFinalCloPoc ) );
+                configuration.FirstBinPath.AddTypes( typeof( IUserFinalCloPoc ) );
             }
 
             using var auto = configuration.Run().CreateAutomaticServices();
@@ -159,7 +159,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void IPocoFactory_exposes_the_IsClosedPoco_and_ClosureInterface_properties()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IUserFinalCloPoc ) );
+            configuration.FirstBinPath.AddTypes( typeof( IUserFinalCloPoc ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var fUser = auto.Services.GetRequiredService<IPocoFactory<IUserCloPoc>>();
@@ -187,7 +187,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Add( typeof( INotClosedByDesign ) );
+                configuration.FirstBinPath.AddTypes( typeof( INotClosedByDesign ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 var f = auto.Services.GetRequiredService<IPocoFactory<INotClosedByDesign>>();
@@ -196,7 +196,7 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Add( typeof( IExtendNotClosedByDesign ) );
+                configuration.FirstBinPath.AddTypes( typeof( IExtendNotClosedByDesign ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
@@ -205,7 +205,7 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Add( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
+                configuration.FirstBinPath.AddTypes( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();

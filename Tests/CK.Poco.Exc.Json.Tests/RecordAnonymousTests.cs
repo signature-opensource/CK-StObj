@@ -24,7 +24,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void simple_tuple_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) );
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -46,7 +46,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void simple_nullable_tuple_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -79,7 +79,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void IPoco_collections_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithCollections ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithCollections ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -127,7 +127,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void collections_of_records_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithRecord ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithRecord ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -158,7 +158,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void collections_of_nullable_records_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

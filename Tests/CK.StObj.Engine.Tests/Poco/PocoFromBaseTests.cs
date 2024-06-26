@@ -35,7 +35,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IPocoFromBase ));
+            configuration.FirstBinPath.AddTypes(typeof( IPocoFromBase ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();

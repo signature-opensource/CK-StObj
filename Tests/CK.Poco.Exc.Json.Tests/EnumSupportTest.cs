@@ -36,7 +36,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void enum_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ITest ) );
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( ITest ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -50,7 +50,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void enum_serialization_roundtrip()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( ITest ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( ITest ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -90,7 +90,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void enum_serialization_with_ulong_underlying_type()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithULong ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithULong ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -117,7 +117,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void enum_serialization_in_list()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithList ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithList ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

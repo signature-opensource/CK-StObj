@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public void ISet_implementation_supports_all_the_required_types( Type type )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( type );
+            configuration.FirstBinPath.AddTypes( type );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -91,7 +91,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public void ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
+            configuration.FirstBinPath.AddTypes( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();

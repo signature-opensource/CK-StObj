@@ -26,7 +26,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void poco_knows_its_Factory()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IPocoKnowsItsFactory ));
+            configuration.FirstBinPath.AddTypes( typeof( IPocoKnowsItsFactory ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();

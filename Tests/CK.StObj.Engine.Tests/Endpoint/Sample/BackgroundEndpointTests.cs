@@ -25,7 +25,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task Background_execution_Async( string mode )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( DefaultCommandProcessor ),
+            configuration.FirstBinPath.AddTypes( typeof( DefaultCommandProcessor ),
                                             typeof( BackgroundDIContainerDefinition ),
                                             typeof( BackgroundExecutorService ),
                                             typeof( SampleCommandMemory ),
@@ -101,7 +101,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task IOptions_in_the_background_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( SampleCommandProcessorWithOptions ),
+            configuration.FirstBinPath.AddTypes( typeof( SampleCommandProcessorWithOptions ),
                                             typeof( SampleCommandMemory ),
                                             typeof( BackgroundDIContainerDefinition ),
                                             typeof( BackgroundExecutorService ) );
@@ -133,7 +133,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task IOptionsSnapshot_in_the_background_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( SampleCommandProcessorWithOptionsSnapshot ),
+            configuration.FirstBinPath.AddTypes( typeof( SampleCommandProcessorWithOptionsSnapshot ),
                                             typeof( SampleCommandMemory ),
                                             typeof( BackgroundDIContainerDefinition ),
                                             typeof( BackgroundExecutorService ) );
@@ -180,7 +180,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task IOptionsMonitor_in_the_background_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( SampleCommandProcessorWithOptionsMonitor ),
+            configuration.FirstBinPath.AddTypes( typeof( SampleCommandProcessorWithOptionsMonitor ),
                                             typeof( SampleCommandMemory ),
                                             typeof( BackgroundDIContainerDefinition ),
                                             typeof( BackgroundExecutorService ) );

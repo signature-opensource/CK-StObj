@@ -40,7 +40,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( Holder ) );
+            configuration.FirstBinPath.AddTypes( typeof( Holder ) );
             configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
@@ -55,7 +55,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( StaticHolder ) );
+            configuration.FirstBinPath.AddTypes( typeof( StaticHolder ) );
             configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
@@ -70,7 +70,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( RawInterface ) );
+            configuration.FirstBinPath.AddTypes( typeof( RawInterface ) );
             configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
@@ -85,7 +85,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( EvenOnAnEnumItWorks ) );
+            configuration.FirstBinPath.AddTypes( typeof( EvenOnAnEnumItWorks ) );
             configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }

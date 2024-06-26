@@ -22,7 +22,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void simple_tuple_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) );
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -48,7 +48,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void simple_nullable_tuple_serialization()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ));
+            configuration.FirstBinPath.AddTypes(typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

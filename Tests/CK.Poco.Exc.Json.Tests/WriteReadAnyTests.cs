@@ -47,7 +47,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void ReadAnyJson_tests()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) );
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -335,7 +335,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void roundtrip_and_write_read_any_big( int[] seeds )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ),
                                             typeof( ISomeTypes ),
                                             typeof( ICommand ),
                                             typeof( IBatchCommand ),

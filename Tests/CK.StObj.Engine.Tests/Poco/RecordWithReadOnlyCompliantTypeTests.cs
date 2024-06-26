@@ -28,7 +28,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void record_struct_is_supported()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( IWithRecordStruct ));
+            configuration.FirstBinPath.AddTypes(typeof( IWithRecordStruct ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStruct>>().Create();
@@ -139,7 +139,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void nesting_typed_and_anonymous_record_is_possible()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IWithComplexRecords ) );
+            configuration.FirstBinPath.AddTypes( typeof( IWithComplexRecords ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithComplexRecords>>().Create();

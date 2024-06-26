@@ -29,7 +29,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add(typeof( ISimpleCollections ));
+            configuration.FirstBinPath.AddTypes(typeof( ISimpleCollections ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void non_null_Array_property_are_initialized_to_the_Array_Empty()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IWithArray ), typeof( IWithArraySetter ) );
+            configuration.FirstBinPath.AddTypes( typeof( IWithArray ), typeof( IWithArraySetter ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();
@@ -67,7 +67,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void read_only_Array_property_are_definitely_empty()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( IWithArray ) );
+            configuration.FirstBinPath.AddTypes( typeof( IWithArray ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();

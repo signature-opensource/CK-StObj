@@ -54,7 +54,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
         public void command_json_roundtrip()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ),
                                             typeof( CrisCommandDirectoryLike ),
                                             typeof( ISimpleCommand ),
                                             typeof( IAuthCommand ),

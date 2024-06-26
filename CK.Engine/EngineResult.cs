@@ -20,7 +20,7 @@ namespace CK.Setup
         {
             _runStatus = runStatus;
             _configuration = configuration;
-            _binPaths = configuration.BinPaths.Select( c => new BinPath( c, groups.First( g => g.TypeGroup.Configurations.Contains( c ) ) ) )
+            _binPaths = configuration.BinPaths.Select( c => new BinPath( this, c, groups.First( g => g.TypeGroup.Configurations.Contains( c ) ) ) )
                                               .ToImmutableArray();
         }
 
@@ -71,12 +71,14 @@ namespace CK.Setup
         /// </summary>
         public sealed class BinPath
         {
+            readonly EngineResult _owner;
             readonly BinPathConfiguration _configuration;
             readonly BinPathGroup _group;
             readonly RunStatus _status;
 
-            internal BinPath( BinPathConfiguration c, BinPathGroup group )
+            internal BinPath( EngineResult owner, BinPathConfiguration c, BinPathGroup group )
             {
+                _owner = owner;
                 _configuration = c;
                 _group = group;
             }
@@ -86,19 +88,43 @@ namespace CK.Setup
             /// </summary>
             public RunStatus Status => _group.Status;
 
+            public EngineResult Owner => _owner;
+
             public string Name => _configuration.Name;
 
             public BinPathConfiguration Configuration => _configuration;
 
             public BinPathTypeGroup TypeGroup => _group.TypeGroup;
 
-            public IPocoTypeSystemBuilder PocoTypeSystemBuilder => _group.PocoTypeSystemBuilder;
+            public IPocoTypeSystemBuilder PocoTypeSystemBuilder
+            {
+                get
+                {
+                    Throw.CheckState( Owner.Status is not RunStatus.Failed );
+                    return _group.PocoTypeSystemBuilder;
+                }
+            }
 
-            public IStObjEngineMap EngineMap => _group.EngineMap;
+            public IStObjEngineMap EngineMap
+            {
+                get
+                {
+                    Throw.CheckState( Owner.Status is not RunStatus.Failed );
+                    return _group.EngineMap;
+                }
+            }
 
-            public IStObjMap LoadStObjMap( IActivityMonitor monitor ) => _group.LoadStObjMap( monitor );
+            public IStObjMap LoadMap( IActivityMonitor monitor )
+            {
+                Throw.CheckState( Owner.Status is not RunStatus.Failed );
+                return _group.LoadStObjMap( monitor );
+            }
 
-            public IStObjMap? TryLoadStObjMap( IActivityMonitor monitor ) => _group.TryLoadStObjMap( monitor );
+            public IStObjMap? TryLoadMap( IActivityMonitor monitor )
+            {
+                Throw.CheckState( Owner.Status is not RunStatus.Failed );
+                return _group.TryLoadStObjMap( monitor );
+            }
 
             public BinPathGroup Group => _group;
         }

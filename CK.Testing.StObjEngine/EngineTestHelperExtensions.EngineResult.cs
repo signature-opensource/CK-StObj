@@ -10,11 +10,13 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing
 {
-    /// <summary>
-    /// Extends the CKomposable <see cref="EngineResult"/>.
-    /// </summary>
-    public static class EngineResultExtensions
+    public static partial class EngineTestHelperExtensions
     {
+        /// <summary>
+        /// Loads the <see cref="IStObjMap"/>. Must be called only if <see cref="Success"/> is true.
+        /// </summary>
+        /// <returns>The map.</returns>
+        public static IStObjMap LoadMap( this EngineResult.BinPath binPath ) => binPath.LoadMap( TestHelper.Monitor );
 
         /// <summary>
         /// Loads the <see cref="IStObjMap"/> for the specified BinPath. Must be called only if <see cref="Success"/> is true.
@@ -22,8 +24,7 @@ namespace CK.Testing
         /// <param name="binPathName">The bin path name. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
         /// <returns>The map.</returns>
         public static IStObjMap LoadMap( this EngineResult engineResult, string binPathName = "First" ) => engineResult.FindRequiredBinPath( binPathName )
-                                                                                                                       .LoadStObjMap( TestHelper.Monitor );
-
+                                                                                                                       .LoadMap();
         /// <summary>
         /// Fully builds and configures a IServiceProvider after a successful run of the engine fully configured service provider
         /// in <see cref="AutomaticServices"/> (that must be disposed).
@@ -74,7 +75,7 @@ namespace CK.Testing
             var b = engineResult.FindRequiredBinPath( binPathName );
             var pocoTypeSystem = b.PocoTypeSystemBuilder;
             if( pocoTypeSystem?.IsLocked is false ) alterPocoTypeSystem?.Invoke( pocoTypeSystem );
-            return b.LoadStObjMap( TestHelper.Monitor ).CreateAutomaticServices( configureServices );
+            return b.LoadMap( TestHelper.Monitor ).CreateAutomaticServices( configureServices );
         }
 
     }
