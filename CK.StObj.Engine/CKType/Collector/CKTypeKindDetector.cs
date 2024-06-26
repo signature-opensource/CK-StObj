@@ -262,7 +262,7 @@ namespace CK.Setup
                     if( k == CKTypeKind.None && !isInternalInterface )
                     {
                         Throw.DebugAssert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                        Throw.DebugAssert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                        Throw.DebugAssert( typeof( Core.ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
                         Throw.DebugAssert( typeof( ContainerConfiguredScopedServiceAttribute ).Name == "ContainerConfiguredScopedServiceAttribute" );
                         Throw.DebugAssert( typeof( ContainerConfiguredSingletonServiceAttribute ).Name == "ContainerConfiguredSingletonServiceAttribute" );
                         Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );

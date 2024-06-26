@@ -5,22 +5,24 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\CK.Testing.StObjSetup\CK.Testing.StObjSetup.csproj" />
+    <ProjectReference Include="..\..\..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
+    <ProjectReference Include="..\..\..\StObjEngineTesting\Sample.Engine\Sample.Engine.csproj" />
+    <!--<ProjectReference Include="..\..\..\..\CK.Testing.StObjSetup\CK.Testing.StObjSetup.csproj" />-->
     <ProjectReference Include="..\..\LibWithSampleModel\LibWithSampleModel.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="NUnit" Version="4.1.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
-  <ItemGroup>
-    <!--
+  <!--<ItemGroup>
+    --><!--
       This simply ensures that the CK.StObj.Model/Runtime/Engine and Sample.Model/Engine are build before this one but we don't reference nor use it.
       The TestHelper.config uses CKSetup/AutoRegisterLocalComponentPaths to automatically create a LocalStores/Default
       with the StObj.Model/Runtime/Engine and Sample.Model/Engine: this test then uses CK.Testing.StObjSetup on this store
       because when AutoRegisterLocalComponentPaths is used, the TestHelper.CKSetup.GenerateComponentsMode is true and this
       initializes the TestHelper.CKSetup.DefaultStorePath to "LocalStores/Default". 
-    -->
+    --><!--
     <ProjectReference Include="..\..\..\StObjEngineTesting\Tests\Sample.Engine.Tests\Sample.Engine.Tests.csproj" ReferenceOutputAssembly="false" Private="false" />
-  </ItemGroup>
+  </ItemGroup>-->
   <ItemGroup>
     <Folder Include="%24StObjGen\" />
   </ItemGroup>

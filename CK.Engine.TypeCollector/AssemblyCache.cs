@@ -34,6 +34,8 @@ namespace CK.Engine.TypeCollector
         {
             Throw.CheckArgument( assembly is not null && assembly.IsDynamic is false );
             Throw.CheckState( _registrationClosed is true );
+            // Note that whatever the kind is (even a Exclude[Engine thats should be a warning), we
+            // don't care. The goal after the inital registration is just to collect the assemblies.
             return FindOrCreate( assembly, null, null, out var _ );
         }
 
@@ -107,10 +109,8 @@ namespace CK.Engine.TypeCollector
                     bool success = configuration.DiscoverAssembliesFromPath
                                     ? binPath.DiscoverFolder( monitor )
                                     : configuration.Assemblies.Aggregate( true, ( success, b ) => success &= binPath.AddExplicit( monitor, b ) );
-                    if( success )
-                    {
-                        success &= binPath.CollectTypes( monitor );
-                    }
+                    Throw.DebugAssert( success == binPath.Success );
+                    success &= binPath.FinalizeAndCollectTypes( monitor );
                     if( !success )
                     {
                         monitor.CloseGroup( "Failed." );
@@ -137,9 +137,9 @@ namespace CK.Engine.TypeCollector
             {
                 GetAssemblyNames( knownName ?? assembly.GetName(), out string assemblyName, out string assemblyFullName );
                 initialKind = AssemblyKind.None;
-                if( IsSkipped( assemblyName ) )
+                if( IsSystemSkipped( assemblyName ) )
                 {
-                    initialKind = AssemblyKind.Skipped;
+                    initialKind = AssemblyKind.SystemSkipped;
                 }
                 else if( _assemblyExcluder != null && _assemblyExcluder( assemblyName ) )
                 {
@@ -161,7 +161,7 @@ namespace CK.Engine.TypeCollector
                 }
             }
 
-            static bool IsSkipped( string assemblyName )
+            static bool IsSystemSkipped( string assemblyName )
             {
                 return assemblyName.StartsWith( "Microsoft." )
                        || assemblyName.StartsWith( "System." );

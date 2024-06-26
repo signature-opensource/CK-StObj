@@ -116,18 +116,19 @@ namespace CK.Poco.Exc.Json.Tests
                 h.Array2 = new[] { s2 };
             } );
 
-            holder.ToString().Should().Be( """
+            var s = holder.ToString();
+            s.Should().Be( """
                 {
-                    "List1":[{"Power":3712,"Name":"Talia","Id":""}],
-                    "ConcreteList1":[{"Power":3712,"Name":"Talia","Id":""}],
-                    "Dictionary1":[[1,{"Power":3712,"Name":"Talia","Id":""}]],
-                    "ConcreteDictionary1":[[12,{"Power":3712,"Name":"Talia","Id":""}]],
-                    "Array1":[{"Power":3712,"Name":"Talia","Id":""}],
-                    "List2":[{"Power":-1,"Name":"","Id":"#1"}],
-                    "ConcreteList2":[{"Power":-1,"Name":"","Id":"#1"}],
-                    "Dictionary2":[[2,{"Power":-1,"Name":"","Id":"#1"}]],
-                    "ConcreteDictionary2":[[22,{"Power":-1,"Name":"","Id":"#1"}]],
-                    "Array2":[{"Power":-1,"Name":"","Id":"#1"}]
+                    "List1":[{"Power":3712,"Id":"","Name":"Talia"}],
+                    "ConcreteList1":[{"Power":3712,"Id":"","Name":"Talia"}],
+                    "Dictionary1":[[1,{"Power":3712,"Id":"","Name":"Talia"}]],
+                    "ConcreteDictionary1":[[12,{"Power":3712,"Id":"","Name":"Talia"}]],
+                    "Array1":[{"Power":3712,"Id":"","Name":"Talia"}],
+                    "List2":[{"Power":-1,"Id":"#1","Name":""}],
+                    "ConcreteList2":[{"Power":-1,"Id":"#1","Name":""}],
+                    "Dictionary2":[[2,{"Power":-1,"Id":"#1","Name":""}]],
+                    "ConcreteDictionary2":[[22,{"Power":-1,"Id":"#1","Name":""}]],
+                    "Array2":[{"Power":-1,"Id":"#1","Name":""}]
                 }
                 """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
 

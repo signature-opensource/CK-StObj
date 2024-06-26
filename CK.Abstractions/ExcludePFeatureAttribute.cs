@@ -6,7 +6,8 @@ namespace CK.Setup
     /// Prevents the specified referenced assembly's types to be considered when registering this assembly.
     /// <para>
     /// This is a "weak" exclusion used to compute a set of initial types to register: types from this
-    /// assembly can perfectly be registered explicitly or through other types.
+    /// assembly can perfectly be registered explicitly or through other types and the excluded assembly is
+    /// still a PFeature (that can be included back by any upper level assembly).
     /// </para>
     /// <para>
     /// This allows to hide all the types of a referenced assembly by default and to opt-in exposing some of
@@ -22,10 +23,6 @@ namespace CK.Setup
         /// (it may already been excluded by referenced assemblies), only a warning is emitted. This enables
         /// to guaranty the this assembly will exclude <paramref name="assemblyName"/> regardless of any
         /// changes in its referenced assemblies.
-        /// <para>
-        /// The special "this" name can be used to exclude this assembly: this is used in rare case, for instance
-        /// CK.Engine.Configuration depends on CK.Abstractions but doesn't contain any types that needs to be setup.
-        /// </para>
         /// </summary>
         /// <param name="assemblyName">The simple assembly name or "this" to exclude this assembly.</param>
         public ExcludePFeatureAttribute( string assemblyName )

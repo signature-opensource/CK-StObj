@@ -124,9 +124,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             var mG = g.GetRequiredService<ManyConsumer>();
             mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>(),
-                                                            g.GetRequiredService<ManySingleton>(),
-                                                            g.GetRequiredService<ManyAuto2>(),
-                                                            g.GetRequiredService<ManySingleton2>() } );
+                                                          g.GetRequiredService<ManyAuto2>(),
+                                                          g.GetRequiredService<ManySingleton>(),
+                                                          g.GetRequiredService<ManySingleton2>() } );
 
             var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
             m1.All.Should().BeEquivalentTo( mG.All );

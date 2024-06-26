@@ -6,6 +6,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector
 {
@@ -41,64 +43,54 @@ namespace CK.Engine.TypeCollector
             _isInitialAssembly = isInitialAssembly;
             _pFeatures = ImmutableHashSet<CachedAssembly>.Empty;
             _allPFeatures = ImmutableHashSet<CachedAssembly>.Empty;
-            if( initialKind == AssemblyKind.None )
+            Throw.DebugAssert( "These comes from the configuration.", _kind is AssemblyKind.None or AssemblyKind.SystemSkipped or AssemblyKind.Excluded );
+            if( initialKind is not AssemblyKind.SystemSkipped )
             {
-                _kind = GetInitialAssemblyType();
-                Throw.DebugAssert( _kind is AssemblyKind.PFeature
-                                    or AssemblyKind.CKEngine
-                                    or AssemblyKind.PFeatureDefiner
-                                    or AssemblyKind.None );
-                // Auto exclusion or post registration assembly.
-                if( !isInitialAssembly || _kind == AssemblyKind.Excluded )
+                _kind = GetInitialAssemblyType( initialKind is AssemblyKind.Excluded );
+                // Skipped or post registration assembly: we can settle the types and references.
+                if( !isInitialAssembly || _kind is AssemblyKind.AutoSkipped )
                 {
                     _allVisibleTypes = ImmutableArray<Type>.Empty;
                     _rawReferencedAssembly = ImmutableArray<CachedAssembly>.Empty;
                 }
+                // An Excluded Engine is an error: this will be handled right after.
             }
             else
             {
-                Throw.DebugAssert( _kind is AssemblyKind.Skipped or AssemblyKind.Excluded );
                 _customAttributes = ImmutableArray<CustomAttributeData>.Empty;
                 _allVisibleTypes = ImmutableArray<Type>.Empty;
                 _rawReferencedAssembly = ImmutableArray<CachedAssembly>.Empty;
             }
         }
 
-        AssemblyKind GetInitialAssemblyType()
+        AssemblyKind GetInitialAssemblyType( bool excluded )
         {
             // Initial type detection. Allocates the CustomAttributes.
             uint found = 0;
             foreach( var d in CustomAttributes )
             {
-                // Auto exclusion: nothing more to do.
+                // Skipped: nothing more to do.
                 // This hides the "multiple error" below but we don't care.
-                if( d.AttributeType == typeof( ExcludePFeatureAttribute ) )
+                if( d.AttributeType == typeof( SkippedAssemblyAttribute ) || /*Legacy*/d.AttributeType.Name == "ExcludeFromSetupAttribute" )
                 {
-                    var excludedName = (string?)d.ConstructorArguments[0].Value;
-                    if( excludedName == "this" || excludedName == _assemblyName )
-                    {
-                        return AssemblyKind.Excluded;
-                    }
+                    return AssemblyKind.AutoSkipped;
                 }
-                // Legacy.
-                if( d.AttributeType.Name == "ExcludeFromSetupAttribute" )
-                {
-                    return AssemblyKind.Excluded;
-                }
-                if( d.AttributeType.Name == nameof( IsPFeatureAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelDependentAttribute" ) found |= 1;
-                else if( d.AttributeType.Name == nameof( IsCKEngineAttribute ) || /*Legacy*/d.AttributeType.Name == "IsSetupDependencyAttribute" ) found |= 2;
+                else if( d.AttributeType.Name == nameof( IsPFeatureAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelDependentAttribute" ) found |= 1;
+                else if( d.AttributeType.Name == nameof( IsEngineAttribute ) || /*Legacy*/d.AttributeType.Name == "IsSetupDependencyAttribute" ) found |= 2;
                 else if( d.AttributeType.Name == nameof( IsPFeatureDefinerAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelAttribute" ) found |= 4;
             }
             if( BitOperations.PopCount( found ) > 1 )
             {
                 // We cannot reaaly do anything else here... We cannot exclude the assembly, nor choose one at random because there is no sensible choice.
-                // This is a totally fucked up assembly: the developper must fix this. 
+                // This is a fucked up assembly: the developper must fix this. 
                 Throw.CKException( $"""
-                                    Invalid assembly '{_assemblyName}': it contains more than one [IsPFeature], [IsCKEngine] or [IsPFeatureDefiner].
+                                    Invalid assembly '{_assemblyName}': it contains more than one [IsPFeature], [IsEngine] or [IsPFeatureDefiner].
                                     These attributes are mutually exclusive.
                                     """ );
             }
-            return found switch { 1 => AssemblyKind.PFeature, 2 => AssemblyKind.CKEngine, 4 => AssemblyKind.PFeatureDefiner, _ => AssemblyKind.None };
+            var k = found switch { 1 => AssemblyKind.PFeature, 2 => AssemblyKind.Engine, 4 => AssemblyKind.PFeatureDefiner, _ => AssemblyKind.None };
+            if( excluded ) k |= AssemblyKind.Excluded;
+            return k;
         }
 
         /// <summary>
@@ -205,6 +197,13 @@ namespace CK.Engine.TypeCollector
         /// an assembly that comes from a later type registration.
         /// </summary>
         public bool IsInitialAssembly => _isInitialAssembly;
+
+        internal void AddHash( IncrementalHash hasher )
+        {
+            hasher.AppendData( MemoryMarshal.Cast<char, byte>( _assemblyName.AsSpan() ) );
+            var t = _lastWriteTime;
+            hasher.AppendData( MemoryMarshal.AsBytes( MemoryMarshal.CreateReadOnlySpan( ref t, 1 ) ) );
+        }
 
         /// <summary>
         /// Gets "Assembly '<see cref="Name"/>".

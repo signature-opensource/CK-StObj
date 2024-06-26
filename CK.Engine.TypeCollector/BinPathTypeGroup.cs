@@ -4,8 +4,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Transactions;
 
@@ -23,20 +26,23 @@ namespace CK.Engine.TypeCollector
         readonly AssemblyCache.BinPathGroup? _assemblyGroup;
         // Unified has the AssemblyCache.
         readonly IAssemblyCache? _assemblyCache;
+        SHA1Value _signature;
 
         // Regular group.
         BinPathTypeGroup( ImmutableArray<BinPathConfiguration> configurations,
                           string groupName,   
                           AssemblyCache.BinPathGroup assemblyGroup,
-                          IConfiguredTypeSet configuredTypes )
+                          IConfiguredTypeSet configuredTypes,
+                          SHA1Value signature )
         {
             _configurations = configurations;
             _groupName = groupName;
             _assemblyGroup = assemblyGroup;
             _configuredTypes = configuredTypes;
+            _signature = signature;
         }
 
-        // Unified group.
+        // Unified group (Signature is Zero).
         BinPathTypeGroup( IAssemblyCache assemblyCache,
                           HashSet<Type> allTypes )
         {
@@ -92,6 +98,16 @@ namespace CK.Engine.TypeCollector
         public IAssemblyCache AssemblyCache => _assemblyGroup?.AssemblyCache ?? _assemblyCache!;
 
         /// <summary>
+        /// Gets this BinPathTypeGroup digital signature. Based on <see cref="AssemblyCache.BinPathGroup.Signature"/>
+        /// and the <see cref="BinPathConfiguration.ExcludedTypes"/> and <see cref="BinPathConfiguration.Types"/>
+        /// content.
+        /// <para>
+        /// This is the <see cref="SHA1Value.Zero"/> if <see cref="IsUnifiedPure"/> is true or <see cref="Success"/> is false.
+        /// </para>
+        /// </summary>
+        public SHA1Value Signature => _signature;
+
+        /// <summary>
         /// Creates one or more <see cref="BinPathTypeGroup"/> from a configuration.
         /// <para>
         /// This step cannot fail: A false <see cref="Result.Success"/> comes from the assembly level.
@@ -105,6 +121,7 @@ namespace CK.Engine.TypeCollector
             using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
             var assemblyResult = TypeCollector.AssemblyCache.Run( monitor, configuration );
 
+
             // Always produce the groups even if assemblyResult.Success is false.
             var groups = new List<BinPathTypeGroup>();
             var rawGroups = assemblyResult.BinPathGroups.Select( g => g.Configurations.GroupBy( b => new GroupKey( g, b ) ) )
@@ -117,17 +134,35 @@ namespace CK.Engine.TypeCollector
                 var sourceName = $"BinPath '{groupName}'";
                 var c = configurations.First();
 
+                // Clones the assembly configured types as there may be other BinPathTypeGroup that use it
+                // (don't currently try to opimize here as it would mutate the assemblyGroup.ConfiguredTypes that should be immutable
+                // since it is publicy exposed... or make it internal).
                 var types = new ConfiguredTypeSet( assemblyGroup.ConfiguredTypes );
-                types.Remove( c.ExcludedTypes );
-                foreach( var tc in c.Types )
+
+                // Instead of computing the signature on the final set of types that would require to sort it by type name,
+                // we based the start of our signature on the Excluded and Types configurations and rely on the Assembly.BinPathGroup
+                // signature for the rest.
+                using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
+                hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
+                // Must unfortunately order the sets.
+                foreach( var t in c.ExcludedTypes.Select( t => (Type: t, t.FullName) ).OrderBy( t => t.FullName ) )
                 {
-                    Throw.DebugAssert( "Normalized did the job.", TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind ) == null );
+                    types.Remove( t.Type );
+                    hasher.AppendData( MemoryMarshal.Cast<char, byte>( t.FullName.AsSpan() ) );
+                }
+                Throw.DebugAssert( "Normalized did the job.", c.Types.All( tc => TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind ) == null ) );
+                foreach( var tc in c.Types.Select( tc => (tc.Type, tc.Kind, tc.Type.FullName) ).OrderBy( tc => tc.FullName ) )
+                {
                     types.Add( monitor, sourceName, tc.Type, tc.Kind );
+                    hasher.AppendData( MemoryMarshal.Cast<char, byte>( tc.FullName.AsSpan() ) );
+                    var k = tc.Kind;
+                    hasher.AppendData( MemoryMarshal.AsBytes( MemoryMarshal.CreateReadOnlySpan( ref k, 1 ) ) );
                 }
                 var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
                                               groupName,
                                               assemblyGroup,
-                                              types );
+                                              types,
+                                              new SHA1Value( hasher.GetCurrentHash() ) );
                 groups.Add( g );
             }
             if( assemblyResult.Success )

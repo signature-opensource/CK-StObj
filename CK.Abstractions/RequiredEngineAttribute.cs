@@ -8,7 +8,7 @@ namespace CK.Setup
     /// or more associated engines.
     /// </summary>
     [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = true )]
-    public sealed class RequiredCKEngineAttribute : Attribute
+    public sealed class RequiredEngineAttribute : Attribute
     {
         /// <summary>
         /// Initializes a new required CKEngine dependency attribute.
@@ -18,20 +18,8 @@ namespace CK.Setup
         /// A NuGet version range (see https://learn.microsoft.com/en-us/nuget/concepts/package-versioning?tabs=semver20sort#version-ranges)
         /// of the CKEngine to use.
         /// </param>
-        public RequiredCKEngineAttribute( string assemblyName, string versionBound )
+        public RequiredEngineAttribute( string assemblyName, string versionBound )
         {
-            AssemblyName = assemblyName;
-            VersionBound = versionBound;
         }
-
-        /// <summary>
-        /// Gets the simple name of the CKEngine assembly.
-        /// </summary>
-        public string AssemblyName { get; }
-
-        /// <summary>
-        /// Gets the NuGet version range of the CKEngine to use.
-        /// </summary>
-        public string VersionBound { get; }
     }
 }

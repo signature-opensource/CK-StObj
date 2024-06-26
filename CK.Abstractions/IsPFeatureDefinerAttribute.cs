@@ -7,7 +7,7 @@ namespace CK.Setup
     /// A "definer" typically defines abstract constructs and attributes that are referenced and used by PFeatures
     /// but doesn't need to be processed because it doesn't contain types that must directly participate to the CKomposable setup process.
     /// <para>
-    /// Definers are usually also marked with a <see cref="RequiredCKEngineAttribute"/> that identifies an associated engine
+    /// Definers are usually also marked with a <see cref="RequiredEngineAttribute"/> that identifies an associated engine
     /// component that handles the final implementation. 
     /// </para>
     /// </summary>
