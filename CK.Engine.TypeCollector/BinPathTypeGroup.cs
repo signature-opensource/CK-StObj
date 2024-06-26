@@ -119,9 +119,6 @@ namespace CK.Engine.TypeCollector
         /// <returns>The result (<see cref="Result.Success"/> can be false).</returns>
         public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
         {
-            Throw.DebugAssert( "Time to update all SHA1VAlue( hasher, reset ) and use IncrementalHashExtensions",
-                               Type.GetType( "CK.Core.IncrementalHashExtensions, CK.Core", false ) == null );  
-
             using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
             var assemblyResult = TypeCollector.AssemblyCache.Run( monitor, configuration );
 
@@ -167,21 +164,19 @@ namespace CK.Engine.TypeCollector
                 foreach( var t in c.ExcludedTypes.Select( t => (Type: t, t.FullName) ).OrderBy( t => t.FullName ) )
                 {
                     types.Remove( t.Type );
-                    hasher.AppendData( MemoryMarshal.Cast<char, byte>( t.FullName.AsSpan() ) );
+                    hasher.Append( t.FullName! );
                 }
                 Throw.DebugAssert( "Normalized did the job.", c.Types.All( tc => TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind ) == null ) );
                 foreach( var tc in c.Types.Select( tc => (tc.Type, tc.Kind, tc.Type.FullName) ).OrderBy( tc => tc.FullName ) )
                 {
                     types.Add( monitor, sourceName, tc.Type, tc.Kind );
-                    hasher.AppendData( MemoryMarshal.Cast<char, byte>( tc.FullName.AsSpan() ) );
-                    var k = tc.Kind;
-                    hasher.AppendData( MemoryMarshal.AsBytes( MemoryMarshal.CreateReadOnlySpan( ref k, 1 ) ) );
+                    hasher.Append( tc.FullName! ).Append( tc.Kind );
                 }
                 var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
                                               groupName,
                                               assemblyGroup,
                                               types,
-                                              new SHA1Value( hasher.GetHashAndReset() ) );
+                                              new SHA1Value( hasher, resetHasher: true ) );
                 groups.Add( g );
             }
             // The groups list is ordered by GroupName. We may compute the signature here... 
@@ -192,7 +187,7 @@ namespace CK.Engine.TypeCollector
                 // or the reordering of the groups (with the most covering one at the start)?
                 foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
             }
-            return new Result( assemblyResult, groups, new SHA1Value( hasher.GetCurrentHash() ) );
+            return new Result( assemblyResult, groups, new SHA1Value( hasher, resetHasher: false ) );
         }
 
         static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result )

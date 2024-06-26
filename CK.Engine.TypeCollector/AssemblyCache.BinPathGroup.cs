@@ -185,9 +185,7 @@ namespace CK.Engine.TypeCollector
                 bool success = true;
 
                 using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
-                hasher.AppendData( MemoryMarshal.Cast<char, byte>( _path.Path.AsSpan() ) );
-                var tMax = _maxFileTime;
-                hasher.AppendData( MemoryMarshal.AsBytes( MemoryMarshal.CreateReadOnlySpan( ref tMax, 1 ) ) );
+                hasher.Append( _path.Path ).Append( _maxFileTime );
 
                 // Needs ordering for the hash.
                 foreach( var head in _heads.Keys.OrderBy( a => a.Name ) )
@@ -195,7 +193,7 @@ namespace CK.Engine.TypeCollector
                     head.AddHash( hasher );
                     success &= CollectTypes( monitor, head, c );
                 }
-                _signature = new SHA1Value( hasher.GetCurrentHash() );
+                _signature = new SHA1Value( hasher, resetHasher: false );
                 if( success ) _result = c;
                 return success;
 

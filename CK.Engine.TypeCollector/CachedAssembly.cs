@@ -200,9 +200,8 @@ namespace CK.Engine.TypeCollector
 
         internal void AddHash( IncrementalHash hasher )
         {
-            hasher.AppendData( MemoryMarshal.Cast<char, byte>( _assemblyName.AsSpan() ) );
-            var t = _lastWriteTime;
-            hasher.AppendData( MemoryMarshal.AsBytes( MemoryMarshal.CreateReadOnlySpan( ref t, 1 ) ) );
+            hasher.Append( _assemblyName );
+            hasher.Append( _lastWriteTime );
         }
 
         /// <summary>
