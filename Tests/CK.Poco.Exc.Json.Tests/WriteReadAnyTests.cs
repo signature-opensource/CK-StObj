@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -45,8 +46,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void ReadAnyJson_tests()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             directory.ReadAnyJson( "null" ).Should().BeNull();
@@ -331,21 +334,23 @@ namespace CK.Poco.Exc.Json.Tests
         [TestCase( new int[] { 1, 3712, 42, -1, 57 } )]
         public void roundtrip_and_write_read_any_big( int[] seeds )
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
-                                                     typeof( ISomeTypes ),
-                                                     typeof( ICommand ),
-                                                     typeof( IBatchCommand ),
-                                                     typeof( IMission ),
-                                                     typeof( IMissionCommand ),
-                                                     typeof( ICanBeRequiredMission ),
-                                                     typeof( IOrder ),
-                                                     typeof( IDestination ),
-                                                     typeof( IMultiMission ),
-                                                     typeof( IMultiMission2 ),
-                                                     typeof( IDispatchMission ),
-                                                     typeof( ISimpleMission ),
-                                                     typeof( IPickingMission ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+                                            typeof( ISomeTypes ),
+                                            typeof( ICommand ),
+                                            typeof( IBatchCommand ),
+                                            typeof( IMission ),
+                                            typeof( IMissionCommand ),
+                                            typeof( ICanBeRequiredMission ),
+                                            typeof( IOrder ),
+                                            typeof( IDestination ),
+                                            typeof( IMultiMission ),
+                                            typeof( IMultiMission2 ),
+                                            typeof( IDispatchMission ),
+                                            typeof( ISimpleMission ),
+                                            typeof( IPickingMission ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             foreach( var seed in seeds )

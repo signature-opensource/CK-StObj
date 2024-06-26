@@ -37,8 +37,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void non_nullable_string_defaults_to_empty_and_DateTime_defaults_to_Util_UtcMinValue()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWithValueTuple ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( IWithValueTuple ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
 
             p.Thing.Count.Should().Be( 0 );
@@ -61,8 +63,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullables_are_let_to_null()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWithValueTuple2 ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( IWithValueTuple2 ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
 
             p.Power.Item1.Should().Be( 0 );
@@ -184,10 +188,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void long_value_tuples_are_handled()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWithLongTuple ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
-            var ts = auto.LoadResult.EngineResult.Groups[0].PocoTypeSystemBuilder;
-            Throw.DebugAssert( ts != null );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( IWithLongTuple ));
+            var engineResult = configuration.Run();
+
+            var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
             var tPoco = ts.FindByType<IPrimaryPocoType>( typeof( IWithLongTuple ) );
             Debug.Assert( tPoco != null );
@@ -195,6 +200,7 @@ namespace CK.StObj.Engine.Tests.Poco
             tA.Fields.Count.Should().Be( 20 );
 
             // Just to test the code generation.
+            using var auto = engineResult.CreateAutomaticServices();
             var p = auto.Services.GetRequiredService<IPocoFactory<IWithLongTuple>>().Create();
             var tuple = (ITuple)p.Long;
             for( int i = 0; i < tuple.Length; i++ )

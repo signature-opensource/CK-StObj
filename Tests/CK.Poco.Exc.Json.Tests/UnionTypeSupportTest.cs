@@ -3,6 +3,7 @@ using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -25,8 +26,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void union_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var o = directory.Create<IBasicUnion>();

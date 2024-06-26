@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -22,8 +23,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_tuple_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithTuple>>();
@@ -42,8 +45,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_nullable_tuple_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithNullableTuple>>();
@@ -73,8 +78,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void IPoco_collections_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithCollections ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithCollections>>();
@@ -119,8 +126,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void collections_of_records_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithRecord ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithRecord>>();
@@ -148,8 +157,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void collections_of_nullable_records_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) ); ;
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithRecordNullable>>();

@@ -42,8 +42,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void intrinsic_from_IList_to_IReadOnlyList()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IActualRootA ), typeof( IActualSubA ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( IActualRootA ), typeof( IActualSubA ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var a = d.Create<IActualRootA>();
             a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
@@ -60,8 +62,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void intrinsic_from_concrete_List_to_IReadOnlyList()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var a = d.Create<IActualRootAConcrete>();
             a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();

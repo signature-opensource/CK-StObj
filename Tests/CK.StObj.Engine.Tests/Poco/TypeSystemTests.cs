@@ -263,13 +263,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( typeof( IWithAll ), new[] { "Required", "Optional", "Power" } )]
         public void AbstractPocoField_test( Type impl, string[] names )
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IAbstractPoco ),
-                                                     typeof( IWithList ),
-                                                     impl );
-            var engineResult = TestHelper.RunEngine( TestHelper.CreateDefaultEngineConfiguration(), c );
-            engineResult.Success.Should().BeTrue();
-            var ts = engineResult.Groups[0].PocoTypeSystemBuilder;
-            Throw.DebugAssert( ts != null );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( IAbstractPoco ),
+                                            typeof( IWithList ),
+                                            impl );
+            var engineResult = configuration.Run();
+            engineResult.Status.Should().Be( RunStatus.Succeed );
+            var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
             var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );
             Debug.Assert( abs != null );

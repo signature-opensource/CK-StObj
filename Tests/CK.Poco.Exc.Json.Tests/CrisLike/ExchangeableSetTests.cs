@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests.CrisLike
@@ -86,8 +87,10 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         [Test]
         public void not_serializable_and_not_exchangeable_attributes_are_handled()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
             var thing = CreateThing( directory );
 
@@ -128,8 +131,10 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         [Test]
         public void PocoTypeSet_restrictions_cannot_be_spoofed_for_Poco_and_Record_fields()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
             var poco = directory.Create<ICannotBeSpoofed>();
             poco.SafeData.MemoryOnly = new MemoryOnlyData( SecureName: "MEMORY-ONLY-1" );
@@ -171,8 +176,10 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         [Test]
         public void PocoTypeSet_restrictions_cannot_be_spoofed_for_anonymous_records_fields()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
             var poco = directory.Create<ICannotBeSpoofed2>();
             poco.SafeData.Item1 = new MemoryOnlyData( SecureName: "MEMORY-ONLY-1" );

@@ -19,12 +19,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task global_DI_automatically_falls_back_to_default_value_provider_for_ubiquitous_info_Async()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( FakeTenantInfo ),
-                                                    typeof( DefaultTenantProvider ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c, configureServices: services =>
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( FakeTenantInfo ),
+                                            typeof( DefaultTenantProvider ) );
+
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
-                services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+                services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
+                services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             } );
 
             await TestHelper.StartHostedServicesAsync( auto.Services );
@@ -58,17 +60,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void Front_endpoint_default_for_Ambient_services()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( SomeFrontDIContainerDefinition ),
-                                                    typeof( FakeTenantInfo ),
-                                                    typeof( DefaultTenantProvider ),
-                                                    typeof( FakeCultureInfo ),
-                                                    typeof( DefaultCultureProvider ),
-                                                    typeof( FakeAuthenticationInfo ),
-                                                    typeof( DefaultAuthenticationInfoProvider ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( SomeFrontDIContainerDefinition ),
+                                            typeof( FakeTenantInfo ),
+                                            typeof( DefaultTenantProvider ),
+                                            typeof( FakeCultureInfo ),
+                                            typeof( DefaultCultureProvider ),
+                                            typeof( FakeAuthenticationInfo ),
+                                            typeof( DefaultAuthenticationInfoProvider ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
             // the defaults.
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
-
             var someFront = auto.Services.GetRequiredService<IDIContainer<SomeFrontDIContainerDefinition.Data>>();
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
@@ -109,16 +112,20 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
                 const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<FakeAuthenticationInfo>'. " +
                                    "Type 'FakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
-                var c = TestHelper.CreateTypeCollector( typeof( FakeAuthenticationInfo ),
-                                                         typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) );
+
+
+                var c = new[]{ typeof( FakeAuthenticationInfo ),
+                               typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) };
                 TestHelper.GetFailedCollectorResult( c, msg );
             }
             {
                 const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>'. " +
                                    "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
-                var c = TestHelper.CreateTypeCollector( typeof( FakeAuthenticationInfo ),
-                                                        typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
-                TestHelper.GetFailedSingleBinPathAutomaticServices( c, msg );
+
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add( typeof( FakeAuthenticationInfo ),
+                                                typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
+                configuration.GetFailedSingleBinPathAutomaticServices( msg );
             }
         }
     }

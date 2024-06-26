@@ -4,7 +4,6 @@ using System.Linq;
 using System.Diagnostics;
 using CK.Core;
 using System.Reflection;
-using System.Reflection.PortableExecutable;
 
 namespace CK.Setup
 {
@@ -89,9 +88,9 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="type">The type to register.</param>
-        /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
+        /// <param name="kind">The kind of service. Must not be <see cref="ConfigurableAutoServiceKind .None"/>.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, AutoServiceKind kind )
+        public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, ConfigurableAutoServiceKind kind )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
             if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
@@ -121,7 +120,7 @@ namespace CK.Setup
         /// <param name="kind">The kind of service. Can be <see cref="AutoServiceKind.None"/> (nothing is done except the type resolution).</param>
         /// <param name="isOptional">True to warn if the type is not found instead of logging an error and returning false.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool SetAutoServiceKind( IActivityMonitor monitor, string typeName, AutoServiceKind kind, bool isOptional )
+        public bool SetAutoServiceKind( IActivityMonitor monitor, string typeName, ConfigurableAutoServiceKind kind, bool isOptional )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
             if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
@@ -129,7 +128,7 @@ namespace CK.Setup
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
             if( t != null )
             {
-                return kind == AutoServiceKind.None || SetAutoServiceKind( monitor, t, kind );
+                return kind == ConfigurableAutoServiceKind.None || SetAutoServiceKind( monitor, t, kind );
             }
             if( isOptional )
             {

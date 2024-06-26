@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -33,8 +34,9 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void arrays_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithArray ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithArray ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
@@ -113,8 +115,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void lists_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithLists ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithLists ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithLists>>();
@@ -191,8 +195,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void sets_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithSets ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithSets ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var oS = directory.Create<IWithSets>( o =>
@@ -251,8 +257,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void dictionaries_serialization()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithDictionaries ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithDictionaries ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithDictionaries>>();
@@ -352,8 +360,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void dictionaries_with_string_keys_can_be_objects_or_use_arrays()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithDynamicObject ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithDynamicObject ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var o = directory.Create<IWithDynamicObject>( o =>
@@ -397,8 +407,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void PocoTypeSet_filtering_can_lead_to_invalid_Poco()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IAllCollectionOfObjects ), typeof( IThing ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IAllCollectionOfObjects ), typeof( IThing ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var oneThing = directory.Create<IThing>( c => { c.Name = "Here"; c.Power = 42; } );
@@ -511,8 +523,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void lists_serialization_with_abstracts()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithListsA ), typeof( ISecondary ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithListsA ), typeof( ISecondary ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var p1 = directory.Create<IConcrete>( o => o.Name = "c" );
@@ -588,8 +602,10 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void dictionaries_serialization_with_abstracts()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ), typeof( IWithDicsA ), typeof( ISecondary ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ), typeof( IWithDicsA ), typeof( ISecondary ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var c1 = NormalizedCultureInfo.EnsureNormalizedCultureInfo( "es" );

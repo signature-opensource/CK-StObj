@@ -1,23 +1,20 @@
 using System;
 
-namespace CK.Core
+namespace CK.Setup
 {
     /// <summary>
-    /// Detailed flags that categorizes service types used by the Automatic DI.
+    /// Subset of the Automatic DI types categorization that can be applied to external classes or interfaces.
+    /// <para>
+    /// This applies only to Automatic Services, Real Objects and Poco can only be defined by code.
+    /// </para>
     /// </summary>
     [Flags]
-    public enum AutoServiceKind
+    public enum ConfigurableAutoServiceKind
     {
         /// <summary>
-        /// Not a service we handle or external service for which
-        /// no lifetime nor any information is known.
+        /// No specific information is known about the type.
         /// </summary>
         None = 0,
-
-        /// <summary>
-        /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
-        /// </summary>
-        IsAutoService = 1 << 6,
 
         /// <summary>
         /// The service is known to be a scoped service. Each Unit of Work is provided a unique instance.
@@ -34,15 +31,6 @@ namespace CK.Core
         /// </list>
         /// </summary>
         IsSingleton = 1 << 8,
-
-        /// <summary>
-        /// A <see cref="IRealObject"/> is a true singleton.
-        /// <list type="bullet">
-        ///     <item><term>Implies</term><description><see cref="IsSingleton"/></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsMultipleService"/> and <see cref="IsContainerConfiguredService"/></description></item>
-        /// </list>
-        /// </summary>
-        IsRealObject = 1 << 10,
 
         /// <summary>
         /// The type is a DI service available in some containers but not necessarily in all of them.
@@ -64,14 +52,11 @@ namespace CK.Core
 
         /// <summary>
         /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
-        /// <list type="bullet">
-        ///     <item><term>Implies</term><description></description></item>
-        ///     <item><term>Rejects</term><description><see cref="IsRealObject"/></description></item>
-        /// </list>
         /// </summary>
         /// <remarks>
         /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
         /// </remarks>
         IsMultipleService = 1 << 15,
+
     }
 }

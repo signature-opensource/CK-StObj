@@ -66,11 +66,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exc.Json.Tests", "T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Poco.Exchange.Engine", "CK.Poco.Exchange.Engine\CK.Poco.Exchange.Engine.csproj", "{C1AEB1CE-204C-495C-A7EA-AFFE01BDE82D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Engine.Configuration", "CK.Engine.Configuration\CK.Engine.Configuration.csproj", "{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Engine.Configuration", "CK.Engine.Configuration\CK.Engine.Configuration.csproj", "{A9853B31-5354-41D9-AA38-E9A6E61D9BD7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Engine.TypeCollector", "CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj", "{75C73A3C-0384-4A21-A3D8-B193A7919B02}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Engine.TypeCollector", "CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj", "{75C73A3C-0384-4A21-A3D8-B193A7919B02}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Abstractions", "CK.Abstractions\CK.Abstractions.csproj", "{DDC9E5C0-EEE7-40ED-BBCB-25969DC26902}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Abstractions", "CK.Abstractions\CK.Abstractions.csproj", "{DDC9E5C0-EEE7-40ED-BBCB-25969DC26902}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Engine", "CK.Engine\CK.Engine.csproj", "{D10296C4-2A1D-4757-BE56-238488F207DA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -334,6 +336,18 @@ Global
 		{DDC9E5C0-EEE7-40ED-BBCB-25969DC26902}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{DDC9E5C0-EEE7-40ED-BBCB-25969DC26902}.Release|x86.ActiveCfg = Release|Any CPU
 		{DDC9E5C0-EEE7-40ED-BBCB-25969DC26902}.Release|x86.Build.0 = Release|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Debug|x86.Build.0 = Debug|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Release|x86.ActiveCfg = Release|Any CPU
+		{D10296C4-2A1D-4757-BE56-238488F207DA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -60,14 +60,15 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void super_definer_applies_to_final_interface()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ClassFromInterfaceService ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ClassFromInterfaceService ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+            auto.Map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+            auto.Map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
 
-            auto.LoadResult.Map.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
-            auto.LoadResult.Map.Services.Mappings[typeof( ClassFromInterfaceService )].UniqueMappings
+            auto.Map.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
+            auto.Map.Services.Mappings[typeof( ClassFromInterfaceService )].UniqueMappings
                 .Should().BeEquivalentTo( new[] { typeof( InterfaceService ) } );
 
             auto.Services.GetService<InterfaceService>().Should().Be( auto.Services.GetService<ClassFromInterfaceService>() );
@@ -93,8 +94,10 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void device_host_model()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ADeviceHost ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ADeviceHost ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             auto.Services.GetService<ADeviceHost>().Should().NotBeNull(); 
         }
     }

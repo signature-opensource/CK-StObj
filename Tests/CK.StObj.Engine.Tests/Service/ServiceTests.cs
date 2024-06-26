@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
+using static CK.StObj.Engine.Tests.Service.OpenGenericSupportTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
@@ -97,19 +98,21 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_RealObject_class_can_be_an_IAutoService_but_an_interface_cannot()
         {
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( Obj ) );
-                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add( typeof( Obj ) );
+                using var auto = configuration.Run().CreateAutomaticServices();
 
-                auto.LoadResult.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
-                auto.LoadResult.Map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
-                auto.LoadResult.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
+                auto.Map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
+                auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
                 // On built ServiceProvider.
                 var o = auto.Services.GetRequiredService<Obj>();
                 auto.Services.GetRequiredService<ISampleService>().Should().BeSameAs( o );
             }
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( ObjInvalid ) );
-                TestHelper.GetFailedSingleBinPathAutomaticServices( collector, "IRealObject interface cannot be a IAutoService (type is an interface)." );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add( typeof( ObjInvalid ) );
+                configuration.GetFailedSingleBinPathAutomaticServices( "IRealObject interface cannot be a IAutoService (type is an interface)." );
             }
         }
 
@@ -120,12 +123,14 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_RealObject_class_and_IAutoService_with_specialization()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ObjSpec ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
-            auto.LoadResult.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
-            auto.LoadResult.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            auto.LoadResult.Map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
-            auto.LoadResult.Map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ObjSpec ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
+            auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+            auto.Map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
+            auto.Map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
             // On the built ServiceProvider.
             var o = auto.Services.GetRequiredService<Obj>();
             auto.Services.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
@@ -148,16 +153,18 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_RealObject_class_and_IAutoService_with_deep_specializations()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ObjSpecFinal ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ObjSpecFinal ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             // On generated data.
-            auto.LoadResult.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            auto.LoadResult.Map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            auto.LoadResult.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            auto.LoadResult.Map.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
-            auto.LoadResult.Map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
-            auto.LoadResult.Map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
-            auto.LoadResult.Map.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
+            auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+            auto.Map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+            auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+            auto.Map.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
+            auto.Map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
+            auto.Map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
+            auto.Map.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
             // On build ServiceProvider.
             var o = auto.Services.GetRequiredService<ObjSpecFinal>();
             auto.Services.GetRequiredService<Obj>().Should().BeSameAs( o );
@@ -190,8 +197,10 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_can_be_implemented_by_RealObjects()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ODep ), typeof( OBase ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( ODep ), typeof( OBase ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var oDep = auto.Services.GetRequiredService<ODep>();
             auto.Services.GetRequiredService<IBase>().Should().BeSameAs( oDep );
             auto.Services.GetRequiredService<IDerived>().Should().BeSameAs( oDep );
@@ -266,12 +275,13 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void scoped_dependency_detection()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            auto.LoadResult.Map.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
-            auto.LoadResult.Map.Services.Mappings[typeof( A )].IsScoped.Should().BeTrue();
-            auto.LoadResult.Map.Services.Mappings[typeof( IA )].IsScoped.Should().BeTrue();
+            auto.Map.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
+            auto.Map.Services.Mappings[typeof( A )].IsScoped.Should().BeTrue();
+            auto.Map.Services.Mappings[typeof( IA )].IsScoped.Should().BeTrue();
 
             // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
             var rootA = auto.Services.GetRequiredService<A>();
@@ -303,8 +313,10 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void StObjGen_attribute_excludes_the_type()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SampleServiceGenerated ), typeof( SampleService ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( SampleServiceGenerated ), typeof( SampleService ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             auto.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
         }
 

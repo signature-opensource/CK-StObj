@@ -55,8 +55,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
             var p = auto.Services.GetRequiredService<IPocoFactory<IPoco2>>().Create();

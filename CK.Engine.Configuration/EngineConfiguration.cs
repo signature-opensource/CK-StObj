@@ -1,8 +1,10 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -24,8 +26,12 @@ namespace CK.Setup
         /// </summary>
         public const string GeneratedAssemblyNamePrefix = "CK.GeneratedAssembly";
 
+        internal const string DefaultBinPathName = "AutoName";
+
         readonly List<BinPathConfiguration> _binPaths;
         readonly HashSet<Type> _globalExcludedTypes;
+        readonly TypeConfigurationSet _globalTypes;
+        readonly HashSet<string> _excludedAssemblies;
         Dictionary<string, EngineAspectConfiguration> _namedAspects;
         List<EngineAspectConfiguration> _aspects;
         string? _generatedAssemblyName;
@@ -44,6 +50,8 @@ namespace CK.Setup
             _aspects = new List<EngineAspectConfiguration>();
             _binPaths = new List<BinPathConfiguration>();
             _globalExcludedTypes = new HashSet<Type>();
+            _globalTypes = new TypeConfigurationSet();
+            _excludedAssemblies = new HashSet<string>();
             AddFirstBinPath();
         }
 
@@ -52,6 +60,7 @@ namespace CK.Setup
             var first = new BinPathConfiguration();
             first.Owner = this;
             _binPaths.Add( first );
+            first.Name = "First";
         }
 
         /// <summary>
@@ -207,9 +216,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets an optional base path that applies to relative <see cref="BinPaths"/>.
-        /// When null or empty, the current directory is used.
+        /// When empty, the current directory is used. When this configuration is the result of a <see cref="Load(string)"/>,
+        /// the file's directory is the initial base path.
         /// </summary>
         public NormalizedPath BasePath { get => _basePath; set => _basePath = value; }
+
+        #region BinPaths
 
         /// <summary>
         /// Gets the first <see cref="BinPathConfiguration"/> from the <see cref="BinPaths"/>
@@ -227,7 +239,34 @@ namespace CK.Setup
         public IReadOnlyList<BinPathConfiguration> BinPaths => _binPaths;
 
         /// <summary>
+        /// Finds the <see cref="BinPathConfiguration"/> or throws a <see cref="ArgumentException"/> if not found.
+        /// </summary>
+        /// <param name="binPathName">The bin path name. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
+        /// <returns>The BinPath.</returns>
+        public BinPathConfiguration FindRequiredBinPath( string binPathName )
+        {
+            var b = FindBinPath( binPathName );
+            if( b == null )
+            {
+                Throw.ArgumentException( nameof( binPathName ),
+                                         $"""
+                                          Unable to find BinPath named '{binPathName}'. Existing BinPaths are:
+                                          '{_binPaths.Select( b => b.Name ).Concatenate( "', '" )}'.
+                                          """ );
+            }
+            return b;
+        }
+
+        /// <summary>
+        /// Tries to find the <see cref="BinPathConfiguration"/> or returns null.
+        /// </summary>
+        /// <param name="binPathName">The bin path name.</param>
+        /// <returns>The BinPath or null.</returns>
+        public BinPathConfiguration? FindBinPath( string binPathName ) => _binPaths.FirstOrDefault( b => b.Name == binPathName );
+
+        /// <summary>
         /// Adds a BinPathConfiguration to these <see cref="BinPaths"/>.
+        /// The <see cref="BinPathConfiguration.Name"/> is automatically adusted if the name already exists.
         /// <para>
         /// The <paramref name="binPath"/> must not belong to another Engine configuration otherwise
         /// a <see cref="ArgumentException"/> is thrown.
@@ -246,8 +285,9 @@ namespace CK.Setup
             Throw.CheckArgument( binPath.Owner == null );
             binPath.Owner = this;
             _binPaths.Add( binPath );
-            // Remove orphans BinPath configurations or bind them.
-            List<BinPathAspectConfiguration>? toRemove = null; 
+            EnsureUniqueName( binPath );
+            // Remove orphans BinPath aspect configurations or bind them.
+            List<BinPathAspectConfiguration>? toRemove = null;
             foreach( var aspect in binPath.Aspects )
             {
                 var a = FindAspect( aspect.AspectName );
@@ -271,6 +311,32 @@ namespace CK.Setup
             }
         }
 
+        internal static string CheckBinPathName( string? name )
+        {
+            if( name == null ) return DefaultBinPathName;
+            Throw.CheckArgument( "BinPath name must only contain A-Z, a-z, _ and 0-9 characters.",
+                                 Regex.IsMatch( name, @"^[a-zA-Z_0-9]+$", RegexOptions.CultureInvariant ) );
+            return name;
+        }
+
+        internal void EnsureUniqueName( BinPathConfiguration binPath )
+        {
+            var n = binPath.Name;
+            if( !_binPaths.Any( b => b != binPath && n == b.Name ) )
+            {
+                return;
+            }
+            n = Regex.Replace( n, @"\d+$", String.Empty, RegexOptions.CultureInvariant );
+            int i = 0;
+            var nNum = n;
+            while( _binPaths.Any( b => b != binPath && nNum == b.Name ) )
+            {
+                ++i;
+                nNum = n + i.ToString();
+            }
+            binPath.Name = nNum;
+        }
+
         /// <summary>
         /// Removes a BinPathConfiguration from <see cref="BinPaths"/>. Does nothing if the <paramref name="binPath"/>
         /// does not belong to this configuration or if there is only a single BinPath.
@@ -290,12 +356,28 @@ namespace CK.Setup
             }
         }
 
+        #endregion // BinPaths
+
+        /// <summary>
+        /// Gets a mutable set of of simple assembly names that must be excluded from registration.
+        /// This applies to all <see cref="BinPaths"/> and there is no exclusion at <see cref="BinPathConfiguration"/> level.
+        /// </summary>
+        public HashSet<string> ExcludedAssemblies => _excludedAssemblies;
+
         /// <summary>
         /// Gets a mutable set of type that must be excluded from registration.
         /// This applies to all <see cref="BinPaths"/>: excluding a type here guaranties its exclusion
         /// from any BinPath.
         /// </summary>
         public HashSet<Type> GlobalExcludedTypes => _globalExcludedTypes;
+
+        /// <summary>
+        /// Gets the set of types that must be added to all <see cref="BinPaths"/> in their <see cref="BinPathConfiguration.Types"/>.
+        /// <para>
+        /// The <see cref="GlobalExcludedTypes"/> has the priority over this set: an excluded type will be removed from this one.
+        /// </para>
+        /// </summary>
+        public TypeConfigurationSet GlobalTypes => _globalTypes;
 
         /// <summary>
         /// Gets or sets a base SHA1 for the StObjMaps (CKSetup sets this to the files signature).
@@ -316,5 +398,11 @@ namespace CK.Setup
         /// </summary>
         public bool ForceRun { get; set; }
 
+
+        /// <summary>
+        /// Clones this configuration (via xml).
+        /// </summary>
+        /// <returns>A clone of this configuration.</returns>
+        public EngineConfiguration Clone() => new EngineConfiguration( ToXml() );
     }
 }

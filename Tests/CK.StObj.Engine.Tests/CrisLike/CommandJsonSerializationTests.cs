@@ -53,15 +53,17 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [Test]
         public void command_json_roundtrip()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( CommonPocoJsonSupport ),
-                                                    typeof( CrisCommandDirectoryLike ),
-                                                    typeof( ISimpleCommand ),
-                                                    typeof( IAuthCommand ),
-                                                    typeof( ICriticalCommand ),
-                                                    typeof( IDeviceCommand ),
-                                                    typeof( IFullAuthCommand ),
-                                                    typeof( IFullAuthCommandWithResult ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( CommonPocoJsonSupport ),
+                                            typeof( CrisCommandDirectoryLike ),
+                                            typeof( ISimpleCommand ),
+                                            typeof( IAuthCommand ),
+                                            typeof( ICriticalCommand ),
+                                            typeof( IDeviceCommand ),
+                                            typeof( IFullAuthCommand ),
+                                            typeof( IFullAuthCommandWithResult ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var services = auto.Services;
 
             TestRoundTrip<ISimpleCommand>( services );

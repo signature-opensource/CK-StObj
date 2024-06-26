@@ -606,7 +606,7 @@ namespace CK.StObj.Engine.Tests
                   <Aspect Type="CK.StObj.Engine.Tests.TypeScriptAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
                   <!--BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation.-->
                   <BinPaths>
-                    <BinPath Path="" DiscoverAssembliesFromPath="false">
+                    <BinPath Name="First" Path="" DiscoverAssembliesFromPath="false">
                       <CompileOption>None</CompileOption>
                       <Assemblies />
                       <ExcludedTypes />
@@ -713,11 +713,11 @@ namespace CK.StObj.Engine.Tests
 
             b1.Types.Should().HaveCount( 3 );
             var t1 = b1.Types.Single( tc => tc.Type == typeof(IActivityMonitor) );
-            t1.Kind.Should().Be( AutoServiceKind.IsScoped );
+            t1.Kind.Should().Be( ConfigurableAutoServiceKind.IsScoped );
             var t2 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
-            t2.Kind.Should().Be( AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
+            t2.Kind.Should().Be( ConfigurableAutoServiceKind.IsMultipleService | ConfigurableAutoServiceKind.IsSingleton );
             var t3 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Options.IOptions<> ) ); ;
-            t3.Kind.Should().Be( AutoServiceKind.IsSingleton );
+            t3.Kind.Should().Be( ConfigurableAutoServiceKind.IsSingleton );
 
             var bSample = b1.FindAspect<SampleBinPathAspectConfiguration>();
             Debug.Assert( bSample != null );
@@ -767,7 +767,7 @@ namespace CK.StObj.Engine.Tests
             Throw.DebugAssert( another != null );
             another.Path.Should().Be( "{BasePath}comm/ands" );
 
-            RunningEngineConfiguration.PrepareConfiguration( TestHelper.Monitor, c );
+            c.NormalizeConfiguration( TestHelper.Monitor ).Should().BeTrue();
 
             sample.Param.Should().Be( "/The/Base/Path/Another/Relative/Test" );
             sample.A.Should().Be( "/The/Base/Path/Another/Relative/InTheOutputPath" );

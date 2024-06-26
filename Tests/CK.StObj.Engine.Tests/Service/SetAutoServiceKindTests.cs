@@ -27,13 +27,12 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IService ), AutoServiceKind.IsScoped | AutoServiceKind.IsMultipleService ) );
+            config.FirstBinPath.Types.Add( typeof( IService ), ConfigurableAutoServiceKind.IsScoped | ConfigurableAutoServiceKind.IsMultipleService )
+                                     .Add( typeof( TheService ) );
 
-            var collector = TestHelper.CreateTypeCollector( typeof( TheService ) );
+            var map = config.Run().LoadMap();
 
-            var result = TestHelper.RunSingleBinPathAndLoad( config, collector );
-
-            var d = result.Map.Services.Mappings[typeof( TheService )];
+            var d = map.Services.Mappings[typeof( TheService )];
             d.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
             d.MultipleMappings.Should().Contain( typeof( IService ) );
         }
@@ -53,7 +52,10 @@ namespace CK.StObj.Engine.Tests.Service
         public void late_resolving_open_generics()
         {
             var collector = new Setup.StObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, "CK.StObj.Engine.Tests.Service.SetAutoServiceKindTests+OpenGeneric`1, CK.StObj.Engine.Tests", AutoServiceKind.IsSingleton, true );
+            collector.SetAutoServiceKind( TestHelper.Monitor,
+                                          "CK.StObj.Engine.Tests.Service.SetAutoServiceKindTests+OpenGeneric`1, CK.StObj.Engine.Tests",
+                                          ConfigurableAutoServiceKind.IsSingleton,
+                                          isOptional: true );
             collector.RegisterType( TestHelper.Monitor, typeof( GenService ) );
             var r = collector.GetResult( TestHelper.Monitor );
             r.HasFatalError.Should().BeFalse();
@@ -67,21 +69,19 @@ namespace CK.StObj.Engine.Tests.Service
         public class ThisIsTheConfig : IConfiguration { }
 
         public class ThisShouldCoexist1 : IConfigurationSection { }
-        class ThisShouldCoexist2 : IConfigurationSection { }
+        public class ThisShouldCoexist2 : IConfigurationSection { }
 
         [Test]
         public void base_singleton_interface_definition_can_coexist_with_specializations()
         {
             var config = TestHelper.CreateDefaultEngineConfiguration();
-            config.FirstBinPath.Types.Add( new BinPathConfiguration.TypeConfiguration( typeof( IConfiguration ), AutoServiceKind.IsSingleton ) );
+            config.FirstBinPath.Types.Add( typeof( IConfiguration ), ConfigurableAutoServiceKind.IsSingleton )
+                                     .Add( typeof( ThisShouldCoexist1 ), typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist2 ) );
 
-            var collector = TestHelper.CreateTypeCollector( typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist1 ), typeof( ThisShouldCoexist2 ) );
-
-            // TestHelper.GetFailedAutomaticServicesConfiguration( collector );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( config, collector, configureServices: register =>
+            using var auto = config.Run().CreateAutomaticServices( configureServices: register =>
             {
                 // This is done by .net configuration extension.
-                register.Services.AddSingleton<IConfiguration>( new ThisIsTheConfig() );
+                register.AddSingleton<IConfiguration>( new ThisIsTheConfig() );
             } );
 
             auto.Services.GetService<IConfiguration>( throwOnNull: true ).Should().BeOfType<ThisIsTheConfig>();

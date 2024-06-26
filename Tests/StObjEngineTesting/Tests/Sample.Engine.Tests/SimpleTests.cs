@@ -33,8 +33,10 @@ namespace Sample.Engine.Tests
         [Test]
         public void StupidCodeAttribute_works()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ThingService ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( ThingService ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var thing = auto.Services.GetRequiredService<ThingService>();
             thing.GetValue( "ab" ).Should().Be( 2 );
             thing.GetAnotherValue( "abc" ).Should().Be( 9 );

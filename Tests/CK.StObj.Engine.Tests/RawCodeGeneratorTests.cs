@@ -39,8 +39,9 @@ namespace CK.StObj.Engine.Tests
         public void ICSCodeGenerator_on_regular_class()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateTypeCollector( typeof( Holder ) );
-            TestHelper.RunSingleBinPathAndLoad( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( Holder ) );
+            configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
 
@@ -53,8 +54,9 @@ namespace CK.StObj.Engine.Tests
         public void ICodeGenerator_on_static_class()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateTypeCollector( typeof( StaticHolder ) );
-            TestHelper.RunSingleBinPathAndLoad( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( StaticHolder ) );
+            configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
 
@@ -67,8 +69,9 @@ namespace CK.StObj.Engine.Tests
         public void ICodeGenerator_on_raw_interface()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateTypeCollector( typeof( RawInterface ) );
-            TestHelper.RunSingleBinPathAndLoad( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( RawInterface ) );
+            configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
 
@@ -81,8 +84,9 @@ namespace CK.StObj.Engine.Tests
         public void ICodeGenerator_on_enum()
         {
             CGen.Called = false;
-            var c = TestHelper.CreateTypeCollector( typeof( EvenOnAnEnumItWorks ) );
-            TestHelper.RunSingleBinPathAndLoad( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( EvenOnAnEnumItWorks ) );
+            configuration.Run().LoadMap();
             CGen.Called.Should().BeTrue();
         }
 

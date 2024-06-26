@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +36,51 @@ namespace CK.Setup
             SaveSource
         }
 
+
+        // New way
+        readonly BinPathTypeGroup? _typeGroup;
+
+        internal IConfiguredTypeSet ConfiguredTypes => _typeGroup!.ConfiguredTypes;
+
+        internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
+        {
+            _typeGroup = typeGroup;
+            _engineConfiguration = engineConfiguration;
+            _names = typeGroup.GroupName;
+            if( typeGroup.IsUnifiedPure )
+            {
+                _isUnifiedPure = true;
+                // Legacy unified had a Configuration. Let'es create a stupid empty one
+                // because we already have the types.
+                var unified = new BinPathConfiguration()
+                {
+                    Path = AppContext.BaseDirectory,
+                    OutputPath = AppContext.BaseDirectory,
+                    Name = "(Unified)",
+                    // The root (the Working directory) doesn't want any output by itself.
+                    GenerateSourceFiles = false
+                };
+                Debug.Assert( unified.CompileOption == CompileOption.None );
+                _configuration = unified;
+                _generatedDllName = String.Empty;
+                _similarConfigurations = new[] { unified };
+            }
+            else
+            {
+                _configuration = typeGroup.Configurations[0];
+                _generatedDllName = $"{engineConfiguration.GeneratedAssemblyName}.{_configuration.Name}.dll";
+                _similarConfigurations = typeGroup.Configurations;
+                _runSignature = engineConfiguration.BaseSHA1;
+                _generatedSource = CreateG0( _configuration );
+                _generatedAssembly = CreateAssembly( _configuration );
+            }
+        }
+
+        static GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "G0.cs" ) );
+
+        GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
+
+
         internal RunningBinPathGroup( EngineConfiguration engineConfiguration,
                                       BinPathConfiguration head,
                                       BinPathConfiguration[] similars,
@@ -66,9 +112,6 @@ namespace CK.Setup
             _names = "(Unified)";
         }
 
-        static GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "G0.cs" ) );
-
-        GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
 
         internal bool Initialize( IActivityMonitor monitor, bool forceRun, ref bool canSkipRun )
         {
@@ -94,25 +137,18 @@ namespace CK.Setup
             if( _runSignature.IsZero )
             {
                 // No known code base SHA1.
-                // We are not called by CKSetup: the StObjEngine is run in-process, typically
-                // by CK.Testing.StObjEngine.
                 // Retrieving the SHA1 (if forceSetup is false) from the existing generated source and/or assembly
-                // is easily doable but pointless: when the StObjEngine is ran in-process without known SHA1, it is 
-                // with a StObjCollector (the set of types) that is specific and with no way to have any clue about
+                // is easily doable but pointless: the Engine is runnning in-process without known SHA1, with 
+                // a set of types that is specific and with no way to have any clue about
                 // their "content" (even for two consecutive identical set of types, their code, attributes or the
                 // code of the generators may have changed between 2 runs).
                 // In this usage, the goal is to correctly manage the G0.cs and CK.GeneratedAssembly files.
-                //
-                // The behavior here is tailored for CK.Testing.StObjEngine and by its API.
-                // If the source code is not required, we require it here so that the SHA1 can be computed based on
-                // the generated code source.
                 if( _saveSource == SaveSourceLevel.None )
                 {
                     monitor.Info( $"Source code for '{Names}' will be generated to compute the SHA1 but will not be saved." );
                     // This level doesn't need to be exposed since the GenerateSourceCodeSecondPass
-                    // will generate the source code even if SaveSource is false, CompileOption is None as soon as RunSignature
-                    // is zero: this level is here to avoid setting SaveSource to true here so that CopyArtifactsFromHead
-                    // will not update any files.
+                    // will generate the source code even if SaveSource is false: this level is here to avoid setting
+                    // SaveSource to true here so that CopyArtifactsFromHead will not update any files.
                     _saveSource = SaveSourceLevel.RequiredForSHA1;
                 }
                 canSkipRun = false;
@@ -121,7 +157,7 @@ namespace CK.Setup
             {
                 // A code base SHA1 is provided.
                 // If we can find this map in the already available StObjMap, we may skip the run.
-                var mapInfo = StObjContextRoot.GetMapInfo( RunSignature, monitor );
+                var mapInfo = StObjContextRoot.GetMapInfo( _runSignature, monitor );
                 if( mapInfo != null )
                 {
                     monitor.Info( $"An existing StObjMap with the signature is already loaded: setting SaveSource to false and CompileOption to None for BinPaths {Names}." );
@@ -135,9 +171,9 @@ namespace CK.Setup
                         monitor.Info( $"Source '{_generatedSource}' is up to date. Setting SaveSource to false for BinPaths {Names}." );
                         _saveSource = SaveSourceLevel.None;
                     }
-                    if( compile != CompileOption.None && GeneratedAssembly.GetSignature( monitor ) == RunSignature )
+                    if( compile != CompileOption.None && _generatedAssembly.GetSignature( monitor ) == _runSignature )
                     {
-                        monitor.Info( $"Assembly '{GeneratedAssembly}' is up to date. Setting CompileOption to None for BinPaths {Names}." );
+                        monitor.Info( $"Assembly '{_generatedAssembly}' is up to date. Setting CompileOption to None for BinPaths {Names}." );
                         _compileOption = CompileOption.None;
                     }
                 }
@@ -177,6 +213,9 @@ namespace CK.Setup
 
         /// <inheritdoc />
         public string Names => _names;
+
+        /// <inheritdoc />
+        public IStObjEngineMap? EngineMap => _collectorResult?.EngineMap;
 
         /// <inheritdoc />
         public IPocoTypeSystemBuilder? PocoTypeSystemBuilder => _collectorResult?.PocoTypeSystemBuilder;

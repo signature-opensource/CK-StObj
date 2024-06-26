@@ -39,7 +39,7 @@ namespace CK.Setup
         /// objects.
         /// </para>
         /// <para>
-        /// At the end of the process, this container is used as the base service provider of code generation (see
+        /// At the end of the configuration process, this container is used as the base service provider of code generation (see
         /// <see cref="IGeneratedBinPath.ServiceContainer"/>).
         /// </para>
         /// </summary>
@@ -61,7 +61,6 @@ namespace CK.Setup
 
         /// <summary>
         /// Registers a type that must be a class or a IPoco interface.
-        /// Aspects can use this instead of adding the assembly qualified name of the type in <see cref="BinPathConfiguration.Types"/>.
         /// </summary>
         /// <param name="type">Type to register.</param>
         void AddExplicitRegisteredType( Type type );
@@ -69,7 +68,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the list of already created and configured aspects.
         /// Recall that the order of the configurations in <see cref="EngineConfiguration.Aspects"/> drives the order of Aspects creation).
-        /// When <see cref="IStObjEngineAspect.Configure"/> is called, only configured aspects are registered here and available.
+        /// When <see cref="IStObjEngineAspect.Configure"/> is called, only configured previous aspects are available.
         /// </summary>
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 

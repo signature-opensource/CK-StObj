@@ -74,8 +74,10 @@ namespace CK.StObj.Engine.Tests.Poco
         public void non_nullable_abstract_IPoco_field_must_have_a_concrete_writable_field()
         {
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
-                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add(typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ));
+                using var auto = configuration.Run().CreateAutomaticServices();
+
                 var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IResolveSome>();
                 f.Some.V.Should().Be( "Yes!" );
@@ -84,8 +86,10 @@ namespace CK.StObj.Engine.Tests.Poco
                 ((IWithNonNullAbstract)f).Some.Should().BeSameAs( cmd, "Implementations use the same backing field." );
             }
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add(typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ));
+                using var auto = configuration.Run().CreateAutomaticServices();
+
                 var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IResolveSome2>();
                 f.Some.V.Should().Be( "Yes!" );
@@ -109,15 +113,19 @@ namespace CK.StObj.Engine.Tests.Poco
         public void nullable_abstract_IPoco_field_without_writable_keeps_a_default_null_value()
         {
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IWithNullAbstract ) );
-                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add(typeof( IWithNullAbstract ));
+                using var auto = configuration.Run().CreateAutomaticServices();
+
                 var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IWithNullAbstract>();
                 f.Some.Should().Be( null );
             }
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Add(typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ));
+                using var auto = configuration.Run().CreateAutomaticServices();
+
                 var d = auto.Services.GetRequiredService<PocoDirectory>();
                 var f = d.Create<IWithNullAbstract2>();
                 f.Some.Should().Be( null );
@@ -200,8 +208,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( typeof( (int, string) ), typeof( IAutoAnonymousRecordPrimary2 ), typeof( IAutoAnonymousRecordExtension2 ) )]
         public void auto_initialized_property_can_be_exposed_as_nullable_properties( Type tAutoProperty, Type tPrimary, Type tExtension )
         {
-            var c = TestHelper.CreateTypeCollector( tPrimary, tExtension );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(tPrimary, tExtension);
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Find( tPrimary );
             Debug.Assert( f != null );
@@ -239,8 +249,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase(typeof( IAutoIAbstract2 ) )]
         public void object_abstract_readonly_property_can_be_nullable_AbstractPoco( Type tPrimary )
         {
-            var c = TestHelper.CreateTypeCollector( tPrimary );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(tPrimary);
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Find( tPrimary );
             Debug.Assert( f != null );
@@ -288,8 +300,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void abstract_properties_samples()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var impl = d.Create<IImplementThem>();
 

@@ -1,13 +1,14 @@
 using CK.Core;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Xml;
 
 namespace CK.Setup
 {
-
     /// <summary>
     /// Describes a folder that the CKEngine must process.
     /// </summary>
@@ -15,10 +16,10 @@ namespace CK.Setup
     {
         readonly Dictionary<string,BinPathAspectConfiguration> _aspects;
         readonly HashSet<string> _assemblies;
-        readonly HashSet<TypeConfiguration> _types;
+        readonly TypeConfigurationSet _types;
         readonly HashSet<Type> _excludedTypes;
         EngineConfiguration? _owner;
-        string? _name;
+        string _name;
         NormalizedPath _path;
         NormalizedPath _outputPath;
         NormalizedPath _projectPath;
@@ -35,8 +36,9 @@ namespace CK.Setup
             GenerateSourceFiles = true;
             _assemblies = new HashSet<string>();
             _excludedTypes = new HashSet<Type>();
-            _types = new HashSet<TypeConfiguration>();
             _aspects = new Dictionary<string, BinPathAspectConfiguration>();
+            _name = EngineConfiguration.DefaultBinPathName;
+            _types = new TypeConfigurationSet();
         }
 
         /// <summary>
@@ -45,10 +47,23 @@ namespace CK.Setup
         public EngineConfiguration? Owner { get => _owner; internal set => _owner = value; }
 
         /// <summary>
-        /// Gets or sets the name that uniquely identifies this configuration among the others.
-        /// When null, an automatically numbered name is generated.
+        /// Gets or sets the name that uniquely identifies this configuration among the other <see cref="EngineConfiguration.BinPaths"/>.
+        /// Name must only contain A-Z, a-z, _ and 0-9 characters otherwise an <see cref="ArgumentException"/> is thrown.
+        /// <para>
+        /// </para>
+        /// When set to null, an automatically numbered name "BinPathX" is generated and if another BinPath in <see cref="Owner"/>
+        /// has the same name, this one is automatically suffixed with a number: unicity of this name is automatically managed.
         /// </summary>
-        public string? Name { get => _name; set => _name = value; }
+        [AllowNull]
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name = EngineConfiguration.CheckBinPathName( value );
+                Owner?.EnsureUniqueName( this );
+            }
+        }
 
         /// <summary>
         /// Gets or sets the path of the directory to setup.
@@ -93,9 +108,12 @@ namespace CK.Setup
         public HashSet<string> Assemblies => _assemblies;
 
         /// <summary>
-        /// Gets or sets whether the dlls is the <see cref="Path"/> should be processed by the setup.
+        /// Gets or sets whether the dlls in the <see cref="Path"/> should be processed by the setup.
         /// <para>
         /// Defaults to false: only <see cref="Types"/> and existing <see cref="Assemblies"/> are considered.
+        /// </para>
+        /// <para>
+        /// Settings this to true is useful only if Assemblies is empty (explicitly defined assemblies always have the priority). 
         /// </para>
         /// </summary>
         public bool DiscoverAssembliesFromPath { get => _discoverAssembliesFromPath; set => _discoverAssembliesFromPath = value; }
@@ -103,7 +121,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets a set of <see cref="TypeConfiguration"/> that must be registered explicitly regardless of the <see cref="Assemblies"/>.
         /// </summary>
-        public HashSet<TypeConfiguration> Types => _types;
+        public TypeConfigurationSet Types => _types;
 
         /// <summary>
         /// Gets a set of types that must be excluded from registration.
@@ -113,6 +131,8 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         public HashSet<Type> ExcludedTypes => _excludedTypes;
+
+        #region Aspects
 
         /// <summary>
         /// Gets the BinPath specific aspect configurations.
@@ -230,6 +250,14 @@ namespace CK.Setup
                 _aspects.Remove( name );
             }
         }
+
+        #endregion // Aspects
+
+        /// <summary>
+        /// Overridden to return "BinPath '<see cref="Name"/>".
+        /// </summary>
+        /// <returns>"BinPath 'Name'"</returns>
+        public override string ToString() => $"BinPath '{_name}'";
     }
 
 }

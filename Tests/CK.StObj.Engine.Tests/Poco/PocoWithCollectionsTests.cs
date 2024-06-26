@@ -28,9 +28,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance()
         {
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add(typeof( ISimpleCollections ));
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            var c = TestHelper.CreateTypeCollector( typeof( ISimpleCollections ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
             var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
             p.Strings.Should().NotBeNull().And.BeEmpty();
             p.Configurations.Should().NotBeNull().And.BeEmpty();
@@ -50,8 +51,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void non_null_Array_property_are_initialized_to_the_Array_Empty()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWithArray ), typeof( IWithArraySetter ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( IWithArray ), typeof( IWithArraySetter ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();
             var p = f.Create();
             p.Array.Should().BeSameAs( Array.Empty<int>() );
@@ -63,8 +66,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void read_only_Array_property_are_definitely_empty()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWithArray ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( c );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( IWithArray ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
             var p = f.Create();
             p.Array.Should().BeSameAs( Array.Empty<int>() );

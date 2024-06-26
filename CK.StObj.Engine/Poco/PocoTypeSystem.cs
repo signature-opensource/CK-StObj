@@ -81,8 +81,6 @@ namespace CK.Setup
 
         public IPocoDirectory PocoDirectory => _pocoDirectory;
 
-        public IPocoType ObjectType => _allTypes[0];
-
         public IReadOnlyList<IPocoType> AllTypes => _allTypes;
 
         public IReadOnlyList<IPocoType> AllNonNullableTypes => _nonNullableTypes;

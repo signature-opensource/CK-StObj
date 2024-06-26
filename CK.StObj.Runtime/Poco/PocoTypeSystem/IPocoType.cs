@@ -166,7 +166,7 @@ namespace CK.Setup
         ///     </item>
         ///     <item>
         ///     <term>Collection</term>
-        ///     <description>Their regular are concrete collections (array, List, HashSet and Dictionary) and their generic parameters are regular.</description>
+        ///     <description>Their regular are concrete collections (array, List, HashSet and Dictionary) and their generic arguments are regular.</description>
         ///     </item>
         ///     <item>
         ///     <term>Abstract read-only Collection</term>
@@ -198,11 +198,10 @@ namespace CK.Setup
         ///     <item>Abstract read only collections (see <see cref="ICollectionPocoType.IsAbstractReadOnly"/>) have no final type.</item>
         ///     <item>A <see cref="IBasicRefPocoType"/> with an abstract <see cref="Type"/> has no final type.</item>
         ///     <item>
-        ///     For mutable collections, <see cref="ICollectionPocoType.StructuralFinalType"/> it is the nullable
-        ///     equivalent type with oblivious generic parameters.
+        ///     For mutable collections, it is the nullable equivalent type with oblivious generic arguments.
         ///     </item>
         ///     <item>
-        ///     For <see cref="ISecondaryPocoType"/> is its <see cref="IPrimaryPocoType"/> (that is oblivious, hence nullable).
+        ///     For <see cref="ISecondaryPocoType"/> it is its <see cref="IPrimaryPocoType"/> (that is oblivious, hence nullable).
         ///     </item>
         ///     <item>For <see cref="PocoTypeKind.Enum"/>, <see cref="PocoTypeKind.Record"/> it is their non nullable.</item>
         ///     <item>For <see cref="PocoTypeKind.AnonymousRecord"/> it is the oblivious's non nullable.</item>
@@ -233,9 +232,8 @@ namespace CK.Setup
         IPocoType? FinalType { get; }
 
         /// <summary>
-        /// Gets whether this type exists in its serializable form: it is non nullable, regular
-        /// and is either final or its nullable is final. <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/>
-        /// and <see cref="PocoTypeKind.UnionType"/> are never observable (thay have no final type).
+        /// Gets whether this type exists in its serializable form: it is non nullable, regular and is either final or its nullable is final.
+        /// <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/> and <see cref="PocoTypeKind.UnionType"/> are never observable (thay have no final type).
         /// <para>
         /// There is no <c>SerializedObservableType</c> and this is intended as it would introduce an ambiguity
         /// regarding the final type that will be selected for abstract collection (<see cref="ICollectionPocoType.IsAbstractCollection"/>):

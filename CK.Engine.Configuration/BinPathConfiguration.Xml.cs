@@ -13,7 +13,7 @@ namespace CK.Setup
         internal BinPathConfiguration( EngineConfiguration configuration, XElement e, Dictionary<string, EngineAspectConfiguration> namedAspects )
         {
             _owner = configuration;
-            _name = (string?)e.Attribute( EngineConfiguration.xName );
+            _name = (string?)e.Attribute( EngineConfiguration.xName ) ?? EngineConfiguration.DefaultBinPathName;
             _path = (string?)e.Attribute( EngineConfiguration.xPath );
             _outputPath = (string?)e.Element( EngineConfiguration.xOutputPath );
             _projectPath = (string?)e.Element( EngineConfiguration.xProjectPath );
@@ -37,7 +37,7 @@ namespace CK.Setup
             _discoverAssembliesFromPath = (bool?)e.Attribute( EngineConfiguration.xDiscoverAssembliesFromPath ) ?? false;
             _excludedTypes = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
 
-            _types = new HashSet<TypeConfiguration>( e.Elements( EngineConfiguration.xTypes ).Elements( EngineConfiguration.xType ).Select( e => new TypeConfiguration( e ) ) );
+            _types = new TypeConfigurationSet( e.Elements( EngineConfiguration.xTypes ) );
 
             var allowedNames = new List<string>()
             {
@@ -86,10 +86,8 @@ namespace CK.Setup
         public XElement ToXml()
         {
             return new XElement( EngineConfiguration.xBinPath,
+                                    new XAttribute( EngineConfiguration.xName, Name ),
                                     new XAttribute( EngineConfiguration.xPath, Path ),
-                                    String.IsNullOrWhiteSpace( Name )
-                                        ? null
-                                        : new XAttribute( EngineConfiguration.xName, Name ),
                                     new XAttribute( EngineConfiguration.xDiscoverAssembliesFromPath, DiscoverAssembliesFromPath ),
                                     !OutputPath.IsEmptyPath
                                         ? new XElement( EngineConfiguration.xOutputPath, OutputPath )
@@ -103,12 +101,7 @@ namespace CK.Setup
                                         : new XElement( EngineConfiguration.xGenerateSourceFiles, false ),
                                     EngineConfiguration.ToXml( EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly, Assemblies ),
                                     EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, ExcludedTypes ),
-                                    new XElement( EngineConfiguration.xTypes,
-                                                    Types.Select( t => new XElement( EngineConfiguration.xType,
-                                                                                     t.Kind != AutoServiceKind.None
-                                                                                            ? new XAttribute( EngineConfiguration.xKind, t.Kind )
-                                                                                            : null,
-                                                                                     EngineConfiguration.CleanName( t.Type ) ) ) ),
+                                    _types.ToXml( EngineConfiguration.xTypes ),
                                     _aspects.Values.Select( a => a.ToXml() ) );
         }
     }

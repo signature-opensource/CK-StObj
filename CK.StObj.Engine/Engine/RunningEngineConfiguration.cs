@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,15 +13,9 @@ namespace CK.Setup
     /// <summary>
     /// Implements <see cref="IRunningEngineConfiguration"/>.
     /// </summary>
-    public sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
+    sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
     {
         readonly List<RunningBinPathGroup> _binPathGroups;
-
-        internal RunningEngineConfiguration( EngineConfiguration configuration )
-        {
-            _binPathGroups = new List<RunningBinPathGroup>();
-            Configuration = configuration;
-        }
 
         /// <inheritdoc />
         public EngineConfiguration Configuration { get; }
@@ -30,299 +25,31 @@ namespace CK.Setup
 
         IReadOnlyList<IRunningBinPathGroup> IRunningEngineConfiguration.Groups => _binPathGroups;
 
-        /// <summary>
-        /// Any element or attribute value that start with '{BasePath}', '{OutputPath}' and '{ProjectPath}' are evaluated
-        /// in every <see cref="BinPathAspectConfiguration.ToXml()"/> and if the xml has changed, <see cref="BinPathAspectConfiguration.InitializeFrom(XElement)"/>
-        /// is called to update the bin path aspect configuration.
-        /// </para>
-        /// <para>
-        /// This method is public to ease tests.
-        /// </para>
-        /// </summary>
-        /// <returns>True on success, false is something's wrong.</returns>
-        public static bool PrepareConfiguration( IActivityMonitor monitor, EngineConfiguration c )
+        // New way
+        public RunningEngineConfiguration( EngineConfiguration configuration, IReadOnlyList<BinPathTypeGroup> groups )
         {
-            c.BasePath = CheckEnginePaths( monitor, c );
-            if( c.BasePath.IsEmptyPath ) return false;
+            Configuration = configuration;
+            _binPathGroups = groups.Select( g => new RunningBinPathGroup( configuration, g ) ).ToList();
+        }
 
-            // Process the BinPaths: setting default Name and setup the AlternativePath for each of them.
-            AlternativePath[] altPaths = AnalyzeBinPaths( c, out var maxAlternativeCount );
 
-            // Check that BinPath name is unique. This must be done after the loop above (Name is set when empty).
-            var byName = c.BinPaths.GroupBy( c => c.Name );
-            if( byName.Any( g => g.Count() > 1 ) )
+        internal bool Initialize( IActivityMonitor monitor, out bool canSkipRun )
+        {
+            // Lets be optimistic.
+            canSkipRun = true;
+            // Provides the canSkipRun to each group.
+            foreach( var g in _binPathGroups )
             {
-                monitor.Error( $"BinPath configuration 'Name' must be unique. Duplicates found: {byName.Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
-                return false;
+                if( !g.Initialize( monitor, Configuration.ForceRun, ref canSkipRun ) ) return false;
             }
-
-            // Handle [Alter|native] BinPath.Path if there are: all BinPath.Paths are now settled. 
-            if( !ResolveAlternateBinPaths( monitor, c, maxAlternativeCount, altPaths ) )
-            {
-                return false;
-            }
-
-            // Updates the BinPathConfiguration.OutputPath and BinPathConfiguration.ProjectPath to be rooted
-            // and (at least on their BinPath.Path), process their Xml to handle '{BasePath}', '{OutputPath}' and '{ProjectPath}'
-            // prefixes and handles types:
-            // - Propagate GlobalExcludedTypes to each BinPath ExcludedTypes.
-            // - Removes BinPath Types that appears in their ExcludedTypes (warn on them).
-            FinalizeBinPaths( monitor, c );
-
             return true;
+        }
 
-            /// <summary>
-            /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
-            /// are rooted.
-            /// </summary>
-            /// <returns>Non empty path on success.</returns>
-            static NormalizedPath CheckEnginePaths( IActivityMonitor monitor, EngineConfiguration c )
-            {
-                // Roots the BasePath.
-                NormalizedPath basePath = c.BasePath;
-                if( basePath.IsEmptyPath )
-                {
-                    basePath = Environment.CurrentDirectory;
-                    monitor.Info( $"Configuration BasePath is empty: using current directory '{basePath}'." );
-                }
-                else if( !basePath.IsRooted )
-                {
-                    basePath = Path.GetFullPath( basePath );
-                    monitor.Info( $"Configuration BasePath changed from '{c.BasePath}' to '{basePath}'." );
-                }
-                // Checks the GeneratedAssemblyName (no error, just a fix) and normalize BaseSHA1 to Zero.
-                if( c.GeneratedAssemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
-                {
-                    monitor.Info( $"GeneratedAssemblyName should not end with '.dll'. Removing suffix." );
-                    c.GeneratedAssemblyName += c.GeneratedAssemblyName.Substring( 0, c.GeneratedAssemblyName.Length - 4 );
-                }
-                if( c.BaseSHA1.IsZero || c.BaseSHA1 == SHA1Value.Empty )
-                {
-                    c.BaseSHA1 = SHA1Value.Zero;
-                    monitor.Info( $"Zero or Empty BaseSHA1, the generated code source SHA1 will be used." );
-                }
-                return basePath;
-            }
-
-            static AlternativePath[] AnalyzeBinPaths( EngineConfiguration c, out int maxAlternativeCount )
-            {
-                maxAlternativeCount = 1;
-                var altPaths = new AlternativePath[c.BinPaths.Count];
-                int idx = 0;
-                foreach( var b in c.BinPaths )
-                {
-                    b.Path = MakeAbsolutePath( c, b.Path );
-
-                    var ap = new AlternativePath( b.Path.Path );
-                    if( ap.Count > maxAlternativeCount ) maxAlternativeCount = ap.Count;
-                    altPaths[idx++] = ap;
-
-                    // Use the incremented idx: first name is "BinPath1".
-                    if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
-                }
-                return altPaths;
-            }
-
-            static NormalizedPath MakeAbsolutePath( EngineConfiguration c, NormalizedPath p )
-            {
-                if( !p.IsRooted ) p = c.BasePath.Combine( p );
-                p = p.ResolveDots();
-                return p;
-            }
-
-            // Resolves [sl|ots] in every BinPathConfiguration.Path (the EngineConfiguration.FirstBinPath is driving).
-            static bool ResolveAlternateBinPaths( IActivityMonitor monitor, EngineConfiguration c, int maxAlternativeCount, AlternativePath[] altPaths )
-            {
-                if( maxAlternativeCount > 1 )
-                {
-                    using( monitor.OpenInfo( $"Handling {maxAlternativeCount} possibilities for {c.BinPaths.Count} paths." ) )
-                    {
-                        var primary = altPaths[0];
-                        var alien = altPaths.Skip( 1 ).FirstOrDefault( p => !primary.CanCover( in p ) );
-                        if( alien.IsNotDefault )
-                        {
-                            monitor.Error( $"""
-                                            The path '{alien.OrginPath}' must not define alternatives that are NOT defined in the first path '{primary.Path}'.
-                                            The first path drives the alternative analysis.
-                                            """ );
-                            return false;
-                        }
-                        using( monitor.OpenTrace( $"Testing {primary.Count} alternate paths in {primary.Path}." ) )
-                        {
-                            int bestIdx = -1;
-                            NormalizedPath best = new NormalizedPath();
-                            DateTime bestDate = Util.UtcMinValue;
-                            for( int i = 0; i < primary.Count; ++i )
-                            {
-                                NormalizedPath path = primary[i];
-                                var noPub = path.LastPart == "publish" ? path.RemoveLastPart() : path;
-                                if( !Directory.Exists( noPub ) )
-                                {
-                                    monitor.Debug( $"Alternate path '{noPub}' not found." );
-                                    continue;
-                                }
-                                var files = Directory.EnumerateFiles( noPub );
-                                if( files.Any() )
-                                {
-                                    var mostRecent = Directory.EnumerateFiles( noPub ).Max( p => File.GetLastWriteTimeUtc( p ) );
-                                    if( bestDate < mostRecent )
-                                    {
-                                        bestDate = mostRecent;
-                                        best = path;
-                                        bestIdx = i;
-                                    }
-                                }
-                                else monitor.Debug( $"Alternate path '{noPub}' is empty." );
-                            }
-                            if( bestIdx < 0 )
-                            {
-                                monitor.Error( $"Unable to find any file in any of the {primary.Count} paths in {primary.Path}." );
-                                return false;
-                            }
-                            monitor.Info( $"Selected path is n°{bestIdx}: {best} since it has the most recent file change ({bestDate})." );
-                            c.FirstBinPath.Path = best;
-                            for( var iFinal = 1; iFinal < altPaths.Length; ++iFinal )
-                            {
-                                var aP = altPaths[iFinal];
-                                NormalizedPath cap = primary.Cover( bestIdx, aP );
-                                if( aP.OrginPath != cap.Path )
-                                {
-                                    monitor.Trace( $"Path '{altPaths[iFinal].OrginPath}' resolved to '{cap}'." );
-                                    c.BinPaths[iFinal].Path = cap;
-                                }
-                            }
-                        }
-                    }
-                }
-                else monitor.Trace( $"No alternative found among the {c.BinPaths.Count} paths." );
-                return true;
-            }
-
-            static void FinalizeBinPaths( IActivityMonitor monitor, EngineConfiguration c )
-            {
-                foreach( var b in c.BinPaths )
-                {
-                    b.ExcludedTypes.AddRange( c.GlobalExcludedTypes );
-                    foreach( var tc in b.Types )
-                    {
-                        if( b.ExcludedTypes.Remove( tc.Type ) )
-                        {
-                            monitor.Warn( $"BinPath '{b.Name}' Types contains '{tc.Type}' ({tc.Kind}) that is excluded. It is removed and will be ignored." );
-                        }
-                    }
-
-                    if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
-                    else b.OutputPath = MakeAbsolutePath( c, b.OutputPath );
-
-                    if( b.ProjectPath.IsEmptyPath ) b.ProjectPath = b.OutputPath;
-                    else
-                    {
-                        b.ProjectPath = MakeAbsolutePath( c, b.ProjectPath );
-                        if( b.ProjectPath.LastPart != "$StObjGen" )
-                        {
-                            b.ProjectPath = b.ProjectPath.AppendPart( "$StObjGen" );
-                        }
-                    }
-
-                    bool hasChanged;
-                    foreach( var binPathAspect in b.Aspects )
-                    {
-                        hasChanged = false;
-                        var e = binPathAspect.ToXml();
-                        Throw.DebugAssert( b.Name != null );
-                        EvalKnownPaths( monitor, b.Name, binPathAspect.AspectName, e, c.BasePath, b.OutputPath, b.ProjectPath, ref hasChanged );
-                        if( hasChanged ) binPathAspect.InitializeFrom( e );
-                    }
-                }
-                static void EvalKnownPaths( IActivityMonitor monitor,
-                                            string binPathName,
-                                            string aspectName,
-                                            XElement element,
-                                            NormalizedPath basePath,
-                                            NormalizedPath outputPath,
-                                            NormalizedPath projectPath,
-                                            ref bool hasChanged )
-                {
-                    EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, element );
-                    foreach( var e in element.Elements() )
-                    {
-                        EvalAttributes( monitor, binPathName, aspectName, basePath, outputPath, projectPath, ref hasChanged, e );
-                        if( !e.HasElements )
-                        {
-                            if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, e.Value, out string? mapped ) )
-                            {
-                                e.Value = mapped;
-                                hasChanged = true;
-                            }
-                        }
-                        else
-                        {
-                            EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath, ref hasChanged );
-                        }
-                    }
-
-                    static bool EvalString( IActivityMonitor monitor,
-                                            string binPathName,
-                                            string aspectName,
-                                            NormalizedPath basePath,
-                                            NormalizedPath outputPath,
-                                            NormalizedPath projectPath,
-                                            string? v,
-                                            [NotNullWhen( true )] out string? mapped )
-                    {
-                        if( v != null && v.Length >= 10 )
-                        {
-                            Throw.DebugAssert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
-                            var vS = ReplacePattern( basePath, "{BasePath}", v );
-                            vS = ReplacePattern( outputPath, "{OutputPath}", vS );
-                            vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
-                            if( v != vS )
-                            {
-                                monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
-                                mapped = vS;
-                                return true;
-                            }
-                        }
-                        mapped = null;
-                        return false;
-
-                        static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
-                        {
-                            int len = pattern.Length;
-                            if( v.Length >= len )
-                            {
-                                if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
-                                {
-                                    if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
-                                    return basePath.Combine( v.Substring( len ) ).ResolveDots();
-                                }
-                            }
-                            return v;
-                        }
-
-                    }
-
-                    static void EvalAttributes( IActivityMonitor monitor,
-                                               string binPathName,
-                                               string aspectName,
-                                               NormalizedPath basePath,
-                                               NormalizedPath outputPath,
-                                               NormalizedPath projectPath,
-                                               ref bool hasChanged,
-                                               XElement e )
-                    {
-                        foreach( var a in e.Attributes() )
-                        {
-                            if( EvalString( monitor, binPathName, aspectName, basePath, outputPath, projectPath, a.Value, out string? mapped ) )
-                            {
-                                a.Value = mapped;
-                                hasChanged = true;
-                            }
-                        }
-                    }
-                }
-
-            }
+        #region Legacy
+        public RunningEngineConfiguration( EngineConfiguration configuration )
+        {
+            _binPathGroups = new List<RunningBinPathGroup>();
+            Configuration = configuration;
         }
 
         /// <summary>
@@ -384,15 +111,14 @@ namespace CK.Setup
             }
         }
 
-        internal bool Initialize( IActivityMonitor monitor, out bool canSkipRun )
+        internal bool CreateRunningBinPathGroups( IActivityMonitor monitor, out bool canSkipRun )
         {
             // Lets be optimistic (and if an error occurred the returned false will skip the run anyway).
             // If ForceRun is true, we'll always run. This flag can only transition from true to false.
             canSkipRun = !Configuration.ForceRun;
             if( Configuration.BinPaths.Count == 1 )
             {
-                var b = Configuration.BinPaths[0];
-                _binPathGroups.Add( new RunningBinPathGroup( Configuration, b, Configuration.BaseSHA1 ) );
+                _binPathGroups.Add( new RunningBinPathGroup( Configuration, Configuration.FirstBinPath, Configuration.BaseSHA1 ) );
                 monitor.Trace( $"No unification required (single BinPath)." );
             }
             else
@@ -462,21 +188,15 @@ namespace CK.Setup
             public bool Equals( BinPathConfiguration? x, BinPathConfiguration? y )
             {
                 Debug.Assert( x != null && y != null );
-                bool s = x.Types.Count == y.Types.Count
-                         && x.Assemblies.SetEquals( y.Assemblies )
-                         && x.ExcludedTypes.SetEquals( y.ExcludedTypes );
-                if( s )
-                {
-                    var one = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
-                    var two = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
-                    s = one.SequenceEqual( two );
-                }
-                return s;
+                return x.Assemblies.SetEquals( y.Assemblies )
+                       && x.ExcludedTypes.SetEquals( y.ExcludedTypes )
+                       && x.Types.SetEquals( y.Types );
             }
 
+            // Useless but fulfills the equality contract.
             public int GetHashCode( BinPathConfiguration b ) => b.ExcludedTypes.Count
-                                                                        + b.Types.Count * 59
-                                                                        + b.Assemblies.Count * 117;
+                                                                + b.Types.Count * 79
+                                                                + b.Assemblies.Count * 117;
         }
 
         /// <summary>
@@ -514,10 +234,13 @@ namespace CK.Setup
 
             var all = configurations.SelectMany( b => b.Configuration.Types.Select( tc => tc.Type ) )
                                     .Where( t => typeof( IPoco ).IsAssignableFrom( t ) || typeof( IRealObject ).IsAssignableFrom( t ) )
-                                    .Select( t => new BinPathConfiguration.TypeConfiguration( t ) );
-            unified.Types.AddRange( all );
+                                    .Select( t => new TypeConfiguration( t ) );
+            foreach( var tc in all )
+            {
+                unified.Types.Add( tc );
+            }
             return unified;
         }
-
+        #endregion // Legacy
     }
 }

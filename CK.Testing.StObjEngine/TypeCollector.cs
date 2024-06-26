@@ -9,42 +9,18 @@ namespace CK.Testing
     /// <summary>
     /// Helper that collects types.
     /// </summary>
+    [Obsolete("Use the EngineConfiguration directly.")]
     public sealed class TypeCollector : ISet<Type>
     {
         readonly HashSet<Type> _types;
-        readonly Dictionary<Assembly, AssemblyType> _all;
-
-        enum AssemblyType
-        {
-            None,
-            Model,
-            ModelDependent
-        }
-
+        [Obsolete("Use the EngineConfiguration directly")]
         internal TypeCollector()
         {
-            _all = new Dictionary<Assembly, AssemblyType>();
             _types = new HashSet<Type>();
         }
 
         /// <inheritdoc />
         public int Count => _types.Count;
-
-        /// <summary>
-        /// Adds all public types from <paramref name="root"/> and from its referenced assemblies
-        /// only for assembly that are "model dependent".
-        /// <para>
-        /// To include the types of an assembly, simply <see cref="Add(IEnumerable{Type})"/>
-        /// the <see cref="Assembly.ExportedTypes"/>.
-        /// </para>
-        /// </summary>
-        /// <param name="root">The root assembly from which public types must be collected.</param>
-        /// <returns>This collector (fluent syntax).</returns>
-        public TypeCollector AddModelDependentAssembly( Assembly root )
-        {
-            DoAdd( root );
-            return this;
-        }
 
         /// <summary>
         /// Adds a type.
@@ -73,47 +49,6 @@ namespace CK.Testing
         {
             _types.AddRange( types );
             return this;
-        }
-
-        /// <summary>
-        /// Gets the model dependent assemblies discovered so far.
-        /// </summary>
-        public IEnumerable<Assembly> ModelDependentAssemblies => _all.Where( kv => kv.Value == AssemblyType.ModelDependent ).Select( kv => kv.Key );
-
-        AssemblyType DoAdd( Assembly assembly )
-        {
-            if( !_all.TryGetValue( assembly, out var t ) )
-            {
-                // Trust the fact that there is no cycle in assembly references.
-                t = GetAssemblyType( assembly );
-                _all.Add( assembly, t );
-                foreach( var d in assembly.GetReferencedAssemblies() )
-                {
-                    var dT = DoAdd( Assembly.Load( d ) );
-                    if( t != AssemblyType.ModelDependent && dT != AssemblyType.None )
-                    {
-                        t = AssemblyType.ModelDependent;
-                    }
-                }
-                _all[assembly] = t;
-                if( t == AssemblyType.ModelDependent )
-                {
-                    _types.AddRange( assembly.ExportedTypes );
-                }
-            }
-            return t;
-
-            static AssemblyType GetAssemblyType( Assembly a )
-            {
-                bool isModel = false;
-                foreach( var d in a.GetCustomAttributesData() )
-                {
-                    if( d.AttributeType.Name == "IsModelDependentAttribute" ) return AssemblyType.ModelDependent;
-                    if( d.AttributeType.Name == "IsModelAttribute" ) isModel = true;
-                }
-                return isModel ? AssemblyType.Model : AssemblyType.None;
-            }
-
         }
 
         bool ISet<Type>.Add( Type item ) => _types.Add( item );

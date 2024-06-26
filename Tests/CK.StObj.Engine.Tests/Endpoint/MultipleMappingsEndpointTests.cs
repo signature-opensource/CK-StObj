@@ -74,13 +74,15 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task single_singleton_Async()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( FirstDIContainerDefinition ),
-                                                             typeof( SecondDIContainerDefinition ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManyAuto ),
+                                            typeof( ManyConsumer ),
+                                            typeof( FirstDIContainerDefinition ),
+                                            typeof( SecondDIContainerDefinition ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             await TestHelper.StartHostedServicesAsync( auto.Services );
-            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
+            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
             var g = auto.Services;
             var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
@@ -101,16 +103,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task multiple_singletons_Async()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManyAuto ),
-                                                             typeof( ManySingleton ),
-                                                             typeof( ManyAuto2 ),
-                                                             typeof( ManySingleton2 ),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( FirstDIContainerDefinition ),
-                                                             typeof( SecondDIContainerDefinition ) );
-            var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManyAuto ),
+                                            typeof( ManySingleton ),
+                                            typeof( ManyAuto2 ),
+                                            typeof( ManySingleton2 ),
+                                            typeof( ManyConsumer ),
+                                            typeof( FirstDIContainerDefinition ),
+                                            typeof( SecondDIContainerDefinition ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             await TestHelper.StartHostedServicesAsync( auto.Services );
-            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
+            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
             var g = auto.Services;
             var e1 = g.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
@@ -120,9 +124,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             var mG = g.GetRequiredService<ManyConsumer>();
             mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>(),
-                                                            g.GetRequiredService<ManySingleton>(),
-                                                            g.GetRequiredService<ManyAuto2>(),
-                                                            g.GetRequiredService<ManySingleton2>() } );
+                                                          g.GetRequiredService<ManyAuto2>(),
+                                                          g.GetRequiredService<ManySingleton>(),
+                                                          g.GetRequiredService<ManySingleton2>() } );
 
             var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
             m1.All.Should().BeEquivalentTo( mG.All );
@@ -134,13 +138,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task single_scoped_Async()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManyScoped ),
-                                                            typeof( ManyConsumer ),
-                                                            typeof( FirstDIContainerDefinition ),
-                                                            typeof( SecondDIContainerDefinition ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManyScoped ),
+                                            typeof( ManyConsumer ),
+                                            typeof( FirstDIContainerDefinition ),
+                                            typeof( SecondDIContainerDefinition ));
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
             await TestHelper.StartHostedServicesAsync( auto.Services );
 
@@ -168,18 +173,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task global_can_register_multiple_services_Async()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManyScoped ),
-                                                             typeof( ManyScoped2 ),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( FirstDIContainerDefinition ),
-                                                             typeof( SecondDIContainerDefinition ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector,
-                                                                              configureServices: s =>
-                                                                              {
-                                                                                 s.Services.AddScoped<ManyNothing>();
-                                                                                 s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
-                                                                              } );
-            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManyScoped ),
+                                            typeof( ManyScoped2 ),
+                                            typeof( ManyConsumer ),
+                                            typeof( FirstDIContainerDefinition ),
+                                            typeof( SecondDIContainerDefinition ));
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: s =>
+            {
+                s.AddScoped<ManyNothing>();
+                s.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+            } );
+
+            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
             await TestHelper.StartHostedServicesAsync( auto.Services );
 
@@ -238,11 +244,12 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_endpoint_services()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManySingleton ),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( ManyAsScopedDIContainerDefinition ) );
-            TestHelper.GetFailedSingleBinPathAutomaticServices( collector,
-                                                                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManySingleton ),
+                                            typeof( ManyConsumer ),
+                                            typeof( ManyAsScopedDIContainerDefinition ) );
+            configuration.GetFailedSingleBinPathAutomaticServices( 
+                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
         }
 
 
@@ -266,13 +273,15 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public async Task endpoints_can_register_multiple_singletons_when_the_multiple_has_been_auto_computed_as_singleton_Async()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManySingleton),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( ManyAsSingletonDIContainerDefinition ) );
-            using var auto = TestHelper.CreateSingleBinPathAutomaticServices( collector );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManySingleton),
+                                            typeof( ManyConsumer ),
+                                            typeof( ManyAsSingletonDIContainerDefinition ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
             await TestHelper.StartHostedServicesAsync( auto.Services );
 
-            auto.LoadResult.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
+            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
 
             var e = auto.Services.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<ManyAsSingletonDIContainerDefinition.Data>>().Single();
             using var s1 = e.GetContainer().CreateScope();
@@ -286,16 +295,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_global()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ManySingleton ),
-                                                             typeof( ManyConsumer ),
-                                                             typeof( ManyAsScopedDIContainerDefinition ) );
-            TestHelper.GetFailedSingleBinPathAutomaticServices( collector,
-                                                                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
-                                                                configureServices: s =>
-                                                                {
-                                                                    s.Services.AddScoped<ManyNothing>();
-                                                                    s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
-                                                                } );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Add( typeof( ManySingleton ),
+                                            typeof( ManyConsumer ),
+                                            typeof( ManyAsScopedDIContainerDefinition ) );
+            configuration.GetFailedSingleBinPathAutomaticServices(
+               "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
+               configureServices: s =>
+               {
+                    s.AddScoped<ManyNothing>();
+                    s.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+               } );
         }
 
 
