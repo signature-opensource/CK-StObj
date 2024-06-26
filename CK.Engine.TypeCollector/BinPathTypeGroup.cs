@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -118,20 +119,39 @@ namespace CK.Engine.TypeCollector
         /// <returns>The result (<see cref="Result.Success"/> can be false).</returns>
         public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
         {
+            Throw.DebugAssert( "Time to update all SHA1VAlue( hasher, reset ) and use IncrementalHashExtensions",
+                               Type.GetType( "CK.Core.IncrementalHashExtensions, CK.Core", false ) == null );  
+
             using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
             var assemblyResult = TypeCollector.AssemblyCache.Run( monitor, configuration );
 
 
             // Always produce the groups even if assemblyResult.Success is false.
             var groups = new List<BinPathTypeGroup>();
+            // Ok...
+            // 1 - Groups the BinPathConfigurations in all Assembly groups by the key based on ExcludedTypes and Types configurations.
+            // 2 - Projects the groups by Assembly group and the BinPathConfigurations that sahre the same key.
+            // 3 - Union them (SelectMany).
+            // 4 - Computes the BinPathType.GroupName.
+            // 5 - Orders these raw groups by their GroupName to compute the global Result signature.
             var rawGroups = assemblyResult.BinPathGroups.Select( g => g.Configurations.GroupBy( b => new GroupKey( g, b ) ) )
-                                                         .SelectMany( gType => gType.Select( tG => (Types: tG.Key.AssemblyGroup, Configurations: tG.ToImmutableArray()) ) );
-            foreach( var (assemblyGroup, configurations) in rawGroups )
+                                                        .SelectMany( gType => gType.Select( tG => (Configurations: tG.OrderBy( b => b.Name ).ToImmutableArray(),
+                                                                                                  tG.Key.AssemblyGroup) ) )
+                                                        .Select( rawGroup => (
+                                                                                rawGroup.Configurations,
+                                                                                rawGroup.AssemblyGroup,
+                                                                                Name: rawGroup.Configurations.Length == rawGroup.AssemblyGroup.Configurations.Count
+                                                                                        ? rawGroup.AssemblyGroup.GroupName
+                                                                                        : rawGroup.Configurations.Select( b => b.Name ).Concatenate()
+                                                                              ) )
+                                                        .OrderBy( rawGroup => rawGroup.Name );
+
+            // Reusable hasher.
+            using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
+
+            foreach( var (configurations, assemblyGroup, groupName) in rawGroups )
             {
-                var groupName = configurations.Length == assemblyGroup.Configurations.Count
-                                    ? assemblyGroup.GroupName
-                                    : configurations.Select( b => b.Name ).Concatenate();
-                var sourceName = $"BinPath '{groupName}'";
+                var sourceName = $"BinTypePathGoup '{groupName}'";
                 var c = configurations.First();
 
                 // Clones the assembly configured types as there may be other BinPathTypeGroup that use it
@@ -142,7 +162,6 @@ namespace CK.Engine.TypeCollector
                 // Instead of computing the signature on the final set of types that would require to sort it by type name,
                 // we based the start of our signature on the Excluded and Types configurations and rely on the Assembly.BinPathGroup
                 // signature for the rest.
-                using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
                 hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
                 // Must unfortunately order the sets.
                 foreach( var t in c.ExcludedTypes.Select( t => (Type: t, t.FullName) ).OrderBy( t => t.FullName ) )
@@ -162,14 +181,18 @@ namespace CK.Engine.TypeCollector
                                               groupName,
                                               assemblyGroup,
                                               types,
-                                              new SHA1Value( hasher.GetCurrentHash() ) );
+                                              new SHA1Value( hasher.GetHashAndReset() ) );
                 groups.Add( g );
             }
+            // The groups list is ordered by GroupName. We may compute the signature here... 
             if( assemblyResult.Success )
             {
                 HandleUnifiedBinPath( monitor, groups );
+                // ...but why not waiting the unification and accounting the existenc of the UnifiedPure
+                // or the reordering of the groups (with the most covering one at the start)?
+                foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
             }
-            return new Result( assemblyResult, groups );
+            return new Result( assemblyResult, groups, new SHA1Value( hasher.GetCurrentHash() ) );
         }
 
         static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result )
@@ -221,6 +244,6 @@ namespace CK.Engine.TypeCollector
             }
         }
 
-        public override string ToString() => $"BinPathGoup '{_groupName}'";
+        public override string ToString() => $"BinTypePathGoup '{_groupName}'";
     }
 }

@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -67,7 +68,7 @@ namespace CK.Engine.TypeCollector
             {
                 Throw.DebugAssert( _configurations.Contains( configuration ) is false );
                 _configurations.Add( configuration );
-                _groupName += ", " + configuration.Name;
+                // Don't update the groupName here as we want it to be order by name.
             }
 
             /// <summary>
@@ -169,6 +170,11 @@ namespace CK.Engine.TypeCollector
 
             internal bool FinalizeAndCollectTypes( IActivityMonitor monitor )
             {
+                if( _configurations.Count > 1 )
+                {
+                    _configurations.Sort( (a,b) => a.Name.CompareTo( b.Name ) );
+                    _groupName = _configurations.Select( b => b.Name ).Concatenate();
+                }
                 monitor.Trace( $"Skipped {_systemSkipped.Count} system assemblies: {_systemSkipped.Select( a => a.Name ).Concatenate()}." );
                 // Useless to keep the list content.
                 _systemSkipped.Clear();

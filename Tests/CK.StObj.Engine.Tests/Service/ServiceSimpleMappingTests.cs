@@ -90,7 +90,7 @@ namespace CK.StObj.Engine.Tests.Service
         //
         // Current exclusion semantics is what it is, not perfect and used rarely and quite always on leaf types, so let it be.
         [Test]
-        [Ignore("Exclusion needs reworK.")]
+        [Ignore("Exclusion needs rework.")]
         public void service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous()
         {
             //{
