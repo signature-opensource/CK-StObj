@@ -54,7 +54,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void generic_AbstractType_parameter_and_argument()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ITopCommand ) );
+            configuration.FirstBinPath.Types.Add( typeof( ITopCommand ) );
             var engineResult = configuration.RunSuccessfully();
 
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -85,7 +85,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void MinimalAbstractTypes_considers_generic_parameter_covariance()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( IIntCommand ));
+            configuration.FirstBinPath.Types.Add(typeof( IIntCommand ));
             var engineResult = configuration.RunSuccessfully();
 
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -147,7 +147,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void commands_with_multiple_returns()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( IS5Command ));
+            configuration.FirstBinPath.Types.Add(typeof( IS5Command ));
             var engineResult = configuration.RunSuccessfully();
 
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -204,7 +204,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( IS6NoWayCommand1 ) );
+                configuration.FirstBinPath.Types.Add( typeof( IS6NoWayCommand1 ) );
                 var engineResult = configuration.RunSuccessfully();
 
                 var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -215,7 +215,7 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( IS6NoWayCommand2 ) );
+                configuration.FirstBinPath.Types.Add( typeof( IS6NoWayCommand2 ) );
                 var engineResult = configuration.RunSuccessfully();
 
                 var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -246,7 +246,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // With only the IS6ExcludeIS5Command, the ITopCommand : ICommand<object> returns an object.
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes(  typeof( IS6ExcludeIS5Command ) );
+                configuration.FirstBinPath.Types.Add(  typeof( IS6ExcludeIS5Command ) );
                 var engineResult = configuration.RunSuccessfully();
                 var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -258,7 +258,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // With IS6ExcludeIS5Command and IS5Command bu no command that return a int, IS5Command is fine.
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes(  typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
+                configuration.FirstBinPath.Types.Add(  typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
                 var engineResult = configuration.RunSuccessfully();
                 var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -270,7 +270,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // With IS6ExcludeIS5Command, IS5Command and a command that return a int, the return cannot be resolved.
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes(  typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
+                configuration.FirstBinPath.Types.Add(  typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
                 var engineResult = configuration.RunSuccessfully();
                 var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -284,7 +284,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void MinimalAbstractTypes_considers_recurse_generic_parameter_covariance()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(  typeof( IS6Command ) );
+            configuration.FirstBinPath.Types.Add(  typeof( IS6Command ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
             Throw.DebugAssert( ts != null );
@@ -393,7 +393,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void MinimalAbstractTypes_considers_generic_parameter_contravariance()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( IObjectInput ) );
+            configuration.FirstBinPath.Types.Add( typeof( IObjectInput ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -448,7 +448,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void MinimalAbstractTypes_considers_recurse_generic_parameter_contravariance()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( IExt6Input ) );
+            configuration.FirstBinPath.Types.Add( typeof( IExt6Input ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
             
@@ -518,7 +518,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void explicit_registering_abstract_generic_poco( bool registerGeneric )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( IS5Command ) );
+            configuration.FirstBinPath.Types.Add( typeof( IS5Command ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 

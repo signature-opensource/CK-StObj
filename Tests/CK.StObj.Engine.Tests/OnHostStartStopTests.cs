@@ -106,7 +106,7 @@ namespace CK.StObj.Engine.Tests.Service
         public async Task HostedServiceLifetimeTrigger_at_work_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( OnHostStartStopTests ).GetNestedTypes() );
+            configuration.FirstBinPath.Types.Add( typeof( OnHostStartStopTests ).GetNestedTypes() );
             using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
                 services.AddScoped( sp => TestHelper.Monitor );

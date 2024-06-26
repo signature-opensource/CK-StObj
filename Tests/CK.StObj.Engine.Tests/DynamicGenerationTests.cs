@@ -113,7 +113,7 @@ namespace CK.StObj.Engine.Tests
             public static void DoTest()
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( B ), typeof( ASpec ) );
+                configuration.FirstBinPath.Types.Add( typeof( B ), typeof( ASpec ) );
                 configuration.AddAspect( new FakeAspectConfiguration() );
                 var result = configuration.RunSuccessfully();
 
@@ -231,7 +231,7 @@ namespace CK.StObj.Engine.Tests
             {
 
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( BSpec ), typeof( ASpec ) );
+                configuration.FirstBinPath.Types.Add( typeof( BSpec ), typeof( ASpec ) );
                 configuration.AddAspect( new FakeAspectConfiguration() );
                 var result = configuration.RunSuccessfully();
                 var engineMap = result.FirstBinPath.EngineMap;
@@ -377,7 +377,7 @@ namespace CK.StObj.Engine.Tests
             public void DoTest()
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( AutomaticallyImplemented ) );
+                configuration.FirstBinPath.Types.Add( typeof( AutomaticallyImplemented ) );
                 var map = configuration.Run().LoadMap();
 
                 var a = map.GetType().Assembly;
@@ -493,7 +493,7 @@ namespace CK.StObj.Engine.Tests
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                    configuration.FirstBinPath.AddTypes( typeof( S1 ), typeof( S2 ) );
+                    configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
                     configuration.Run().LoadMap();
                     entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                                     .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );

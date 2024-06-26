@@ -34,7 +34,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void default_values_on_simple_field()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( IThing ), typeof( IThingHolder ));
+            configuration.FirstBinPath.Types.Add(typeof( IThing ), typeof( IThingHolder ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();

@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void simple_Poco_found_by_name_previous_name_or_interface_type()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ICmdTest ) );
+            configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -41,7 +41,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void GeneratedPoco_factory_instance_can_be_found_by_its_type()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ICmdTest ) );
+            configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -80,7 +80,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ));
+            configuration.FirstBinPath.Types.Add(typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ));
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {

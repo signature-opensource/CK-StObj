@@ -41,7 +41,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void all_basic_types_roundtrip()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) );
+            configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) );
             using var auto = configuration.Run().CreateAutomaticServices();
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -114,7 +114,7 @@ namespace CK.Poco.Exc.Json.Tests
         public void all_nullable_basic_types_roundtrip()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) );
+            configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

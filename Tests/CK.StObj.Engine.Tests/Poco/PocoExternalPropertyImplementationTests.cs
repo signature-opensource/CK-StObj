@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void some_poco_properties_can_be_handled_by_independent_CodeGenerator()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
+            configuration.FirstBinPath.Types.Add( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();

@@ -26,7 +26,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_Multiple_services_discovery()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( S1 ), typeof( S2 ));
+            configuration.FirstBinPath.Types.Add(typeof( S1 ), typeof( S2 ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Map.Services.Mappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
@@ -93,7 +93,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes(typeof( MayWork ));
+                configuration.FirstBinPath.Types.Add(typeof( MayWork ));
 
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
@@ -107,7 +107,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes(typeof( MayWork ));
+                configuration.FirstBinPath.Types.Add(typeof( MayWork ));
 
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
@@ -162,7 +162,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( UserGoogle ), typeof( UserOffice ));
+            configuration.FirstBinPath.Types.Add(typeof( UserGoogle ), typeof( UserOffice ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
@@ -193,7 +193,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces_on_RealObjects_and_is_Singleton()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ));
+            configuration.FirstBinPath.Types.Add(typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
@@ -311,7 +311,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
+                configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
@@ -321,7 +321,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManyConsumer ) );
+                configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManyConsumer ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
@@ -331,7 +331,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManySingleton ), typeof( ManyConsumer ) );
+                configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManySingleton ), typeof( ManyConsumer ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );

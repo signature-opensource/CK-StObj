@@ -88,7 +88,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         public void not_serializable_and_not_exchangeable_attributes_are_handled()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
+            configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -132,7 +132,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         public void PocoTypeSet_restrictions_cannot_be_spoofed_for_Poco_and_Record_fields()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
+            configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -177,7 +177,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         public void PocoTypeSet_restrictions_cannot_be_spoofed_for_anonymous_records_fields()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
+            configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var directory = auto.Services.GetRequiredService<PocoDirectory>();

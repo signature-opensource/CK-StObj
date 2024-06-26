@@ -294,7 +294,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void code_generation_is_so_easy_on_real_objects()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( A ), typeof( B ) );
+            configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -330,7 +330,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void code_generation_is_also_easy_on_services()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ServiceCanTalk ) );
+            configuration.FirstBinPath.Types.Add( typeof( ServiceCanTalk ) );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
@@ -348,7 +348,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void Service_implemented_by_a_real_object_can_be_overridden()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
+            configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -376,7 +376,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void Initially_registered_StartupServices_may_be_used_as_configurator_or_options()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
+            configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
@@ -400,7 +400,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void superseding_a_IRealObject_implemented_service_by_a_wrapper()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
+            configuration.FirstBinPath.Types.Add( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -422,7 +422,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( BDependency ), typeof( A ), typeof( B ) );
+            configuration.FirstBinPath.Types.Add( typeof( BDependency ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -443,7 +443,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( A ), typeof( B ) );
+            configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
@@ -473,7 +473,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             using var _ = TestHelper.Monitor.OpenInfo( nameof( ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime ) );
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ServiceWithValueTypeCtorParameters ) );
+            configuration.FirstBinPath.Types.Add( typeof( ServiceWithValueTypeCtorParameters ) );
 
             {
                 using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn, 1000 ) )
@@ -520,14 +520,14 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( ServiceWithVaryingParams ) );
+                configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
                 using var auto = configuration.Run().CreateAutomaticServices();
 
                 auto.Services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( ServiceWithVaryingParams ) );
+                configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
                 using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
                 {
                     services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
@@ -550,7 +550,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void ValueType_ctor_parameters_with_default_value_are_ignored()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+            configuration.FirstBinPath.Types.Add( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();

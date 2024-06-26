@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             using var _ = TestHelper.Monitor.OpenInfo( nameof( without_SingletonServiceAttribute_scope_requires_manual_registration ) );
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ));
+            configuration.FirstBinPath.Types.Add(typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ));
             var map = configuration.RunSuccessfully().FirstBinPath.LoadMap();
 
             using var auto1 = map.CreateAutomaticServices();
@@ -78,7 +78,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void SingletonServiceAttribute_enables_services_to_not_have_public_constructor()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( SomeSingleton ), typeof( NotConstructibleService ));
+            configuration.FirstBinPath.Types.Add(typeof( SomeSingleton ), typeof( NotConstructibleService ));
             using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
                 services.AddSingleton( sp => NotConstructibleService.Create() );

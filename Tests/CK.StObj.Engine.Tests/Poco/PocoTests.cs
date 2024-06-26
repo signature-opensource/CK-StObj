@@ -120,7 +120,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void poco_property_supports_DefaultValueAttribute_from_System_ComponentModel()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( IDefTest ));
+            configuration.FirstBinPath.Types.Add(typeof( IDefTest ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IDefTest>>();

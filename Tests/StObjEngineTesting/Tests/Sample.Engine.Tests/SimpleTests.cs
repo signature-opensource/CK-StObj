@@ -34,7 +34,7 @@ namespace Sample.Engine.Tests
         public void StupidCodeAttribute_works()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( ThingService ));
+            configuration.FirstBinPath.Types.Add(typeof( ThingService ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var thing = auto.Services.GetRequiredService<ThingService>();

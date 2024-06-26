@@ -110,26 +110,19 @@ namespace CK.Testing
         /// </summary>
         /// <param name="set">This type configuration set.</param>
         /// <param name="types">Types to add.</param>
-        public static void Add( this TypeConfigurationSet set, IEnumerable<Type> types )
+        /// <returns>This set.</returns>
+        public static TypeConfigurationSet Add( this TypeConfigurationSet set, IEnumerable<Type> types )
         {
             foreach( var t in types ) set.Add( t );
+            return set;
         }
 
         /// <inheritdoc cref="Add(TypeConfigurationSet,IEnumerable{Type})"/> 
-        public static void Add( this TypeConfigurationSet set, params Type[] types )
+        public static TypeConfigurationSet Add( this TypeConfigurationSet set, params Type[] types )
         {
             foreach( var t in types ) set.Add( t );
+            return set;
         }
-
-        /// <summary>
-        /// <see cref="TypeConfigurationSet.Add(Type)"/> any number of types into <see cref="BinPathConfiguration.Types"/>.
-        /// </summary>
-        /// <param name="binPath">This BinPath configuration.</param>
-        /// <param name="types">Types to add.</param>
-        public static void AddTypes( this BinPathConfiguration binPath, IEnumerable<Type> types ) => binPath.Types.Add( types );
-
-        /// <inheritdoc cref="AddTypes(BinPathConfiguration,IEnumerable{Type})"/> 
-        public static void AddTypes( this BinPathConfiguration binPath, params Type[] types ) => binPath.Types.Add( types );
 
     }
 }

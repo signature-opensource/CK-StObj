@@ -74,7 +74,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Default_Implementation_Methods_are_supported()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( IActualRoot ) );
+            configuration.FirstBinPath.Types.Add( typeof( IActualRoot ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -204,7 +204,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void poco_can_have_Abstract_and_DefaultImplementationMethods()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes(typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ));
+            configuration.FirstBinPath.Types.Add(typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var poco = auto.Services.GetRequiredService<PocoDirectory>();

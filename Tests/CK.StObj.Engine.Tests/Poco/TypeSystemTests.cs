@@ -264,7 +264,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void AbstractPocoField_test( Type impl, string[] names )
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( IAbstractPoco ),
+            configuration.FirstBinPath.Types.Add( typeof( IAbstractPoco ),
                                             typeof( IWithList ),
                                             impl );
             var engineResult = configuration.RunSuccessfully();

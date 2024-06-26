@@ -20,7 +20,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public async Task global_DI_automatically_falls_back_to_default_value_provider_for_ubiquitous_info_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( FakeTenantInfo ),
+            configuration.FirstBinPath.Types.Add( typeof( FakeTenantInfo ),
                                             typeof( DefaultTenantProvider ) );
 
             using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
@@ -61,7 +61,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void Front_endpoint_default_for_Ambient_services()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( SomeFrontDIContainerDefinition ),
+            configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
                                             typeof( FakeTenantInfo ),
                                             typeof( DefaultTenantProvider ),
                                             typeof( FakeCultureInfo ),
@@ -123,7 +123,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                    "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
 
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.AddTypes( typeof( FakeAuthenticationInfo ),
+                configuration.FirstBinPath.Types.Add( typeof( FakeAuthenticationInfo ),
                                                 typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
                 configuration.GetFailedSingleBinPathAutomaticServices( msg );
             }

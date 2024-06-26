@@ -61,7 +61,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void super_definer_applies_to_final_interface()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ClassFromInterfaceService ) );
+            configuration.FirstBinPath.Types.Add( typeof( ClassFromInterfaceService ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
@@ -95,7 +95,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void device_host_model()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.AddTypes( typeof( ADeviceHost ) );
+            configuration.FirstBinPath.Types.Add( typeof( ADeviceHost ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Services.GetService<ADeviceHost>().Should().NotBeNull(); 
