@@ -314,8 +314,10 @@ namespace CK.Setup
         internal static string CheckBinPathName( string? name )
         {
             if( name == null ) return DefaultBinPathName;
-            Throw.CheckArgument( "BinPath name must only contain A-Z, a-z, _ and 0-9 characters.",
-                                 Regex.IsMatch( name, @"^[a-zA-Z_0-9]+$", RegexOptions.CultureInvariant ) );
+            if( !Regex.IsMatch( name, @"^[a-zA-Z_0-9]+$", RegexOptions.CultureInvariant ) )
+            {
+                Throw.ArgumentException( nameof( name ), $"BinPath name '{name}' must not be empty only contain A-Z, a-z, _ and 0-9 characters." );
+            }
             return name;
         }
 
