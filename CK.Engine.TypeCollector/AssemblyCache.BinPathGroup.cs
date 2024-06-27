@@ -172,8 +172,8 @@ namespace CK.Engine.TypeCollector
             {
                 if( _configurations.Count > 1 )
                 {
-                    _configurations.Sort( (a,b) => a.Name.CompareTo( b.Name ) );
-                    _groupName = _configurations.Select( b => b.Name ).Concatenate();
+                    _configurations.Sort( ( a, b ) => a.Name.CompareTo( b.Name ) );
+                    _groupName = _configurations.Select( b => b.Name ).Concatenate( "-" );
                 }
                 monitor.Trace( $"Skipped {_systemSkipped.Count} system assemblies: {_systemSkipped.Select( a => a.Name ).Concatenate()}." );
                 // Useless to keep the list content.

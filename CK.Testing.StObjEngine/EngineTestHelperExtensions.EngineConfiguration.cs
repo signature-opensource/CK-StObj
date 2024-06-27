@@ -1,13 +1,13 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using Microsoft.Extensions.Hosting;
-using System.Collections.Generic;
-using System;
-using static CK.Testing.MonitorTestHelper;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing
 {
@@ -61,19 +61,20 @@ namespace CK.Testing
         }
 
         /// <summary>
-        /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
+        /// Attempts to build and configure a IServiceProvider from the specified <paramref name="binPathName"/> and ensures
+        /// that this fails while configuring the Services (and not before).
         /// </summary>
         /// <param name="configuration">This configuration.</param>
         /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
         /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <param name="configureServices">Optional services configuration.</param>
         /// <param name="binPathName">The <see cref="BinPathConfiguration.Name"/>. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
-        public static void GetFailedSingleBinPathAutomaticServices( this EngineConfiguration configuration,
-                                                                    string message,
-                                                                    IEnumerable<string>? otherMessages = null,
-                                                                    Action<IServiceCollection>? configureServices = null,
-                                                                    SimpleServiceContainer? startupServices = null,
-                                                                    string binPathName = "First" )
+        public static void GetFailedAutomaticServices( this EngineConfiguration configuration,
+                                                       string message,
+                                                       IEnumerable<string>? otherMessages = null,
+                                                       Action<IServiceCollection>? configureServices = null,
+                                                       SimpleServiceContainer? startupServices = null,
+                                                       string binPathName = "First" )
         {
             using( TestHelper.Monitor.CollectEntries( out var entries ) )
             {

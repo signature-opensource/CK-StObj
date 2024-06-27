@@ -125,7 +125,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( FakeAuthenticationInfo ),
                                                 typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
-                configuration.GetFailedSingleBinPathAutomaticServices( msg );
+                configuration.GetFailedAutomaticServices( msg );
             }
         }
     }

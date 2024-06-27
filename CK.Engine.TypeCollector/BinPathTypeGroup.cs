@@ -137,11 +137,11 @@ namespace CK.Engine.TypeCollector
                                                         .Select( rawGroup => (
                                                                                 rawGroup.Configurations,
                                                                                 rawGroup.AssemblyGroup,
-                                                                                Name: rawGroup.Configurations.Length == rawGroup.AssemblyGroup.Configurations.Count
-                                                                                        ? rawGroup.AssemblyGroup.GroupName
-                                                                                        : rawGroup.Configurations.Select( b => b.Name ).Concatenate()
+                                                                                GroupName: rawGroup.Configurations.Length == rawGroup.AssemblyGroup.Configurations.Count
+                                                                                            ? rawGroup.AssemblyGroup.GroupName
+                                                                                            : rawGroup.Configurations.Select( b => b.Name ).Concatenate( "-" )
                                                                               ) )
-                                                        .OrderBy( rawGroup => rawGroup.Name );
+                                                        .OrderBy( rawGroup => rawGroup.GroupName );
 
             // Reusable hasher.
             using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );

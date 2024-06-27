@@ -450,7 +450,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Invalid, 1000 ) )
             {
-                configuration.GetFailedSingleBinPathAutomaticServices( "But SuperStartupService has been told to fail miserably.",
+                configuration.GetFailedAutomaticServices( "But SuperStartupService has been told to fail miserably.",
                                                                        startupServices: startupServices );
 
                 entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." && e.MaskedLevel == LogLevel.Info );

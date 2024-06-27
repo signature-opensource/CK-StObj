@@ -248,7 +248,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             configuration.FirstBinPath.Types.Add( typeof( ManySingleton ),
                                             typeof( ManyConsumer ),
                                             typeof( ManyAsScopedDIContainerDefinition ) );
-            configuration.GetFailedSingleBinPathAutomaticServices( 
+            configuration.GetFailedAutomaticServices( 
                 "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
         }
 
@@ -299,7 +299,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             configuration.FirstBinPath.Types.Add( typeof( ManySingleton ),
                                             typeof( ManyConsumer ),
                                             typeof( ManyAsScopedDIContainerDefinition ) );
-            configuration.GetFailedSingleBinPathAutomaticServices(
+            configuration.GetFailedAutomaticServices(
                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
                configureServices: s =>
                {

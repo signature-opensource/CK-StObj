@@ -112,7 +112,7 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( ObjInvalid ) );
-                configuration.GetFailedSingleBinPathAutomaticServices( "IRealObject interface cannot be a IAutoService (type is an interface)." );
+                configuration.GetFailedAutomaticServices( "IRealObject interface cannot be a IAutoService (type is an interface)." );
             }
         }
 

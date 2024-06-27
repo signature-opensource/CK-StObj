@@ -285,7 +285,7 @@ namespace CK.StObj.Engine.Tests.Service
                 config.FirstBinPath.Types.Add( typeof( IOfficialHostedService ), ConfigurableAutoServiceKind.IsMultipleService | ConfigurableAutoServiceKind.IsSingleton );
                 config.FirstBinPath.Types.Add( typeof( H2 ) );
 
-                config.GetFailedSingleBinPathAutomaticServices( "An interface or an implementation cannot be both Scoped and Singleton" );
+                config.GetFailedAutomaticServices( "An interface or an implementation cannot be both Scoped and Singleton" );
             }
         }
 
@@ -366,7 +366,7 @@ namespace CK.StObj.Engine.Tests.Service
             config.FirstBinPath.Types.Add( new TypeConfiguration( typeof( IMany ), ConfigurableAutoServiceKind.IsScoped ) );
             config.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
 
-            config.GetFailedSingleBinPathAutomaticServices( "An interface or an implementation cannot be both Scoped and Singleton" );
+            config.GetFailedAutomaticServices( "An interface or an implementation cannot be both Scoped and Singleton" );
         }
 
     }
