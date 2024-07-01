@@ -67,6 +67,7 @@ namespace CK.Engine.TypeCollector
         {
             // Initial type detection. Allocates the CustomAttributes.
             uint found = 0;
+            uint foundLegacy = 0;
             foreach( var d in CustomAttributes )
             {
                 // Skipped: nothing more to do.
@@ -75,9 +76,12 @@ namespace CK.Engine.TypeCollector
                 {
                     return AssemblyKind.AutoSkipped;
                 }
-                else if( d.AttributeType.Name == nameof( IsPFeatureAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelDependentAttribute" ) found |= 1;
-                else if( d.AttributeType.Name == nameof( IsEngineAttribute ) || /*Legacy*/d.AttributeType.Name == "IsSetupDependencyAttribute" ) found |= 2;
-                else if( d.AttributeType.Name == nameof( IsPFeatureDefinerAttribute ) || /*Legacy*/d.AttributeType.Name == "IsModelAttribute" ) found |= 4;
+                else if( d.AttributeType.Name == nameof( IsPFeatureAttribute ) ) found |= 1;
+                else if( d.AttributeType.Name == nameof( IsEngineAttribute ) ) found |= 2;
+                else if( d.AttributeType.Name == nameof( IsPFeatureDefinerAttribute ) ) found |= 4;
+                else if( /*Legacy*/d.AttributeType.Name == "IsModelDependentAttribute" ) foundLegacy |= 1;
+                else if( /*Legacy*/d.AttributeType.Name == "IsSetupDependencyAttribute" ) foundLegacy |= 2;
+                else if( /*Legacy*/d.AttributeType.Name == "IsModelAttribute" ) foundLegacy |= 4;
             }
             if( BitOperations.PopCount( found ) > 1 )
             {
@@ -87,6 +91,12 @@ namespace CK.Engine.TypeCollector
                                     Invalid assembly '{_assemblyName}': it contains more than one [IsPFeature], [IsEngine] or [IsPFeatureDefiner].
                                     These attributes are mutually exclusive.
                                     """ );
+            }
+            if( found == 0 )
+            {
+                // When IsModel was used the assembly was analyzed :-(.
+                if( (foundLegacy & 2) != 0 ) found = 2;
+                else if( (foundLegacy & (1|4)) != 0 ) found = 1;
             }
             var k = found switch { 1 => AssemblyKind.PFeature, 2 => AssemblyKind.Engine, 4 => AssemblyKind.PFeatureDefiner, _ => AssemblyKind.None };
             if( excluded ) k |= AssemblyKind.Excluded;
