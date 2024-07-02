@@ -7,16 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="MSBuild\CK.AppBuilder.props" />
-    <None Remove="MSBuild\CK.AppBuilder.targets" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="MSBuild\CK.AppBuilder.props">
-      <PackagePath>buildTransitive\CK.StObj.Model.props</PackagePath>
+      <PackagePath>buildTransitive\CK.AppBuilder.props</PackagePath>
       <Pack>true</Pack>
     </Content>
     <Content Include="MSBuild\CK.AppBuilder.targets">
-      <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
+      <PackagePath>buildTransitive\CK.AppBuilder.targets</PackagePath>
       <Pack>true</Pack>
     </Content>
   </ItemGroup>
