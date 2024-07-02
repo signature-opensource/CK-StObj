@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Description>CKomposable application builder from a ".App" project to its ".Host".</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="MSBuild\CK.AppBuilder.props" />
+    <None Remove="MSBuild\CK.AppBuilder.targets" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MSBuild\CK.AppBuilder.props">
+      <PackagePath>buildTransitive\CK.StObj.Model.props</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="MSBuild\CK.AppBuilder.targets">
+      <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CK.Monitoring" Version="20.0.1--0018-develop" />
+    <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
+  </ItemGroup>
+
+</Project>
