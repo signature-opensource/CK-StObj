@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
+    <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
     <ProjectReference Include="..\CK.Poco.Exchange\CK.Poco.Exchange.csproj" />
   </ItemGroup>
 
