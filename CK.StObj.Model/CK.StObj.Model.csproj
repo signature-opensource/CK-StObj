@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <LangVersion>11</LangVersion>
     <Description>
       Minimalist model with attributes, interfaces and basic objects that define StObj (Real Objects), Automatic DI configuration and enables Source Code Generation across multiple projects.

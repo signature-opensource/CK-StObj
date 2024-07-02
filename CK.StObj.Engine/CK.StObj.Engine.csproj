@@ -4,7 +4,6 @@
     <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
-    <Nullable>enable</Nullable>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>

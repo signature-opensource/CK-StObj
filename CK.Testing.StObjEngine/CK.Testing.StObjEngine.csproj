@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Provides helpers for CKomposable engine to ease tests.</Description>
-    <Nullable>enable</Nullable>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>

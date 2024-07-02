@@ -1,16 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <LangVersion>11</LangVersion>
     <Description>
       Implements Poco Json exporter/importer.
     </Description>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\CK.Poco.Exchange\CK.Poco.Exchange.csproj" />
   </ItemGroup>
-
 </Project>
