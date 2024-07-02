@@ -152,7 +152,7 @@ namespace CK.Engine.TypeCollector
                 var c = configurations.First();
 
                 // Clones the assembly configured types as there may be other BinPathTypeGroup that use it
-                // (don't currently try to opimize here as it would mutate the assemblyGroup.ConfiguredTypes that should be immutable
+                // (don't currently try to opimize here as it would mutate the assemblyGroup.ConfiguredTypes that should not be immutable
                 // since it is publicy exposed... or make it internal).
                 var types = new ConfiguredTypeSet( assemblyGroup.ConfiguredTypes );
 

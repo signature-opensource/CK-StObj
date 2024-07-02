@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector
 {
-    public sealed class CachedAssembly
+    public sealed class CachedAssembly : IComparable<CachedAssembly>
     {
         readonly Assembly _assembly;
         readonly string _assemblyName;
@@ -22,11 +22,13 @@ namespace CK.Engine.TypeCollector
         // Initialized on demand.
         ImmutableArray<CustomAttributeData> _customAttributes;
         ImmutableArray<Type> _allVisibleTypes;
-        // Initialized by AssemblyCollector.DoAdd.
+        // Initialized by AssemblyCache.DoAdd.
         internal AssemblyKind _kind;
         internal ImmutableArray<CachedAssembly> _rawReferencedAssembly;
         internal IReadOnlySet<CachedAssembly> _pFeatures;
         internal IReadOnlySet<CachedAssembly> _allPFeatures;
+        // Initialized by CollectTypes.
+        internal ConfiguredTypeSet? _types;
 
         internal CachedAssembly( Assembly assembly,
                                  string name,
@@ -102,6 +104,15 @@ namespace CK.Engine.TypeCollector
             if( excluded ) k |= AssemblyKind.Excluded;
             return k;
         }
+
+        /// <summary>
+        /// Comparing two assemblies is based on the <see cref="Name"/>. This may seem surprising but this is
+        /// enough to order the <see cref="PFeatures"/> that makes type sets composition deterministic AND we are working
+        /// with unique assembly names.
+        /// </summary>
+        /// <param name="other">The other cached assembly.</param>
+        /// <returns>See <see cref="string.CompareTo(string?)"/>.</returns>
+        public int CompareTo( CachedAssembly? other ) => _assemblyName.CompareTo( other?._assemblyName );
 
         /// <summary>
         /// Gets this assembly's simple name.
@@ -207,6 +218,14 @@ namespace CK.Engine.TypeCollector
         /// an assembly that comes from a later type registration.
         /// </summary>
         public bool IsInitialAssembly => _isInitialAssembly;
+
+        /// <summary>
+        /// Gets the types that this PFeature brings to the system.
+        /// <para>
+        /// This is null if this assembly is not a PFeature or if it is not used.
+        /// </para>
+        /// </summary>
+        public IConfiguredTypeSet? Types => _types;
 
         internal void AddHash( IncrementalHash hasher )
         {

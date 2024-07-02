@@ -1,13 +1,11 @@
 using CK.Core;
 using CK.Setup;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Security.Cryptography;
 
@@ -25,7 +23,7 @@ namespace CK.Engine.TypeCollector
             readonly List<BinPathConfiguration> _configurations;
             readonly NormalizedPath _path;
             // The head assemblies are mapped to true when explicitly added.
-            readonly Dictionary<CachedAssembly, bool> _heads;
+            readonly SortedDictionary<CachedAssembly, bool> _heads;
             // SystemSkipped stored to avoid too much logs.
             readonly List<CachedAssembly> _systemSkipped;
             readonly bool _isAppContextFolder;
@@ -46,7 +44,7 @@ namespace CK.Engine.TypeCollector
                 _configurations = new List<BinPathConfiguration> { configuration };
                 _groupName = configuration.Name;
                 _path = configuration.Path;
-                _heads = new Dictionary<CachedAssembly, bool>();
+                _heads = new SortedDictionary<CachedAssembly, bool>();
                 _maxFileTime = Util.UtcMinValue;
                 _isAppContextFolder = configuration.Path == _assemblyCache.AppContextBaseDirectory;
                 _result = ImmutableConfiguredTypeSet.Empty;
@@ -181,30 +179,36 @@ namespace CK.Engine.TypeCollector
                 if( !_success ) return false;
 
                 using var _ = monitor.OpenInfo( $"Collecting types from {_heads.Keys.Count} PFeatures." );
+                using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
+                hasher.Append( _path.Path );
+
                 var c = new ConfiguredTypeSet();
                 bool success = true;
-
-                using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
-                hasher.Append( _path.Path ).Append( _maxFileTime );
-
-                // Needs ordering for the hash.
-                foreach( var head in _heads.Keys.OrderBy( a => a.Name ) )
+                foreach( var head in _heads.Keys )
                 {
                     head.AddHash( hasher );
-                    success &= CollectTypes( monitor, head, c );
+                    success &= CollectTypes( monitor, head, out var headC );
+                    c.Add( monitor, headC, head.ToString() );
                 }
                 _signature = new SHA1Value( hasher, resetHasher: false );
                 if( success ) _result = c;
                 return success;
 
-                static bool CollectTypes( IActivityMonitor monitor, CachedAssembly assembly, ConfiguredTypeSet c )
+                static bool CollectTypes( IActivityMonitor monitor, CachedAssembly assembly, out ConfiguredTypeSet c )
                 {
+                    if( assembly._types != null )
+                    {
+                        c = assembly._types;
+                        return true;
+                    }
+                    c = new ConfiguredTypeSet();
                     var assemblySourceName = assembly.ToString();
                     using var _ = monitor.OpenInfo( $"Collecting types from {assemblySourceName}." );
                     bool success = true;
                     foreach( var sub in assembly.PFeatures )
                     {
-                        success &= CollectTypes( monitor, sub, c );
+                        success &= CollectTypes( monitor, sub, out var subC );
+                        c.Add( monitor, subC, assemblySourceName );
                     }
                     c.AddRange( assembly.AllVisibleTypes );
                     // Don't merge the 2 loops here!
@@ -270,6 +274,8 @@ namespace CK.Engine.TypeCollector
                     {
                         monitor.Info( $"Assembly '{assembly.Name}' explicitly removed {changed.Count} types from registration: '{changed.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
                     }
+                    monitor.CloseGroup( $"{c.AllTypes.Count} types." );
+                    assembly._types = c;
                     return success;
 
                     static bool HandleTypeConfiguration( IActivityMonitor monitor,
@@ -465,12 +471,12 @@ namespace CK.Engine.TypeCollector
                 // If this assembly is a PFeature, builds the 2 sets of dependencies:
                 // the "all" one and the "curated" ones.
                 HashSet<CachedAssembly>? allPFeatures = null;
-                HashSet<CachedAssembly>? pFeatures = null;
+                SortedSet<CachedAssembly>? pFeatures = null;
                 if( isPFeature )
                 {
                     cached._kind = cached._kind.SetPFeature();
                     allPFeatures = new HashSet<CachedAssembly>();
-                    pFeatures = cached._kind.IsExcluded() ? null : new HashSet<CachedAssembly>();
+                    pFeatures = cached._kind.IsExcluded() ? null : new SortedSet<CachedAssembly>();
                     foreach( var aRef in cached._rawReferencedAssembly )
                     {
                         if( aRef.Kind.IsPFeature() )
@@ -523,7 +529,7 @@ namespace CK.Engine.TypeCollector
             void ProcessExcludePFeatures( IActivityMonitor monitor,
                                           CachedAssembly cached,
                                           HashSet<CachedAssembly>? allPFeatures,
-                                          HashSet<CachedAssembly>? pFeatures )
+                                          SortedSet<CachedAssembly>? pFeatures )
             {
                 // The excluded tuple keeps the "name" but can have a null (never seen) CachedAssembly.
                 var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( ExcludePFeatureAttribute ) )
