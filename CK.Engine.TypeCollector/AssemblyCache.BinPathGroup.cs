@@ -178,7 +178,7 @@ namespace CK.Engine.TypeCollector
                 _systemSkipped.Clear();
                 if( !_success ) return false;
 
-                using var _ = monitor.OpenInfo( $"Collecting types from {_heads.Keys.Count} PFeatures." );
+                using var _ = monitor.OpenInfo( $"Collecting types from head PFeatures: '{_heads.Keys.Select( a => a.Name).Concatenate("', '")}'." );
                 using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
                 hasher.Append( _path.Path );
 
@@ -203,7 +203,7 @@ namespace CK.Engine.TypeCollector
                     }
                     c = new ConfiguredTypeSet();
                     var assemblySourceName = assembly.ToString();
-                    using var _ = monitor.OpenInfo( $"Collecting types from {assemblySourceName}." );
+                    using var _ = monitor.OpenInfo( assemblySourceName );
                     bool success = true;
                     foreach( var sub in assembly.PFeatures )
                     {

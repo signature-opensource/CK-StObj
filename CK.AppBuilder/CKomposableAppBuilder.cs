@@ -88,9 +88,15 @@ namespace CK.Setup
 
                 EngineConfiguration configuration;
                 NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
-                configuration = File.Exists( ckSetupFile )
-                                    ? EngineConfiguration.Load( ckSetupFile )
-                                    : new EngineConfiguration() { BasePath = builderFolder };
+                if( File.Exists( ckSetupFile ) )
+                {
+                    monitor.Info( "Loading EngineConfiguration from CKSetup.xml file." );
+                    configuration = EngineConfiguration.Load( ckSetupFile );
+                }
+                else
+                {
+                    configuration = new EngineConfiguration() { BasePath = builderFolder };
+                }
                 var b = new CKomposableAppBuilder( parentPath, rootLogPath, monitor, msBuildOutputPath, applicationName, builderFolder, configuration );
                 configure?.Invoke( monitor, b );
                 var engineResult = b.EngineConfiguration.Run( monitor );

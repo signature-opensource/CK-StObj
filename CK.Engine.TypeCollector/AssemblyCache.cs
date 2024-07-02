@@ -63,7 +63,7 @@ namespace CK.Engine.TypeCollector
                 if( b.Success )
                 {
                     sb.AppendLine( $"- {b.ConfiguredTypes.AllTypes.Count} types for group '{b.GroupName}'." );
-                    sb.AppendLine( $"  From primary PFeatures: '{b.HeadAssemblies.Select( p => p.Name ).Concatenate( "', '" )}'." );
+                    sb.AppendLine( $"  From head PFeatures: '{b.HeadAssemblies.Select( p => p.Name ).Concatenate( "', '" )}'." );
                 }
                 else
                 {
