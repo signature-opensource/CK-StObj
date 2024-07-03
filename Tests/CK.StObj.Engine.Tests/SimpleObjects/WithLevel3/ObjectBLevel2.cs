@@ -11,7 +11,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects.WithLevel3
     //
     // As long as it is the same, there is no problem.
     //
-    [StObj( Container = typeof( PackageForABLevel1 ) )]
+    [RealObject( Container = typeof( PackageForABLevel1 ) )]
     public class ObjectBLevel2 : ObjectBLevel1, IAbstractionBOnLevel2
     {
         IAbstractionALevel3? _a3;

@@ -8,6 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using static CK.Testing.StObjEngineTestHelper;
 using System.Diagnostics;
+using CK.Testing;
+using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -48,7 +50,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        readonly Type[] BaseUserAndDocumentCloPocs = new Type[]
+        public readonly Type[] BaseUserAndDocumentCloPocs = new Type[]
         {
             typeof(ICloPoc), typeof(ICloPocPart),
             typeof(IAuthenticatedCloPocPart), typeof(ICultureDependentCloPocPart),
@@ -59,60 +61,54 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( "AllBaseUserAndDocumentCloPocs" )]
         public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_ICommand( string mode )
         {
-            var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
             if( mode == "AllBaseUserAndDocumentCloPocs" )
             {
-                c.RegisterTypes( BaseUserAndDocumentCloPocs );
+                configuration.FirstBinPath.Types.Add( BaseUserAndDocumentCloPocs );
             }
             else
             {
-                c.RegisterType( typeof( IDocumentCloPoc ) );
-                c.RegisterType( typeof( ICultureUserCloPoc ) );
+                configuration.FirstBinPath.Types.Add( typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) );
             }
-            var all = TestHelper.CreateAutomaticServices( c );
-            try
-            {
-                var pocoSupportResult = all.CollectorResult.CKTypeResult.PocoSupport;
-                Debug.Assert( pocoSupportResult != null );
-                pocoSupportResult.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoSupportResult() );
-                var services = all.Services;
+            var engineResult = configuration.Run();
 
-                var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();
-                dCloPoc.Should().NotBeNull( "Factories work." );
+            var pocoDirectory = engineResult.FirstBinPath.PocoTypeSystemBuilder.PocoDirectory;
+            Throw.DebugAssert( pocoDirectory != null );
 
-                var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();
-                factoryCloPoc.Should().NotBeNull();
+            using var auto = engineResult.CreateAutomaticServices();
+            var services = auto.Services;
 
-                services.GetService<IPocoFactory<ICloPoc>>().Should().BeNull( "ICloPoc is a CKTypeDefiner." );
-                services.GetService<IPocoFactory<ICloPocPart>>().Should().BeNull( "ICloPocPart is a CKTypeSuperDefiner." );
-                services.GetService<IPocoFactory<IAuthenticatedCloPocPart>>().Should().BeNull( "Since ICloPocPart is a CKTypeSuperDefiner, a command part is NOT Poco." );
+            var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();
+            dCloPoc.Should().NotBeNull( "Factories work." );
 
-                pocoSupportResult.AllInterfaces.Should().HaveCount( 3 );
-                pocoSupportResult.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo(
-                    new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
+            var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();
+            factoryCloPoc.Should().NotBeNull();
 
-                pocoSupportResult.OtherInterfaces.Keys.Should().BeEquivalentTo(
-                    new[] { typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
+            services.GetService<IPocoFactory<ICloPoc>>().Should().BeNull( "ICloPoc is a CKTypeDefiner." );
+            services.GetService<IPocoFactory<ICloPocPart>>().Should().BeNull( "ICloPocPart is a CKTypeSuperDefiner." );
+            services.GetService<IPocoFactory<IAuthenticatedCloPocPart>>().Should().BeNull( "Since ICloPocPart is a CKTypeSuperDefiner, a command part is NOT Poco." );
 
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
-                    .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface ).Should().BeEquivalentTo(
-                    new[] { typeof( IDocumentCloPoc ), typeof( IUserCloPoc ) } );
+            pocoDirectory.AllInterfaces.Should().HaveCount( 3 );
+            pocoDirectory.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo(
+                new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
 
-                pocoSupportResult.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
-                    pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have parts." );
-                pocoSupportResult.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].Should().BeEquivalentTo(
-                    pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
-                pocoSupportResult.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo(
-                    new[] { typeof( ICultureUserCloPoc ) } );
+            pocoDirectory.OtherInterfaces.Keys.Should().BeEquivalentTo(
+                new[] { typeof( IClosedPoco ), typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
 
-                var factoryCultCloPoc = services.GetService<IPocoFactory<ICultureUserCloPoc>>();
-                factoryCultCloPoc.Should().BeSameAs( factoryCloPoc );
-            }
-            finally
-            {
-                all.Services.Dispose();
-            }
+            pocoDirectory.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
+                .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );
+            pocoDirectory.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface.PocoInterface ).Should().BeEquivalentTo(
+                new[] { typeof( IDocumentCloPoc ), typeof( IUserCloPoc ) } );
+
+            pocoDirectory.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
+                pocoDirectory.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have parts." );
+            pocoDirectory.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].Should().BeEquivalentTo(
+                pocoDirectory.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
+            pocoDirectory.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo(
+                new[] { typeof( ICultureUserCloPoc ) } );
+
+            var factoryCultCloPoc = services.GetService<IPocoFactory<ICultureUserCloPoc>>();
+            factoryCultCloPoc.Should().BeSameAs( factoryCloPoc );
         }
 
         public interface IOther1UserCloPoc : IUserCloPoc
@@ -132,43 +128,41 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void not_closed_poco_commmand_are_detected()
         {
-            var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-            c.RegisterType( typeof( IOther1UserCloPoc ) );
-            c.RegisterType( typeof( IOther2UserCloPoc ) );
-            TestHelper.GetFailedResult( c );
+            var c = new[] { typeof( IOther1UserCloPoc ), typeof( IOther2UserCloPoc ) };
+            TestHelper.GetFailedCollectorResult( c, "must be closed but none of these interfaces covers the other ones" );
         }
 
         [TestCase( "IUserFinalCloPoc only" )]
         [TestCase( "All commands" )]
         public void a_closed_poco_commmand_works_fine( string mode )
         {
-            var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-            if( mode == "All commands")
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            if( mode == "All commands" )
             {
-                c.RegisterTypes( BaseUserAndDocumentCloPocs );
-                c.RegisterType( typeof( IOther1UserCloPoc ) );
-                c.RegisterType( typeof( IOther2UserCloPoc ) );
-                c.RegisterType( typeof( IUserFinalCloPoc ) );
+                configuration.FirstBinPath.Types.Add( BaseUserAndDocumentCloPocs );
+                configuration.FirstBinPath.Types.Add( typeof( IOther1UserCloPoc ), typeof( IOther2UserCloPoc ), typeof( IUserFinalCloPoc ) );
             }
             else
             {
-                c.RegisterType( typeof( IUserFinalCloPoc ) );
+                configuration.FirstBinPath.Types.Add( typeof( IUserFinalCloPoc ) );
             }
 
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();
+            using var auto = configuration.Run().CreateAutomaticServices();
+            var factoryCloPoc = auto.Services.GetService<IPocoFactory<IUserCloPoc>>();
             factoryCloPoc.Should().NotBeNull();
-            services.GetService<IPocoFactory<IOther1UserCloPoc>>().Should().BeSameAs( factoryCloPoc );
-            services.GetService<IPocoFactory<IOther2UserCloPoc>>().Should().BeSameAs( factoryCloPoc );
-            services.GetService<IPocoFactory<IUserFinalCloPoc>>().Should().BeSameAs( factoryCloPoc );
+            auto.Services.GetService<IPocoFactory<IOther1UserCloPoc>>().Should().BeSameAs( factoryCloPoc );
+            auto.Services.GetService<IPocoFactory<IOther2UserCloPoc>>().Should().BeSameAs( factoryCloPoc );
+            auto.Services.GetService<IPocoFactory<IUserFinalCloPoc>>().Should().BeSameAs( factoryCloPoc );
         }
 
         [Test]
         public void IPocoFactory_exposes_the_IsClosedPoco_and_ClosureInterface_properties()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IUserFinalCloPoc ) );
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            var fUser = services.GetRequiredService<IPocoFactory<IUserCloPoc>>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( IUserFinalCloPoc ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var fUser = auto.Services.GetRequiredService<IPocoFactory<IUserCloPoc>>();
             fUser.IsClosedPoco.Should().BeTrue();
             fUser.ClosureInterface.Should().Be( typeof( IUserFinalCloPoc ) );
         }
@@ -192,24 +186,30 @@ namespace CK.StObj.Engine.Tests.Poco
         public void the_ClosureInterface_is_available_if_a_closure_interface_exists_even_if_the_Poco_is_not_a_IClosedPoco()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( INotClosedByDesign ) );
-                using var services = TestHelper.CreateAutomaticServices( c ).Services;
-                var f = services.GetRequiredService<IPocoFactory<INotClosedByDesign>>();
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Types.Add( typeof( INotClosedByDesign ) );
+                using var auto = configuration.Run().CreateAutomaticServices();
+
+                var f = auto.Services.GetRequiredService<IPocoFactory<INotClosedByDesign>>();
                 f.IsClosedPoco.Should().BeFalse();
                 f.ClosureInterface.Should().Be( typeof( INotClosedByDesign ) );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IExtendNotClosedByDesign ) );
-                using var services = TestHelper.CreateAutomaticServices( c ).Services;
-                var f = services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Types.Add( typeof( IExtendNotClosedByDesign ) );
+                using var auto = configuration.Run().CreateAutomaticServices();
+
+                var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
                 f.IsClosedPoco.Should().BeFalse();
                 f.ClosureInterface.Should().Be( typeof( IExtendNotClosedByDesign ) );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
-                using var services = TestHelper.CreateAutomaticServices( c ).Services;
-                var f = services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
-                f.Name.Should().Be( "CK.StObj.Engine.Tests.Poco.ClosedPocoTests+INotClosedByDesign" );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Types.Add( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
+                using var auto = configuration.Run().CreateAutomaticServices();
+
+                var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
+                f.Name.Should().Be( "CK.StObj.Engine.Tests.Poco.ClosedPocoTests.INotClosedByDesign" );
                 f.Interfaces.Should().HaveCount( 3 );
                 f.IsClosedPoco.Should().BeFalse();
                 f.ClosureInterface.Should().BeNull();

@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -9,15 +10,15 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
-    namespace DucTypedAndInternal
+    namespace DuckTypedAndInternal
     {
         class ExcludeCKTypeAttribute : System.Attribute { }
     }
 
-    [DucTypedAndInternal.ExcludeCKType]
+    [DuckTypedAndInternal.ExcludeCKType]
     public interface IAmNotAPocoButIAmPocoCompliant
     {
-        List<(int Power, string Name)> Values { get; }
+        IList<(int Power, string Name)> Values { get; }
 
         [DefaultValue(3712)]
         int Power { get; set; }
@@ -31,19 +32,18 @@ namespace CK.StObj.Engine.Tests.Poco
     public class PocoFromBaseTests
     {
         [Test]
-        public void IPoco_can_be_defined_above_but_with_ExcludeCKType_attribute()
+        public void IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoFromBase ) );
-            var result = TestHelper.CreateAutomaticServices( c );
-            using var s = result.Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add(typeof( IPocoFromBase ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.IPocoFromBase" );
             Debug.Assert( fA != null );
             var a = d.Create<IPocoFromBase>();
             a.Values.Should().NotBeNull().And.BeEmpty();
             a.Power.Should().Be( 3712 );
         }
-
-
     }
 }

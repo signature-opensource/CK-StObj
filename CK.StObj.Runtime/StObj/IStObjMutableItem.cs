@@ -52,7 +52,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets a mutable reference to the container of the object.
-        /// Initialized by <see cref="StObjAttribute.Container"/> or any other <see cref="IStObjStructuralConfigurator"/>.
+        /// Initialized by <see cref="RealObjectAttribute.Container"/> or any other <see cref="IStObjStructuralConfigurator"/>.
         /// When the configured container's type is null and this StObj has a Generalization, the container of its Generalization will be used.
         /// </summary>
         IStObjMutableReference Container { get; }
@@ -65,25 +65,25 @@ namespace CK.Setup
 
         /// <summary>
         /// Contained items of the object.
-        /// Initialized by <see cref="StObjAttribute.Children"/>.
+        /// Initialized by <see cref="RealObjectAttribute.Children"/>.
         /// </summary>
         IStObjMutableReferenceList Children { get; }
 
         /// <summary>
         /// Direct dependencies of the object.
-        /// Initialized by <see cref="StObjAttribute.Requires"/>.
+        /// Initialized by <see cref="RealObjectAttribute.Requires"/>.
         /// </summary>
         IStObjMutableReferenceList Requires { get; }
 
         /// <summary>
         /// Reverse dependencies: types that depend on the object.
-        /// Initialized by <see cref="StObjAttribute.RequiredBy"/>.
+        /// Initialized by <see cref="RealObjectAttribute.RequiredBy"/>.
         /// </summary>
         IStObjMutableReferenceList RequiredBy { get; }
 
         /// <summary>
         /// Groups for this object.
-        /// Initialized by <see cref="StObjAttribute.Groups"/>.
+        /// Initialized by <see cref="RealObjectAttribute.Groups"/>.
         /// </summary>
         IStObjMutableReferenceList Groups { get; }
 

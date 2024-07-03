@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using static CK.Testing.StObjEngineTestHelper;
 using FluentAssertions;
+using CK.Testing;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -27,7 +28,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
             {
-                foreach( var poco in c.Assembly.GetPocoSupportResult().Roots )
+                foreach( var poco in c.Assembly.GetPocoDirectory().Families )
                 {
                     foreach( var p in poco.ExternallyImplementedPropertyList )
                     {
@@ -50,9 +51,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void some_poco_properties_can_be_handled_by_independent_CodeGenerator()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var f = s.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var f = auto.Services.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();
             var o = f.Create();
             o.GlobalSequence.Should().Be( 45343 );
         }

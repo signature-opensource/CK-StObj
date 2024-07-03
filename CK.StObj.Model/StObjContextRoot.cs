@@ -22,11 +22,6 @@ namespace CK.Core
         public static readonly string RootContextTypeName = "GeneratedRootContext";
 
         /// <summary>
-        /// Default assembly name.
-        /// </summary>
-        public const string GeneratedAssemblyName = "CK.StObj.AutoAssembly";
-
-        /// <summary>
         /// Suffix of the companion signature file when present, contains the RunSignature of the StObjMap.
         /// </summary>
         public const string SuffixSignature = ".signature.txt";

@@ -17,19 +17,20 @@ namespace CK.Setup
     {
 
         internal bool GenerateSourceCode( IActivityMonitor monitor,
-                                          StObjEngineRunContext.GenBinPath g,
+                                          EngineRunContext.GenBinPath g,
                                           string? informationalVersion,
                                           IEnumerable<ICSCodeGenerator> aspectsGenerators )
         {
-            List<MultiPassCodeGeneration> secondPasses = new List<MultiPassCodeGeneration>();
-            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, secondPasses, aspectsGenerators ) )
+            var secondPasses = new List<MultiPassCodeGeneration>();
+            var allGenerators = new List<ICSCodeGeneratorWithFinalization>();
+            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, aspectsGenerators, secondPasses, allGenerators ) )
             {
                 return false;
             }
-            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses );
+            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses, allGenerators );
             if( success )
             {
-                Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
+                Throw.DebugAssert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
                 g.ConfigurationGroup.RunSignature = runSignature;
             }
             return success;
@@ -38,8 +39,9 @@ namespace CK.Setup
         bool GenerateSourceCodeFirstPass( IActivityMonitor monitor,
                                           ICSCodeGenerationContext codeGenContext,
                                           string? informationalVersion,
-                                          List<MultiPassCodeGeneration> collector,
-                                          IEnumerable<ICSCodeGenerator> aspectsGenerators )
+                                          IEnumerable<ICSCodeGenerator> aspectsGenerators,
+                                          List<MultiPassCodeGeneration> secondPassCollector,
+                                          List<ICSCodeGeneratorWithFinalization> finalGen )
         {
             Debug.Assert( EngineMap != null );
             Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
@@ -47,11 +49,11 @@ namespace CK.Setup
             {
                 Debug.Assert( _valueCollector != null );
                 using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.ConfigurationGroup.Names}." ) )
-                using( monitor.CollectEntries( out var errorSummary ) )
+                using( monitor.CollectEntries( out var entries ) )
                 {
                     using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                     {
-                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
+                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs.Cast<MutableItem>() )
                         {
                             item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
                         }
@@ -79,9 +81,9 @@ namespace CK.Setup
                     ws.EnsureAssemblyReference( typeof( Microsoft.Extensions.DependencyInjection.ServiceProvider ) );
 
                     // Model assemblies.
-                    if( CKTypeResult.Assemblies.Count > 0 )
+                    if( _typeResult.Assemblies.Count > 0 )
                     {
-                        ws.EnsureAssemblyReference( CKTypeResult.Assemblies );
+                        ws.EnsureAssemblyReference( _typeResult.Assemblies.Keys );
                     }
                     else
                     {
@@ -93,6 +95,7 @@ namespace CK.Setup
                           .EnsureUsing( "CK.Core" )
                           .EnsureUsing( "System" )
                           .EnsureUsing( "System.Collections.Generic" )
+                          .EnsureUsing( "System.Collections.Immutable" )
                           .EnsureUsing( "System.Linq" )
                           .EnsureUsing( "System.Threading.Tasks" )
                           .EnsureUsing( "System.Text" )
@@ -116,28 +119,49 @@ namespace CK.Setup
                     // Generates the StObjContextRoot implementation.
                     CreateGeneratedRootContext( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
-                    // Calls all ICSCodeGenerator items.
-                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
-                                               .Concat( aspectsGenerators ) )
+                    using( monitor.OpenTrace( "Calls all ICSCodeGenerator items." ) )
                     {
-                        var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
-                        if( second != null ) collector.Add( second );
+                        int count = 0;
+                        int count2ndPass = 0;
+                        foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
+                                                   .Concat( aspectsGenerators ) )
+                        {
+                            if( g is ICSCodeGeneratorWithFinalization f ) finalGen.Add( f );
+                            using( monitor.OpenTrace( $"ICSCodeGenerator n°{++count} - {g.GetType():C}." ) )
+                            {
+                                var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                                if( second != null )
+                                {
+                                    ++count2ndPass;
+                                    secondPassCollector.Add( second );
+                                }
+                            }
+                        }
+                        monitor.CloseGroup( $"{count} generator, {count2ndPass} second passes required." );
                     }
 
                     // Asks every ImplementableTypeInfo to generate their code. 
                     // This step MUST always be done, even if CompileOption is None and GenerateSourceFiles is false
                     // since during this step, side effects MAY occur (this is typically the case of the first run where
                     // the "reality cache" is created).
-                    foreach( var t in CKTypeResult.TypesToImplement )
+                    using( monitor.OpenTrace( "Calls all Type implementor items." ) )
                     {
-                        t.RunFirstPass( monitor, codeGenContext, collector );
-                    }
-
-                    if( errorSummary.Count > 0 )
-                    {
-                        using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                        int count = 0;
+                        int count2ndPass = secondPassCollector.Count;
+                        foreach( var t in _typeResult.TypesToImplement )
                         {
-                            foreach( var e in errorSummary )
+                            using( monitor.OpenTrace( $"Type implementor n°{count} - {t.GetType():C}." ) )
+                            {
+                                t.RunFirstPass( monitor, codeGenContext, secondPassCollector );
+                            }
+                        }
+                        monitor.CloseGroup( $"{count} Type implementors, {secondPassCollector.Count - count2ndPass} second passes required." );
+                    }
+                    if( entries.Count != 0 )
+                    {
+                        using( monitor.OpenFatal( $"{entries.Count} error(s). Summary:" ) )
+                        {
+                            foreach( var e in entries )
                             {
                                 monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
                             }
@@ -145,7 +169,6 @@ namespace CK.Setup
                         return false;
                     }
                 }
-
                 return true;
             }
             catch( Exception ex )
@@ -157,24 +180,43 @@ namespace CK.Setup
 
         (bool Success, SHA1Value RunSignature) GenerateSourceCodeSecondPass( IActivityMonitor monitor,
                                                                              ICSCodeGenerationContext codeGenContext,
-                                                                             List<MultiPassCodeGeneration> secondPass )
+                                                                             List<MultiPassCodeGeneration> secondPass,
+                                                                             List<ICSCodeGeneratorWithFinalization> finalGen )
         {
-            Debug.Assert( EngineMap != null );
-            Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
+            Throw.DebugAssert( EngineMap != null );
+            Throw.DebugAssert( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
             var configurationGroup = codeGenContext.CurrentRun.ConfigurationGroup;
             var runSignature = configurationGroup.RunSignature;
 
             try
             {
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {configurationGroup.Names}." ) )
-                using( monitor.CollectEntries( out var errorSummary ) )
+                using( monitor.CollectEntries( out var entries ) )
                 {
-                    MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
-                    if( errorSummary.Count > 0 )
+                    if( MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass ) )
                     {
-                        using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                        foreach( var g in finalGen )
                         {
-                            foreach( var e in errorSummary )
+                            if( !g.FinalImplement( monitor, codeGenContext ) )
+                            {
+                                // Ensure that an error is logged.
+                                monitor.Error( $"Generator '{g.GetType():C}': FinalImplement method failed." );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Ensure that an error is logged.
+                        if( entries.Count == 0 )
+                        {
+                            monitor.Error( ActivityMonitor.Tags.ToBeInvestigated, "Second pass code generation failed but no errors have been logged." );
+                        }
+                    }
+                    if( entries.Count != 0 )
+                    {
+                        using( monitor.OpenFatal( $"{entries.Count} error(s). Summary:" ) )
+                        {
+                            foreach( var e in entries )
                             {
                                 monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
                             }
@@ -328,13 +370,12 @@ namespace CK.Setup
         const string _gMultiple = """
             sealed class GMultiple : IStObjMultipleInterface
             {
-                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im, Type[] m )
+                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im )
                 {
                     IsScoped = s;
                     ItemType = i;
                     EnumerableType = e;
                     Implementations = im;
-                    MarshallableTypes = m;
                 }
 
                 public bool IsScoped { get; }
@@ -344,8 +385,6 @@ namespace CK.Setup
                 public Type EnumerableType { get; }
 
                 public IReadOnlyCollection<IStObjFinalClass> Implementations { get; }
-
-                public IReadOnlyCollection<Type> MarshallableTypes { get; }
             }
             """;
 
@@ -389,13 +428,13 @@ public static IReadOnlyList<IStObjFinalImplementation> FinalRealObjects => _fina
 public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
 " );
             var rootStaticCtor = rootType.CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
-            SetupObjectsGraph( rootStaticCtor, orderedStObjs, CKTypeResult.RealObjects.EngineMap );
+            SetupObjectsGraph( rootStaticCtor, orderedStObjs, _typeResult.RealObjects.EngineMap );
 
             // Construct and Initialize methods takes a monitor and the context instance: we need the instance constructor.
             // We ensure that this StObjMap can be initialized once and only once (static bool _intializeOnce).
             // This doesn't mean that this StObjMap can be registered in a ServiceCollection only once: services registration
             // (including endpoints) are on the "run" side (the EndpointType<TScopedData> is a pure service that manages the 
-            // services as opposed to the real object EndpointDefinition).
+            // services as opposed to the real object DIContainerDefinition).
             GenerateInstanceConstructor( rootType, orderedStObjs );
 
             // Ignores null (error) return here: we always generate the code.
@@ -489,7 +528,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         {
             using var region = rootCtor.Region();
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 if( m.PreConstructProperties != null )
                 {
@@ -562,7 +601,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         static void InitializePostBuildProperties( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             using var region = rootCtor.Region();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 if( m.PostBuildProperties != null )
                 {
@@ -583,7 +622,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         static void CallInitializeMethods( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             using var region = rootCtor.Region();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {

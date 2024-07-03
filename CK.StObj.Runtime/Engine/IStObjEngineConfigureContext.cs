@@ -18,8 +18,8 @@ namespace CK.Setup
         /// Gets or sets whether the run can be sipped.
         /// This can only transition from true to false (setting it to true if it's false has no effect).
         /// <para>
-        /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
-        /// <see cref="RunningBinPathGroup.GeneratedAssembly"/> and <see cref="RunningBinPathGroup.GeneratedSource"/>
+        /// It's initial value is determined by <see cref="EngineConfiguration.ForceRun"/> and by each
+        /// <see cref="IRunningBinPathGroup.GeneratedAssembly"/> and <see cref="IRunningBinPathGroup.GeneratedSource"/>
         /// availability.
         /// </para>
         /// </summary>
@@ -28,7 +28,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the engine configuration.
         /// </summary>
-        IRunningStObjEngineConfiguration StObjEngineConfiguration { get; }
+        IRunningEngineConfiguration EngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered
@@ -39,8 +39,8 @@ namespace CK.Setup
         /// objects.
         /// </para>
         /// <para>
-        /// At the end of the process, this container is used as the base service provider of code generation (see
-        /// <see cref="ICodeGenerationContext.GlobalServiceContainer"/>).
+        /// At the end of the configuration process, this container is used as the base service provider of code generation (see
+        /// <see cref="IGeneratedBinPath.ServiceContainer"/>).
         /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }
@@ -61,15 +61,14 @@ namespace CK.Setup
 
         /// <summary>
         /// Registers a type that must be a class or a IPoco interface.
-        /// Aspects can use this instead of adding the assembly qualified name of the type in <see cref="BinPathConfiguration.Types"/>.
         /// </summary>
         /// <param name="type">Type to register.</param>
         void AddExplicitRegisteredType( Type type );
 
         /// <summary>
         /// Gets the list of already created and configured aspects.
-        /// Recall that the order of the configurations in <see cref="StObjEngineConfiguration.Aspects"/> drives the order of Aspects creation).
-        /// When <see cref="IStObjEngineAspect.Configure"/> is called, only configured aspects are registered here and available.
+        /// Recall that the order of the configurations in <see cref="EngineConfiguration.Aspects"/> drives the order of Aspects creation).
+        /// When <see cref="IStObjEngineAspect.Configure"/> is called, only configured previous aspects are available.
         /// </summary>
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 

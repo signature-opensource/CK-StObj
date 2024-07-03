@@ -17,6 +17,7 @@ namespace CK.Setup
     public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
         HashSet<AutoServiceClassInfo>? _ctorParmetersClosure;
+        AutoServiceKind? _serviceKind;
         // Memorizes the EnsureCtorBinding call state.
         bool? _ctorBinding;
 
@@ -159,9 +160,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final service kind.
         /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
-        /// <see cref="AutoServiceKind.IsProcessService"/> are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
         /// </summary>
-        public AutoServiceKind? FinalTypeKind { get; private set; }
+        public AutoServiceKind? FinalTypeKind  => _serviceKind;
 
         /// <summary>
         /// Gets the multiple interfaces that are marked with <see cref="CKTypeKind.IsMultipleService"/>
@@ -219,15 +219,6 @@ namespace CK.Setup
         public IReadOnlyList<AutoServiceInterfaceInfo>? Interfaces { get; private set; }
 
         /// <summary>
-        /// Gets the container type to which this service is associated.
-        /// This can be null (service is considered to reside in the final package) or
-        /// if an error occurred.
-        /// For Service Chaining Resolution to be available (either to depend on or be used by others),
-        /// services must be associated to one container.
-        /// </summary>
-        public Type? ContainerType { get; }
-
-        /// <summary>
         /// Gets the StObj container.
         /// </summary>
         public IStObjResult? Container => ContainerItem;
@@ -239,17 +230,6 @@ namespace CK.Setup
         /// This is not null (even for service implemented by Real object) as soon as the EnsureCtorBinding internal method has been called.
         /// </summary>
         public IReadOnlyList<CtorParameter>? ConstructorParameters { get; private set; }
-
-        /// <summary>
-        /// Gets the types that must be marshalled for this Auto service to be marshallable.
-        /// This is null until the EnsureCtorBinding internal method has been called.
-        /// This is empty (if this service is not marshallable), it contains this <see cref="ClassType"/>
-        /// (if it is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available), or is a set of one or more types
-        /// that must have a marshaller.
-        /// </summary>
-        public IReadOnlyCollection<Type>? MarshallableTypes { get; private set; }
-
-        IReadOnlyCollection<Type> IStObjServiceClassDescriptor.MarshallableTypes => MarshallableTypes!;
 
         /// <summary>
         /// Gets the <see cref="ImplementableTypeInfo"/> if this <see cref="CKTypeInfo.Type"/>
@@ -324,11 +304,14 @@ namespace CK.Setup
                 // An unused Auto Service interface (i.e. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
-                Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces,
-                                                                  IsRealObject
+
+                Interfaces = collector.RegisterServiceInterfaces( monitor,
+                                                                    TypeInfo.Interfaces,
+                                                                    IsRealObject
                                                                     ? null
-                                                                    : TypeInfo.AddMultipleMapping )
-                                      .ToArray();
+                                                                    : !TypeInfo.IsSpecialized
+                                                                        ? TypeInfo.AddMultipleMapping
+                                                                        : null ).ToArray();
             }
             return isConcretePath;
         }
@@ -378,14 +361,6 @@ namespace CK.Setup
 #if DEBUG
                     atLeastOneAssignment = true;
 #endif
-                    if( child.ContainerType != null )
-                    {
-                        if( (child.ContainerItem = engineMap.ToHighestImpl( child.ContainerType )) == null )
-                        {
-                            monitor.Error( $"Unable to resolve container '{child.ContainerType.FullName}' for service '{child.ClassType.FullName}' to a StObj." );
-                            success = false;
-                        }
-                    }
                 }
             }
             while( (child = child.Generalization) != Generalization );
@@ -415,19 +390,13 @@ namespace CK.Setup
         internal AutoServiceKind ComputeFinalTypeKind( IActivityMonitor m, IAutoServiceKindComputeFacade kindComputeFacade, Stack<AutoServiceClassInfo> path, ref bool success )
         {
             Debug.Assert( !TypeInfo.IsSpecialized, "This is called only on leaf, most specialized, class." );
-            if( !FinalTypeKind.HasValue )
+            if( !_serviceKind.HasValue )
             {
                 var initial = kindComputeFacade.KindDetector.GetValidKind( m, ClassType ).ToAutoServiceKind();
                 var final = initial;
-                using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
+                Debug.Assert( ConstructorParameters != null );
+                using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    HashSet<Type>? allMarshallableTypes = null;
-                    // If this service is not marshallable then all its parameters that are Process services must be marshallable
-                    // so that this service can be "normally" created as long as its required dependencies have been marshalled.
-                    // Lets's be optimistic: all parameters that are Process services (if any) will be marshallable, so this one
-                    // can be used "on the other side" as if it was itself marshallable.
-                    bool isAutomaticallyMarshallable = true;
-
                     if( path.Contains( this ) )
                     {
                         m.Error( $"Service class dependency cycle detected: '{path.Select( c => c.ClassType.Name ).Concatenate( "' -> '" )}'." );
@@ -450,7 +419,7 @@ namespace CK.Setup
                             }
                             else if( p.IsAutoService )
                             {
-                                Debug.Assert( !p.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
+                                Throw.DebugAssert( "A [IsMultiple] interface cancels its IAutoService trait (if any).", !p.IsEnumerable );
                                 pC = p.FinalServiceClass;
                                 Debug.Assert( pC != null );
                                 kP = pC.ComputeFinalTypeKind( m, kindComputeFacade, path, ref success );
@@ -497,39 +466,6 @@ namespace CK.Setup
                                         final |= AutoServiceKind.IsScoped;
                                     }
                                 }
-                                // Handling ProcessService propagation (EndpointService doesn't propagate).
-                                // If the parameter is not a endpoint or a process service, we can safely ignore it: we don't care of a IsMarshallable only type.
-                                if( (kP & AutoServiceKind.IsProcessService) == 0 ) continue;
-
-                                var newFinal = final | (kP & AutoServiceKind.IsProcessService);
-                                if( newFinal != final )
-                                {
-                                    // Upgrades to ProcessService...
-                                    m.Trace( $"Type '{ClassType}' must be {newFinal & AutoServiceKind.IsProcessService}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
-                                    final = newFinal;
-                                }
-                                // If this Service is marshallable at its level OR it is already known to be NOT automatically marshallable,
-                                // we don't have to worry anymore about the parameters marshalling.
-                                if( (final & AutoServiceKind.IsMarshallable) != 0 || !isAutomaticallyMarshallable ) continue;
-
-                                if( (kP & AutoServiceKind.IsMarshallable) == 0 )
-                                {
-                                    m.Warn( $"Type '{ClassType}' is not marked as [IsMarshallable] and the constructor's parameter '{p.Name}' of type '{paramTypeName}' that is a Front service is not marshallable: it cannot be considered as marshallable." );
-                                    isAutomaticallyMarshallable = false;
-                                }
-                                else
-                                {
-                                    allMarshallableTypes ??= new HashSet<Type>();
-                                    if( pC != null )
-                                    {
-                                        Debug.Assert( pC.MarshallableTypes != null, "EnsureCtorBinding has been called." );
-                                        allMarshallableTypes.AddRange( pC.MarshallableTypes );
-                                    }
-                                    else
-                                    {
-                                        allMarshallableTypes.Add( p.ParameterInfo.ParameterType );
-                                    }
-                                }
                             }
                         }
                         path.Pop();
@@ -542,34 +478,13 @@ namespace CK.Setup
                                 m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
                                 final |= AutoServiceKind.IsSingleton;
                             }
-                            // Conclude about Front aspect.
-                            if( (final & AutoServiceKind.IsMarshallable) != 0 )
-                            {
-                                MarshallableTypes = new[] { ClassType };
-                            }
-                            else
-                            {
-                                if( isAutomaticallyMarshallable && allMarshallableTypes != null )
-                                {
-                                    Debug.Assert( allMarshallableTypes.Count > 0 );
-                                    MarshallableTypes = allMarshallableTypes;
-                                    final |= AutoServiceKind.IsMarshallable;
-                                }
-                                else
-                                {
-                                    // This service is not a Process service OR it is not automatically marshallable.
-                                    // We have nothing special to do: the set of Marshallable types is empty (this is not an error)
-                                    // and this FinalTypeKind will be 'None' or a EndPoint/Process service but without the IsMarshallable bit.
-                                    MarshallableTypes = Type.EmptyTypes;
-                                }
-                            }
                         }
                     }
                     if( final != initial ) m.CloseGroup( $"Final: {final}" );
-                    FinalTypeKind = final;
+                    _serviceKind = final;
                 }
             }
-            return FinalTypeKind.Value;
+            return _serviceKind.Value;
         }
 
         /// <summary>
@@ -638,7 +553,7 @@ namespace CK.Setup
             return _ctorParmetersClosure;
         }
 
-        IEnumerable<AutoServiceClassInfo> GetReplacedTargetsFromReplaceServiceAttribute( IActivityMonitor m, CKTypeCollector collector )
+        IEnumerable<AutoServiceClassInfo> GetReplacedTargetsFromReplaceServiceAttribute( IActivityMonitor monitor, CKTypeCollector collector )
         {
             foreach( var p in ClassType.GetCustomAttributesData()
                                   .Where( a => a.AttributeType.Name == nameof( ReplaceAutoServiceAttribute ) )
@@ -650,7 +565,7 @@ namespace CK.Setup
                     replaced = SimpleTypeFinder.WeakResolver( s, false );
                     if( replaced == null )
                     {
-                        m.Warn( $"[ReplaceAutoService] on type '{ClassType}': the assembly qualified name '{s}' cannot be resolved. It is ignored." );
+                        monitor.Warn( $"[ReplaceAutoService] on type '{ClassType}': the assembly qualified name '{s}' cannot be resolved. It is ignored." );
                         continue;
                     }
                 }
@@ -659,14 +574,14 @@ namespace CK.Setup
                     replaced = p.Value as Type;
                     if( replaced == null )
                     {
-                        m.Warn( $"[ReplaceAutoService] on type '{ClassType}': the parameter '{p.Value}' is not a Type. It is ignored." );
+                        monitor.Warn( $"[ReplaceAutoService] on type '{ClassType}': the parameter '{p.Value}' is not a Type. It is ignored." );
                         continue;
                     }
                 }
-                var target = collector.FindServiceClassInfo( replaced );
+                var target = collector.FindServiceClassInfo( monitor, replaced );
                 if( target == null )
                 {
-                    m.Warn( $"[ReplaceAutoService({replaced.Name})] on type '{ClassType}': the Type to replace is not an Auto Service class implementation. It is ignored." );
+                    monitor.Warn( $"[ReplaceAutoService({replaced.Name})] on type '{ClassType}': the Type to replace is not an Auto Service class implementation. It is ignored." );
                 }
                 else
                 {
@@ -693,15 +608,15 @@ namespace CK.Setup
             var ctors = ClassType.GetConstructors();
             if( ctors.Length > 1 )
             {
-                if( !collector.KindDetector.UbiquitousInfoServices.Contains( ClassType ) )
+                if( !collector.KindDetector.AmbientServices.Contains( ClassType ) )
                 {
                     m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relay to protected constructors for explicit initialization." );
                     success = false;
                 }
                 else
                 {
-                    // Ubiquitous services are not automatically resolved but explicitly resolved with a factory function (or found in the EndpointUbiquitousInfo
-                    // or set to their default value provided by their IEndpointUbiquitousServiceDefault singleton companion).
+                    // Ambient services are not automatically resolved but explicitly resolved with a factory function (or found in the AmbientServiceHub
+                    // or set to their default value provided by their IAmbientServiceDefaultProvider singleton companion).
                     // They can perfectly have multiple constructors (they are selected/used by the explicit factory methods).
                     // When a single constructor is found, we process it like a regular auto service.
                     // Here there are multiple constructors: we ignore them since unifying their parameters don't make a lot of sense.
@@ -727,7 +642,7 @@ namespace CK.Setup
                         // The class is not abstract and has no public constructor.
                         // Same as above (multiple constructor case): this is allowed for endpoint services since
                         // they are "manually" build by the endpoint code.
-                        if( !collector.KindDetector.UbiquitousInfoServices.Contains( ClassType ) )
+                        if( !collector.KindDetector.AmbientServices.Contains( ClassType ) )
                         {
                             // We can't do anything with it.
                             success = false;
@@ -785,7 +700,7 @@ namespace CK.Setup
             }
         }
 
-        CtorParameterData CreateCtorParameterData( IActivityMonitor m,
+        CtorParameterData CreateCtorParameterData( IActivityMonitor monitor,
                                                    CKTypeCollector collector,
                                                    ParameterInfo p )
         {
@@ -801,14 +716,14 @@ namespace CK.Setup
                 }
                 else 
                 {
-                    var genKind = collector.KindDetector.GetValidKind( m, tGen );
+                    var genKind = collector.KindDetector.GetValidKind( monitor, tGen );
                     if( genKind != CKTypeKind.None )
                     {
                         return new CtorParameterData( true, null, null, false, genKind, tParam );
                     }
                 }
             }
-            var kind = collector.KindDetector.GetRawKind( m, tParam );
+            var kind = collector.KindDetector.GetNonDefinerKind( monitor, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
             var conflictMsg = (kind & CKTypeKind.HasError) != 0 ? kind.GetCombinationError( tParam.IsClass ) : null;
@@ -841,7 +756,7 @@ namespace CK.Setup
             }
             if( conflictMsg != null )
             {
-                m.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor: {conflictMsg}" );
+                monitor.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor: {conflictMsg}" );
                 return new CtorParameterData( false, null, null, false, kind, tParam );
             }
             // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
@@ -854,10 +769,10 @@ namespace CK.Setup
             Debug.Assert( conflictMsg == null && (kind & CKTypeKind.IsAutoService) != 0 );
             if( tParam.IsClass )
             {
-                var sClass = collector.FindServiceClassInfo( tParam );
+                var sClass = collector.FindServiceClassInfo( monitor, tParam );
                 if( sClass == null )
                 {
-                    m.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor." );
+                    monitor.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 if( !sClass.IsIncluded )
@@ -868,25 +783,25 @@ namespace CK.Setup
                     var prefix = $"Service type '{tParam}' is {reason}. Parameter '{p.Name}' in '{p.Member.DeclaringType.ToCSharpName()}' constructor ";
                     if( !p.HasDefaultValue )
                     {
-                        m.Error( prefix + "can not be resolved." );
+                        monitor.Error( prefix + "can not be resolved." );
                         return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                     }
-                    m.Info( prefix + "will use its default value." );
+                    monitor.Info( prefix + "will use its default value." );
                     sClass = null;
                 }
                 else if( TypeInfo.IsAssignableFrom( sClass.TypeInfo ) )
                 {
-                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be this class or one of its specializations." );
+                    monitor.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be this class or one of its specializations." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 else if( sClass.TypeInfo.IsAssignableFrom( TypeInfo ) )
                 {
-                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be one of its base class." );
+                    monitor.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be one of its base class." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 return new CtorParameterData( true, sClass, null, isEnumerable, kind, tParam );
             }
-            return new CtorParameterData( true, null, collector.FindServiceInterfaceInfo( tParam ), isEnumerable, kind, tParam );
+            return new CtorParameterData( true, null, collector.FindServiceInterfaceInfo( monitor, tParam ), isEnumerable, kind, tParam );
         }
 
         /// <summary>

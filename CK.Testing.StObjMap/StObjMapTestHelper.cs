@@ -99,7 +99,7 @@ namespace CK.Testing
 
         string IStObjMapTestHelperCore.BinPathName => _binPathName;
 
-        string GetDllName() => $"{StObjContextRoot.GeneratedAssemblyName}-{_binPathName}.dll";
+        string GetDllName() => $"{EngineConfiguration.GeneratedAssemblyNamePrefix}.{_binPathName}.dll";
 
         event EventHandler<AutomaticServicesConfigurationEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfigured
         {
@@ -224,7 +224,7 @@ namespace CK.Testing
         {
             using( _monitor.Monitor.OpenInfo( $"Deleting generated assemblies from '{directory}'." ) )
             {
-                var r = new Regex( Regex.Escape( StObjContextRoot.GeneratedAssemblyName ) + '-' + IStObjMapTestHelperCore.BinPathNamePrefix + @"\d*?\.dll", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
+                var r = new Regex( Regex.Escape( EngineConfiguration.GeneratedAssemblyNamePrefix ) + '.' + IStObjMapTestHelperCore.BinPathNamePrefix + @"\d*?\.dll", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
                 int count = 0;
                 if( Directory.Exists( directory ) )
                 {

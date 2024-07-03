@@ -12,6 +12,10 @@ namespace CK.Core
         /// Gets the type of the most specialized implementation (may be abstract):
         /// use <see cref="IStObjFinalClass.FinalType"/> to obtain the type that may have been generated.
         /// </summary>
+        /// <remarks>
+        /// This masked property resolves the ambiguity between <see cref="IStObj.ClassType"/> (the slice) and
+        /// the <see cref="IStObjFinalClass.ClassType"/> (most specialized).
+        /// </remarks>
         new Type ClassType { get; }
 
         /// <summary>

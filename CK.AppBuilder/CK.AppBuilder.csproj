@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Description>CKomposable application builder from a ".App" project to its ".Host".</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="MSBuild\CK.AppBuilder.props">
+      <PackagePath>buildTransitive\CK.AppBuilder.props</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="MSBuild\CK.AppBuilder.targets">
+      <PackagePath>buildTransitive\CK.AppBuilder.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Monitoring" Version="21.0.0" />
+    <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
+  </ItemGroup>
+</Project>

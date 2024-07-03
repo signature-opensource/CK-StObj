@@ -17,7 +17,6 @@ namespace CK.Testing
     public class StObjSetupTestHelper : IStObjSetupTestHelperCore, ITestHelperResolvedCallback
     {
         readonly ICKSetupTestHelper _ckSetup;
-        readonly IStObjMapTestHelper _stObjMap;
         IStObjSetupTestHelper? _mixin;
         EventHandler<StObjSetupRunningEventArgs>? _stObjSetupRunning;
         bool _generateSourceFiles;
@@ -27,7 +26,6 @@ namespace CK.Testing
         internal StObjSetupTestHelper( TestHelperConfiguration config, ICKSetupTestHelper ckSetup, IStObjMapTestHelper stObjMap )
         {
             _ckSetup = ckSetup;
-            _stObjMap = stObjMap;
             stObjMap.StObjMapLoading += OnStObjMapLoading;
 
             _generateSourceFiles = config.DeclareBoolean( "StObjSetup/StObjGenerateSourceFiles",
@@ -52,15 +50,16 @@ namespace CK.Testing
         }
 
         /// <summary>
-        /// Low level helper that initializes a new <see cref="StObjEngineConfiguration"/> and computes the force setup flag
+        /// Low level helper that initializes a new <see cref="EngineConfiguration"/> and computes the force setup flag
         /// that can be used by other helpers that need to run a setup.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
-        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor,
+        static public (EngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor,
                                                                                                                        IStObjSetupTestHelper helper )
         {
-            var stObjConf = new StObjEngineConfiguration
+            var c = new EngineConfiguration
             {
                 RevertOrderingNames = helper.StObjRevertOrderingNames,
                 TraceDependencySorterInput = helper.StObjTraceGraphOrdering,
@@ -82,19 +81,15 @@ namespace CK.Testing
                 monitor.Info( $"No 'CKSetup/DefaultBinPaths' configuration. Using ClosestSUTProjectFolder/PathToBin: {binPath}." );
             }
 
-            var b = new BinPathConfiguration
-            {
-                // The name of the BinPath to use is the current IStObjMapTestHelper.BinPathName.
-                Name = helper.BinPathName,
-                Path = binPath,
-                // Then the OutputPath will copy the generated assembly to this bin folder.
-                OutputPath = helper.BinFolder,
-                CompileOption = CompileOption.Compile,
-                // ...and the G0.cs to the TestProjectFolder.
-                GenerateSourceFiles = helper.StObjGenerateSourceFiles,
-                ProjectPath = helper.TestProjectFolder
-            };
-            stObjConf.BinPaths.Add( b );
+            // The name of the BinPath to use is the current IStObjMapTestHelper.BinPathName.
+            c.FirstBinPath.Name = helper.BinPathName;
+            c.FirstBinPath.Path = binPath;
+            // Then the OutputPath will copy the generated assembly to this bin folder.
+            c.FirstBinPath.OutputPath = helper.BinFolder;
+            c.FirstBinPath.CompileOption = CompileOption.Compile;
+            // ...and the G0.cs to the TestProjectFolder.
+            c.FirstBinPath.GenerateSourceFiles = helper.StObjGenerateSourceFiles;
+            c.FirstBinPath.ProjectPath = helper.TestProjectFolder;
 
             // Consider by default the CKSetup configuration that be not None,
             // but if it is None, set it to Engine: the engine must run even if
@@ -106,10 +101,10 @@ namespace CK.Testing
                 monitor.Trace( $"Setting CKSetup ForceSetupLevel to Engine so it can check the required artifacts." );
                 f = ForceSetupLevel.Engine;
             }
-            return (stObjConf, f);
+            return (c, f);
         }
 
-        CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, ForceSetupLevel forceSetup )
+        CKSetupRunResult DoRunStObjSetup( EngineConfiguration stObjConf, ForceSetupLevel forceSetup )
         {
             Throw.CheckNotNullArgument( stObjConf );
             using( _ckSetup.Monitor.OpenInfo( $"Invoking StObjSetupRunning event." ) )
@@ -118,8 +113,10 @@ namespace CK.Testing
                 {
                     var ev = new StObjSetupRunningEventArgs( stObjConf, forceSetup );
                     _stObjSetupRunning?.Invoke( this, ev );
-                    var ckSetupConf = new SetupConfiguration( new XDocument( ev.StObjEngineConfiguration.ToXml() ), "CK.Setup.StObjEngine, CK.StObj.Engine" );
-                    ckSetupConf.CKSetupName = _ckSetup.TestProjectName;
+                    var ckSetupConf = new SetupConfiguration( new XDocument( ev.EngineConfiguration.ToXml() ), "CK.Setup.StObjEngine, CK.StObj.Engine" )
+                    {
+                        CKSetupName = _ckSetup.TestProjectName
+                    };
                     return _ckSetup.CKSetup.Run( ckSetupConf, forceSetup: ev.ForceSetup );
                 }
                 catch( Exception ex )
@@ -142,7 +139,7 @@ namespace CK.Testing
             remove => _stObjSetupRunning -= value;
         }
 
-        CKSetupRunResult IStObjSetupTestHelperCore.RunStObjSetup( StObjEngineConfiguration configuration, ForceSetupLevel forceSetup ) => DoRunStObjSetup( configuration, forceSetup );
+        CKSetupRunResult IStObjSetupTestHelperCore.RunStObjSetup( EngineConfiguration configuration, ForceSetupLevel forceSetup ) => DoRunStObjSetup( configuration, forceSetup );
 
         void ITestHelperResolvedCallback.OnTestHelperGraphResolved( object resolvedObject )
         {

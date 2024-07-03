@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>CK.Setup.PocoJson</RootNamespace>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Poco.Exchange.Engine\CK.Poco.Exchange.Engine.csproj" />
+    <ProjectReference Include="..\CK.Poco.Exc.Json\CK.Poco.Exc.Json.csproj" />
+  </ItemGroup>
+</Project>

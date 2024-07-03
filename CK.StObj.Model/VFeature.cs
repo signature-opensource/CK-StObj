@@ -4,42 +4,46 @@ using System;
 namespace CK.Core
 {
     /// <summary>
-    /// Very simple model of a "feature": a non empty name associated to a <see cref="SVersion"/>. 
+    /// Very simple model of a "feature": a non empty name associated to a <see cref="SVersion"/>.
+    /// <para>
+    /// This supports a total order (<see cref="Name"/> is case insensitive).
+    /// </para>
     /// </summary>
     public readonly struct VFeature : IEquatable<VFeature>, IComparable<VFeature>
     {
+        readonly string _name;
+        readonly SVersion _version;
+
         /// <summary>
         /// Initializes a new <see cref="VFeature"/>.
         /// </summary>
-        /// <param name="name">The feature name. Can not be null.</param>
+        /// <param name="name">The feature name. Cannot be null or white space.</param>
         /// <param name="version">
         /// The version. Can not be null and must be <see cref="SVersion.IsValid"/>.
         /// If it happens to be a <see cref="CSVersion"/>, <see cref="CSVersion.ToNormalizedForm()"/> is called.
         /// </param>
         public VFeature( string name, SVersion version )
         {
-            if( String.IsNullOrWhiteSpace( name ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( name ) );
-            Name = name;
-            if( version == null || !version.IsValid ) throw new ArgumentException( "Must be a valid SVersion.", nameof( version ) );
-            Version = version.AsCSVersion?.ToNormalizedForm() ?? version;
+            Throw.CheckNotNullOrWhiteSpaceArgument( name );
+            Throw.CheckArgument( version != null && version.IsValid );
+            _name = name;
+            _version = version.AsCSVersion?.ToNormalizedForm() ?? version;
         }
 
+        /// <summary>
+        /// Gets the name (empty if <see cref="IsValid"/> is false).
+        /// </summary>
+        public string Name => _name ?? string.Empty;
 
         /// <summary>
-        /// Gets the name (never null except if <see cref="IsValid"/> is false).
+        /// Gets the version that is necessarily valid (<see cref="SVersion.ZeroVersion"/> if <see cref="IsValid"/> is false).
         /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// Gets the version that is necessarily valid (except if <see cref="IsValid"/> is false).
-        /// It must be in normalized (short) form.
-        /// </summary>
-        public SVersion Version { get; }
+        public SVersion Version => _version ?? SVersion.ZeroVersion;
 
         /// <summary>
         /// Gets whether this instance is valid: both <see cref="Name"/> and <see cref="Version"/> are valid.
         /// </summary>
-        public bool IsValid => Name != null;
+        public bool IsValid => _name != null;
 
         /// <summary>
         /// Compares this instance to another: <see cref="Name"/> and descending <see cref="Version"/> are
@@ -54,7 +58,7 @@ namespace CK.Core
                 return other.IsValid ? -1 : 0;
             }
             if( !other.IsValid ) return 1;
-            int cmp = StringComparer.OrdinalIgnoreCase.Compare( Name, other.Name );
+            int cmp = StringComparer.OrdinalIgnoreCase.Compare( _name, other._name );
             return cmp != 0 ? cmp : other.Version.CompareTo( Version );
         }
 
@@ -76,14 +80,14 @@ namespace CK.Core
         /// Returns a hash based on <see cref="Name"/> and <see cref="Version"/>.
         /// </summary>
         /// <returns>The has code.</returns>
-        public override int GetHashCode() => IsValid ? Version.GetHashCode() ^ Name.GetHashCode( StringComparison.Ordinal ) : 0;
+        public override int GetHashCode() => IsValid ? _version.GetHashCode() ^ _name.GetHashCode( StringComparison.Ordinal ) : 0;
 
         /// <summary>
         /// Overridden to return <see cref="Name"/>/<see cref="Version"/> or the empty string
         /// if <see cref="IsValid"/> is false.
         /// </summary>
         /// <returns>A readable string.</returns>
-        public override string ToString() => IsValid ? $"{Name}/{Version}" : String.Empty;
+        public override string ToString() => IsValid ? $"{_name}/{_version}" : string.Empty;
 
         /// <summary>
         /// Simple parse of the "Name/Version" format that may return an invalid

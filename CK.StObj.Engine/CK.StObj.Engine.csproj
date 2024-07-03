@@ -4,13 +4,19 @@
     <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
-    <Nullable>enable</Nullable>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Poco\Json\**" />
+    <EmbeddedResource Remove="Poco\Json\**" />
+    <None Remove="Poco\Json\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
+    <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="9.0.0" />
-    <PackageReference Include="CK.Core" Version="19.0.0" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="10.0.0" />
+    <PackageReference Include="CK.Core" Version="20.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

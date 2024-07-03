@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -34,17 +35,14 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 // NotALinkBetweenFamilies supports all the services (IS1, IS2 and IOtherServiceBase).
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( NotALinkBetweenFamilies ) );
-                TestHelper.GetSuccessfulResult( collector );
+                var collector = TestHelper.CreateTypeCollector( typeof( NotALinkBetweenFamilies ) );
+                TestHelper.GetSuccessfulCollectorResult( collector );
             }
             {
                 // OnlyForS, that covers NotALinkBetweenFamilies, is the final best for IS1 and IS2.
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( NotALinkBetweenFamilies ) );
-                collector.RegisterType( typeof( OnlyForS ) );
-                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var collector = TestHelper.CreateTypeCollector( typeof( NotALinkBetweenFamilies ), typeof( OnlyForS ) );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                Throw.DebugAssert( map != null );
                 map.Services.Mappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
                 map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
                 map.Services.Mappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );

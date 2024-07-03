@@ -1,13 +1,9 @@
 using CK.Core;
-using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
 
@@ -25,9 +21,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void simple_Poco_found_by_name_previous_name_or_interface_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f0 = d.Find( "Test" );
             var f1 = d.Find( "PreviousTest1" );
             var f2 = d.Find( "PreviousTest2" );
@@ -42,9 +40,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void GeneratedPoco_factory_instance_can_be_found_by_its_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var d = s.GetRequiredService<PocoDirectory>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var d = auto.Services.GetRequiredService<PocoDirectory>();
             var p = d.Create<ICmdTest>();
             d.Find( p.GetType() ).Should().NotBeNull().And.BeSameAs( ((IPocoGeneratedClass)p).Factory );
         }
@@ -59,20 +59,12 @@ namespace CK.StObj.Engine.Tests.Poco
         public void duplicate_names_on_the_Poco_are_errors()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName1 ) );
-                using( TestHelper.Monitor.CollectEntries( out var entries ) )
-                {
-                    TestHelper.GetFailedResult( c );
-                    entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                             && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) );                }
+                var c = TestHelper.CreateTypeCollector( typeof( ICmdBadName1 ) );
+                TestHelper.GetFailedCollectorResult( c, "Duplicate ExternalName in attribute on " );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName2 ) );
-                using( TestHelper.Monitor.CollectEntries( out var entries ) )
-                {
-                    TestHelper.GetFailedResult( c );
-                    entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                             && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) );                }
+                var c = TestHelper.CreateTypeCollector( typeof( ICmdBadName2 ) );
+                TestHelper.GetFailedCollectorResult( c, "Duplicate ExternalName in attribute on " );
             }
         }
 
@@ -87,12 +79,16 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add(typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ));
+
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
-                TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
-                entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
-                                                    && x.Text.StartsWith( $"Type '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) );
+                configuration.RunSuccessfully();
+                entries.Where( x => x.MaskedLevel == LogLevel.Warn )
+                       .Select( x => x.Text )
+                       .Should()
+                       .Contain( $"Type '{typeof( ICmdNoName ).ToCSharpName()}' use its full CSharpName as its name since no [ExternalName] attribute is defined." );
             }
         }
 
@@ -104,13 +100,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void PocoName_attribute_must_be_on_the_primary_interface()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICmdSecondary ) );
-            using( TestHelper.Monitor.CollectEntries( out var entries ) )
-            {
-                TestHelper.GetFailedResult( c );
-                entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                         && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName( true, true, true )}'.", StringComparison.Ordinal ) ) );
-            }
+            var c = new[] { typeof( ICmdSecondary ) };
+            TestHelper.GetFailedCollectorResult( c, $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName(false)}'." );
         }
 
         [ExternalName( "Cmd1" )]
@@ -126,14 +117,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void PocoName_must_be_unique()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( ICmd1 ), typeof( ICmd1Bis ) );
-            using( TestHelper.Monitor.CollectEntries( out var entries ) )
-            {
-                TestHelper.GetFailedResult( c );
-
-                entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                         && x.Text.StartsWith( "The Poco name 'Cmd1' clashes: both '", StringComparison.Ordinal ) ) );
-            }
+            var c = TestHelper.CreateTypeCollector( typeof( ICmd1 ), typeof( ICmd1Bis ) );
+            TestHelper.GetFailedCollectorResult( c, "The Poco name 'Cmd1' clashes: both '" );
         }
     }
 }

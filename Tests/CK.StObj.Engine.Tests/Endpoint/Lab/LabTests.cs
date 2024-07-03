@@ -2,12 +2,14 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
@@ -66,14 +68,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddScoped<Scoped>();
 
 
-            IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
+            IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            // From the global, obtains a EndpointUbiquitousInfo.
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+            // From the global, obtains a AmbientServiceHub:
+            // This uses the AmbientServiceHub( IServiceProvider services ) contructor to build the hub
+            // from the endpoint configured services.
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
 
-            using var scopedE = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
+            using var scopedE = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
+
+            // From a background container, the AmbientServiceHub is resolved from the ScopedDataHolder.
+            var backgroundUbiq = scopedE.ServiceProvider.GetRequiredService<AmbientServiceHub>();
 
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
@@ -104,7 +111,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             //
             using var scopedG2 = g.CreateScope();
-            using var scopedE2 = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
+            using var scopedE2 = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
             var fromG2 = ResolveFrom( scopedG2.ServiceProvider );
@@ -213,12 +220,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddScoped<Scop2>();
             global.AddScoped<IMulti, Scop2>( sp => sp.GetRequiredService<Scop2>() );
 
-            IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
+            IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-            using var scopedE = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
+            using var scopedE = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             // Both containers resolves to the same instance.
             var sing1 = CheckTrueSingleton<Sing1>( g, e, scopedG, scopedE );
@@ -313,12 +320,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 global.AddSingleton<IMulti>( sp => sp.GetRequiredService<Sing1>() );
             }
 
-            IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
+            IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-            using var scopedE = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
+            using var scopedE = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             // The container works as usual.
             IEnumerable<Sing1> eSing1 = scopedE.ServiceProvider.GetServices<Sing1>();
@@ -347,9 +354,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             }
         }
 
-        public class UbiquitousConsumer : IScopedAutoService
+        public class AmbientServiceConsumer : IScopedAutoService
         {
-            public UbiquitousConsumer( IFakeAuthenticationInfo authInfo, IFakeTenantInfo tenantInfo, FakeCultureInfo cultureInfo )
+            public AmbientServiceConsumer( IFakeAuthenticationInfo authInfo, IFakeTenantInfo tenantInfo, FakeCultureInfo cultureInfo )
             {
                 AuthInfo = authInfo;
                 TenantInfo = tenantInfo;
@@ -364,28 +371,28 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         }
 
         [Test]
-        public void ubiquitous_services_test()
+        public void ambient_services_test()
         {
             ServiceCollection global = new ServiceCollection();
             FakeHost.ConfigureGlobal( global );
-            global.AddScoped<UbiquitousConsumer>();
+            global.AddScoped<AmbientServiceConsumer>();
 
-            IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
+            IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            var fromGlobal = scopedG.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            var fromGlobal = scopedG.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             fromGlobal.AuthInfo.UserName.Should().Be( "Bob" );
             fromGlobal.CultureInfo.Culture.Should().Be( "fr" );
             fromGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
 
-            // From the global, obtains a EndpointUbiquitousInfo.
-            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-            // This endpoint transfers the EndpointUbiquitousInfo as-is.
-            using var scopedNoOverride = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
-            ubiq.IsDirty.Should().BeFalse( "The EndpointUbiquitousInfo has no override." );
-            ubiq.IsLocked.Should().BeTrue( "The EndpointUbiquitousInfo has been locked." );
-            var sameAsGlobal = scopedNoOverride.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            // From the global, obtains a AmbientServiceHub.
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
+            // This endpoint transfers the AmbientServiceHub as-is.
+            using var scopedNoOverride = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
+            ubiq.IsDirty.Should().BeFalse( "The AmbientServiceHub has no override." );
+            ubiq.IsLocked.Should().BeTrue( "The AmbientServiceHub has been locked." );
+            var sameAsGlobal = scopedNoOverride.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             sameAsGlobal.AuthInfo.UserName.Should().Be( "Bob" );
             sameAsGlobal.CultureInfo.Culture.Should().Be( "fr" );
             sameAsGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
@@ -395,19 +402,20 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var ubiqWithCulture = ubiq.CleanClone();
             ubiqWithCulture.IsLocked.Should().BeFalse();
             ubiqWithCulture.Override( new FakeCultureInfo( "en" ) );
-            using var scopedDiffCulture = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiqWithCulture, TestHelper.Monitor ) );
-            var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            ubiqWithCulture.IsDirty.Should().BeTrue();
+            using var scopedDiffCulture = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithCulture, TestHelper.Monitor ) );
+            var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withEnCulture.AuthInfo.UserName.Should().Be( "Bob" );
             withEnCulture.CultureInfo.Culture.Should().Be( "en" );
             withEnCulture.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
 
             // IFakeAuthentication is NOT a IAutoService:
             // We MUST manually handle the registrations... And we can do very bad things!
-            var ubiqWithAlice = ubiq.CleanClone();
+            var ubiqWithAlice = ubiq.CleanClone( restoreInitialValues: true );
             ubiqWithAlice.Override( new FakeAuthenticationInfo( "Alice (class)", 3712 ) );
             ubiqWithAlice.Override( typeof(IFakeAuthenticationInfo), new FakeAuthenticationInfo( "Alice (interface)", 3712 ) );
-            using var scopedForAlice = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
-            var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
+            using var scopedForAlice = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
+            var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
             withAlice.AuthInfo.UserName.Should().Be( "Alice (interface)" );
             // If the consumer depended on the class, it would have used the other instance!
             scopedForAlice.ServiceProvider.GetRequiredService<FakeAuthenticationInfo>().UserName.Should().Be( "Alice (class)" );
@@ -416,24 +424,35 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             // IFakeTenantInfo is an auto service and this is really safer: overriding the class,
             // automatically correctly associates the interface.
-            var ubiqWithTenant = ubiq.CleanClone();
+            var ubiqWithTenant = ubiq.CleanClone( restoreInitialValues: true );
             ubiqWithTenant.IsLocked.Should().BeFalse();
             ubiqWithTenant.Override( new FakeTenantInfo( "AnotherTenant" ) );
-            using var scopedDiffTenant = e.CreateScope( new FakeBackEndpointDefinition.Data( ubiqWithTenant, TestHelper.Monitor ) );
-            var withEnTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
-            withEnTenant.AuthInfo.UserName.Should().Be( "Bob" );
-            withEnTenant.CultureInfo.Culture.Should().Be( "fr" );
-            withEnTenant.TenantInfo.Name.Should().Be( "AnotherTenant" );
+            using var scopedDiffTenant = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenant, TestHelper.Monitor ) );
+            var withTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
+            withTenant.AuthInfo.UserName.Should().Be( "Bob" );
+            withTenant.CultureInfo.Culture.Should().Be( "fr" );
+            withTenant.TenantInfo.Name.Should().Be( "AnotherTenant" );
 
             // And overriding the interface, sets the class.
-            var ubiqWithTenantByI = ubiq.CleanClone();
+            var ubiqWithTenantByI = ubiq.CleanClone( restoreInitialValues: true );
             ubiqWithTenantByI.IsLocked.Should().BeFalse();
             ubiqWithTenantByI.Override( typeof(IFakeTenantInfo), new FakeTenantInfo( "AnotherTenant" ) );
-            using var scopedDiffTenantByI = e.CreateAsyncScope( new FakeBackEndpointDefinition.Data( ubiqWithTenantByI, TestHelper.Monitor ) );
-            var withEnTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<UbiquitousConsumer>();
-            withEnTenantByI.AuthInfo.UserName.Should().Be( "Bob" );
-            withEnTenantByI.CultureInfo.Culture.Should().Be( "fr" );
-            withEnTenantByI.TenantInfo.Name.Should().Be( "AnotherTenant" );
+            using var scopedDiffTenantByI = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByI, TestHelper.Monitor ) );
+            var withTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
+            withTenantByI.AuthInfo.UserName.Should().Be( "Bob" );
+            withTenantByI.CultureInfo.Culture.Should().Be( "fr" );
+            withTenantByI.TenantInfo.Name.Should().Be( "AnotherTenant" );
+
+            var ubiqWithTenantByIAndEn = ubiqWithTenantByI.CleanClone( restoreInitialValues: false );
+            ubiqWithTenantByIAndEn.IsDirty.Should().BeFalse();
+            ubiqWithTenantByIAndEn.Override( new FakeCultureInfo( "en" ) );
+            ubiqWithTenantByIAndEn.IsDirty.Should().BeTrue();
+            using var scopedTenantByIAndEn = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByIAndEn, TestHelper.Monitor ) );
+            var withTenantByIAndEn = scopedTenantByIAndEn.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
+            withTenantByIAndEn.AuthInfo.UserName.Should().Be( "Bob" );
+            withTenantByIAndEn.CultureInfo.Culture.Should().Be( "en" );
+            withTenantByIAndEn.TenantInfo.Name.Should().Be( "AnotherTenant" );
+
         }
 
 

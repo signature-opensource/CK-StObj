@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
+  </ItemGroup>
+  <!-- Hopefully temporary... -->
+  <ItemGroup>
+    <ProjectReference Include="..\CK.StObj.Engine\CK.StObj.Engine.csproj" />
+  </ItemGroup>
+</Project>

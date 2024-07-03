@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -16,16 +17,17 @@ namespace CK.StObj.Engine.Tests.Poco
             // Default must be NormalizedCultureInfo.CodeDefault.
             NormalizedCultureInfo NormalizedCultureInfo { get; set; }
 
-            // Default is a SimpleUserMessage.IsValid == false.
-            SimpleUserMessage SimpleUserMessage { get; set; }
-            // Default is a UserMessage.IsValid == false.
-            UserMessage UserMessage { get; set; }
+            // Default of SimpleUserMessage, UserMessage and FormattedString are not valid.
+            // We forbid the default for them: they can't be Poco fields.
+            //
+            // UserMessage UserMessage { get; set; }
+            // SimpleUserMessage SimpleUserMessage { get; set; }
+            // FormattedString FormattedString { get; set; }
+
             // Default must be MCString.Empty.
             MCString MCString { get; set; }
             // Default must be CodeString.Empty.
             CodeString CodeString { get; set; }
-            // Default must be FormattedString.Empty.
-            FormattedString FormattedString { get; set; }
 
             ExtendedCultureInfo? NExtendedCultureInfo { get; set; }
             NormalizedCultureInfo? NNormalizedCultureInfo { get; set; }
@@ -39,17 +41,16 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void default_for_Globalization_types_are_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithGlobalization ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var p = s.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add(typeof( IWithGlobalization ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var p = auto.Services.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
             p.ExtendedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
             p.NormalizedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
-            p.SimpleUserMessage.IsValid.Should().BeFalse();
-            p.UserMessage.IsValid.Should().BeFalse();
             p.MCString.Should().BeSameAs( MCString.Empty );
             p.CodeString.Should().BeSameAs( CodeString.Empty );
-            p.FormattedString.Should().BeEquivalentTo( FormattedString.Empty );
 
             p.NExtendedCultureInfo.Should().BeNull();
             p.NNormalizedCultureInfo.Should().BeNull();

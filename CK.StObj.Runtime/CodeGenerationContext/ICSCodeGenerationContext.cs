@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections;
@@ -40,5 +41,12 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         bool ActualSourceCodeIsUseless => SaveSource == false && CompileOption == CompileOption.None;
+
+        /// <summary>
+        /// Shortcut to the <see cref="Assembly"/>'s <see cref="IDynamicAssembly.Code"/>'s <see cref="ICodeWorkspace.Global"/>
+        /// name scope.
+        /// </summary>
+        INamespaceScope GeneratedCode { get; }
+
     }
 }

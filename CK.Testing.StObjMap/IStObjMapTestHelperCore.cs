@@ -18,7 +18,7 @@ namespace CK.Testing.StObjMap
         /// <summary>
         /// Gets the name of the BinPath that must be used for setup.
         /// Initially "StObjMapTest".
-        /// The generated assembly name in the <see cref="IBasicTestHelper.BinFolder"/> must be <c>$"CK.StObj.AutoAssembly-{BinPathName}.dll"</c>.
+        /// The generated assembly name in the <see cref="IBasicTestHelper.BinFolder"/> must be <c>$"CK.GeneratedAssembly.{BinPathName}.dll"</c>.
         /// <para>
         /// This is updated each time <see cref="ResetStObjMap"/> is called with an incremented number starting at 1.
         /// </para>
@@ -63,7 +63,7 @@ namespace CK.Testing.StObjMap
         event EventHandler<AutomaticServicesConfigurationEventArgs> AutomaticServicesConfigured;
 
         /// <summary>
-        /// Gets the <see cref="IStObjMap"/> from the current <see cref="BinPathName"/>, recreating a new <c>CK.StObj.AutoAssembly-StObjMapTestXXX.dll</c>
+        /// Gets the <see cref="IStObjMap"/> from the current <see cref="BinPathName"/>, recreating a new <c>CK.GeneratedAssembly.StObjMapTestXXX.dll</c>
         /// in the <see cref="IBasicTestHelper.BinFolder"/> if needed.
         /// </summary>
         IStObjMap StObjMap { get; }
@@ -97,14 +97,14 @@ namespace CK.Testing.StObjMap
         /// <summary>
         /// Fires the first time the <see cref="StObjMap"/> on current <see cref="BinPathName"/>
         /// must be loaded.
-        /// Enables external code to actually generate the <c>$"CK.StObj.AutoAssembly-{BinPathName}.dll"</c> assembly
+        /// Enables external code to actually generate the <c>$"CK.GeneratedAssembly.{BinPathName}.dll"</c> assembly
         /// in the <see cref="IBasicTestHelper.BinFolder"/> and the G0.cs file in <see cref="IBasicTestHelper.TestProjectFolder"/>
         /// if needed.
         /// </summary>
         event EventHandler StObjMapLoading;
 
         /// <summary>
-        /// Deletes all files like <c>"CK\.StObj\.AutoAssembly-StObjMapTest\d*\.dll"</c> in the specified directory.
+        /// Deletes all files like <c>"CK.GeneratedAssembly.StObjMapTest\d*\.dll"</c> in the specified directory.
         /// </summary>
         /// <param name="directory">The directory from which generated assembly(ies) must be deleted.</param>
         /// <returns>The number of deleted files.</returns>

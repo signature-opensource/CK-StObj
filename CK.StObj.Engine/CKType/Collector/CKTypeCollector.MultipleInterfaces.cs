@@ -26,8 +26,6 @@ namespace CK.Setup
             readonly CKTypeKind _enumKind;
             readonly Type _itemType;
             readonly CKTypeKind _itemKind;
-            // _marshallableTypes property is null until ComputeFinalTypeKind is called.
-            IReadOnlyCollection<Type>? _marshallableTypes;
             // Null until FinalizeMappings has been called.
             IStObjFinalClass[]? _finalImpl;
             AutoServiceKind _finalKind;
@@ -46,8 +44,6 @@ namespace CK.Setup
             Type IStObjMultipleInterface.ItemType => _itemType;
 
             Type IStObjMultipleInterface.EnumerableType => _enumType;
-
-            IReadOnlyCollection<Type> IStObjMultipleInterface.MarshallableTypes => _marshallableTypes!;
 
             bool IStObjMultipleInterface.IsScoped => (_finalKind & AutoServiceKind.IsScoped) != 0;
 
@@ -72,8 +68,8 @@ namespace CK.Setup
                 {
                     if( _isComputing )
                     {
-                        m.Warn( $"Automatic DI type of 'IEnumerable<{_itemType:C}> is not decidable: a dependency cycle has been found. It will be considered as the \"worst case\": a non marshallable process scoped service." );
-                        _finalKind = AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped;
+                        m.Warn( $"Automatic DI type of 'IEnumerable<{_itemType:C}> is not decidable: a dependency cycle has been found. It will be considered as the \"worst case\": a scoped service." );
+                        _finalKind = AutoServiceKind.IsScoped;
                     }
                     else
                     {
@@ -102,16 +98,6 @@ namespace CK.Setup
                 Debug.Assert( _rawImpls != null );
 
                 bool isScoped = (initial & AutoServiceKind.IsScoped) != 0;
-                HashSet<Type>? allMarshallableTypes = null;
-                // If it is [IsMarshallable], the marshaller must handle the marshalling of any implementations
-                // (this is strange... but who knows?). Same for the IsMultiple item interface... and same weirdness...
-                bool isInterfaceOrItemMarshallable = (initial & AutoServiceKind.IsMarshallable) != 0 || (_itemKind & CKTypeKind.IsMarshallable) != 0;
-
-                // If isInterfaceMarshallable is false (regular case), then for this IEnumerable to be marshallable, all its
-                // implementations that are Process services must be marshallable so that it can be resolved as long as its
-                // implementations have been marshalled.
-                // Lets's be optimistic: all implementations that are Process services (if any) will be marshallable.
-                bool isAutomaticallyMarshallable = true;
 
                 using( m.OpenTrace( $"Computing 'IEnumerable<{_itemType.FullName}>'s final type from {_rawImpls.Count} implementations. Initial: '{initial}'." ) )
                 {
@@ -125,7 +111,7 @@ namespace CK.Setup
                         Debug.Assert( impl != null );
                         // We provide a new empty "cycle detection context" to the class constructors: IEnumerable
                         // of interfaces break potential cycles since they handle their own cycle by resolving to
-                        // the "worst" non marshallable ProcessService|IsScoped.
+                        // the "worst" IsScoped.
                         // We consider that if the IEnumerable (or one of its class) cannot be resolved by the DI container,
                         // it's not our problem here.
                         var k = impl.ComputeFinalTypeKind( m, ctx, new Stack<AutoServiceClassInfo>(), ref success );
@@ -146,31 +132,6 @@ namespace CK.Setup
                                 }
                             }
                         }
-                        // If the implementation is not a front service, we skip it (we don't care of a IsMarshallable only type). 
-                        if( (k & AutoServiceKind.IsProcessService) == 0 ) continue;
-
-                        var newFinal = _finalKind | (k & AutoServiceKind.IsProcessService);
-                        if( newFinal != _finalKind )
-                        {
-                            // Upgrades from None to Process.
-                            m.Trace( $"Type 'IEnumerable<{_itemType:C}>' must be IsProcessService, because of (at least) '{impl.ClassType}' implementation." );
-                            _finalKind = newFinal;
-                        }
-                        // If the enumerated Service is marshallable at its level OR it is already known to be NOT automatically marshallable,
-                        // we don't have to worry anymore about the subsequent implementations marshalling.
-                        if( isInterfaceOrItemMarshallable || !isAutomaticallyMarshallable ) continue;
-
-                        if( (k & AutoServiceKind.IsMarshallable) == 0 )
-                        {
-                            if( success ) m.Warn( $"Type 'IEnumerable<{_itemType:C}>' is not marshallable and the implementation '{impl.ClassType}' that is a Process service is not marshallable: 'IEnumerable<{_itemType.Name}>' cannot be considered as marshallable." );
-                            isAutomaticallyMarshallable = false;
-                        }
-                        else
-                        {
-                            allMarshallableTypes ??= new HashSet<Type>();
-                            Debug.Assert( impl.MarshallableTypes != null, "EnsureCtorBinding has been called." );
-                            allMarshallableTypes.AddRange( impl.MarshallableTypes );
-                        }
                     }
                     // Conclude about lifetime.
                     if( !isScoped )
@@ -184,36 +145,6 @@ namespace CK.Setup
                     else
                     {
                         _finalKind |= AutoServiceKind.IsScoped;
-                    }
-                    // Conclude about Front aspect.
-                    if( isInterfaceOrItemMarshallable )
-                    {
-                        if( (_itemKind & CKTypeKind.IsMarshallable) == 0 )
-                        {
-                            _marshallableTypes = new[] { _enumType };
-                            Debug.Assert( (_finalKind & AutoServiceKind.IsMarshallable) != 0 );
-                        }
-                        else
-                        {
-                            _marshallableTypes = new[] { _itemType };
-                            _finalKind |= AutoServiceKind.IsMarshallable;
-                        }
-                    }
-                    else
-                    {
-                        if( isAutomaticallyMarshallable && allMarshallableTypes != null )
-                        {
-                            Debug.Assert( allMarshallableTypes.Count > 0 );
-                            _marshallableTypes = allMarshallableTypes;
-                            _finalKind |= AutoServiceKind.IsMarshallable;
-                        }
-                        else
-                        {
-                            // This service is not a Process service OR it is not automatically marshallable.
-                            // We have nothing special to do: the set of Marshallable types is empty (this is not an error).
-                            _marshallableTypes = Type.EmptyTypes;
-                            Debug.Assert( (_finalKind & AutoServiceKind.IsMarshallable) == 0 );
-                        }
                     }
                     if( _finalKind != initial ) m.CloseGroup( $"Final: {_finalKind}" );
                 }
@@ -239,15 +170,13 @@ namespace CK.Setup
             }
         }
 
-        internal void RegisterMultipleInterfaces( Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
+        internal void RegisterMultipleInterfaces( IActivityMonitor monitor, Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
         {
             Debug.Assert( !final.IsSpecialized );
             if( !_multipleMappings.TryGetValue( tAbstraction, out var multiple ) )
             {
                 Debug.Assert( enumeratedKind.GetCombinationError( false ) == null );
-                // A IEnumerable of IScoped is scoped, a IEnumerable of ISingleton is singleton, a IEnumerable of IProcessService is
-                // itself a process service. Even a IEnumerable of an abstraction that has been marked [IsMarshallable] is de facto marshallable.
-                // We rely on this here.
+                // A IEnumerable of IScoped is scoped, a IEnumerable of ISingleton is singleton.
                 Type tEnumerable = typeof( IEnumerable<> ).MakeGenericType( tAbstraction );
 
                 // The IEnumerable itself may have been explicitly registered via SetAutoServiceKind.

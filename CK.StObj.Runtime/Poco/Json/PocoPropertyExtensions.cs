@@ -14,7 +14,7 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="this">This poco information.</param>
         /// <returns>The Json info if it's available.</returns>
-        public static IPocoJsonInfo? GetJsonInfo( this IPocoRootInfo @this ) => @this.Annotation<IPocoJsonInfo>();
+        public static IPocoJsonInfo? GetJsonInfo( this IPocoFamilyInfo @this ) => @this.Annotation<IPocoJsonInfo>();
 
         /// <summary>
         /// Gets the <see cref="IPocoJsonPropertyInfo"/> associated to this poco property.

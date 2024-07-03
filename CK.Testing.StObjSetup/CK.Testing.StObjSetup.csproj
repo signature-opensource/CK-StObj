@@ -2,10 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Extends CK.Testing.StObjMap and CK.Testing.CKSetup TestHelper to generate and expose compiled StObjMap using out-of-process run of CKSetup.</Description>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Testing.StObjMap\CK.Testing.StObjMap.csproj" />
-    <PackageReference Include="CK.Testing.CKSetup" Version="21.0.0" />
+    <PackageReference Include="CK.Testing.CKSetup" Version="22.0.0" />
   </ItemGroup>
 </Project>

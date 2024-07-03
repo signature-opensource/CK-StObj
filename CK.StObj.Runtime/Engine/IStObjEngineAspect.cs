@@ -9,14 +9,14 @@ namespace CK.Setup
     /// that takes the configuration object instance.
     /// </para>
     /// <para>
-    /// The configuration object is a <see cref="IStObjEngineAspectConfiguration"/> that has been 
-    /// added to the <see cref="StObjEngineConfiguration.Aspects"/> list and 
-    /// whose <see cref="IStObjEngineAspectConfiguration.AspectType"/> is the assembly qualified name
+    /// The configuration object is a <see cref="EngineAspectConfiguration"/> that has been 
+    /// added to the <see cref="EngineConfiguration.Aspects"/> list and 
+    /// whose <see cref="EngineAspectConfiguration.AspectType"/> is the assembly qualified name
     /// of the Aspect they configure.
     /// </para>
     /// <para>
     /// Aspects can implement <see cref="ICSCodeGenerator"/> if they need to directly participate to
-    /// code generation. When implemented <see cref="ICSCodeGenerator.Implement(IActivityMonitor, ICSCodeGenerationContext)"/>
+    /// code generation. When implemented <see cref="ICSCodeGenerator.Implement"/>
     /// is called (for each <see cref="ICodeGenerationContext.CurrentRun"/>) after <see cref="RunPreCode(IActivityMonitor, IStObjEngineRunContext)"/>
     /// and before <see cref="RunPostCode(IActivityMonitor, IStObjEnginePostCodeRunContext)"/>.
     /// </para>

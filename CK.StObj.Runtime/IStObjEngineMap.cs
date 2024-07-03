@@ -22,7 +22,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the endpoints informations.
         /// </summary>
-        IEndpointResult EndpointResult { get; }
+        IDIContainerAnalysisResult EndpointResult { get; }
 
         /// <summary>
         /// Gets all the type's <see cref="ITypeAttributesCache"/>.

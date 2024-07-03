@@ -1,10 +1,10 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 
 namespace CK.Setup
 {
@@ -13,20 +13,13 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeKindDetector
     {
-        const int PrivateStart = 4096;
+        const int PrivateStart = 1 << 17;
 
         /// <summary>
         /// Mask for public information defined in the <see cref="CKTypeKind"/> enumeration.
         /// Internally other flags are used.
         /// </summary>
         public const CKTypeKind MaskPublicInfo = (CKTypeKind)(PrivateStart-1);
-
-        const CKTypeKind IsDefiner = (CKTypeKind)PrivateStart;
-
-        const CKTypeKind IsSuperDefiner = (CKTypeKind)(PrivateStart << 1);
-
-        // The lifetime reason is the interface marker (applies to all our marker interfaces).
-        const CKTypeKind IsReasonMarker = (CKTypeKind)(PrivateStart << 2);
 
         // The type is a service that is scoped because its ctor references a scoped service.
         const CKTypeKind IsScopedReasonReference = (CKTypeKind)(PrivateStart << 3);
@@ -40,16 +33,16 @@ namespace CK.Setup
         // The IsProcessService reason is an external definition.
         const CKTypeKind IsProcessServiceReasonExternal = (CKTypeKind)(PrivateStart << 6);
 
-        // The IsEndpoint reason is an external definition.
-        const CKTypeKind IsEndpointServiceReasonExternal = (CKTypeKind)(PrivateStart << 7);
+        // The IsContainerConfigured reason is an external definition.
+        const CKTypeKind IsContainerConfiguredServiceReasonExternal = (CKTypeKind)(PrivateStart << 7);
 
         // The IsMultiple reason is an external definition.
         const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 8);
 
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
-        readonly Dictionary<Type, AutoServiceKind> _endpointServices;
-        readonly List<Type> _ubiquitousInfoServices;
+        readonly Dictionary<Type, AutoServiceKind> _containerConfiguredServices;
+        readonly List<Type> _ambientServices;
 
         /// <summary>
         /// Initializes a new detector.
@@ -58,46 +51,45 @@ namespace CK.Setup
         public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
-            _endpointServices = new Dictionary<Type, AutoServiceKind>();
+            _containerConfiguredServices = new Dictionary<Type, AutoServiceKind>();
             _typeFilter = typeFilter;
-            _ubiquitousInfoServices = new List<Type>();
+            _ambientServices = new List<Type>();
         }
 
         /// <summary>
-        /// Gets all the types that have been declared as endpoint services.
+        /// Gets all the types that have been declared as container configured services.
         /// <para>
         /// Some of these types may appear only here since totally external types (interfaces or classes)
-        /// can be declared as endpoint services.
+        /// can be declared as container configured services.
         /// </para>
         /// </summary>
-        public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
+        public IReadOnlyDictionary<Type, AutoServiceKind> ContainerConfiguredServices => _containerConfiguredServices;
 
         /// <summary>
         /// Gets the ubiquitous types. These are endpoint services that are available from all endpoints
         /// and can be overridden.
         /// </summary>
-        public IReadOnlyList<Type> UbiquitousInfoServices => _ubiquitousInfoServices;
+        public IReadOnlyList<Type> AmbientServices => _ambientServices;
 
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
         /// <para>
-        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits mus be set
-        /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>) an the type
-        /// is registered as an endpoint service in the <see cref="DefaultEndpointDefinition"/>.
+        /// If the <see cref="AutoServiceKind.IsContainerConfiguredService"/> bit set, one of the lifetime bits mus be set
+        /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>).
         /// </para>
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
+        /// a service cannot be both scoped and singleton).
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="t">The type to register.</param>
         /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>The type kind on success, null on error (errors - included combination ones - are logged).</returns>
-        public CKTypeKind? SetAutoServiceKind( IActivityMonitor monitor, Type t, AutoServiceKind kind )
+        public CKTypeKind? SetAutoServiceKind( IActivityMonitor monitor, Type t, ConfigurableAutoServiceKind kind )
         {
             Throw.CheckNotNullArgument( t );
-            Throw.CheckArgument( kind != AutoServiceKind.None );
+            Throw.CheckArgument( kind != ConfigurableAutoServiceKind.None );
 
             CKTypeKind k = (CKTypeKind)kind;
             string? error = k.GetCombinationError( t.IsClass );
@@ -106,15 +98,13 @@ namespace CK.Setup
                 monitor.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t:C}'." );
                 return null;
             }
-            bool hasProcess = (kind & AutoServiceKind.IsProcessService) != 0;
-            bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
-            bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
-            bool hasEndpoint = (kind & AutoServiceKind.IsEndpointService) != 0;
+            bool hasLifetime = (kind & (ConfigurableAutoServiceKind.IsScoped | ConfigurableAutoServiceKind.IsSingleton)) != 0;
+            bool hasMultiple = (kind & ConfigurableAutoServiceKind.IsMultipleService) != 0;
+            bool hasContainerConfigured = (kind & ConfigurableAutoServiceKind.IsContainerConfiguredService) != 0;
 
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
-            if( hasProcess ) k |= IsProcessServiceReasonExternal;
-            if( hasEndpoint ) k |= IsEndpointServiceReasonExternal;
+            if( hasContainerConfigured ) k |= IsContainerConfiguredServiceReasonExternal;
 
             return SetLifetimeOrProcessType( monitor, t, k );
         }
@@ -134,17 +124,15 @@ namespace CK.Setup
 
         CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
-            Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
-            Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
-
-            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsProcessService | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.UbiquitousInfo) != 0,
-                            "At least, something must be set." );
+            Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", ( kind & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
+            Throw.DebugAssert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass )!, ( kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null );
+            Throw.DebugAssert( "At least, something must be set.", ( kind & CKTypeKindExtension.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKindExtension.AmbientServiceFlags) != 0 );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
             // not be called for an already registered type.)
             var exist = RawGet( m, t );
-            if( (exist & (IsDefiner|IsSuperDefiner)) != 0 )
+            if( (exist & (CKTypeKind.IsDefiner|CKTypeKind.IsSuperDefiner)) != 0 )
             {
                 Throw.Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
@@ -157,34 +145,41 @@ namespace CK.Setup
             }
 
             _cache[t] = updated;
-            if( (updated & CKTypeKind.IsEndpointService) != 0 )
+            if( (updated & CKTypeKind.IsContainerConfiguredService) != 0 )
             {
-                _endpointServices[t] = updated.ToAutoServiceKind();
-                if( (updated & CKTypeKind.UbiquitousInfo) == CKTypeKind.UbiquitousInfo
-                    && !_ubiquitousInfoServices.Contains( t ) )
+                _containerConfiguredServices[t] = updated.ToAutoServiceKind();
+                if( (updated & CKTypeKind.IsAmbientService) != 0
+                    && t != typeof( AmbientServiceHub )
+                    && !_ambientServices.Contains( t ) )
                 {
-                    _ubiquitousInfoServices.Add( t );
+                    _ambientServices.Add( t );
                 }
             }
 
-            Debug.Assert( (updated & (IsDefiner | IsSuperDefiner)) == 0 );
+            Debug.Assert( (updated & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
             Debug.Assert( CKTypeKindExtension.GetCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
             return updated & MaskPublicInfo;
         }
 
         /// <summary>
-        /// Checks whether the type kind: <see cref="CKTypeKind.IsExcludedType"/> or <see cref="CKTypeKind.HasError"/> flag set.
-        /// <para>
-        /// Note that [CKTypeDefiner] and [CKTypeSuperDefiner] kind is always <see cref="CKTypeKind.None"/>.
-        /// </para>
+        /// Gets the kind, whatever it is.
         /// </summary>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type that can be an interface or a class.</param>
         /// <returns>The CK type kind (may be invalid or excluded).</returns>
-        public CKTypeKind GetRawKind( IActivityMonitor m, Type t )
+        public CKTypeKind GetRawKind( IActivityMonitor m, Type t ) => RawGet( m, t ) & MaskPublicInfo;
+
+        /// <summary>
+        /// Gets the kind except if it is a definer: when [CKTypeDefiner] or [CKTypeSuperDefiner]
+        /// the returned kind is always <see cref="CKTypeKind.None"/>.
+        /// </summary>
+        /// <param name="m">The monitor to use.</param>
+        /// <param name="t">The type that can be an interface or a class.</param>
+        /// <returns>The CK type kind (may be invalid or excluded).</returns>
+        public CKTypeKind GetNonDefinerKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner | IsSuperDefiner)) == 0
+            return (k & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
         }
@@ -202,7 +197,7 @@ namespace CK.Setup
         public CKTypeKind GetValidKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner | IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasError)) == 0
+            return (k & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasError)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
         }
@@ -248,42 +243,41 @@ namespace CK.Setup
                     var allInterfaces = t.GetInterfaces().Where( i => i.IsPublic || i.IsNestedPublic ).ToArray();
 
                     // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
-                    // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IProcessAutoService
+                    // We must also handle here interfaces that have 2 baseS because IAmbientAutoService => IScopedAutoService => IAutoService.
                     // are extending IAutoService.
                     if( t.IsInterface
-                        && allInterfaces.Length <= 1
+                        && allInterfaces.Length <= 2
                         && t.GetMembers().Length == 0 )
                     {
-                        if( t.Name == nameof( IRealObject ) ) k = CKTypeKind.RealObject | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( IProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsProcessService | IsDefiner | IsReasonMarker;
-                        else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
+                        if( t.Name == nameof( IRealObject ) ) k = CKTypeKindExtension.RealObjectFlags | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | CKTypeKind.IsDefiner;
+                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsSingleton | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t == typeof( IAmbientAutoService ) ) k = CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped | CKTypeKind.IsAutoService | CKTypeKind.IsDefiner;
+                        else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | CKTypeKind.IsDefiner;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.
                     //
                     bool isInternalInterface = t.IsInterface && !t.IsPublic && !t.IsNestedPublic;
                     if( k == CKTypeKind.None && !isInternalInterface )
                     {
-                        Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                        Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                        Debug.Assert( typeof( EndpointScopedServiceAttribute ).Name == "EndpointScopedServiceAttribute" );
-                        Debug.Assert( typeof( EndpointSingletonServiceAttribute ).Name == "EndpointSingletonServiceAttribute" );
-                        Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
-                        Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
-                        Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                        Debug.Assert( typeof( PocoClassAttribute ).Name == "PocoClassAttribute" );
-                        Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
-                        Debug.Assert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
+                        Throw.DebugAssert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
+                        Throw.DebugAssert( typeof( Core.ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                        Throw.DebugAssert( typeof( ContainerConfiguredScopedServiceAttribute ).Name == "ContainerConfiguredScopedServiceAttribute" );
+                        Throw.DebugAssert( typeof( ContainerConfiguredSingletonServiceAttribute ).Name == "ContainerConfiguredSingletonServiceAttribute" );
+                        Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
+                        Throw.DebugAssert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
+                        Throw.DebugAssert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                        Throw.DebugAssert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
+                        Throw.DebugAssert( typeof( ScopedServiceAttribute ).Name == "ScopedServiceAttribute" );
                         bool hasSuperDefiner = false;
                         bool hasDefiner = false;
                         bool isMultipleInterface = false;
-                        bool hasMarshallable = false;
                         bool hasSingletonService = false;
+                        bool hasScopedService = false;
                         bool isExcludedType = false;
-                        bool isEndpointScoped = false;
-                        bool isUbiquitousServiceInfo = false;
+                        bool isContainerConfiguredScoped = false;
+                        bool isAmbientService = false;
                         bool isEndpointSingleton = false;
 
                         // Now process the attributes of the type. This sets the variables above
@@ -305,11 +299,11 @@ namespace CK.Setup
                                 case "ExcludeCKTypeAttribute":
                                     isExcludedType = true;
                                     break;
-                                case "EndpointScopedServiceAttribute":
-                                    isEndpointScoped = true;
-                                    isUbiquitousServiceInfo = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
+                                case "ContainerConfiguredScopedServiceAttribute":
+                                    isContainerConfiguredScoped = true;
+                                    isAmbientService = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
                                     break;
-                                case "EndpointSingletonServiceAttribute":
+                                case "ContainerConfiguredSingletonServiceAttribute":
                                     isEndpointSingleton = true;
                                     break;
                                 case "CKTypeDefinerAttribute":
@@ -318,11 +312,11 @@ namespace CK.Setup
                                 case "CKTypeSuperDefinerAttribute":
                                     hasSuperDefiner = true;
                                     break;
-                                case "IsMarshallableAttribute":
-                                    hasMarshallable = true;
-                                    break;
                                 case "SingletonServiceAttribute":
                                     hasSingletonService = true;
+                                    break;
+                                case "ScopedServiceAttribute":
+                                    hasScopedService = true;
                                     break;
                                 case "IsMultipleAttribute" when t.IsInterface:
                                     isMultipleInterface = true;
@@ -353,25 +347,25 @@ namespace CK.Setup
                             }
                             foreach( var i in allBases  )
                             {
-                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType | IsReasonMarker);
-                                if( (k & IsDefiner) == 0 // We are not yet a Definer...
-                                    && (kI & IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
+                                var kI = RawGet( m, i ) & ~(CKTypeKind.IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsExcludedType);
+                                if( (k & CKTypeKind.IsDefiner) == 0 // We are not yet a Definer...
+                                    && (kI & CKTypeKind.IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
                                 {
-                                    kI |= IsDefiner;
+                                    kI |= CKTypeKind.IsDefiner;
                                 }
-                                k |= kI & ~IsSuperDefiner;
+                                k |= kI & ~CKTypeKind.IsSuperDefiner;
                             }
                             // Applying the direct flags. Any inherited combination error is cleared.
                             k &= ~CKTypeKind.HasError;
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
-                            if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                             if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
-                            if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
-                            if( hasSuperDefiner ) k |= IsSuperDefiner;
-                            if( hasDefiner ) k |= IsDefiner;
-                            if( isUbiquitousServiceInfo ) k |= CKTypeKind.UbiquitousInfo;
-                            else if( isEndpointScoped ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
+                            if( hasScopedService ) k |= CKTypeKind.IsScoped;
+                            if( isEndpointSingleton ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsSingleton;
+                            if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
+                            if( hasDefiner ) k |= CKTypeKind.IsDefiner;
+                            if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
+                            else if( isContainerConfiguredScoped ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
 
                             // Final check if the type filter has not excluded the type.
                             // We may be IAutoService or a IPoco or... whatever: any combination error will be detected.
@@ -394,11 +388,11 @@ namespace CK.Setup
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
-                                else if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                else if( (k & CKTypeKind.IsContainerConfiguredService) != 0 )
                                 {
                                     if( !isPublic )
                                     {
-                                        k &= ~CKTypeKind.IsEndpointService;
+                                        k &= ~CKTypeKind.IsContainerConfiguredService;
                                         m.Info( $"Type '{t:N}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
                                     }
                                 }
@@ -412,30 +406,6 @@ namespace CK.Setup
                                         m.Error( $"Invalid class '{t:N}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
                                     }
-                                    else if( (k & CKTypeKind.IsAutoService) != 0 )
-                                    {
-                                        foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
-                                        {
-                                            Type marshallable = marshaller.GetGenericArguments()[0];
-                                            m.Info( $"Type '{marshallable}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t}' that is a IAutoService." );
-                                            SetLifetimeOrProcessType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
-
-                                            // The marshaller interface (the closed generic) is promoted to be a IAutoService since it must be
-                                            // mapped (without ambiguities) on the currently registering class (that is itself a IAutoService).
-                                            var exists = RawGet( m, marshaller );
-                                            if( (exists & CKTypeKind.IsAutoService) == 0 )
-                                            {
-                                                exists |= CKTypeKind.IsAutoService;
-                                                error = exists.GetCombinationError( false );
-                                                if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
-                                                else
-                                                {
-                                                    m.Trace( $"Interface {marshaller.Name} is now a IAutoService." );
-                                                    _cache[marshaller] = exists;
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                                 else
                                 {
@@ -447,12 +417,13 @@ namespace CK.Setup
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
-                                if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                // Registers special services: endpoints and ambient: ignores the processwide singleton services.
+                                if( (k & CKTypeKind.IsContainerConfiguredService) != 0 )
                                 {
-                                    _endpointServices.Add( t, k.ToAutoServiceKind() );
-                                    if( (k & CKTypeKind.UbiquitousInfo) == CKTypeKind.UbiquitousInfo )
+                                    _containerConfiguredServices.Add( t, k.ToAutoServiceKind() );
+                                    if( (k & CKTypeKind.IsAmbientService) != 0 && t != typeof( AmbientServiceHub ) )
                                     {
-                                        _ubiquitousInfoServices.Add( t );
+                                        _ambientServices.Add( t );
                                     }
                                 }
                             }
@@ -470,9 +441,8 @@ namespace CK.Setup
         static string ToStringFull( CKTypeKind t )
         {
             var c = (t & MaskPublicInfo).ToStringFlags();
-            if( (t & IsDefiner) != 0 ) c += " [IsDefiner]";
-            if( (t & IsSuperDefiner) != 0 ) c += " [IsSuperDefiner]";
-            if( (t & IsReasonMarker) != 0 ) c += " [IsMarkerInterface]";
+            if( (t & CKTypeKind.IsDefiner) != 0 ) c += " [IsDefiner]";
+            if( (t & CKTypeKind.IsSuperDefiner) != 0 ) c += " [IsSuperDefiner]";
             if( (t & IsLifetimeReasonExternal) != 0 ) c += " [Lifetime:External]";
             if( (t & IsScopedReasonReference) != 0 ) c += " [Lifetime:UsesScoped]";
             if( (t & IsMarshallableReasonMarshaller) != 0 ) c += " [Marshallable:MarshallerExists]";

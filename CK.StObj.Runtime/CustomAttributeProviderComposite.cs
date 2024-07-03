@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace CK.Setup
         /// <param name="providers">Multiple providers. Must not be null.</param>
         public CustomAttributeProviderComposite( IEnumerable<ICKCustomAttributeProvider> providers )
         {
-            if( providers == null ) throw new ArgumentNullException( nameof( providers ) ); 
+            Throw.CheckNotNullArgument( providers ); 
             _providers = providers;
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
@@ -26,7 +27,7 @@ namespace CK.StObj.Engine.Tests
         }
 
         [StObjPropertySetAttribute( PropertyName = "OneIntValue", PropertyValue = 3712 )]
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class SimpleContainer : IRealObject
         {
         }
@@ -35,9 +36,8 @@ namespace CK.StObj.Engine.Tests
         public void OneObject()
         {
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( SimpleContainer ) );
-                var result = collector.GetResult().EngineMap!.StObjs;
+                var collector = TestHelper.CreateTypeCollector( typeof( SimpleContainer ) );
+                var result = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap!.StObjs;
                 result.OrderedStObjs
                       .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
@@ -46,22 +46,22 @@ namespace CK.StObj.Engine.Tests
 
         #region Mergeable & Propagation
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class SpecializedContainer : SimpleContainer
         {
         }
 
-        [StObj( Container = typeof( SpecializedContainer ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( SpecializedContainer ), ItemKind = DependentItemKindSpec.Item )]
         public class BaseObject : IRealObject
         {
         }
 
-        [StObj( ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( ItemKind = DependentItemKindSpec.Item )]
         public class SpecializedObject : BaseObject
         {
         }
 
-        [StObj( Container = typeof( SpecializedContainer ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( SpecializedContainer ), ItemKind = DependentItemKindSpec.Item )]
         public class SpecializedObjectWithExplicitContainer : SpecializedObject
         {
         }
@@ -81,13 +81,13 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void SchmurtzPropagation()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new SchmurtzConfigurator() );
-            collector.RegisterType( typeof( SimpleContainer ) );
-            collector.RegisterType( typeof( SpecializedContainer ) );
-            collector.RegisterType( typeof( BaseObject ) );
-            collector.RegisterType( typeof( SpecializedObject ) );
-            collector.RegisterType( typeof( SpecializedObjectWithExplicitContainer ) );
-            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new SchmurtzConfigurator() );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleContainer ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SpecializedContainer ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( BaseObject ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SpecializedObject ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SpecializedObjectWithExplicitContainer ) );
+            var result = collector.GetResult( TestHelper.Monitor ).EngineMap!.StObjs;
 
             Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" )!.ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer" ) );

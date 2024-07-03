@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
@@ -40,14 +41,14 @@ namespace CK.StObj.Engine.Tests
         }
 
         [DirectPropertySet( PropertyName = "OneIntValue", PropertyValue = 3712 )]
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class SimpleObjectDirect : IRealObject
         {
             public int OneIntValue { get; set; }
         }
 
         [AmbientPropertySet( PropertyName = "OneIntValue", PropertyValue = 3712 )]
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class SimpleObjectAmbient : IRealObject
         {
             [AmbientProperty]
@@ -75,19 +76,18 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void OneObjectDirectProperty()
         {
-            var container = new SimpleServiceContainer();
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container );
-                collector.RegisterType( typeof( SimpleObjectDirect ) );
-                var map = collector.GetResult().EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var collector = TestHelper.CreateTypeCollector( typeof( SimpleObjectDirect ) );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                Throw.DebugAssert( map != null );
                 map.StObjs.Obtain<SimpleObjectDirect>()!.OneIntValue.Should().Be( 3712, "Direct properties can be set by Attribute." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator: new ConfiguratorOneIntValueSetTo42() );
-                collector.RegisterType( typeof( SimpleObjectDirect ) );
-                var map = collector.GetResult().EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var container = new SimpleServiceContainer();
+                StObjCollector collector = new StObjCollector( container, configurator: new ConfiguratorOneIntValueSetTo42() );
+                collector.RegisterType( TestHelper.Monitor, typeof( SimpleObjectDirect ) );
+                var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
+                Throw.DebugAssert( map != null );
                 map.StObjs.Obtain<SimpleObjectDirect>()!.OneIntValue.Should().Be( 42, "Direct properties can be set by any IStObjStructuralConfigurator participant (here the global one)." );
             }
         }
@@ -95,20 +95,23 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void OneObjectAmbientProperty()
         {
-            var container = new SimpleServiceContainer();
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container );
-                collector.RegisterType( typeof( SimpleObjectAmbient ) );
-                var map = collector.GetResult().EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var collector = TestHelper.CreateTypeCollector( typeof( SimpleObjectAmbient ) );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                Throw.DebugAssert( map != null );
                 map.StObjs.OrderedStObjs.Should().NotBeEmpty( "We registered SimpleObjectAmbient." );
                 map.StObjs.Obtain<SimpleObjectAmbient>()!.OneIntValue.Should().Be( 3712, "Same as Direct properties (above) regarding direct setting. The difference between Ambient and non-ambient lies in value propagation." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator: new ConfiguratorOneIntValueSetTo42() );
-                collector.RegisterType( typeof( SimpleObjectAmbient ) );
-                var map = collector.GetResult().EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new ConfiguratorOneIntValueSetTo42() );
+                collector.RegisterType( TestHelper.Monitor, typeof( SimpleObjectAmbient ) );
+
+                collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+                StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+                r.HasFatalError.Should().Be( false, "There must be no error." );
+
+                var map = r.EngineMap;
+                Throw.DebugAssert( map != null );
                 map.StObjs.Obtain<SimpleObjectAmbient>()!.OneIntValue.Should().Be( 42, "Same as Direct properties (above) regarding direct setting. The difference between Ambient and non-ambient lies in value propagation." );
             }
         }
@@ -130,20 +133,19 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void AmbientOrDirectPropertyDeclaredInBaseClassCanBeSet()
         {
-            var container = new SimpleServiceContainer();
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container );
-                collector.RegisterType( typeof( SpecializedObjectDirect ) );
-                var map = collector.GetResult().EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var collector = TestHelper.CreateTypeCollector( typeof( SpecializedObjectDirect ) );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                Throw.DebugAssert( map != null );
+
                 map.StObjs.OrderedStObjs.Select( o => o.ClassType ).Should().Contain( new[] { typeof( SpecializedObjectDirect ), typeof( SimpleObjectDirect ) } );
                 map.StObjs.Obtain<SpecializedObjectDirect>()!.OneIntValue.Should().Be( 999, "Direct properties can be set by Attribute (or any IStObjStructuralConfigurator)." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container );
-                collector.RegisterType( typeof( SpecializedObjectAmbient ) );
-                var map = collector.GetResult().EngineMap;
-                Debug.Assert( map != null, "No initialization error." );
+                var collector = TestHelper.CreateTypeCollector( typeof( SpecializedObjectAmbient ) );
+                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                Throw.DebugAssert( map != null );
+
                 map.StObjs.OrderedStObjs.Select( o => o.ClassType ).Should().Contain( new[] { typeof( SpecializedObjectAmbient ), typeof( SimpleObjectAmbient ) } );
                 map.StObjs.Obtain<SpecializedObjectAmbient>()!.OneIntValue.Should().Be( 999, "Ambient properties can be set by Attribute (or any IStObjStructuralConfigurator)." );
             }
@@ -151,14 +153,14 @@ namespace CK.StObj.Engine.Tests
 
         #region Propagation to container's children.
 
-        [StObj( Container = typeof( SimpleObjectDirect ) )]
+        [RealObject( Container = typeof( SimpleObjectDirect ) )]
         public class SimpleObjectInsideDirect : IRealObject
         {
             [AmbientProperty]
             public int OneIntValue { get; set; }
         }
 
-        [StObj( Container = typeof( SimpleObjectAmbient ) )]
+        [RealObject( Container = typeof( SimpleObjectAmbient ) )]
         public class SimpleObjectInsideAmbient : IRealObject
         {
             [AmbientProperty]
@@ -168,11 +170,17 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void PropagationFromDirectPropertyDoesNotWork()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new ConfiguratorOneIntValueSetTo42() );
-            collector.RegisterType( typeof( SimpleObjectDirect ) );
-            collector.RegisterType( typeof( SimpleObjectInsideDirect ) );
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new ConfiguratorOneIntValueSetTo42() );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleObjectDirect ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleObjectInsideDirect ) );
+
+            collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+            r.HasFatalError.Should().Be( false, "There must be no error." );
+
+            var map = r.EngineMap;
+            Throw.DebugAssert( map != null );
+
             Assert.That( map.StObjs.Obtain<SimpleObjectInsideDirect>()!.OneIntValue, Is.EqualTo( 0 ), "A direct property (not an ambient property) CAN NOT be a source for ambient properties." );
             Assert.That( map.StObjs.Obtain<SimpleObjectDirect>()!.OneIntValue, Is.EqualTo( 42 ), "...But it can be set by any IStObjStructuralConfigurator participant." );
         }
@@ -180,11 +188,16 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void PropagationFromAmbientProperty()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new ConfiguratorOneIntValueSetTo42() );
-            collector.RegisterType( typeof( SimpleObjectAmbient ) );
-            collector.RegisterType( typeof( SimpleObjectInsideAmbient ) );
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new ConfiguratorOneIntValueSetTo42() );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleObjectAmbient ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleObjectInsideAmbient ) );
+
+            collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+            r.HasFatalError.Should().Be( false, "There must be no error." );
+
+            var map = r.EngineMap;
+            Throw.DebugAssert( map != null );
             Assert.That( map.StObjs.Obtain<SimpleObjectInsideAmbient>()!.OneIntValue, Is.EqualTo( 42 ), "Of course, ambient properties propagate their values." );
         }
 
@@ -206,12 +219,12 @@ namespace CK.StObj.Engine.Tests
         {
         }
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class C1 : BaseForObject, IRealObject
         {
         }
 
-        [StObj( Container = typeof( C1 ) )]
+        [RealObject( Container = typeof( C1 ) )]
         public class O1InC1 : BaseForObject, IRealObject
         {
         }
@@ -220,7 +233,7 @@ namespace CK.StObj.Engine.Tests
         {
         }
 
-        [StObj( Container = typeof( C2 ) )]
+        [RealObject( Container = typeof( C2 ) )]
         public class O2InC2 : O1InC1
         {
         }
@@ -237,12 +250,16 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void TypeResolution()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new AmbientResolutionTypeSetter() );
-            collector.RegisterType( typeof( O2InC2 ) );
-            collector.RegisterType( typeof( C2 ) );
-            collector.RegisterType( typeof( TypeToMap ) );
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new AmbientResolutionTypeSetter() );
+            collector.RegisterType( TestHelper.Monitor, typeof( O2InC2 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( C2 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( TypeToMap ) );
+            collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+            r.HasFatalError.Should().Be( false, "There must be no error." );
+
+            var map = r.EngineMap;
+            Throw.DebugAssert( map != null );
 
             TypeToMap o = map.StObjs.Obtain<TypeToMap>()!;
             Assert.That( map.StObjs.Obtain<C1>()!.Ambient, Is.SameAs( o ) );

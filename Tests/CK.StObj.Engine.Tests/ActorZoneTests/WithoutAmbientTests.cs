@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
     public class WithoutAmbientTests
     {
         // This is not how the real SqlDefaultDatabase is implemented: see WithAmbientTests for a more accurate reproduction.
-        [StObj( ItemKind = DependentItemKindSpec.Group,
+        [RealObject( ItemKind = DependentItemKindSpec.Group,
                 Children = new Type[] 
                 { 
                     typeof( BasicPackage ), 
@@ -39,24 +39,24 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         #region Basic Package
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class BasicPackage : IRealObject
         {
         }
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicActor : IRealObject
         {
         }
 
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicUser : IRealObject
         {
         }
 
 
-        [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
         public class BasicGroup : IRealObject
         {
             void StObjConstruct( BasicActor actor )
@@ -72,7 +72,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         {
         }
 
-        [StObj( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
         public class ZoneGroup : BasicGroup
         {
             void StObjConstruct( ISecurityZone zone )
@@ -84,7 +84,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         {
         }
 
-        [StObj( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
+        [RealObject( Container = typeof( ZonePackage ), ItemKind = DependentItemKindSpec.Item )]
         public class SecurityZone : ISecurityZone
         {
             void StObjConstruct( BasicGroup group )
@@ -96,12 +96,12 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         #region Authentication Package
 
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        [RealObject( ItemKind = DependentItemKindSpec.Container )]
         public class AuthenticationPackage : IRealObject
         {
         }
 
-        [StObj( Container = typeof( AuthenticationPackage ) )]
+        [RealObject( Container = typeof( AuthenticationPackage ) )]
         public class AuthenticationUser : BasicUser
         {
         }
@@ -127,27 +127,31 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public void LayeredArchitecture()
         {
             var valueResolver = new ValueResolver();
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), valueResolver: valueResolver );
-            collector.RegisterType( typeof( BasicPackage ) );
-            collector.RegisterType( typeof( BasicActor ) );
-            collector.RegisterType( typeof( BasicUser ) );
-            collector.RegisterType( typeof( BasicGroup ) );
-            collector.RegisterType( typeof( ZonePackage ) );
-            collector.RegisterType( typeof( ZoneGroup ) );
-            collector.RegisterType( typeof( SecurityZone ) );
-            collector.RegisterType( typeof( AuthenticationPackage ) );
-            collector.RegisterType( typeof( AuthenticationUser ) );
-            collector.RegisterType( typeof( SqlDefaultDatabase ) );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), valueResolver: valueResolver );
+            collector.RegisterTypes( TestHelper.Monitor, new[] { typeof( BasicPackage ),
+                                                                 typeof( BasicActor ),
+                                                                 typeof( BasicUser ),
+                                                                 typeof( BasicGroup ),
+                                                                 typeof( ZonePackage ),
+                                                                 typeof( ZoneGroup ),
+                                                                 typeof( SecurityZone ),
+                                                                 typeof( AuthenticationPackage ),
+                                                                 typeof( AuthenticationUser ),
+                                                                 typeof( SqlDefaultDatabase ) } );
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-            
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( r != null, "No initialization error." );
 
-            WithAmbientTests.CheckChildren<BasicPackage>( r.StObjs, "BasicActor,BasicUser,BasicGroup" );
-            WithAmbientTests.CheckChildren<ZonePackage>( r.StObjs, "SecurityZone,ZoneGroup" );
-            WithAmbientTests.CheckChildren<SqlDefaultDatabase>( r.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
-            var db = r.StObjs.Obtain<SqlDefaultDatabase>();
+            collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
+            r.HasFatalError.Should().Be( false, "There must be no error." );
+
+            var map = r.EngineMap;
+            Throw.DebugAssert( "No initialization error.", map != null );
+
+            WithAmbientTests.CheckChildren<BasicPackage>( map.StObjs, "BasicActor,BasicUser,BasicGroup" );
+            WithAmbientTests.CheckChildren<ZonePackage>( map.StObjs, "SecurityZone,ZoneGroup" );
+            WithAmbientTests.CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
+            var db = map.StObjs.Obtain<SqlDefaultDatabase>();
             Debug.Assert( db != null );
             db.ConnectionString.Should().Be( "The connection String" );
         }

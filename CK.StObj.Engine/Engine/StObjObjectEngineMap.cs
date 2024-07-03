@@ -21,7 +21,7 @@ namespace CK.Setup
     {
         readonly Dictionary<object, MutableItem> _map;
         readonly IReadOnlyList<MutableItem> _finaImplementations;
-        readonly IReadOnlyCollection<Assembly> _assemblies;
+        readonly IReadOnlyDictionary<Assembly,bool> _assemblies;
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
         // during Real objects processing.
@@ -30,7 +30,7 @@ namespace CK.Setup
         // This sucks...
         IReadOnlyList<MutableItem>? _orderedStObjs;
         Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
-        IEndpointResult? _endpointResult;
+        IDIContainerAnalysisResult? _endpointResult;
         IReadOnlyDictionary<Type, IStObjMultipleInterface>? _multiplemappings;
 
         /// <summary>
@@ -39,12 +39,12 @@ namespace CK.Setup
         /// <param name="names">The final map names.</param>
         /// <param name="allSpecializations">
         /// Pre-dimensioned array that will be filled with actual
-        /// mutable items by <see cref="StObjCollector.GetResult()"/>.
+        /// mutable items by <see cref="StObjCollector.GetResult(IActivityMonitor)"/>.
         /// </param>
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
         internal StObjObjectEngineMap( IReadOnlyList<string> names,
                                        IReadOnlyList<MutableItem> allSpecializations,
-                                       IReadOnlyCollection<Assembly> assemblies )
+                                       IReadOnlyDictionary<Assembly,bool> assemblies )
         {
             Debug.Assert( names != null );
             Names = names;
@@ -113,9 +113,8 @@ namespace CK.Setup
         /// <returns>The most abstract, less specialized, associated StObj.</returns>
         internal MutableItem? ToHighestImpl( Type t )
         {
-            if( t == null ) throw new ArgumentNullException( "t" );
-            MutableItem? c;
-            if( _map.TryGetValue( t, out c ) )
+            Throw.CheckNotNullArgument( t );
+            if( _map.TryGetValue( t, out MutableItem? c ) )
             {
                 if( c.RealObjectType.Type != t )
                 {
@@ -151,13 +150,13 @@ namespace CK.Setup
 
         IReadOnlyDictionary<Type, ITypeAttributesCache> IStObjEngineMap.AllTypesAttributesCache => (IReadOnlyDictionary<Type, ITypeAttributesCache>?)_allTypesAttributesCache ?? ImmutableDictionary<Type, ITypeAttributesCache>.Empty;
 
-        IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
+        IDIContainerAnalysisResult IStObjEngineMap.EndpointResult => _endpointResult!;
 
         IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
 
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
                                               Dictionary<Type,ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult? endpointResult,
+                                              IDIContainerAnalysisResult? endpointResult,
                                               IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             _orderedStObjs = ordered;
@@ -175,9 +174,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Dynamically projects <see cref="CKTypeCollectorResult.Assemblies"/> to their <see cref="VFeature"/>
-        /// (ordered by <see cref="VFeature.Name"/> since by design there can not be multiple versions by feature).
+        /// (ordered by <see cref="VFeature.Name"/> since by design there cannot be multiple versions by feature).
         /// </summary>
-        public IReadOnlyCollection<VFeature> Features => _assemblies.Select( ToVFeature ).OrderBy( Util.FuncIdentity ).ToList();
+        public IReadOnlyCollection<VFeature> Features => _assemblies.Where( kv => kv.Value )
+                                                                    .Select( kv => ToVFeature( kv.Key ) )
+                                                                    .OrderBy( Util.FuncIdentity )
+                                                                    .ToList();
 
         static VFeature ToVFeature( Assembly a )
         {

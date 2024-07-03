@@ -13,15 +13,6 @@ namespace CK.Core
         /// Gets the service kind.
         /// </summary>
         AutoServiceKind AutoServiceKind { get; }
-
-        /// <summary>
-        /// Gets the types that must be marshalled for this service to be marshallable.
-        /// This is empty (if this service is not marshallable), it contains this <see cref="IStObjFinalClass.ClassType"/>
-        /// (if it is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available), or is a set of one or more types
-        /// that must have a marshaller.
-        /// </summary>
-        IReadOnlyCollection<Type> MarshallableTypes { get; }
-
     }
 
 }

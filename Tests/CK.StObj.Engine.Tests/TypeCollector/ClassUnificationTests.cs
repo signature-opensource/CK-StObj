@@ -4,6 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service.TypeCollector
 {
@@ -21,9 +22,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             var r = CheckSuccess( collector =>
             {
-                collector.RegisterClass( typeof( UnifiedA ) );
-                collector.RegisterClass( typeof( AS1 ) );
-                collector.RegisterClass( typeof( AS2 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( UnifiedA ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( AS1 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( AS2 ) );
             } );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
             var c = r.AutoServices.RootClasses[0].MostSpecialized;
@@ -36,8 +37,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             var r = CheckSuccess( collector =>
             {
-                collector.RegisterClass( typeof( UnifiedAWithoutS2 ) );
-                collector.RegisterClass( typeof( AS1 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( UnifiedAWithoutS2 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( AS1 ) );
             } );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
             r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
@@ -55,11 +56,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             var r = CheckSuccess( collector =>
             {
-                collector.RegisterClass( typeof( _UnifiedA1 ) );
-                collector.RegisterClass( typeof( _UnifiedA2 ) );
-                collector.RegisterClass( typeof( _AS1 ) );
-                collector.RegisterClass( typeof( _AS2 ) );
-                collector.RegisterClass( typeof( _AS3 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( _UnifiedA1 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( _UnifiedA2 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( _AS1 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( _AS2 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( _AS3 ) );
             } );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
             r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( _UnifiedA2 ) );
@@ -77,11 +78,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             var r = CheckSuccess( collector =>
             {
-                collector.RegisterClass( typeof( ExternalUnifier ) );
-                collector.RegisterClass( typeof( e_UnifiedA2 ) );
-                collector.RegisterClass( typeof( e_AS1 ) );
-                collector.RegisterClass( typeof( e_AS2 ) );
-                collector.RegisterClass( typeof( e_AS3 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( ExternalUnifier ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( e_UnifiedA2 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( e_AS1 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( e_AS2 ) );
+                collector.RegisterClass( TestHelper.Monitor, typeof( e_AS3 ) );
             } );
             r.AutoServices.RootClasses.Should().HaveCount( 2 );
             r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( e_A ) ).MostSpecialized!.ClassType
@@ -102,9 +103,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             {
                 var r = CheckSuccess( collector =>
                 {
-                    collector.RegisterClass( typeof( u_AS1 ) );
-                    collector.RegisterClass( typeof( u_AS2 ) );
-                    collector.RegisterClass( typeof( u_UnifiedD ) );
+                    collector.RegisterClass( TestHelper.Monitor, typeof( u_AS1 ) );
+                    collector.RegisterClass( TestHelper.Monitor, typeof( u_AS2 ) );
+                    collector.RegisterClass( TestHelper.Monitor, typeof( u_UnifiedD ) );
                 } );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
                 r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
@@ -113,9 +114,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             {
                 var r = CheckSuccess( collector =>
                 {
-                    collector.RegisterClass( typeof( u_AS1 ) );
-                    collector.RegisterClass( typeof( u_AS2 ) );
-                    collector.RegisterClass( typeof( u_UnifiedA ) );
+                    collector.RegisterClass( TestHelper.Monitor, typeof( u_AS1 ) );
+                    collector.RegisterClass( TestHelper.Monitor, typeof( u_AS2 ) );
+                    collector.RegisterClass( TestHelper.Monitor, typeof( u_UnifiedA ) );
                 } );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
                 r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
@@ -127,10 +128,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         public void unification_failure_on_two_potential_unifiers()
         {
             var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( u_AS1 ) );
-            collector.RegisterClass( typeof( u_AS2 ) );
-            collector.RegisterClass( typeof( u_UnifiedD ) );
-            collector.RegisterClass( typeof( u_UnifiedA ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( u_AS1 ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( u_AS2 ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( u_UnifiedD ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( u_UnifiedA ) );
             var r = CheckFailure( collector );
         }
 
@@ -160,10 +161,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         public void subgraph_requires_unification( Type unifier )
         {
             var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( s_AS1 ) );
-            collector.RegisterClass( typeof( s_AS2a ) );
-            collector.RegisterClass( typeof( s_AS2b ) );
-            collector.RegisterClass( unifier );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS1 ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2a ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2b ) );
+            collector.RegisterClass( TestHelper.Monitor, unifier );
             var r = CheckFailure( collector );
             var ambiguities = r.AutoServices.ClassAmbiguities;
             ambiguities.Should().HaveCount( 1 );
@@ -179,10 +180,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         public void supergraph_requires_unification( Type unifier )
         {
             var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( s_AS1 ) );
-            collector.RegisterClass( typeof( s_AS2a ) );
-            collector.RegisterClass( typeof( s_AS2b ) );
-            collector.RegisterClass( unifier );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS1 ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2a ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2b ) );
+            collector.RegisterClass( TestHelper.Monitor, unifier );
             var r = CheckFailure( collector );
             var ambiguities = r.AutoServices.ClassAmbiguities;
             ambiguities.Should().HaveCount( 1 );
@@ -196,9 +197,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         public void graph_with_two_ambiguities()
         {
             var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( s_AS1 ) );
-            collector.RegisterClass( typeof( s_AS2a ) );
-            collector.RegisterClass( typeof( s_AS2b ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS1 ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2a ) );
+            collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2b ) );
             var r = CheckFailure( collector );
             var ambiguities = r.AutoServices.ClassAmbiguities;
             ambiguities.Should().HaveCount( 2 );
@@ -213,11 +214,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 {
                     CheckSuccess( collector =>
                     {
-                        collector.RegisterClass( typeof( s_AS1 ) );
-                        collector.RegisterClass( typeof( s_AS2a ) );
-                        collector.RegisterClass( typeof( s_AS2b ) );
-                        collector.RegisterClass( super );
-                        collector.RegisterClass( sub );
+                        collector.RegisterClass( TestHelper.Monitor, typeof( s_AS1 ) );
+                        collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2a ) );
+                        collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2b ) );
+                        collector.RegisterClass( TestHelper.Monitor, super );
+                        collector.RegisterClass( TestHelper.Monitor, sub );
                     } );
                 }
             }

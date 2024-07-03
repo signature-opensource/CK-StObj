@@ -22,11 +22,7 @@ namespace CK.Setup
         /// <param name="m">The member to implement.</param>
         /// <param name="codeGenContext">Code generation context with its Dynamic assembly being implemented.</param>
         /// <param name="typeBuilder">The type builder to use.</param>
-        /// <returns>
-        /// The <see cref="CSCodeGenerationResult"/>. If a <see cref="CSCodeGenerationResult.ImplementorType"/> is specified,
-        /// it must implement this <see cref="IAutoImplementorMethod"/> interface.
-        /// On error, the error must be logged into the <paramref name="monitor"/>.
-        /// </returns>
+        /// <returns>The <see cref="CSCodeGenerationResult"/>.</returns>
         CSCodeGenerationResult Implement( IActivityMonitor monitor, T m, ICSCodeGenerationContext codeGenContext, ITypeScope typeBuilder );
     }
 

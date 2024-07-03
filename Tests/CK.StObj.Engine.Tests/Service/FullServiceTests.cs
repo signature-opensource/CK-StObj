@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -178,7 +179,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
         }
 
-        public interface IB : IRealObject
+        public interface IBIsRealObject : IRealObject
         {
             int BCanTalkToYou( IActivityMonitor m, string msg );
         }
@@ -240,7 +241,7 @@ namespace CK.StObj.Engine.Tests.Service
         /// a Service MUST have one and only one public constructor.
         /// An RealObject that implements a Service is an exception to this rule.
         /// </summary>
-        public abstract class B : IB, IAutoServiceCanBeImplementedByRealObject
+        public abstract class B : IBIsRealObject, IAutoServiceCanBeImplementedByRealObject
         {
             void IAutoServiceCanBeImplementedByRealObject.DoSomething( IActivityMonitor m )
             {
@@ -274,8 +275,14 @@ namespace CK.StObj.Engine.Tests.Service
 
             void ConfigureServices( StObjContextRoot.ServiceRegister register, TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem conf )
             {
-                var impl = conf.AlwaysUseAlice ? typeof( PrivateAlwaysAliceProvider ) : typeof( PrivateAliceOrBobProvider );
-                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true, allowMultipleRegistration: false );
+                if( conf.AlwaysUseAlice )
+                {
+                    register.Services.AddScoped<IAliceOrBobProvider, PrivateAlwaysAliceProvider>();
+                }
+                else
+                {
+                    register.Services.AddScoped<IAliceOrBobProvider, PrivateAliceOrBobProvider>();
+                }
             }
 
             [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]
@@ -286,23 +293,26 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void code_generation_is_so_easy_on_real_objects()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
+
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
-            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
-                sp.GetRequiredService<IB>()
+                var map = configuration.Run().LoadMap();
+                
+                using var auto = map.CreateAutomaticServices( startupServices: startupServices );
+
+                auto.Services.GetRequiredService<IBIsRealObject>()
                     .BCanTalkToYou( TestHelper.Monitor, "Magic!" )
                     .Should().Be( 3172 );
 
-                sp.GetRequiredService<IB>()
-                    .Should().BeSameAs( sp.GetRequiredService<B>() )
-                    .And.BeSameAs( sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
+                auto.Services.GetRequiredService<IBIsRealObject>()
+                    .Should().BeSameAs( auto.Services.GetRequiredService<B>() )
+                    .And.BeSameAs( auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
 
-                logs.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
+                entries.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
             }
         }
 
@@ -319,12 +329,14 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void code_generation_is_also_easy_on_services()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceCanTalk ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ServiceCanTalk ) );
+
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector ).Services;
-                sp.GetRequiredService<ServiceCanTalk>()
+                using var auto = configuration.Run().CreateAutomaticServices();
+
+                auto.Services.GetRequiredService<ServiceCanTalk>()
                     .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
                     .Should().Be( 3172 );
 
@@ -333,69 +345,29 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void startup_services_registration_on_real_objects()
-        {
-            // Succesful run: TotallyExternalStartupService is available.
-            {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( A ) );
-                collector.RegisterType( typeof( B ) );
-                var startupServices = new SimpleServiceContainer();
-                startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
-
-                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
-                {
-                    using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
-                    sp.GetRequiredService<IA1>().Should().BeSameAs( sp.GetRequiredService<A>() );
-                    sp.GetRequiredService<IB>().Should().BeSameAs( sp.GetRequiredService<B>() );
-                    using( var scope = sp.CreateScope() )
-                    {
-                        sp.GetRequiredService<IA1>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IA1>(), "Real object is Singleton." );
-                        sp.GetRequiredService<IB>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IB>(), "Real object is Singleton." );
-                    }
-                    // We are using here the default B's implementation.
-                    sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
-
-                    logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                    logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                    logs.Should().Contain( e => e.Text == "I'm doing something from B." );
-                }
-            }
-            // Failed (while Configuring Services): TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem is missing.
-            {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( A ) );
-                collector.RegisterType( typeof( B ) );
-                TestHelper.GetFailedAutomaticServicesConfiguration( collector );
-            }
-        }
-
-        [Test]
         public void Service_implemented_by_a_real_object_can_be_overridden()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ScopedImplementation ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
+                using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
                 // We are using here the ScopedImplementation.
-                var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
+                var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.DoSomething( TestHelper.Monitor );
                 // Just to be sure it's actually a Scoped service.
-                using( var scoped = sp.CreateScope() )
+                using( var scoped = auto.Services.CreateScope() )
                 {
                     scoped.ServiceProvider.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().Should().NotBeSameAs( s );
                 }
-                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                logs.Should().NotContain( e => e.Text == "I'm doing something from B." );
-                logs.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Alice'.'."
+                entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                entries.Should().NotContain( e => e.Text == "I'm doing something from B." );
+                entries.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Alice'.'."
                                             || e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Bob'.'." );
             }
         }
@@ -403,95 +375,85 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Initially_registered_StartupServices_may_be_used_as_configurator_or_options()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ScopedImplementation ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
 
-            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
+                using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
                 // We are using here the ScopedImplementation.
-                var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
+                var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.Should().BeOfType<ScopedImplementation>();
                 s.DoSomething( TestHelper.Monitor );
 
-                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                logs.Should().NotContain( e => e.Text == "I'm doing something from B." );
-                logs.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is ALWAYS 'Alice'.'." );
+                entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                entries.Should().NotContain( e => e.Text == "I'm doing something from B." );
+                entries.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is ALWAYS 'Alice'.'." );
             }
         }
 
         [Test]
         public void superseding_a_IRealObject_implemented_service_by_a_wrapper()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SingletonImplementation ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
-                using var sp = r.ServiceRegister.Services.BuildServiceProvider();
-                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
-                r.ServiceRegister.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
+                using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
+                auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
+                auto.ServiceCollection.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
 
-                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                logs.Should().Contain( e => e.Text == "I'm wrapping the default B's implementation." );
-                logs.Should().Contain( e => e.Text == "I'm doing something from B." );
+                entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                entries.Should().Contain( e => e.Text == "I'm wrapping the default B's implementation." );
+                entries.Should().Contain( e => e.Text == "I'm doing something from B." );
             }
         }
 
         [Test]
         public void superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( BDependency ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( BDependency ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
-                using var sp = r.ServiceRegister.Services.BuildServiceProvider();
-                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
+                using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
+                auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
-                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                logs.Should().Contain( e => e.Text == "B is no more doing something." )
-                             .And.NotContain( e => e.Text == "I'm doing something from B." );
+                entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                entries.Should().Contain( e => e.Text == "B is no more doing something." )
+                                .And.NotContain( e => e.Text == "I'm doing something from B." );
             }
         }
 
         [Test]
         public void any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
 
-            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Invalid, 1000 ) )
             {
-                TestHelper.GetFailedAutomaticServicesConfiguration( collector, null, startupServices );
+                configuration.GetFailedAutomaticServices( "But SuperStartupService has been told to fail miserably.",
+                                                                       startupServices: startupServices );
 
-                logs.Should().Contain( e => e.MaskedLevel >= LogLevel.Error );
-                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                logs.Should().Contain( e => e.Text == "But SuperStartupService has been told to fail miserably." );
+                entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." && e.MaskedLevel == LogLevel.Info );
             }
         }
 
@@ -506,44 +468,35 @@ namespace CK.StObj.Engine.Tests.Service
             public bool RequiredValueType { get; }
         }
 
-        public class ServiceWithOptionalValueTypeCtorParameters : IAutoService
-        {
-            public ServiceWithOptionalValueTypeCtorParameters( bool optionalValueType = true, string stringAreConsideredSameAsValueType = "Hop" )
-            {
-            }
-        }
-
         [Test]
         public void ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
+            using var _ = TestHelper.Monitor.OpenInfo( nameof( ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ServiceWithValueTypeCtorParameters ) );
+
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
-
-                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn, 1000 ) )
                 {
-                    using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                    services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+                    using var auto = configuration.Run().CreateAutomaticServices();
+                    auto.Services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
 
-                    logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                                && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
+                    entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                                   && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
                 }
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
-
-                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+                    using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
                     {
-                        services.Services.AddSingleton( typeof( bool ), true );
+                        services.AddSingleton( typeof( bool ), true );
 
-                    } ).Services;
-                    var resolved = s.GetRequiredService<ServiceWithValueTypeCtorParameters>();
+                    } );
+                    var resolved = auto.Services.GetRequiredService<ServiceWithValueTypeCtorParameters>();
                     resolved.RequiredValueType.Should().BeTrue();
 
-                    logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                    entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
                                                 && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.OrdinalIgnoreCase ) );
                 }
             }
@@ -566,35 +519,41 @@ namespace CK.StObj.Engine.Tests.Service
         public void varying_params_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithVaryingParams ) );
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
+                using var auto = configuration.Run().CreateAutomaticServices();
 
-                using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
+                auto.Services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithVaryingParams ) );
-
-                using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
+                using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
                 {
-                    services.Services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
+                    services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
 
-                } ).Services;
-                var resolved = s.GetRequiredService<ServiceWithVaryingParams>();
+                } );
+                var resolved = auto.Services.GetRequiredService<ServiceWithVaryingParams>();
                 resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
             }
 
         }
 
+        public class ServiceWithOptionalValueTypeCtorParameters : IAutoService
+        {
+            public ServiceWithOptionalValueTypeCtorParameters( bool optionalValueType = true, string stringAreConsideredSameAsValueType = "Hop" )
+            {
+            }
+        }
+
         [Test]
         public void ValueType_ctor_parameters_with_default_value_are_ignored()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-            services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
+            auto.Services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
         }
 
         public interface IPublicService : IAutoService
@@ -621,9 +580,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void internal_interfaces_are_ignored()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( TheService ) );
-            TestHelper.GetSuccessfulResult( collector );
+            var collector = TestHelper.CreateTypeCollector( typeof( TheService ) );
+            TestHelper.GetSuccessfulCollectorResult( collector );
         }
 
 

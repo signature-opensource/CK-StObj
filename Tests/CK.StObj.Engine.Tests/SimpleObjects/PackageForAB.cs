@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects
 {
     public interface IAmNotHere : IRealObject { }
 
-    [StObj( ItemKind = DependentItemKindSpec.Container )]
+    [RealObject( ItemKind = DependentItemKindSpec.Container )]
     public class PackageForAB : IRealObject
     {
         public int ConstructCount { get; protected set; }

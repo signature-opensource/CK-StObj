@@ -7,6 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using CK.Testing;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
@@ -18,16 +19,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public async Task global_DI_automatically_falls_back_to_default_value_provider_for_ubiquitous_info_Async()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( FakeTenantInfo ),
-                                                     typeof( DefaultTenantProvider ) );
-            using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
-            {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
-                services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
-            } ).Services;
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( FakeTenantInfo ),
+                                            typeof( DefaultTenantProvider ) );
 
-            await TestHelper.StartHostedServicesAsync( services );
-            using( var scoped = services.CreateScope() )
+            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+            {
+                services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
+                services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+            } );
+
+            await TestHelper.StartHostedServicesAsync( auto.Services );
+            using( var scoped = auto.Services.CreateScope() )
             {
                 var tenant = scoped.ServiceProvider.GetService<IFakeTenantInfo>();
                 Debug.Assert( tenant != null );
@@ -35,8 +38,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        [EndpointDefinition( EndpointKind.Front )]
-        public abstract class SomeFrontEndpointDefinition : EndpointDefinition<SomeFrontEndpointDefinition.Data>
+        [DIContainerDefinition( DIContainerKind.Endpoint )]
+        public abstract class SomeFrontDIContainerDefinition : DIContainerDefinition<SomeFrontDIContainerDefinition.Data>
         {
             public sealed class Data : IScopedData
             {
@@ -47,7 +50,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 }
             }
 
-            public override void ConfigureEndpointServices( IServiceCollection services, Func<IServiceProvider, Data> scopeData, IServiceProviderIsService globalServiceExists )
+            public override void ConfigureContainerServices( IServiceCollection services, Func<IServiceProvider, Data> scopeData, IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor>( sp => scopeData( sp )._monitor );
                 services.AddScoped<IParallelLogger>( sp => scopeData( sp )._monitor.ParallelLogger );
@@ -55,24 +58,25 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task Front_endpoint_default_for_ubiquitous_services_Async()
+        public void Front_endpoint_default_for_Ambient_services()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( SomeFrontEndpointDefinition ),
-                                                     typeof( FakeTenantInfo ),
-                                                     typeof( DefaultTenantProvider ),
-                                                     typeof( FakeCultureInfo ),
-                                                     typeof( DefaultCultureProvider ),
-                                                     typeof( FakeAuthenticationInfo ),
-                                                     typeof( DefaultAuthenticationInfoProvider ) );
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
+                                            typeof( FakeTenantInfo ),
+                                            typeof( DefaultTenantProvider ),
+                                            typeof( FakeCultureInfo ),
+                                            typeof( DefaultCultureProvider ),
+                                            typeof( FakeAuthenticationInfo ),
+                                            typeof( DefaultAuthenticationInfoProvider ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            await TestHelper.StartHostedServicesAsync( services );
-
-            var someFront = services.GetRequiredService<IEndpointType<SomeFrontEndpointDefinition.Data>>();
+            // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
+            // the defaults.
+            var someFront = auto.Services.GetRequiredService<IDIContainer<SomeFrontDIContainerDefinition.Data>>();
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                using( var scoped = someFront.GetContainer().CreateScope( new SomeFrontEndpointDefinition.Data( TestHelper.Monitor ) ) )
+                using( var scoped = someFront.GetContainer().CreateScope( new SomeFrontDIContainerDefinition.Data( TestHelper.Monitor ) ) )
                 {
                     var tenantI = scoped.ServiceProvider.GetRequiredService<IFakeTenantInfo>();
                     var tenantC = scoped.ServiceProvider.GetRequiredService<FakeTenantInfo>();
@@ -87,14 +91,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>
+        public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>
         {
             readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
 
             public IFakeAuthenticationInfo Default => _anonymous;
         }
 
-        public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>
+        public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IAmbientServiceDefaultProvider<FakeAuthenticationInfo>
         {
             readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
 
@@ -103,17 +107,25 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
         [Test]
-        public void ubiquitous_services_are_painful_when_they_are_not_AutoService()
+        public void Ambient_services_are_painful_when_they_are_not_AutoService()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
-                                                         typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) );
-                TestHelper.GetFailedResult( c );
+                const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<FakeAuthenticationInfo>'. " +
+                                   "Type 'FakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
+
+
+                var c = new[]{ typeof( FakeAuthenticationInfo ),
+                               typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) };
+                TestHelper.GetFailedCollectorResult( c, msg );
             }
             {
-                var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
-                                                         typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
-                TestHelper.GetFailedResult( c );
+                const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>'. " +
+                                   "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
+
+                var configuration = TestHelper.CreateDefaultEngineConfiguration();
+                configuration.FirstBinPath.Types.Add( typeof( FakeAuthenticationInfo ),
+                                                typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
+                configuration.GetFailedAutomaticServices( msg );
             }
         }
     }

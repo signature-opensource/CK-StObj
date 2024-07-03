@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>CK.Setup</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
+    <ProjectReference Include="..\CK.Poco.Exchange\CK.Poco.Exchange.csproj" />
+  </ItemGroup>
+</Project>

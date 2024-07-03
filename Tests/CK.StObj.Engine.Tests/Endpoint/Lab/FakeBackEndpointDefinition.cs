@@ -1,7 +1,6 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Runtime.CompilerServices;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
@@ -12,19 +11,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
     }
 
-    [EndpointDefinition( EndpointKind.Back )]
-    abstract class FakeBackEndpointDefinition : EndpointDefinition<FakeBackEndpointDefinition.Data>
+    [DIContainerDefinition( DIContainerKind.Background )]
+    abstract class FakeBackDIContainerDefinition : DIContainerDefinition<FakeBackDIContainerDefinition.Data>
     {
         // Required definition of the specialized ScopedData type.
         // This can typically define internal fields used to exchange data from the external
         // to the internal world.
         // Here we have decided to explicitly provide the IActivityMonitor. This supposes that
-        // it is "reserved" to work on this side in the scoped service container!
-        public sealed class Data : BackScopedData
+        // this DI container must be used with awaiting whathever it does.
+        public sealed class Data : BackendScopedData
         {
             internal readonly IActivityMonitor _monitor;
 
-            public Data( EndpointUbiquitousInfo info, IActivityMonitor monitor )
+            public Data( AmbientServiceHub info, IActivityMonitor monitor )
                 : base( info )
             {
                 _monitor = monitor;
@@ -37,7 +36,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // (if you like pain).
         // This enables the endpoint to inject new service types or override registrations of existing
         // services registered in the endpoint container.
-        public override void ConfigureEndpointServices( IServiceCollection services,
+        public override void ConfigureContainerServices( IServiceCollection services,
                                                         Func<IServiceProvider,Data> scopeData,
                                                         IServiceProviderIsService globalServiceExists )
         {

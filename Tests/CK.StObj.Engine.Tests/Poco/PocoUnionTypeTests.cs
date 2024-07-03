@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -8,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using static CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -16,7 +18,7 @@ namespace CK.StObj.Engine.Tests.Poco
     public partial class PocoUnionTypeTests
     {
         // Error:
-        // [UnionType] attribute on 'IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'class UnionTypes { public (int?,string) Thing { get; } }' with the types (here, (int?,string) is just an example of course).
+        // [UnionType] attribute on 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'class UnionTypes { public (int,string) Thing { get; } }' with the types (here, (int,string) is just an example of course).
         public interface IInvalidPocoWithUnionTypeMissUnionTypes : IPoco
         {
             [UnionType]
@@ -37,7 +39,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         // Error:
-        // The 'Thing' property of the nested class UnionTypes must be a value tuple (current type is String).
+        // Property 'Thing' of the nested 'class CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeInvalidFieldDefinition.UnionTypes' must be a value tuple (current type is string).
         public interface IInvalidPocoWithUnionTypeInvalidFieldDefinition : IPoco
         {
             [UnionType]
@@ -54,55 +56,30 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_definition_must_be_public_properties_in_nested_class_UnionTypes()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissUnionTypes ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissFieldDefinition ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeInvalidFieldDefinition ) );
-            TestHelper.GetFailedResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidPocoWithUnionTypeMissUnionTypes ) );
+            TestHelper.GetFailedCollectorResult( c, "[UnionType] attribute on 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'class UnionTypes { public (int,string) Thing { get; } }' with the types. Here, (int,string) is just an example of course." );
+            c = TestHelper.CreateTypeCollector( typeof( IInvalidPocoWithUnionTypeMissFieldDefinition ) );
+            TestHelper.GetFailedCollectorResult( c, "The nested class UnionTypes requires a public value tuple 'Thing' property." );
+            c = TestHelper.CreateTypeCollector( typeof( IInvalidPocoWithUnionTypeInvalidFieldDefinition ) );
+            TestHelper.GetFailedCollectorResult( c, "Property 'Thing' of the nested 'class CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeInvalidFieldDefinition.UnionTypes' must be a value tuple (current type is string)." );
         }
 
-        // Error:
-        // Union type 'int' is incompatible with the property type 'String'.
-        public interface IInvalidPocoWithUnionTypeMismatch1 : IPoco
+        public interface IUnionTypePropertyMustBeAnObject : IPoco
         {
             [UnionType]
             string Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (string, int) Thing { get; }
-            }
         }
 
-        // Error:
-        // Union types 'string' ,'DateTime' are incompatible with the property type 'IPoco'.
-        public interface IInvalidPocoWithUnionTypeMismatch2 : IPoco
+        [Test]
+        public void UnionType_property_must_be_an_object()
         {
-            [UnionType]
-            IPoco Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (string, DateTime) Thing { get; }
-            }
+            var c = TestHelper.CreateTypeCollector( typeof( IUnionTypePropertyMustBeAnObject ) );
+            TestHelper.GetFailedCollectorResult( c, "Property 'Thing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IUnionTypePropertyMustBeAnObject' is a UnionType: its type can only be 'object' or 'object?'." );
         }
 
-        // Error:
-        // Union type 'IPoco' is incompatible with the property type 'Int32'.
-        public interface IInvalidPocoWithUnionTypeMismatch3 : IPoco
-        {
-            [UnionType]
-            int Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (IPoco, int) Thing { get; }
-            }
-        }
 
         // Error:
-        // UnionTypes cannot define the type 'object' since this would erase all possible types.
+        // UnionTypes cannot contain the type 'object' since this would erase all possible types.
         public interface IInvalidPocoWithUnionTypeObject : IPoco
         {
             [UnionType]
@@ -115,21 +92,24 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void Union_property_types_must_all_be_assignable_to_the_union_property()
+        public void UnionType_definition_must_not_contain_any_object_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMismatch1 ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMismatch2 ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMismatch3 ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeObject ) );
-            TestHelper.GetFailedResult( c );
+            var c = TestHelper.CreateTypeCollector( typeof( IInvalidPocoWithUnionTypeObject ) );
+            TestHelper.GetFailedCollectorResult( c, "'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeObject.UnionTypes.Thing' cannot define the type 'object' since this would erase all possible types." );
         }
 
-        // Error:
-        // Union type 'int?' must NOT be nullable since 'Object Thing { get; }' is not nullable.
-        public interface INotNullablePropertyConflict1 : IPoco
+        public interface IUnionTypeDefinitionMustBeNotNullable : IPoco
+        {
+            [UnionType]
+            object? Thing { get; set; }
+
+            class UnionTypes
+            {
+                public (string, int)? Thing { get; }
+            }
+        }
+
+        public interface IUnionTypeDefinitionMustAllBeNotNullable1 : IPoco
         {
             [UnionType]
             object Thing { get; set; }
@@ -140,12 +120,10 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
-        // Error:
-        // Union types 'IPoco?' ,'string?' must NOT be nullable since 'Object Thing { get; }' is not nullable.
-        public interface INotNullablePropertyConflict2 : IPoco
+        public interface IUnionTypeDefinitionMustAllBeNotNullable2 : IPoco
         {
             [UnionType]
-            object Thing { get; set; }
+            object? Thing { get; set; }
 
             class UnionTypes
             {
@@ -154,32 +132,18 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void Not_nullable_Union_property_requires_NOT_nullable_union_types()
+        public void UnionType_definitition_must_always_be_not_nullables()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( INotNullablePropertyConflict1 ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( INotNullablePropertyConflict2 ) );
-            TestHelper.GetFailedResult( c );
-        }
+            var c = TestHelper.CreateTypeCollector( typeof( IUnionTypeDefinitionMustBeNotNullable ) );
+            TestHelper.GetFailedCollectorResult( c, "CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IUnionTypeDefinitionMustBeNotNullable.UnionTypes.Thing: union type definition must be a non nullable value tuple." );
 
-        // Error:
-        // None of the union types are nullable but 'Object? Thing { get; }' is nullable.
-        public interface INullablePropertyConflict : IPoco
-        {
-            [UnionType]
-            object? Thing { get; set; }
+            c = TestHelper.CreateTypeCollector( typeof( IUnionTypeDefinitionMustAllBeNotNullable1 ) );
+            TestHelper.GetFailedCollectorResult( c, "CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IUnionTypeDefinitionMustAllBeNotNullable1.UnionTypes.Thing: type definition 'int?' must not be nullable: nullability of the union type is defined by the 'object' property nullability." );
 
-            class UnionTypes
-            {
-                public (string, int) Thing { get; }
-            }
-        }
-
-        [Test]
-        public void Nullable_Union_property_expects_at_least_ONE_nullable_union_types()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( INullablePropertyConflict ) );
-            TestHelper.GetFailedResult( c );
+            c = TestHelper.CreateTypeCollector( typeof( IUnionTypeDefinitionMustAllBeNotNullable2 ) );
+            TestHelper.GetFailedCollectorResult( c,
+                "CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IUnionTypeDefinitionMustAllBeNotNullable2.UnionTypes.Thing: type definition 'IPoco' must not be nullable: nullability of the union type is defined by the 'object' property nullability.",
+                "CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IUnionTypeDefinitionMustAllBeNotNullable2.UnionTypes.Thing: type definition 'string' must not be nullable: nullability of the union type is defined by the 'object' property nullability." );
         }
 
         public interface IPocoWithUnionType : IPoco
@@ -192,7 +156,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int, string, List<string>)? Thing { get; }
+                public (int, string, List<string>) Thing { get; }
                 public (int, string, List<string?>) AnotherThing { get; }
             }
         }
@@ -200,11 +164,13 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_when_not_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add(typeof( IPocoWithUnionType ));
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
+
+            var p = auto.Services.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
 
             p.Thing = 34;
             p.Thing.Should().Be( 34 );
@@ -218,12 +184,10 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // AnotherThing must not be null.
             p.AnotherThing = 3;
-            var p2 = JsonTestHelper.Roundtrip( directory, p );
-            p.Should().BeEquivalentTo( p2 );
         }
 
-        public class Person { }
-        public class Student : Person { }
+        public interface IPerson : IPoco { }
+        public interface IStudent : IPerson { }
 
         [ExternalName( "I2" )]
         public interface IPocoWithDuplicatesUnionTypes2 : IPoco
@@ -233,7 +197,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (Person, Student) AnotherThing { get; }
+                public (IPerson, IStudent) AnotherThing { get; }
             }
         }
 
@@ -245,107 +209,30 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int, Student, string, Person, string, string, string) YetAnotherThing { get; }
+                public (int, IStudent, string, IPerson, string, string, string) YetAnotherThing { get; }
             }
         }
 
         [Test]
         public void IsAssignableFrom_and_duplicates_are_removed()
         {
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes2 ) );
-                TestHelper.GetSuccessfulResult( c );
+                var c = TestHelper.CreateTypeCollector( typeof( IPocoWithDuplicatesUnionTypes2 ), typeof( IPerson ), typeof( IStudent ) );
+                TestHelper.GetSuccessfulCollectorResult( c );
 
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Person' is assignable from (is more general than) 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Student'. Removing the second one.", StringComparison.Ordinal ) )
-                    .And.Contain( t => t.Contains( "UnionType contains only one type. This is weird (but ignored).", StringComparison.Ordinal ) );
+                logs.Should().Contain( "Property 'AnotherThing' on Poco interfaces: 'I2': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IStudent' duplicated. Removing one." );
             }
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes3 ) );
-                TestHelper.GetSuccessfulResult( c );
+                var c = TestHelper.CreateTypeCollector( typeof( IPocoWithDuplicatesUnionTypes3 ), typeof( IPerson ), typeof( IStudent ) );
+                TestHelper.GetSuccessfulCollectorResult( c );
 
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "Property 'YetAnotherThing' of type 'object' on Poco interfaces: 'I3'. UnionType 'string' duplicated. Removing one.", StringComparison.Ordinal ) );
-
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Person' is assignable from (is more general than) 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Student'. Removing the second one.", StringComparison.Ordinal ) );
+                logs.Should()
+                    .Contain( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPerson' duplicated. Removing one." );
+                logs.Count( t => t.Contains( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'string' duplicated. Removing one." ) )
+                    .Should().Be( 3 );
             }
-        }
-
-        [ExternalName( "I4" )]
-        public interface IPocoWithIListInUnion : IPoco
-        {
-            [UnionType]
-            object ConcreteList { get; set; }
-
-            class UnionTypes
-            {
-                public (int, IList<string>) ConcreteList { get; }
-            }
-        }
-
-        [ExternalName( "I4" )]
-        public interface IPocoWithIDictionaryInUnion : IPoco
-        {
-            [UnionType]
-            object ConcreteDictionary { get; set; }
-
-            class UnionTypes
-            {
-                public (int, IDictionary<string,int>) ConcreteDictionary { get; }
-            }
-        }
-
-        [ExternalName( "I5" )]
-        public interface IPocoWithISetInUnion : IPoco
-        {
-            [UnionType]
-            object ConcreteSet { get; set; }
-
-            class UnionTypes
-            {
-                public (int, ISet<string>) ConcreteSet { get; }
-            }
-        }
-
-        [Test]
-        public void Union_property_types_must_be_HashSet_Dictionary_and_List_not_corresponding_interfaces()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithIListInUnion ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IPocoWithIDictionaryInUnion ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IPocoWithISetInUnion ) );
-            TestHelper.GetFailedResult( c );
-        }
-
-        [ExternalName( "I1" )]
-        public interface IPocoWithNullableUnionType : IPoco
-        {
-            [UnionType]
-            object? Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (int, List<string>, string)? Thing { get; }
-            }
-        }
-
-        [Test]
-        public void boxing_lifts_nullable_value_types_so_nullable_value_type_in_union_when_set_can_only_result_in_value_types()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithNullableUnionType ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
-
-            var p = s.GetRequiredService<IPocoFactory<IPocoWithNullableUnionType>>().Create();
-
-            FluentActions.Invoking( () => p.Thing = 5 ).Should().NotThrow();
-            p.Thing.Should().NotBeOfType<int?>().And.Subject.Should().BeOfType<int>( "Unfortunately..." );
-
-            ((object)(byte?)5).Should().BeOfType<byte>( "Here is why." );
         }
 
         public interface ICompositeOfNullableOrNotNullableValueTypes : IPoco
@@ -360,15 +247,15 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_value_types_are_different()
+        public void List_Set_or_Dictionary_of_nullable_and_not_nullable_value_types_are_different()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
-                var c = TestHelper.CreateStObjCollector( typeof( ICompositeOfNullableOrNotNullableValueTypes ) );
-                TestHelper.GetSuccessfulResult( c );
+                var c = TestHelper.CreateTypeCollector( typeof( ICompositeOfNullableOrNotNullableValueTypes ) );
+                TestHelper.GetSuccessfulCollectorResult( c );
 
                 entries.Select( e => e.Text ).Should()
-                    .NotContain( t => t.Contains( "Removing the non nullable one.", StringComparison.Ordinal ) );
+                    .NotContain( t => t.Contains( "duplicated", StringComparison.Ordinal ) );
             }
         }
 
@@ -384,15 +271,12 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_reference_types_are_considered_different()
+        public void List_Set_or_Dictionary_of_nullable_and_not_nullable_reference_types_are_ambiguous()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
-                var c = TestHelper.CreateStObjCollector( typeof( ICompositeOfNullableOrNotNullableRefTypes ) );
-                TestHelper.GetSuccessfulResult( c );
-
-                entries.Select( e => e.Text ).Should()
-                    .NotContain( t => t.Contains( "Removing the non nullable one.", StringComparison.Ordinal ) );
+                var c = TestHelper.CreateTypeCollector( typeof( ICompositeOfNullableOrNotNullableRefTypes ) );
+                TestHelper.GetFailedCollectorResult( c, "Ambiguous UnionType 'List<string?>' is more general than 'List<string>'. Since CanBeExtended is false, types in the union must be unrelated." );
             }
         }
 
@@ -409,25 +293,114 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_if_none_of_the_variant_is_nullable()
+        public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ), typeof( PocoJsonSerializer ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( IPocoWithUnionTypeNoNullable ) );
+            using var auto = configuration.Run().CreateAutomaticServices();
 
-            var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
+            var directory = auto.Services.GetRequiredService<PocoDirectory>();
+
+            var p = auto.Services.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
+            p.Thing.Should().Be( 0m, "Since it's not null, it defaults to the first definition type that is 'defaultable': here the decimal." );
 
             p.Thing = 34;
             p.Thing.Should().Be( 34 );
-            p.Thing = (decimal)555;
-            p.Thing.Should().Be( (decimal)555 );
+            p.Thing = 555m;
+            p.Thing.Should().Be( 555m );
 
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
-
-            var p2 = JsonTestHelper.Roundtrip( directory, p );
-            p.Should().BeEquivalentTo( p2 );
         }
 
+
+
+        public interface IPocoNonExtendable : IPoco
+        {
+            [UnionType]
+            object Thing { get; set; }
+
+            class UnionTypes
+            {
+                public (decimal, int, double) Thing { get; }
+            }
+        }
+
+        public interface IPocoNonExtendableSpecializedMore : IPocoNonExtendable
+        {
+            [UnionType]
+            new object Thing { get; set; }
+
+            new class UnionTypes
+            {
+                public (decimal, int, double, string) Thing { get; }
+            }
+        }
+
+        public interface IPocoNonExtendableSpecializedLess : IPocoNonExtendable
+        {
+            [UnionType]
+            new object Thing { get; set; }
+
+            new class UnionTypes
+            {
+                public (decimal, int) Thing { get; }
+            }
+        }
+
+        [Test]
+        public void Union_property_types_cannot_be_extended_by_default()
+        {
+            var c = TestHelper.CreateTypeCollector( typeof( IPocoNonExtendable ), typeof( IPocoNonExtendableSpecializedMore ) );
+            TestHelper.GetFailedCollectorResult( c, "Property 'Thing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendable', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableSpecializedMore' is a UnionType that cannot be extended." );
+            c = TestHelper.CreateTypeCollector( typeof( IPocoNonExtendable ), typeof( IPocoNonExtendableSpecializedLess ) );
+            TestHelper.GetFailedCollectorResult( c, "Property 'Thing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendable', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableSpecializedLess' is a UnionType that cannot be extended." );
+        }
+
+        public interface IPocoNonExtendableIndependent : IPoco
+        {
+        }
+
+        public interface IPocoNonExtendableIndependentProperty : IPocoNonExtendableIndependent
+        {
+            [UnionType]
+            object? AnotherThing { get; set; }
+
+            class UnionTypes
+            {
+                public (string[], string, List<string>) AnotherThing { get; }
+            }
+        }
+
+        public interface IPocoNonExtendableIndependentLess : IPocoNonExtendableIndependent
+        {
+            [UnionType]
+            object? AnotherThing { get; set; }
+
+            class UnionTypes
+            {
+                public (string[], string) AnotherThing { get; }
+            }
+        }
+
+        public interface IPocoNonExtendableIndependentMore : IPocoNonExtendableIndependent
+        {
+            [UnionType]
+            object? AnotherThing { get; set; }
+
+            class UnionTypes
+            {
+                public (string[], string, IList<string>, ISet<string>) AnotherThing { get; }
+            }
+        }
+
+        [Test]
+        public void Union_property_types_cannot_be_extended_by_default_accross_independent_interfaces()
+        {
+            var c = TestHelper.CreateTypeCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentLess ) );
+            TestHelper.GetFailedCollectorResult( c, "Property 'AnotherThing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentProperty', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentLess' is a UnionType that cannot be extended." );
+            c = TestHelper.CreateTypeCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentMore ) );
+            TestHelper.GetFailedCollectorResult( c, "Property 'AnotherThing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentProperty', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentMore' is a UnionType that cannot be extended." );
+        }
     }
 }

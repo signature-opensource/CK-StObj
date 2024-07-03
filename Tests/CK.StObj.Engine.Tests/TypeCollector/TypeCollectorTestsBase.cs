@@ -15,11 +15,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             Func<IActivityMonitor, Type, bool>? f = null;
             if( typeFilter != null ) f = ( m, t ) => typeFilter( t );
-            return new CKTypeCollector(
-                        TestHelper.Monitor,
-                        new SimpleServiceContainer(),
-                        new DynamicAssembly(),
-                        f );
+            return new CKTypeCollector( new SimpleServiceContainer(), new DynamicAssembly(), f );
         }
 
         public static CKTypeCollectorResult CheckSuccess( Action<CKTypeCollector> registerTypes, CKTypeCollector? existing = null )
@@ -29,7 +25,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             {
                 if( existing == null ) existing = CreateCKTypeCollector();
                 registerTypes( existing );
-                var r = existing.GetResult();
+                var r = existing.GetResult( TestHelper.Monitor );
                 r.LogErrorAndWarnings( TestHelper.Monitor );
                 (r.HasFatalError || error ).Should().Be( false, "There must be no error." );
                 return r;
@@ -38,7 +34,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
 
         public static CKTypeCollectorResult CheckFailure( CKTypeCollector c )
         {
-            var r = c.GetResult();
+            var r = c.GetResult( TestHelper.Monitor );
             r.LogErrorAndWarnings( TestHelper.Monitor );
             r.HasFatalError.Should().Be( true, "There must be at least one fatal error." );
             return r;

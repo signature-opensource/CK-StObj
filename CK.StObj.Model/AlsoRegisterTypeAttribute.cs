@@ -9,7 +9,7 @@ namespace CK.Setup
     /// <summary>
     /// Enables any registered type to register another type.
     /// </summary>
-    [AttributeUsage(AttributeTargets.All, AllowMultiple = true, Inherited = false)]
+    [AttributeUsage( AttributeTargets.All, AllowMultiple = true, Inherited = false )]
     public class AlsoRegisterTypeAttribute : ContextBoundDelegationAttribute
     {
         /// <summary>

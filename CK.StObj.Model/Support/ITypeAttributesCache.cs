@@ -12,8 +12,7 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Specialized <see cref="ICKCustomAttributeMultiProvider"/> bound to a <see cref="P:Type"/>. 
-    /// Attributes of the Type itself MUST be available from this interface.
+    /// Cached type.
     /// </summary>
     public interface ITypeAttributesCache : ICKCustomAttributeMultiProvider
     {

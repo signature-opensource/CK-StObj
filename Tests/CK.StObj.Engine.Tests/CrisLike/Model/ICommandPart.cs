@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using static CK.StObj.Engine.Tests.Poco.PocoGenericTests;
 
 namespace CK.StObj.Engine.Tests.CrisLike
 {

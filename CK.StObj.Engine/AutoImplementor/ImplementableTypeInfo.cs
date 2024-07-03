@@ -1,13 +1,12 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using CK.Reflection;
 using CK.CodeGen;
 using System.Reflection.Emit;
 using CK.Core;
 using CK.Setup;
+using System.Diagnostics;
 
 #nullable enable
 
@@ -97,10 +96,10 @@ namespace CK.Setup
                        || m.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) );
             }
 
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( abstractType == null ) throw new ArgumentNullException( nameof( abstractType ) );
-            if( !abstractType.IsClass || !abstractType.IsAbstract ) throw new ArgumentException( "Type must be an abstract class.", nameof( abstractType ) );
-            if( attributeProvider == null ) throw new ArgumentNullException( nameof( attributeProvider ) );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( abstractType );
+            Throw.CheckArgument( abstractType.IsClass && abstractType.IsAbstract );
+            Throw.CheckNotNullArgument( attributeProvider );
 
             if( abstractType.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( PreventAutoImplementationAttribute ) ) )
             {
@@ -112,9 +111,18 @@ namespace CK.Setup
 
             ICSCodeGeneratorType[] typeImplementors = attributeProvider.GetCustomAttributes<ICSCodeGeneratorType>( abstractType ).ToArray();
 
+            var bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
             // Gets all the virtual methods (abstract methods are virtual).
-            var candidates = abstractType.GetMethods( BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public )
-                                         .Where( m => !m.IsSpecialName && m.IsVirtual );
+            // We normalize the method object to the Declared one because of the way the
+            // TypeAttributeCache/AttributeProvider works: this SHOULD be refactored soon (around IExtTypeInfo).
+            IEnumerable<MethodInfo> candidates = abstractType.GetMethods( bindingFlags )
+                                                    .Where( m => !m.IsSpecialName && m.IsVirtual )
+                                                    .Select( m => m.ReflectedType == m.DeclaringType
+                                                                ? m
+                                                                : m.DeclaringType!.GetMethod( m.Name,
+                                                                                              bindingFlags,
+                                                                                              m.GetParameters().Select( p => p.ParameterType ).ToArray() ) )!;
             int nbUncovered = 0;
             List<ImplementableMethodInfo> methods = new List<ImplementableMethodInfo>();
             foreach( var m in candidates )
@@ -122,7 +130,7 @@ namespace CK.Setup
                 bool isAbstract = m.IsAbstract;
                 if( isAbstract ) ++nbUncovered;
                 // First, consider any IAutoImplementorMethod attribute.
-                IAutoImplementorMethod? impl = attributeProvider.GetCustomAttributes<IAutoImplementorMethod>( m ).SingleOrDefault();
+                var impl = GetAutoImplementorAttribute<IAutoImplementorMethod>( monitor, attributeProvider, m );
                 if( impl == null )
                 {
                     // Second, ask the type.
@@ -141,11 +149,11 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( isAbstract ) monitor.Warn( $"Unable to find auto implementor for abstract method {m.DeclaringType}.{m.Name}." );
+                    if( isAbstract ) WarnMissingImplementor( monitor, abstractType, m );
                 }
             }
             List<ImplementablePropertyInfo> properties = new List<ImplementablePropertyInfo>();
-            var pCandidates = abstractType.GetProperties( BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public );
+            var pCandidates = abstractType.GetProperties( bindingFlags );
             foreach( var p in pCandidates )
             {
                 MethodInfo? mGet = p.GetGetMethod( true );
@@ -161,16 +169,17 @@ namespace CK.Setup
 
                 bool isAbstract = (mGet != null && mGet.IsAbstract) || (mSet != null && mSet.IsAbstract);
                 if( isAbstract ) ++nbUncovered;
-                // First, consider any IAutoImplementorMethod attribute.
-                IAutoImplementorProperty? impl = attributeProvider.GetCustomAttributes<IAutoImplementorProperty>( p ).SingleOrDefault();
+                // First, consider any IAutoImplementorProperty attribute.
+                var declP = p.ReflectedType == p.DeclaringType ? p : p.DeclaringType!.GetProperty( p.Name, bindingFlags )!;
+                var impl = GetAutoImplementorAttribute<IAutoImplementorProperty>( monitor, attributeProvider, declP );
                 if( impl == null )
                 {
                     // Second, ask the type.
-                    IAutoImplementorProperty? tImpl = typeImplementors.Select( t => t.HandleProperty( monitor, p ) ).FirstOrDefault( i => i != null );
+                    IAutoImplementorProperty? tImpl = typeImplementors.Select( t => t.HandleProperty( monitor, declP ) ).FirstOrDefault( i => i != null );
                     if( (impl = tImpl) == null )
                     {
                         // Third, in case of an abstract method, use the ultimate workaround to avoid an error right now and defer the resolution (if possible).
-                        if( isAbstract && (isTypeAutoImplemented || HasAutoImplementationClaim( attributeProvider, p )) ) impl = UnimplementedMarker;
+                        if( isAbstract && (isTypeAutoImplemented || HasAutoImplementationClaim( attributeProvider, declP )) ) impl = UnimplementedMarker;
                     }
                 }
                 if( impl != null )
@@ -180,7 +189,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( isAbstract ) monitor.Warn( $"Unable to find auto implementor for abstract property {p.DeclaringType}.{p.Name}." );
+                    if( isAbstract ) WarnMissingImplementor( monitor, abstractType, p );
                 }
             }
             if( nbUncovered > 0 )
@@ -189,6 +198,43 @@ namespace CK.Setup
                 return null;
             }
             return new ImplementableTypeInfo( abstractType, typeImplementors, properties, methods );
+
+            static T? GetAutoImplementorAttribute<T>( IActivityMonitor monitor, ICKCustomAttributeProvider attributeProvider, MemberInfo m ) where T : class
+            {
+                T? impl = null;
+                List<object>? extra = null;
+                foreach( var autoImpl in attributeProvider.GetCustomAttributes<T>( m ) )
+                {
+                    if( impl == null ) impl = autoImpl;
+                    else
+                    {
+                        extra ??= new List<object>();
+                        extra.Add( autoImpl );
+                    }
+                }
+                if( extra != null )
+                {
+                    Debug.Assert( impl != null );
+                    var ignoring = extra.Select( e => e.GetType().ToCSharpName( false ) ).Concatenate( "', '" );
+                    monitor.Warn( $"More than one AutoImplementor attribute found on {m.DeclaringType:N}.{m.Name}. Considering '{impl.GetType():C}', ignoring '{ignoring}'." );
+                }
+                return impl;
+            }
+
+            static void WarnMissingImplementor( IActivityMonitor monitor, Type abstractType, MemberInfo m )
+            {
+                var declaringType = m.DeclaringType;
+                Debug.Assert( declaringType != null );
+                var mType = m is MethodInfo ? "method" : "property";
+                if( declaringType != abstractType )
+                {
+                    monitor.Warn( $"Unable to find auto implementor for abstract {mType} {declaringType:C}.{m.Name} (from specialized type {abstractType:N})." );
+                }
+                else
+                {
+                    monitor.Warn( $"Unable to find auto implementor for abstract {mType} {declaringType:N}.{m.Name}." );
+                }
+            }
         }
 
         /// <summary>
@@ -208,11 +254,11 @@ namespace CK.Setup
                 b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, (param,attributeData) => false );
                 foreach( var am in MethodsToImplement )
                 {
-                    CK.Reflection.EmitHelper.ImplementEmptyStubMethod( b, am.Method, false );
+                    b.ImplementEmptyStubMethod( am.Method, false );
                 }
                 foreach( var ap in PropertiesToImplement )
                 {
-                    CK.Reflection.EmitHelper.ImplementStubProperty( b, ap.Property, false );
+                    b.ImplementStubProperty( ap.Property, false );
                 }
                 return _stubType = b.CreateType();
             }

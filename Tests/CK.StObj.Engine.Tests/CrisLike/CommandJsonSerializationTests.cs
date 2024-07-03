@@ -1,11 +1,12 @@
 using CK.Core;
+using CK.Poco.Exc.Json;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
+using System.Text.Json;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.CrisLike
@@ -52,16 +53,18 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [Test]
         public void command_json_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ),
-                                                     typeof( CrisCommandDirectoryLike ),
-                                                     typeof( ISimpleCommand ),
-                                                     typeof( IAuthCommand ),
-                                                     typeof( ICriticalCommand ),
-                                                     typeof( IDeviceCommand ),
-                                                     typeof( IFullAuthCommand ),
-                                                     typeof( IFullAuthCommandWithResult ) );
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            Debug.Assert( services != null );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
+                                            typeof( CrisCommandDirectoryLike ),
+                                            typeof( ISimpleCommand ),
+                                            typeof( IAuthCommand ),
+                                            typeof( ICriticalCommand ),
+                                            typeof( IDeviceCommand ),
+                                            typeof( IFullAuthCommand ),
+                                            typeof( IFullAuthCommandWithResult ));
+            using var auto = configuration.Run().CreateAutomaticServices();
+
+            var services = auto.Services;
 
             TestRoundTrip<ISimpleCommand>( services );
             TestRoundTrip<IAuthCommand>( services );
@@ -93,7 +96,15 @@ namespace CK.StObj.Engine.Tests.CrisLike
                     imp.ActualActorId = 37123712;
                 }
 
-                var cmd2 = JsonTestHelper.Roundtrip( directory, cmd );
+                using var readContext = new PocoJsonReadContext( directory );
+                using var writeContext = new PocoJsonWriteContext( directory );
+
+                T ReadFunc( ref Utf8JsonReader r, IUtf8JsonReaderContext ctx )
+                {
+                    return factory.ReadJson( ref r, (PocoJsonReadContext)ctx )!;
+                };
+
+                var cmd2 = TestHelper.JsonIdempotenceCheck( cmd, ( w, c ) => c.WriteJson( w, writeContext ), ReadFunc, readContext );
                 Debug.Assert( cmd2 != null );
 
                 cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );

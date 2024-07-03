@@ -17,21 +17,24 @@ namespace CK.Setup
     {
         readonly DynamicAssembly _tempAssembly;
         readonly BuildValueCollector? _valueCollector;
-        readonly EndpointResult? _endpointResult;
+        readonly DIContainerAnalysisResult? _endpointResult;
+        readonly CKTypeCollectorResult _typeResult;
+        readonly IStObjEngineMap? _engineMap;
 
         internal StObjCollectorResult( CKTypeCollectorResult typeResult,
                                        DynamicAssembly tempAssembly,
-                                       EndpointResult? e,
+                                       DIContainerAnalysisResult? e,
                                        BuildValueCollector? valueCollector )
         {
-            Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (i.e. valueCollector != null ==> !typeResult.HasFatalError)" );
-            CKTypeResult = typeResult;
+            Throw.DebugAssert( "typeResult.HasFatalError ==> valueCollector == null (i.e. valueCollector != null ==> !typeResult.HasFatalError)",
+                               !typeResult.HasFatalError || valueCollector == null );
+            _typeResult = typeResult;
             _tempAssembly = tempAssembly;
             _valueCollector = valueCollector;
             _endpointResult = e;
             if( valueCollector != null )
             {
-                EngineMap = typeResult.RealObjects.EngineMap;
+                _engineMap = typeResult.RealObjects.EngineMap;
             }
         }
 
@@ -43,17 +46,22 @@ namespace CK.Setup
         /// <summary>
         /// Gets the result of the types discovery and analysis.
         /// </summary>
-        public CKTypeCollectorResult CKTypeResult { get; }
+        public CKTypeCollectorResult CKTypeResult => _typeResult;
+
+        /// <summary>
+        /// Gets the Poco Type System builder.
+        /// </summary>
+        public IPocoTypeSystemBuilder PocoTypeSystemBuilder => _typeResult.PocoTypeSystemBuilder;
 
         /// <summary>
         /// Gets the endpoint results if no error occurred during analysis, null otherwise.
         /// </summary>
-        public EndpointResult? EndpointResult => _endpointResult;
+        public DIContainerAnalysisResult? EndpointResult => _endpointResult;
 
         /// <summary>
         /// Gets the final <see cref="IStObjEngineMap"/> if <see cref="HasFatalError"/> is false.
         /// </summary>
-        public IStObjEngineMap? EngineMap { get; }
+        public IStObjEngineMap? EngineMap => _engineMap;
 
         /// <summary>
         /// Gets the dynamic assembly for this context.

@@ -214,7 +214,7 @@ namespace CK.Setup
                             }
                             else
                             {
-                                if( currentF == null ) currentF = new InterfaceFamily();
+                                currentF ??= new InterfaceFamily();
                                 families.Add( root, currentF );
                             }
                             currentF._interfaces.AddRange( baseInterface.Interfaces );
@@ -260,9 +260,10 @@ namespace CK.Setup
         /// <summary>
         /// Called once Mutable items have been created.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeResult">The types discovery result.</param>
         /// <returns>True on success, false on error.</returns>
-        bool ServiceFinalHandling( CKTypeCollectorResult typeResult )
+        bool ServiceFinalHandling( IActivityMonitor monitor, CKTypeCollectorResult typeResult )
         {
             var engineMap = typeResult.RealObjects.EngineMap;
             using( monitor.OpenInfo( $"Services final handling." ) )

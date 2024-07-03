@@ -9,7 +9,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
         public static void ConfigureGlobal( ServiceCollection global )
         {
-            // Here we are working with 3 fake ubiquitous services.
+            // Here we are working with 3 fake ambient services.
             // None of them have code generation (but they could).
             // These simulate resolution from a request token, query parameter or other mean
             // of deducing these informations for the global context.
@@ -24,9 +24,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
 
         // Mimics the code executed at startup based on the Fake objects.
-        public static IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
-                                                                                                        IServiceCollection globalConfiguration,
-                                                                                                        out IServiceProvider? globalServiceProvider )
+        public static IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
+                                                                                                              IServiceCollection globalConfiguration,
+                                                                                                              out IServiceProvider? globalServiceProvider )
         {
             // 1 - This is the AddStObjMap work. The StObjMap is from the StObj assembly or it's an embedded map:
             //     anyway, we have an instance.
@@ -37,22 +37,22 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 globalServiceProvider = null;
                 return null;
             }
+
             // 2 - Once the global DI container is built, the code generated HostedServiceLifetimeTrigger sets the global
-            //     container on THE EndpointTypeManager from its constructor: the HostedServiceLifetimeTrigger
+            //     container on THE DIContainerHub from its constructor: the HostedServiceLifetimeTrigger
             //     is a regular IHostedService, ISingletonAutoService that takes the global IServiceProvider in its constructor.
 
             // This is done by the application host.
             globalServiceProvider = globalConfiguration.BuildServiceProvider();
 
             // HostedServiceLifetimeTrigger constructor.
-            var theEPTM = ((EndpointTypeManager_CK)globalServiceProvider.GetRequiredService<EndpointTypeManager>());
-            theEPTM.SetGlobalContainer( globalServiceProvider );
+            DIContainerHub_CK.SetGlobalServices( globalServiceProvider );
 
-            // 3 - From now on, on demand (this is lazily initialized), the endpoints are able to expose their
+            // 3 - From now on, on demand (this is lazily initialized), the DIContainers are able to expose their
             //     own DI container.
-            var endpointType = globalServiceProvider.GetRequiredService<EndpointTypeManager>()
-                                .EndpointTypes
-                                .OfType<EndpointType<FakeBackEndpointDefinition.Data>>()
+            var endpointType = globalServiceProvider.GetRequiredService<DIContainerHub>()
+                                .Containers
+                                .OfType<DIContainer<FakeBackDIContainerDefinition.Data>>()
                                 .Single();
             return endpointType.GetContainer();
         }

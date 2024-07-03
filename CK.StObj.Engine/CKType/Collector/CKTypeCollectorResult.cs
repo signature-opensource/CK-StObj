@@ -16,14 +16,14 @@ namespace CK.Setup
     {
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
-        internal CKTypeCollectorResult( ISet<Assembly> assemblies,
-                                        IPocoSupportResult? pocoSupport,
+        internal CKTypeCollectorResult( Dictionary<Assembly,bool> assemblies,
+                                        PocoTypeSystemBuilder pocoTypeSystemBuilder,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
                                         IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
                                         IAutoServiceKindComputeFacade kindComputeFacade )
         {
-            PocoSupport = pocoSupport;
+            PocoTypeSystemBuilder = pocoTypeSystemBuilder;
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
@@ -32,15 +32,16 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets all the registered Poco information.
-        /// Null if an error occurred while computing it.
+        /// Gets the Poco Type system builder.
         /// </summary>
-        public IPocoSupportResult? PocoSupport { get; }
+        public IPocoTypeSystemBuilder PocoTypeSystemBuilder { get; }
 
         /// <summary>
-        /// Gets the set of assemblies for which at least one type has been registered.
+        /// Gets the map of assemblies for which at least one type has been registered
+        /// associated to a boolean that states whether this is a VFeature or an infrastructure
+        /// assembly (only required by Roslyn compiler as meta data reference).
         /// </summary>
-        public ISet<Assembly> Assemblies { get; }
+        public Dictionary<Assembly,bool> Assemblies { get; }
 
         /// <summary>
         /// Gets the results for <see cref="IRealObject"/> objects.
@@ -69,7 +70,7 @@ namespace CK.Setup
         /// False to continue the process (only warnings - or error considered as 
         /// warning - occurred), true to stop remaining processes.
         /// </returns>
-        public bool HasFatalError => PocoSupport == null || RealObjects.HasFatalError || AutoServices.HasFatalError;
+        public bool HasFatalError => RealObjects.HasFatalError || AutoServices.HasFatalError;
 
         /// <summary>
         /// Gets all the <see cref="ImplementableTypeInfo"/>: Abstract types that require a code generation
@@ -95,7 +96,7 @@ namespace CK.Setup
         /// Crappy hook...
         /// </summary>
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
-                                              IEndpointResult? endpointResult,
+                                              IDIContainerAnalysisResult? endpointResult,
                                               IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             // Compute the indexed AllTypesAttributesCache.
@@ -124,7 +125,6 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( monitor );
             using( monitor.OpenTrace( $"Collector summary:" ) )
             {
-                if( PocoSupport == null ) monitor.Fatal( $"Poco support failed!" );
                 RealObjects.LogErrorAndWarnings( monitor );
                 AutoServices.LogErrorAndWarnings( monitor );
             }

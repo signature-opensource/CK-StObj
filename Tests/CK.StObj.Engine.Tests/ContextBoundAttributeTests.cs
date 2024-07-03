@@ -45,10 +45,11 @@ namespace CK.StObj.Engine.Tests
         public void direct_attribute_IAttributeContextBoundInitializer_Initialize_is_called()
         {
             AnAttributeWithInitializer.Initialized = false;
-            var c = TestHelper.CreateStObjCollector( typeof( S1 ) );
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
-            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S1 ) );
+            var collector = TestHelper.CreateTypeCollector( typeof( S1 ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            Throw.DebugAssert( map != null );
+
+            map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S1 ) );
             AnAttributeWithInitializer.Initialized.Should().BeTrue();
         }
 
@@ -83,10 +84,10 @@ namespace CK.StObj.Engine.Tests
         public void ContextBoundDelegation_can_be_used_directly()
         {
             DirectAttributeImpl.Initialized = false;
-            var c = TestHelper.CreateStObjCollector( typeof( S2 ) );
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
-            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S2 ) );
+            var c = TestHelper.CreateTypeCollector( typeof( S2 ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
+            Throw.DebugAssert( map != null );
+            map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S2 ) );
             DirectAttributeImpl.Initialized.Should().BeTrue();
         }
         #endregion
@@ -144,10 +145,10 @@ namespace CK.StObj.Engine.Tests
         public void delegated_attribute_IAttributeContextBoundInitializer_Initialize_is_called_but_not_the_one_of_the_primary_attribute()
         {
             OneAttributeImpl.Initialized = false;
-            var c = TestHelper.CreateStObjCollector( typeof( S3 ) );
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
-            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S3 ) );
+            var c = TestHelper.CreateTypeCollector( typeof( S3 ) );
+            var map = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
+            Throw.DebugAssert( map != null );
+            map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S3 ) );
             OneAttributeImpl.Initialized.Should().BeTrue();
         }
         #endregion
@@ -204,11 +205,11 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests.
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S4 ) );
+            var c = new StObjCollector( aspectProvidedServices );
+            c.RegisterType( TestHelper.Monitor, typeof( S4 ) );
 
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
+            var r = c.GetResult( TestHelper.Monitor );
+            Throw.DebugAssert( r.EngineMap != null );
             r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S4 ) );
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
         }
@@ -269,12 +270,12 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests.
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S5 ) );
-            c.RegisterType( typeof( S4 ) );
+            var c = new StObjCollector( aspectProvidedServices );
+            c.RegisterType( TestHelper.Monitor, typeof( S5 ) );
+            c.RegisterType( TestHelper.Monitor, typeof( S4 ) );
 
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
+            var r = c.GetResult( TestHelper.Monitor );
+            Throw.DebugAssert( r.EngineMap != null );
             r.EngineMap.AllTypesAttributesCache.Values.SelectMany( x => x.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 3 );
 
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
@@ -307,20 +308,20 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S6 ) );
+            var c = new StObjCollector( aspectProvidedServices );
+            c.RegisterType( TestHelper.Monitor, typeof( S6 ) );
 
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
+            var r = c.GetResult( TestHelper.Monitor );
+            Throw.DebugAssert( r.EngineMap != null );
 
             r.EngineMap.AllTypesAttributesCache.Values
                           .Select( attrs => attrs.Type )
                           // These 3 objects are systematically registered.
-                          // The base EndpointDefinition of the DefaultEndpointDefinition that is a [CKTypeDefiner]
+                          // The base DIContainerDefinition of the DefaultDIContainerDefinition that is a [CKTypeDefiner]
                           // is also registered.
                           .Where( t => !typeof( PocoDirectory ).IsAssignableFrom( t )
-                                       && !typeof( EndpointTypeManager ).IsAssignableFrom( t )
-                                       && !typeof( EndpointUbiquitousInfo ).IsAssignableFrom( t ) )
+                                       && !typeof( DIContainerHub ).IsAssignableFrom( t )
+                                       && !typeof( AmbientServiceHub ).IsAssignableFrom( t ) )
                           .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
             r.EngineMap.AllTypesAttributesCache.Values
@@ -359,15 +360,14 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S7 ) );
+            var c = TestHelper.CreateTypeCollector( typeof( S7 ) );
 
-            var r = TestHelper.GetSuccessfulResult( c );
-            Debug.Assert( r.EngineMap != null );
+            var map = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
+            Throw.DebugAssert( map != null );
 
-            r.EngineMap.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo(
+            map.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo(
                 new[] { typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) } );
-            r.EngineMap.AllTypesAttributesCache.Values
+            map.AllTypesAttributesCache.Values
                 .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
 
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
