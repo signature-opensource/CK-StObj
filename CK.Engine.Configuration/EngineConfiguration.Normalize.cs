@@ -474,9 +474,9 @@ namespace CK.Setup
                     else
                     {
                         b.ProjectPath = MakeAbsolutePath( c, b.ProjectPath );
-                        if( b.ProjectPath.LastPart != "$StObjGen" )
+                        if( b.ProjectPath.LastPart.Equals( "$StObjGen", StringComparison.OrdinalIgnoreCase ) )
                         {
-                            b.ProjectPath = b.ProjectPath.AppendPart( "$StObjGen" );
+                            b.ProjectPath = b.ProjectPath.RemoveLastPart();
                         }
                     }
 
