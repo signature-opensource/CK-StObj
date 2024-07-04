@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace CK.Setup
 {
@@ -190,7 +192,7 @@ namespace CK.Setup
             int[] tA = _array;
             int[] oA = other._array;
             uint i = 0;
-#if NET8_0_OR_GREATER
+
             if( _array.Length >= 8 )
             {
                 ref int left = ref MemoryMarshal.GetArrayDataReference<int>( tA );
@@ -224,7 +226,6 @@ namespace CK.Setup
                     }
                 }
             }
-#endif
             for( ; i < count; i++ )
             {
                 var l = tA[ i ];

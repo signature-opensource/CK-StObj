@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>

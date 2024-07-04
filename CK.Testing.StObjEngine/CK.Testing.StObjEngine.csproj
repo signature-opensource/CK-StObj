@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Description>Provides helpers for CKomposable engine to ease tests.</Description>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
