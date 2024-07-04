@@ -1,5 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <RepositoryInfo>
-  <SimpleGitVersion StartingVersion="19.0.0-alpha">
+  <SimpleGitVersion StartingVersion="27.0.0-alpha">
     <Branches>
       <Branch Name="develop" CIVersionMode="LastReleaseBased" VersionName="develop" />
       <Branch Name="poco-refactoring" CIVersionMode="ZeroTimed" VersionName="explo" />
