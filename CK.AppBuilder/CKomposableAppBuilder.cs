@@ -70,11 +70,17 @@ namespace CK.Setup
         /// Shell method that handles the run of a setup from a ".App" to its ".Host" project.
         /// </summary>
         /// <param name="configure">Optional code that can configure the <see cref="EngineConfiguration"/>.</param>
-        /// <param name="programFilePath">Automatically set by Roslyn. This enables to automatically compute all the required folders.</param>
         /// <returns>The standard main result (0 on success, non zero on error).</returns>
-        public static int Run( Action<IActivityMonitor, ICKomposableAppBuilder>? configure = null, [CallerFilePath] string? programFilePath = null )
+        public static int Run( Action<IActivityMonitor, ICKomposableAppBuilder>? configure = null )
         {
-            var builderFolder = new NormalizedPath( programFilePath ).RemoveLastPart();
+            NormalizedPath appContext = AppContext.BaseDirectory;
+            var builderFolder = appContext.RemoveLastPart( 2 );
+            if( builderFolder.LastPart != "bin" )
+            {
+                Console.WriteLine( $"Invalid OutputPath '{appContext}'. It must follow the 'bin/Configuration/TargetFramework' convention." );
+                return -1;
+            }
+            builderFolder = builderFolder.RemoveLastPart();
             var rootLogPath = builderFolder.AppendPart( "Logs" );
             LogFile.RootLogPath = rootLogPath;
             GrandOutput.EnsureActiveDefault();
@@ -82,7 +88,7 @@ namespace CK.Setup
             try
             {
                 var parentPath = builderFolder.RemoveLastPart();
-                var msBuildOutputPath = new NormalizedPath( AppContext.BaseDirectory ).RemovePrefix( builderFolder );
+                var msBuildOutputPath = appContext.RemovePrefix( builderFolder );
                 var applicationName = builderFolder.LastPart;
                 if( applicationName.EndsWith( ".Builder" ) ) applicationName = applicationName.Substring( 0, applicationName.Length - 8 );
 
@@ -105,7 +111,7 @@ namespace CK.Setup
             catch( Exception ex )
             {
                 monitor.Error( ex );
-                return -1;
+                return -2;
             }
             finally
             {

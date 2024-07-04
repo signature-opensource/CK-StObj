@@ -29,10 +29,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.StObj.Engine", "CK.StObj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.StObj.Engine.Tests", "Tests\CK.StObj.Engine.Tests\CK.StObj.Engine.Tests.csproj", "{789F2105-8344-46EC-82D6-60B64C8EEBBA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Testing.StObjMap", "CK.Testing.StObjMap\CK.Testing.StObjMap.csproj", "{0C0FDC63-80B5-4979-A726-4B7854C9AF01}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Testing.StObjSetup", "CK.Testing.StObjSetup\CK.Testing.StObjSetup.csproj", "{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Testing.StObjEngine", "CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj", "{CA67A125-EA16-4B79-88BB-F6AFCF810683}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StObjEngineTesting", "StObjEngineTesting", "{9CA6D1E8-177C-4A15-9CFA-3A314A0EFAC1}"
@@ -76,7 +72,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Engine", "CK.Engine\CK.E
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.AppBuilder", "CK.AppBuilder\CK.AppBuilder.csproj", "{0A45696B-3210-4BBA-BD80-DC5D7C844C78}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CK.Engine.TestCollector.Tests", "Tests\CK.Engine.TestCollector.Tests\CK.Engine.TestCollector.Tests.csproj", "{62CF733F-51BE-4E1C-90D2-488B8F492026}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CK.Engine.TestCollector.Tests", "Tests\CK.Engine.TestCollector.Tests\CK.Engine.TestCollector.Tests.csproj", "{62CF733F-51BE-4E1C-90D2-488B8F492026}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -148,30 +144,6 @@ Global
 		{789F2105-8344-46EC-82D6-60B64C8EEBBA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{789F2105-8344-46EC-82D6-60B64C8EEBBA}.Release|x86.ActiveCfg = Release|Any CPU
 		{789F2105-8344-46EC-82D6-60B64C8EEBBA}.Release|x86.Build.0 = Release|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Debug|x86.Build.0 = Debug|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Release|x86.ActiveCfg = Release|Any CPU
-		{0C0FDC63-80B5-4979-A726-4B7854C9AF01}.Release|x86.Build.0 = Release|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Debug|x86.Build.0 = Debug|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Release|x86.ActiveCfg = Release|Any CPU
-		{96E6682B-03C7-411A-9B5C-42FD2CDEAD3A}.Release|x86.Build.0 = Release|Any CPU
 		{CA67A125-EA16-4B79-88BB-F6AFCF810683}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CA67A125-EA16-4B79-88BB-F6AFCF810683}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA67A125-EA16-4B79-88BB-F6AFCF810683}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
