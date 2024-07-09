@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Threading.Tasks;
 using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.Testing
 {
@@ -32,29 +33,19 @@ namespace CK.Testing
         /// </summary>
         /// <param name="cancellationToken">Used to abort program start.</param>
         /// <returns>A <see cref="Task"/> that will be completed when this host started.</returns>
-        public Task StartAsync( CancellationToken cancellationToken = default ) => _host.StartAsync( cancellationToken );
+        public virtual Task StartAsync( CancellationToken cancellationToken = default ) => _host.StartAsync( cancellationToken );
 
         /// <summary>
         /// Attempts to gracefully stop this host.
         /// </summary>
         /// <param name="cancellationToken">Used to indicate when stop should no longer be graceful.</param>
         /// <returns>A <see cref="Task"/> that will be completed when this host stopped.</returns>
-        public Task StopAsync( CancellationToken cancellationToken = default ) => _host.StopAsync( cancellationToken );
+        public virtual Task StopAsync( CancellationToken cancellationToken = default ) => _host.StopAsync( cancellationToken );
 
         /// <summary>
         /// Disposes this host.
         /// </summary>
         /// <returns>A task that represents the asynchronous dispose operation.</returns>
-        public ValueTask DisposeAsync() => ((IAsyncDisposable)_host).DisposeAsync();
-    }
-
-    public class AppIdentityApplication : ServicedApplication
-    {
-        internal AppIdentityApplication( IHost host )
-            : base( host )
-        {
-        }
-
-        public App
+        public virtual ValueTask DisposeAsync() => ((IAsyncDisposable)_host).DisposeAsync();
     }
 }

@@ -658,7 +658,7 @@ namespace CK.StObj.Engine.Tests
                     </Types>
                     <ExcludedTypes>
                         <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
-                        <Type Name="CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" />
+                        <Type Name="CK.Testing.MonitorTestHelper, CK.Testing.Monitoring" />
                     </ExcludedTypes>
                     <OutputPath>Another/Relative</OutputPath>
                     <CompileOption>Parse</CompileOption>
@@ -693,7 +693,7 @@ namespace CK.StObj.Engine.Tests
               <RevertOrderingNames>True</RevertOrderingNames>
               <GlobalExcludedTypes>
                 <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
-                <Type Name="CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" />
+                <Type Name="CK.Testing.MonitorTestHelper, CK.Testing.Monitoring" />
               </GlobalExcludedTypes>
 
             </Setup>

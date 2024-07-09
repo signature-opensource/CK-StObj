@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CK.Testing;
 using static CK.Testing.MonitorTestHelper;
+using Microsoft.Extensions.Hosting;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
@@ -102,7 +103,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                   typeof( SampleCommandMemory ),
                                                   typeof( BackgroundDIContainerDefinition ),
                                                   typeof( BackgroundExecutorService ) );
-            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+            await using var app = configuration.Run().LoadMap().CreateServicedApplication( configureServices: services =>
             {
                 services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
                 services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -110,18 +111,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 services.Configure<SomeCommandProcessingOptions>( o => o.Power = 42 );
             } );
 
-            await TestHelper.StartHostedServicesAsync( auto.Services );
+            await app.StartAsync();
 
             // BackgroundExecutor is a singleton. We can retrieve it from the root services.
-            var backExecutor = auto.Services.GetRequiredService<BackgroundExecutorService>();
+            var backExecutor = app.Services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
-
-            using( var scoped = auto.Services.CreateScope() )
+            using( var scoped = app.Services.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptions>() );
             }
-            var history = auto.Services.GetRequiredService<SampleCommandMemory>();
+            var history = app.Services.GetRequiredService<SampleCommandMemory>();
             history.ExecutionTrace.Should().HaveCount( 1 ).And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptions> - 42" );
 
         }
@@ -137,7 +137,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             ConfigurationManager config = new ConfigurationManager();
             config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );
-            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+            await using var app = configuration.Run().LoadMap().CreateServicedApplication( configureServices: services =>
             {
                 services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
                 services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -146,23 +146,23 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
             } );
 
-            await TestHelper.StartHostedServicesAsync( auto.Services );
+            await app.StartAsync();
 
             // BackgroundExecutor and SampleCommandMemory are singletons. We can retrieve them from the root services.
-            var history = auto.Services.GetRequiredService<SampleCommandMemory>();
-            var backExecutor = auto.Services.GetRequiredService<BackgroundExecutorService>();
+            var history = app.Services.GetRequiredService<SampleCommandMemory>();
+            var backExecutor = app.Services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
 
-            using( var scoped = auto.Services.CreateScope() )
+            using( var scoped = app.Services.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot>() );
             }
             history.ExecutionTrace.Should().HaveCount( 1 ).And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 3712" );
 
-            config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "42" } } );
+            config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "42" } } );
 
-            using( var scoped = auto.Services.CreateScope() )
+            using( var scoped = app.Services.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot>() );
@@ -183,8 +183,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                             typeof( BackgroundExecutorService ) );
 
             ConfigurationManager config = new ConfigurationManager();
-            config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
-            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+            config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );
+            var hostBuilderSetting = new HostApplicationBuilderSettings() { Configuration = config, DisableDefaults = true };
+            await using var app = configuration.Run().LoadMap().CreateServicedApplication( hostBuilderSetting, configureServices: services =>
             {
                 services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
                 services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -193,27 +194,27 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
             } );
 
-            await TestHelper.StartHostedServicesAsync( auto.Services );
+            await app.StartAsync();
 
             // Just to check that the configuration is reactive.
-            var o = auto.Services.GetRequiredService<IOptionsMonitor<SomeCommandProcessingOptions>>();
+            var o = app.Services.GetRequiredService<IOptionsMonitor<SomeCommandProcessingOptions>>();
             o.CurrentValue.Power.Should().Be( 3712 );
-            config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "0" } } );
+            config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "0" } } );
             await Task.Delay( 100 );
             o.CurrentValue.Power.Should().Be( 0 );
 
             // BackgroundExecutor and SampleCommandMemory are singletons. We can retrieve them from the root services.
-            var history = auto.Services.GetRequiredService<SampleCommandMemory>();
-            var backExecutor = auto.Services.GetRequiredService<BackgroundExecutorService>();
+            var history = app.Services.GetRequiredService<SampleCommandMemory>();
+            var backExecutor = app.Services.GetRequiredService<BackgroundExecutorService>();
             backExecutor.Start();
 
             config.GetRequiredSection( "Opt" ).GetReloadToken().RegisterChangeCallback( _ => ActivityMonitor.StaticLogger.Info( "Configuration changed!" ), null );
-            using( var scoped = auto.Services.CreateScope() )
+            using( var scoped = app.Services.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
                 var t = backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsMonitor>() );
                 await Task.Delay( 100 );
-                config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "42" } } );
+                config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "42" } } );
                 await t;
             }
             history.ExecutionTrace.Should().HaveCount( 2 )
