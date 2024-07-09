@@ -90,13 +90,13 @@ namespace CK.Testing
         }
 
         /// <summary>
-        /// Called when no configuration exists (or <see cref="SetEngineConfiguration(EngineConfiguration?)"/> has been called with null).
+        /// Called when no configuration exists (or <see cref="Reset(EngineConfiguration?)"/> has been called with null).
         /// </summary>
         public static Action<EngineConfiguration>? AutoConfigure { get; set; }
 
         /// <summary>
-        /// Sets a configuration: this resets existing <see cref="EngineResult"/>, <see cref="Map"/> and <see cref="Services"/>, the next
-        /// access to them will trigger a run of the engine.
+        /// Sets a configuration: this resets existing <see cref="EngineResult"/>, <see cref="Map"/> and <see cref="Services"/>
+        /// (as well as any error), the next access to them will trigger a run of the engine.
         /// <para>
         /// When set to null, <see cref="AutoConfigure"/> will be used to obtain a new configuration.
         /// </para>
@@ -105,12 +105,12 @@ namespace CK.Testing
         /// without interfering with the current one.
         /// </para>
         /// <para>
-        /// A failing run is not retried, instead the initial exception is rethrown immediately until <see cref="ResetError"/>
-        /// or <see cref="SetEngineConfiguration(EngineConfiguration)"/> is called.
+        /// A failing run is not retried, instead the initial exception is rethrown immediately until <see cref="Reset"/>
+        /// or <see cref="Reset(EngineConfiguration)"/> is called.
         /// </para>
         /// </summary>
         /// <param name="engineConfiguration">The new configuration to apply.</param>
-        public static void SetEngineConfiguration( EngineConfiguration? engineConfiguration ) 
+        public static void Reset( EngineConfiguration? engineConfiguration = null ) 
         {
             _configuration = engineConfiguration?.Clone();
             _runResult = null;
@@ -119,20 +119,14 @@ namespace CK.Testing
             {
                 _services.Dispose();
                 _services = default;
-                ResetError();
             }
+            _runLevel = _mapLevel = _serviceLevel = null;
         }
 
         /// <summary>
-        /// Gets whether the last run failed. <see cref="ResetError"/> must be called to retry.
+        /// Gets whether the last run failed. <see cref="Reset"/> must be called to retry.
         /// </summary>
-        public static bool OnError => _runLevel != null || _mapLevel != null || _serviceLevel != null;
-
-        /// <summary>
-        /// Resets any error. An access to the <see cref="Map"/> or the <see cref="Services"/>
-        /// will run the engine.
-        /// </summary>
-        public static void ResetError() => _runLevel = _mapLevel = _serviceLevel = null;
+        public static bool HasError => _runLevel != null || _mapLevel != null || _serviceLevel != null;
 
         /// <summary>
         /// Gets the <see cref="EngineResult"/> (that may be <see cref="RunStatus.Failed"/>).
