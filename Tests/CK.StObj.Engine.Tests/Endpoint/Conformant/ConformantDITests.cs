@@ -1,14 +1,11 @@
 using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {

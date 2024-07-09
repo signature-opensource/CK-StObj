@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -36,8 +36,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void super_definer_applies_to_final_class()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ClassService ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( ClassService )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
             map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );

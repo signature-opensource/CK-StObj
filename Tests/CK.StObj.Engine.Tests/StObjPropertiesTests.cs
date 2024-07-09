@@ -5,7 +5,7 @@ using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
@@ -36,8 +36,7 @@ namespace CK.StObj.Engine.Tests
         public void OneObject()
         {
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( SimpleContainer ) );
-                var result = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap!.StObjs;
+                var result = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleContainer )] ).EngineMap!.StObjs;
                 result.OrderedStObjs
                       .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );

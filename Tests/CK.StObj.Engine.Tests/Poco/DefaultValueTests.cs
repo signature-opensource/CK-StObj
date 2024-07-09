@@ -1,15 +1,12 @@
 using CK.Core;
 using CK.Setup;
-using CK.StObj.Engine.Tests.Poco.Sample;
 using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 #pragma warning disable IDE0051 // Remove unused private members

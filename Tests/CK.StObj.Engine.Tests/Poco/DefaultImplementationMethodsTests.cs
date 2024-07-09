@@ -9,8 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using static CK.StObj.Engine.Tests.SimpleObjectsTests;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -110,8 +109,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void homonym_properties_must_all_be_Default_Implementation_Method_or_not_in_a_Family1()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IActualRoot ), typeof( IOnActual ) );
-            TestHelper.GetFailedCollectorResult( c, "has a Default Implementation Method (DIM). To be supported, all 'RowCount' properties must be DIM and use the [AutoImplementationClaim] attribute." );
+            TestHelper.GetFailedCollectorResult( [typeof( IActualRoot ), typeof( IOnActual )],
+                "has a Default Implementation Method (DIM). To be supported, all 'RowCount' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
         public interface IFaultyRoot : IPoco
@@ -123,8 +122,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void a_DIM_property_must_use_AutoImplementationClaim_Attribute()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IFaultyRoot ) );
-            TestHelper.GetFailedCollectorResult( c, "is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
+            TestHelper.GetFailedCollectorResult( [typeof( IFaultyRoot )], "is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
         }
 
         public interface IEmptyRoot : IPoco { }
@@ -144,8 +142,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void homonym_properties_must_all_be_Default_Implementation_Method_or_not_in_a_Family2()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IEmptyRoot ), typeof( IOther ), typeof( IAnother ) );
-            TestHelper.GetFailedCollectorResult( c, "has a Default Implementation Method (DIM). To be supported, all 'ValidDIM' properties must be DIM and use the [AutoImplementationClaim] attribute." );
+            TestHelper.GetFailedCollectorResult( [typeof( IEmptyRoot ), typeof( IOther ), typeof( IAnother )],
+                "has a Default Implementation Method (DIM). To be supported, all 'ValidDIM' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
 

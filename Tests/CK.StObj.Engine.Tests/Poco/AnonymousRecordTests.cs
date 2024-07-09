@@ -9,8 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -25,8 +24,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void writable_anonymous_record_must_be_a_ref_property()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IInvalidValueTupleSetter ) );
-            TestHelper.GetFailedCollectorResult( c, "' must be a ref property: 'ref (int Count,string Name) Thing { get; }'." );
+            TestHelper.GetFailedCollectorResult( [typeof( IInvalidValueTupleSetter )], "' must be a ref property: 'ref (int Count,string Name) Thing { get; }'." );
         }
 
         public interface IWithValueTuple : IPoco
@@ -138,8 +136,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullability_incoherence_is_checked()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( INoError ) );
-            TestHelper.GetSuccessfulCollectorResult( c );
+            TestHelper.GetSuccessfulCollectorResult( [typeof( INoError )] );
 
             CheckError( typeof( INullabilityError0 ) );
             CheckError( typeof( INullabilityError1 ) );
@@ -150,12 +147,11 @@ namespace CK.StObj.Engine.Tests.Poco
 
             static void CheckError( Type tError )
             {
-                var c = TestHelper.CreateTypeCollector( tError );
                 // Property type conflict between:
                 // (string,(string,int),((string,string),string))& CK.StObj.Engine.Tests.Poco.AnonymousRecordTests.IWithNotNPart0.Thing
                 // And:
                 // (string,(string,int),((string,string),string)?)& CK.StObj.Engine.Tests.Poco.AnonymousRecordTests.IWithN.Thing
-                TestHelper.GetFailedCollectorResult( c, "(string,(string,int),((string,string),string)?)& " );
+                TestHelper.GetFailedCollectorResult( [tError], "(string,(string,int),((string,string),string)?)& " );
             }
         }
 

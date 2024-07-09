@@ -11,12 +11,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         static Mapper[] GetDefault()
         {
             // Don't care of race conditions here.
-            _default ??= new Mapper[] {
+            _default ??= [
                 new Mapper( ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default ),
                 new Mapper( ((IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default ),
                 new Mapper( ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultCultureProvider) )!).Default ),
                 new Mapper( ((IAmbientServiceDefaultProvider<IFakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof(DefaultTenantProvider) )!).Default ),
-            };
+            ];
             return System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( _default.Clone() );
 
         }
@@ -39,12 +39,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         static Mapper[] BuildFrom( IServiceProvider services )
         {
-            return new Mapper[] {
+            return [
                 new Mapper( Required( services, typeof(IFakeTenantInfo) ) ),
                 new Mapper( Required( services, typeof(IFakeAuthenticationInfo) ) ),
                 new Mapper( Required( services, typeof(FakeAuthenticationInfo) ) ),
                 new Mapper( Required( services, typeof(FakeCultureInfo) ) )
-            };
+            ];
 
             static object Required( IServiceProvider services, Type type )
             {

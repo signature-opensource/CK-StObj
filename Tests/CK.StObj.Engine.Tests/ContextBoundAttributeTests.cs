@@ -7,7 +7,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CA1822 // Mark members as static
 #pragma warning disable CA1018 // Mark attributes with AttributeUsageAttribute
@@ -45,8 +45,7 @@ namespace CK.StObj.Engine.Tests
         public void direct_attribute_IAttributeContextBoundInitializer_Initialize_is_called()
         {
             AnAttributeWithInitializer.Initialized = false;
-            var collector = TestHelper.CreateTypeCollector( typeof( S1 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S1 )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
             map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S1 ) );
@@ -84,8 +83,7 @@ namespace CK.StObj.Engine.Tests
         public void ContextBoundDelegation_can_be_used_directly()
         {
             DirectAttributeImpl.Initialized = false;
-            var c = TestHelper.CreateTypeCollector( typeof( S2 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S2 )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S2 ) );
             DirectAttributeImpl.Initialized.Should().BeTrue();
@@ -145,8 +143,7 @@ namespace CK.StObj.Engine.Tests
         public void delegated_attribute_IAttributeContextBoundInitializer_Initialize_is_called_but_not_the_one_of_the_primary_attribute()
         {
             OneAttributeImpl.Initialized = false;
-            var c = TestHelper.CreateTypeCollector( typeof( S3 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S3 )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S3 ) );
             OneAttributeImpl.Initialized.Should().BeTrue();
@@ -360,9 +357,8 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
             aspectProvidedServices.Add( this );
-            var c = TestHelper.CreateTypeCollector( typeof( S7 ) );
 
-            var map = TestHelper.GetSuccessfulCollectorResult( c ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S7 )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
             map.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo(

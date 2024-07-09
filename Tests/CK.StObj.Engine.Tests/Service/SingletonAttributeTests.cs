@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -40,8 +40,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void without_SingletonServiceAttribute_scope_lifetime_fails()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( SomeSingletonFailed ), typeof( NotConstructibleServiceNaked ) );
-            TestHelper.GetFailedCollectorResult( c, "is marked as IsSingleton but parameter 'c' of type 'NotConstructibleServiceNaked' in constructor is Scoped" );
+            TestHelper.GetFailedCollectorResult( [typeof( SomeSingletonFailed ), typeof( NotConstructibleServiceNaked )],
+                "is marked as IsSingleton but parameter 'c' of type 'NotConstructibleServiceNaked' in constructor is Scoped" );
         }
 
         public class SomeScoped : IScopedAutoService

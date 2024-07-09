@@ -6,7 +6,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -52,10 +52,9 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( true )]
         public void oblivious_List( bool revert )
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IVerySimplePoco ),
-                                                     typeof( ISecondaryVerySimplePoco ),
-                                                     typeof( IProperListDefinition ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IVerySimplePoco ),
+                                                              typeof( ISecondaryVerySimplePoco ),
+                                                              typeof( IProperListDefinition )] );
             var ts = r.PocoTypeSystemBuilder;
 
             if( !revert )
@@ -378,8 +377,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Oblivious_and_Final_Dictionary()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IVerySimplePoco ), typeof( IProperDictionaryDefinition) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IVerySimplePoco ), typeof( IProperDictionaryDefinition )] );
             var ts = r.PocoTypeSystemBuilder;
 
             // Dictionary of Value type for the value (int)
@@ -520,8 +518,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( "ObliviousLast" )]
         public void oblivious_anonymous_record( string mode )
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IVerySimplePoco ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IVerySimplePoco )] );
             var ts = r.PocoTypeSystemBuilder;
 
             IRecordPocoType? tO = null;

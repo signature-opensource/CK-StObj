@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -66,16 +66,13 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 // Registering TotallyExternalClass: Its CKTypeKind is None.
-                var collector = TestHelper.CreateTypeCollector( typeof( WontWork1 ), typeof( TotallyExternalClass ) );
-                TestHelper.GetFailedCollectorResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
+                TestHelper.GetFailedCollectorResult( [typeof( WontWork1 ), typeof( TotallyExternalClass )], "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( WontWork2 ), typeof( AutoServiceImpl ) );
-                TestHelper.GetFailedCollectorResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
+                TestHelper.GetFailedCollectorResult( [typeof( WontWork2 ), typeof( AutoServiceImpl )], "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( WontWork3 ), typeof( S2 ) );
-                TestHelper.GetFailedCollectorResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
+                TestHelper.GetFailedCollectorResult( [typeof( WontWork3 ), typeof( S2 )], "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
         }
 

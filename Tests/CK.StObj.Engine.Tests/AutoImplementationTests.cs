@@ -1,12 +1,10 @@
-using System;
 using CK.Core;
 using CK.Setup;
-using NUnit.Framework;
-using FluentAssertions;
-
-using static CK.Testing.StObjEngineTestHelper;
-using System.Diagnostics;
 using CK.Testing;
+using FluentAssertions;
+using NUnit.Framework;
+using System;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -42,8 +40,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void abstract_auto_impl_is_supported_on_non_IRealObject_base_class()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( A2 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A2 )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2>();
         }
@@ -55,8 +52,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void abstract_can_be_implemented_by_base_class()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( A2Spec ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A2Spec )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
             map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2Spec>();
@@ -70,8 +66,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void abstract_non_auto_implementable_leaf_are_silently_ignored()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( A3 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A3 )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
             map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A3>();
@@ -91,8 +86,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void abstract_auto_implementable_leaf_but_using_PreventAutoImplementationAttribute_are_silently_ignored()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( A4 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A4 )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
             map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A4>();

@@ -8,7 +8,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable IDE0051 // Remove unused private members
 
@@ -580,8 +580,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void internal_interfaces_are_ignored()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( TheService ) );
-            TestHelper.GetSuccessfulCollectorResult( collector );
+            TestHelper.GetSuccessfulCollectorResult( [typeof( TheService )] );
         }
 
 

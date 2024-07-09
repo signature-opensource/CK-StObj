@@ -8,12 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.Poco.AnonymousRecordTests;
-using static CK.StObj.Engine.Tests.Poco.PocoGenericTests;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -43,16 +38,14 @@ namespace CK.StObj.Engine.Tests.Poco
         public void non_nullable_abstract_IPoco_field_without_writable_is_an_error()
         {
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IWithNonNullAbstract ) );
-                TestHelper.GetFailedCollectorResult( c, """
+                TestHelper.GetFailedCollectorResult( [typeof( IWithNonNullAbstract )], """
                     Required computable default value is missing in Poco:
                     '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract', field: 'Some' has no default value.
                     No default can be synthesized for non nullable '[AbstractPoco]CK.Core.IPoco'.
                     """ );
             }
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IWithNonNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                TestHelper.GetFailedCollectorResult( c, """
+                TestHelper.GetFailedCollectorResult( [typeof( IWithNonNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand )], """
                     Required computable default value is missing in Poco:
                     '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract2', field: 'Some' has no default value.
                     No default can be synthesized for non nullable '[AbstractPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.ICommand'.
@@ -264,13 +257,11 @@ namespace CK.StObj.Engine.Tests.Poco
         public void record_cannot_be_a_Abstract_Read_Only_Property()
         {
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IInvalidAnonymousRecord ) );
-                TestHelper.GetFailedCollectorResult( c,
+                TestHelper.GetFailedCollectorResult( [typeof( IInvalidAnonymousRecord )],
                     "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidAnonymousRecord.NoWay' must be a ref property: 'ref (int A,int B) NoWay { get; }'." );
             }
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IInvalidNamedRecord ) );
-                TestHelper.GetFailedCollectorResult( c, "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.NoWay' must be a ref property: 'ref CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.Rec NoWay { get; }'." );
+                TestHelper.GetFailedCollectorResult( [typeof( IInvalidNamedRecord )], "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.NoWay' must be a ref property: 'ref CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.Rec NoWay { get; }'." );
             }
         }
 
@@ -310,7 +301,7 @@ namespace CK.StObj.Engine.Tests.Poco
             impl.Object = 3712;
             impl.ValueType = 42;
             impl.BasicRefType = "foo";
-            impl.Array = new int[] { 1, 2, 3 };
+            impl.Array = [1, 2, 3];
             impl.ReadOnlyList.Add( impl.Poco );
             impl.Poco = d.Create<IRealCommand>( c => c.V = "Changed!" );
             impl.ReadOnlyList.Add( impl.Poco );

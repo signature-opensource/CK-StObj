@@ -1,15 +1,12 @@
-using System;
 using CK.Core;
 using CK.Setup;
-using NUnit.Framework;
-using System.Linq;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-
-using static CK.Testing.StObjEngineTestHelper;
-using System.Diagnostics;
-using CK.Testing;
-using System.Collections.Generic;
+using NUnit.Framework;
+using System;
+using System.Linq;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -50,12 +47,12 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        public readonly Type[] BaseUserAndDocumentCloPocs = new Type[]
-        {
+        public readonly Type[] BaseUserAndDocumentCloPocs =
+        [
             typeof(ICloPoc), typeof(ICloPocPart),
             typeof(IAuthenticatedCloPocPart), typeof(ICultureDependentCloPocPart),
             typeof(IUserCloPoc), typeof(IDocumentCloPoc), typeof(ICultureUserCloPoc)
-        };
+        ];
 
         [TestCase( "OnlyTheFinalUserAndDocumentCloPocs" )]
         [TestCase( "AllBaseUserAndDocumentCloPocs" )]

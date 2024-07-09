@@ -5,14 +5,12 @@ using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -92,12 +90,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void AllTypes_and_identity_test()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ILinkedListPart ),
-                                                     typeof( IPartWithAnonymous ),
-                                                     typeof( IPartWithRecAnonymous ),
-                                                     typeof( IWithList ),
-                                                     typeof( IWithAllBasicTypes ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( ILinkedListPart ),
+                                                              typeof( IPartWithAnonymous ),
+                                                              typeof( IPartWithRecAnonymous ),
+                                                              typeof( IWithList ),
+                                                              typeof( IWithAllBasicTypes )] );
             var builder = r.PocoTypeSystemBuilder;
 
             const int basicTypesCount = 26; // See IWithAllBasicTypes.
@@ -141,9 +138,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void FindByType_finds_AbstractIPoco_and_PocoClass_implementation_type()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ILinkedListPart ),
-                                                     typeof( IWithList ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( ILinkedListPart ), typeof( IWithList )] );
             var ts = r.PocoTypeSystemBuilder;
 
             var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
@@ -177,8 +172,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void an_empty_record_is_valid_in_the_Poco_world()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IValidEmptyRec ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IValidEmptyRec )] );
             var ts = r.CKTypeResult.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var emptyRec = ts.FindByType( typeof( EmptyRec ) );
             var poco = ts.FindByType( typeof( IValidEmptyRec ) );
@@ -222,8 +216,7 @@ namespace CK.StObj.Engine.Tests.Poco
             t.Should().Be( 0 );
             // Compilation error.
             // t = 1;
-            var c = TestHelper.CreateTypeCollector( typeof( IInvalidEmptyEnum ) );
-            TestHelper.GetFailedCollectorResult( c, "Enum type 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.EmptyEnum' is empty. Empty enum are not valid in a Poco Type System." );
+            TestHelper.GetFailedCollectorResult( [typeof( IInvalidEmptyEnum )], "Enum type 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.EmptyEnum' is empty. Empty enum are not valid in a Poco Type System." );
         }
 
 

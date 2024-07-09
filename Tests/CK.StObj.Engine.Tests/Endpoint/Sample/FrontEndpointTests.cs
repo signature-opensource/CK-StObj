@@ -5,10 +5,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
@@ -17,7 +16,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public class FrontEndpointTests
     {
         [Test]
-        public async Task global_DI_automatically_falls_back_to_default_value_provider_for_ubiquitous_info_Async()
+        public void global_DI_automatically_falls_back_to_default_value_provider_for_Ambient_services()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( FakeTenantInfo ),
@@ -29,7 +28,6 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             } );
 
-            await TestHelper.StartHostedServicesAsync( auto.Services );
             using( var scoped = auto.Services.CreateScope() )
             {
                 var tenant = scoped.ServiceProvider.GetService<IFakeTenantInfo>();

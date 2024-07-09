@@ -2,17 +2,10 @@ using CK.Core;
 using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Serialization;
 using NUnit.Framework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Xml;
-using System.Xml.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -88,8 +81,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void invalid_abstract_to_concrete()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IInvalidActualRootConcrete ), typeof( IActualSubA ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IInvalidActualRootConcrete ), typeof( IActualSubA )],
                 $"Type conflict between:{Environment.NewLine}" +
                 $"IList<PocoCovariantPropertyTests.ISubDefiner> CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IMutableRootDefiner.Lines{Environment.NewLine}" +
                 $"And:{Environment.NewLine}" +

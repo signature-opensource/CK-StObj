@@ -7,8 +7,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
-using static CK.StObj.Engine.Tests.SimpleObjectsTests;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
@@ -46,8 +45,6 @@ namespace CK.StObj.Engine.Tests.Endpoint
                     services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
                 }
             } );
-
-            await TestHelper.StartHostedServicesAsync( auto.Services );
 
             // In-line execution of a request.
             using( var scoped = auto.Services.CreateScope() )
@@ -102,9 +99,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( SampleCommandProcessorWithOptions ),
-                                            typeof( SampleCommandMemory ),
-                                            typeof( BackgroundDIContainerDefinition ),
-                                            typeof( BackgroundExecutorService ) );
+                                                  typeof( SampleCommandMemory ),
+                                                  typeof( BackgroundDIContainerDefinition ),
+                                                  typeof( BackgroundExecutorService ) );
             using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
                 services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
@@ -139,7 +136,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                             typeof( BackgroundExecutorService ) );
 
             ConfigurationManager config = new ConfigurationManager();
-            config.AddInMemoryCollection( new Dictionary<string, string> { { "Opt:Power", "3712" } } );
+            config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );
             using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
             {
                 services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );

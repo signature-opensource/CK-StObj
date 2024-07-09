@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.PerfectEvent;
 using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -10,12 +11,19 @@ namespace CK.Testing
     /// <summary>
     /// Basic helper that works on a shared engine configurationand keeps
     /// a long lived CKomposable map and automatic services.
+    /// <para>
+    /// The basic usage is simply to get the <see cref="AutomaticServices"/> property (or the <see cref="Map"/>).
+    /// </para>
+    /// <para>
+    /// The <see cref="AutoConfigure"/> can be used to alter a brand new configuration: this should be
+    /// used from <see cref="System.Runtime.CompilerServices.ModuleInitializerAttribute"/>.
+    /// </para>
     /// </summary>
     public static class SharedEngine
     {
         static IStObjMap? _map;
         static AutomaticServices _services;
-        static EngineConfiguration _configuration = TestHelper.CreateDefaultEngineConfiguration();
+        static EngineConfiguration? _configuration;
         static ExceptionDispatchInfo? _mapLevel;
         static ExceptionDispatchInfo? _serviceLevel;
 
@@ -26,6 +34,11 @@ namespace CK.Testing
             {
                 if( _map == null )
                 {
+                    if( _configuration == null )
+                    {
+                        _configuration = new EngineConfiguration();
+                        AutoConfigure?.Invoke( _configuration );
+                    }
                     _map = _configuration.Run().LoadMap();
                 }
                 return _map;
@@ -56,8 +69,16 @@ namespace CK.Testing
         }
 
         /// <summary>
+        /// Called when no configuration exists (or <see cref="SetEngineConfiguration(EngineConfiguration?)"/> has been called with null).
+        /// </summary>
+        public static Action<EngineConfiguration>? AutoConfigure { get; set; }
+
+        /// <summary>
         /// Sets a configuration: this resets existing <see cref="Map"/> and <see cref="Services"/>, the next
         /// access to them will trigger a run of the engine.
+        /// <para>
+        /// When set to null, <see cref="AutoConfigure"/> will be used to obtain a new configuration.
+        /// </para>
         /// <para>
         /// The internal configuration is cloned so the <paramref name="engineConfiguration"/> argument can be freely reused
         /// without interfering with the current one.
@@ -68,10 +89,9 @@ namespace CK.Testing
         /// </para>
         /// </summary>
         /// <param name="engineConfiguration">The new configuration to apply.</param>
-        public static void SetEngineConfiguration( EngineConfiguration engineConfiguration ) 
+        public static void SetEngineConfiguration( EngineConfiguration? engineConfiguration ) 
         {
-            Throw.CheckNotNullArgument( engineConfiguration );
-            _configuration = engineConfiguration.Clone();
+            _configuration = engineConfiguration?.Clone();
             _map = null;
             if( _services.Services != null )
             {

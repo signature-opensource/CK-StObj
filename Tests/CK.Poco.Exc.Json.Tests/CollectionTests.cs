@@ -6,9 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
 {

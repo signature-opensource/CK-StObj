@@ -4,7 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -59,12 +59,10 @@ namespace CK.StObj.Engine.Tests.Poco
         public void duplicate_names_on_the_Poco_are_errors()
         {
             {
-                var c = TestHelper.CreateTypeCollector( typeof( ICmdBadName1 ) );
-                TestHelper.GetFailedCollectorResult( c, "Duplicate ExternalName in attribute on " );
+                TestHelper.GetFailedCollectorResult( [typeof( ICmdBadName1 )], "Duplicate ExternalName in attribute on " );
             }
             {
-                var c = TestHelper.CreateTypeCollector( typeof( ICmdBadName2 ) );
-                TestHelper.GetFailedCollectorResult( c, "Duplicate ExternalName in attribute on " );
+                TestHelper.GetFailedCollectorResult( [typeof( ICmdBadName2 )], "Duplicate ExternalName in attribute on " );
             }
         }
 
@@ -117,8 +115,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void PocoName_must_be_unique()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ICmd1 ), typeof( ICmd1Bis ) );
-            TestHelper.GetFailedCollectorResult( c, "The Poco name 'Cmd1' clashes: both '" );
+            TestHelper.GetFailedCollectorResult( [typeof( ICmd1 ), typeof( ICmd1Bis )], "The Poco name 'Cmd1' clashes: both '" );
         }
     }
 }

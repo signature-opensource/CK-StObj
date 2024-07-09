@@ -3,8 +3,7 @@ using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using static CK.Poco.Exc.Json.Tests.BasicTypeTests;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
 {

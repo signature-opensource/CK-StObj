@@ -10,7 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 #pragma warning disable IDE0051 // Remove unused private members
@@ -49,8 +49,7 @@ namespace CK.StObj.Engine.Tests.Poco
                             .Where( t => t.Namespace == "CK.StObj.Engine.Tests.Poco.Sample" )
                             .Concat( extra );
 
-            var c = TestHelper.CreateTypeCollector( types );
-            return TestHelper.GetSuccessfulCollectorResult( c );
+            return TestHelper.GetSuccessfulCollectorResult( types );
         }
 
         [CKTypeDefiner]
@@ -67,8 +66,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void poco_marked_with_CKTypeDefiner_are_not_registered()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( IThing ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( collector );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IThing )] );
             var poco = r.PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null, "Since there has been no error." );
             poco.Families.Should().HaveCount( 1 );
@@ -148,8 +146,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( typeof( IDefPropNullableFloat ), typeof( IDefPropFloat ) )]
         public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same( Type t1, Type t2 )
         {
-            var c = TestHelper.CreateTypeCollector( t1, t2 );
-            TestHelper.GetFailedCollectorResult( c, "Property type conflict between:", "And:" );
+            TestHelper.GetFailedCollectorResult( [t1, t2], "Property type conflict between:", "And:" );
         }
 
         public interface IDefTestMaskedBaseProperties : IDefTest
@@ -164,8 +161,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void DefaultValueAttribute_must_be_the_same_when_base_properties_are_masked()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IDefTestMaskedBaseProperties ) );
-            TestHelper.GetFailedCollectorResult( c, "Default values difference between 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefTest.PDef' = '3712' and 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefTestMaskedBaseProperties.PDef' = '3713'." );
+            TestHelper.GetFailedCollectorResult( [typeof( IDefTestMaskedBaseProperties )],
+                "Default values difference between 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefTest.PDef' = '3712' and 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefTestMaskedBaseProperties.PDef' = '3713'." );
         }
 
         public interface IDefBase : IPoco
@@ -193,8 +190,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void DefaultValueAttribute_must_be_the_same_accross_the_different_interfaces()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IDef1 ), typeof( IDef2 ) );
-            TestHelper.GetFailedCollectorResult( c, "Default values difference between 'CK.StObj.Engine.Tests.Poco.PocoTests+IDef1.PDef' = '3712' and 'CK.StObj.Engine.Tests.Poco.PocoTests+IDef2.PDef' = '3713'." );
+            TestHelper.GetFailedCollectorResult( [typeof( IDef1 ), typeof( IDef2 )], "Default values difference between 'CK.StObj.Engine.Tests.Poco.PocoTests+IDef1.PDef' = '3712' and 'CK.StObj.Engine.Tests.Poco.PocoTests+IDef2.PDef' = '3713'." );
         }
 
         public interface IInvalidDefaultValue1 : IPoco
@@ -227,8 +223,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( typeof( IInvalidDefaultValue4 ) )]
         public void DefaultValueAttribute_and_property_type_must_match( Type t )
         {
-            var c = TestHelper.CreateTypeCollector( t, typeof( IDef1 ) );
-            TestHelper.GetFailedCollectorResult( c, "Invalid DefaultValue attribute" );
+            TestHelper.GetFailedCollectorResult( [t, typeof( IDef1 )], "Invalid DefaultValue attribute" );
         }
 
         public interface IRootTest : IPoco
@@ -275,31 +270,28 @@ namespace CK.StObj.Engine.Tests.Poco
         public void same_Poco_properties_can_be_of_any_type_as_long_as_they_belong_to_the_same_Poco_family()
         {
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IRootTest ),
-                                                         typeof( ISubTest ),
-                                                         typeof( IRootBestTest ),
-                                                         typeof( ISubBestTest ) );
-                TestHelper.GetSuccessfulCollectorResult( c );
+                TestHelper.GetSuccessfulCollectorResult( [typeof( IRootTest ),
+                                                          typeof( ISubTest ),
+                                                          typeof( IRootBestTest ),
+                                                          typeof( ISubBestTest )] );
             }
 
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IRootTest ),
-                                                         typeof( ISubTest ),
-                                                         typeof( IRootBestTest ),
-                                                         typeof( ISubBestTest ),
-                                                         typeof( IRootAbsoluteBestTest ) );
-                TestHelper.GetSuccessfulCollectorResult( c );
+                TestHelper.GetSuccessfulCollectorResult( [typeof( IRootTest ),
+                                                          typeof( ISubTest ),
+                                                          typeof( IRootBestTest ),
+                                                          typeof( ISubBestTest ),
+                                                          typeof( IRootAbsoluteBestTest )] );
             }
 
             // Without registering the IDefBase Poco:
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IRootTest ),
-                                                         typeof( ISubTest ),
-                                                         typeof( IRootBestTest ),
-                                                         typeof( ISubBestTest ),
-                                                         typeof( IRootAbsoluteBestTest ),
-                                                         typeof( IRootBuggyOtherFamily ) );
-                TestHelper.GetFailedCollectorResult( c,
+                TestHelper.GetFailedCollectorResult( [typeof( IRootTest ),
+                                                      typeof( ISubTest ),
+                                                      typeof( IRootBestTest ),
+                                                      typeof( ISubBestTest ),
+                                                      typeof( IRootAbsoluteBestTest ),
+                                                      typeof( IRootBuggyOtherFamily )],
                     $"Property type conflict between:{Environment.NewLine}" +
                     $"PocoTests.IDefBase CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub{Environment.NewLine}" +
                     $"And:{Environment.NewLine}" +
@@ -308,14 +300,13 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // With IDefBase Poco registration:
             {
-                var c = TestHelper.CreateTypeCollector( typeof( IRootTest ),
-                                                         typeof( ISubTest ),
-                                                         typeof( IRootBestTest ),
-                                                         typeof( ISubBestTest ),
-                                                         typeof( IRootAbsoluteBestTest ),
-                                                         typeof( IRootBuggyOtherFamily ),
-                                                         typeof( IDefBase ) );
-                TestHelper.GetFailedCollectorResult( c,
+                TestHelper.GetFailedCollectorResult( [typeof( IRootTest ),
+                                                      typeof( ISubTest ),
+                                                      typeof( IRootBestTest ),
+                                                      typeof( ISubBestTest ),
+                                                      typeof( IRootAbsoluteBestTest ),
+                                                      typeof( IRootBuggyOtherFamily ),
+                                                      typeof( IDefBase )],
                     $"Property type conflict between:{Environment.NewLine}" +
                     $"PocoTests.IDefBase CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub{Environment.NewLine}" +
                     $"And:{Environment.NewLine}" +
@@ -352,8 +343,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Poco_properties_can_carry_context_bound_attributes()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ISome ) );
-            TestHelper.GetSuccessfulCollectorResult( c );
+            TestHelper.GetSuccessfulCollectorResult( [typeof( ISome )] );
             SpecialAttributeImpl.GotType.Should().Be( typeof(ISome ) );
             SpecialAttributeImpl.GotProperty.Name.Should().Be( "Prop" );
         }

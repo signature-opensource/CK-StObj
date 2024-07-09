@@ -53,6 +53,25 @@ namespace CK.Testing
             return new AutomaticServices( map, serviceProvider, reg.Services );
         }
 
+
+        public static ServicedApplication CreateServicedApplication( this IStObjMap map,
+                                                                     HostApplicationBuilderSettings? hostBuilderSettings = null,
+                                                                     Action<IServiceCollection>? configureServices = null,
+                                                                     SimpleServiceContainer? startupServices = null )
+        {
+            var builder = Host.CreateEmptyApplicationBuilder( hostBuilderSettings ?? new HostApplicationBuilderSettings { DisableDefaults = true } );
+
+            var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, builder.Services, startupServices );
+            configureServices?.Invoke( builder.Services );
+            reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+
+            var host = builder.Build();
+            // Getting the IHostedService is enough to initialize the DI containers.
+            // Even if IHost.StartAsync() is not called, the DI containers are correctly initialized.
+            host.Services.GetServices<IHostedService>();
+            return new ServicedApplication( host );
+        }
+
         /// <summary>
         /// Fully builds and configures a IServiceProvider after a successful run of the engine fully configured service provider
         /// in <see cref="AutomaticServices"/> (that must be disposed).

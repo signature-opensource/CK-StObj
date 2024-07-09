@@ -3,18 +3,14 @@ using CK.Core;
 using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 #pragma warning disable IDE0051 // Remove unused private members
@@ -305,7 +301,7 @@ namespace CK.StObj.Engine.Tests
                 // Here we tell the engine: "I'm handling this property implementation" only if the property name starts with a 'H'.
                 // This is rather stupid but this shows an easy way to enforce naming rules.
                 // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
-                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H", StringComparison.Ordinal ) ? this : null;
+                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( 'H' ) ? this : null;
 
                 // We choose to implement all the properties as a whole in Implement method below: by returning CSCodeGenerationResult.Success
                 // we tell the engine: "Okay, I handled it, please continue your business."

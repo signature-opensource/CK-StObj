@@ -1,11 +1,10 @@
 using CK.Core;
+using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Sample.Model;
-
-using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace Sample.Engine.Tests
 {

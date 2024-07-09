@@ -43,7 +43,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(FakeTenantInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
                 { typeof(FakeCultureInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
             };
-            _containerDefinitions = new DIContainerDefinition[] { new FakeBackDIContainerDefinition_CK() };
+            _containerDefinitions = [new FakeBackDIContainerDefinition_CK()];
             _ambientMappings = ImmutableArray.Create(
                 // IFakeTenantInfo is an auto service: the inheritance chain is analyzed, they share the same index.
                 new AmbientServiceMapping( typeof( IFakeTenantInfo ), 0 ),
@@ -58,34 +58,34 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
             Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetAmbientService( sp, 2 );
             Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetAmbientService( sp, 3 );
-            _ambientServiceBackendDescriptors = new ServiceDescriptor[] {
+            _ambientServiceBackendDescriptors = [
                     new ServiceDescriptor( typeof( IFakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), back0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeAuthenticationInfo), back1, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeAuthenticationInfo), back2, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeCultureInfo), back3, ServiceLifetime.Scoped ),
-            };
+            ];
             // These declarations are only here as the defaults.
             // In practice they are overridden by the endpoint container definition ConfigureServices.
             Func<IServiceProvider, object> front0 = sp => ((IAmbientServiceDefaultProvider<FakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultTenantProvider ) )!).Default;
             Func<IServiceProvider, object> front1 = sp => ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
             Func<IServiceProvider, object> front3 = sp => ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
-            _ambientServiceEndpointDescriptors = new ServiceDescriptor[] {
+            _ambientServiceEndpointDescriptors = [
                     new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeTenantInfo), front0, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( IFakeAuthenticationInfo), front1, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeAuthenticationInfo), front1, ServiceLifetime.Scoped ),
                     new ServiceDescriptor( typeof( FakeCultureInfo),front3, ServiceLifetime.Scoped ),
-            };
+            ];
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
         public DIContainerHub_CK()
         {
-            _containers = new IDIContainerInternal[]
-            {
+            _containers =
+            [
                     new DIContainer<FakeBackDIContainerDefinition.Data>( new FakeBackDIContainerDefinition_CK() )
-            };
+            ];
         }
 
         public override IReadOnlyList<DIContainerDefinition> ContainerDefinitions => _containerDefinitions;
@@ -98,8 +98,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         internal ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )
         {
-            return new ServiceDescriptor[]
-            {
+            return
+            [
                 // This endpointTypeManager that is the relay to the global services.
                 new ServiceDescriptor( typeof( DIContainerHub ), this ),
                 // The StObjMap singleton.
@@ -113,7 +113,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
                 // And our fundamental scoped that holds the endpoint specific scoped Data.
                 new ServiceDescriptor( typeof( ScopeDataHolder ), typeof( ScopeDataHolder ), ServiceLifetime.Scoped )
-            };
+            ];
         }
 
     }

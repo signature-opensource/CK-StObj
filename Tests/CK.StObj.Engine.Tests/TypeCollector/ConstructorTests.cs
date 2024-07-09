@@ -7,7 +7,7 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service.TypeCollector
 {

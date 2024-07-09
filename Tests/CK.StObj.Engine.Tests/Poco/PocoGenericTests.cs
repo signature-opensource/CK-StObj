@@ -7,7 +7,7 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Reflection;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -30,8 +30,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void open_generic_IPoco_is_forbidden()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWantAnInt ) );
-            TestHelper.GetFailedCollectorResult( c, "Use the [CKTypeDefiner] attribute to define a generic IPoco." );
+            TestHelper.GetFailedCollectorResult( [typeof( IWantAnInt )], "Use the [CKTypeDefiner] attribute to define a generic IPoco." );
         }
 
         [CKTypeDefiner]
@@ -42,8 +41,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void generic_AbstractTypes_must_expose_the_parameter_type_property()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWillFail ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IWillFail )],
                 "Generic interface 'CK.StObj.Engine.Tests.Poco.PocoGenericTests.IBuggy<T1,T2>' must define '[AutoImplementationClaim] public static T1 T1Type => default!;' property. This is required for type analysis.",
                 "Generic interface 'CK.StObj.Engine.Tests.Poco.PocoGenericTests.IBuggy<T1,T2>' must define '[AutoImplementationClaim] public static T2 T2Type => default!;' property. This is required for type analysis." );
         }
@@ -95,11 +93,11 @@ namespace CK.StObj.Engine.Tests.Poco
             Throw.DebugAssert( cmdNullable.IsNullable );
             cmdNullable.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
             cmdNullable.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[] {
+                .Should().BeEquivalentTo( [
                     "[AbstractPoco]ICommand<object>?",
                     "[AbstractPoco]IAbstractCommand?",
                     "[AbstractPoco]ICrisPoco?",
-                    "[AbstractPoco]ICommand<int>?" } );
+                    "[AbstractPoco]ICommand<int>?" ] );
 
             cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Should().Be( "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<int>?" );
@@ -107,11 +105,11 @@ namespace CK.StObj.Engine.Tests.Poco
             var cmd = cmdNullable.NonNullable;
             cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
             cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace("CK.StObj.Engine.Tests.CrisLike.", "") )
-                .Should().BeEquivalentTo( new[] {
+                .Should().BeEquivalentTo( [
                     "[AbstractPoco]ICommand<object>",
                     "[AbstractPoco]IAbstractCommand",
                     "[AbstractPoco]ICrisPoco",
-                    "[AbstractPoco]ICommand<int>" } );
+                    "[AbstractPoco]ICommand<int>" ] );
 
             cmd.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmd.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Should().Be( "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<int>" );
@@ -158,8 +156,8 @@ namespace CK.StObj.Engine.Tests.Poco
             cmdNullable.AllAbstractTypes.Should().BeEquivalentTo( cmdNullable.AbstractTypes );
             cmdNullable.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>?",
                     "[AbstractPoco]IAbstractCommand?",
                     "[AbstractPoco]ICrisPoco?",
@@ -168,7 +166,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<IAbstractCommand>?",
                     "[AbstractPoco]ICommand<ICommand<object>>?",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>?"
-                } );
+                ] );
             GetCommandResult( cmdNullable ).ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                       .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
                 .Should().Be( "[AbstractPoco]ICommand<ICommand<object>>?" );
@@ -177,8 +175,8 @@ namespace CK.StObj.Engine.Tests.Poco
             cmd.AllAbstractTypes.Should().BeEquivalentTo( cmd.AbstractTypes );
             cmd.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                        .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>",
                     "[AbstractPoco]IAbstractCommand",
                     "[AbstractPoco]ICrisPoco",
@@ -187,7 +185,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<IAbstractCommand>",
                     "[AbstractPoco]ICommand<ICommand<object>>",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>"
-                } );
+                ] );
             GetCommandResult( cmd ).ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                               .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
                 .Should().Be( "[AbstractPoco]ICommand<ICommand<object>>?" );
@@ -297,8 +295,8 @@ namespace CK.StObj.Engine.Tests.Poco
             cmdNullable.PrimaryPocoType.AllAbstractTypes.Should().HaveCount( 9 );
             cmdNullable.PrimaryPocoType.AllAbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                                   .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>?",
                     "[AbstractPoco]IAbstractCommand?",
                     "[AbstractPoco]ICrisPoco?",
@@ -308,7 +306,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<ICommand<object>>?",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>?",
                     "[AbstractPoco]ICommand<ICommand<ICommand<int>>>?"
-                } );
+                ] );
 
             // AbstractTypes DOES NOT include ImplementationLess abstract poco.
             cmdNullable.PrimaryPocoType.AllAbstractTypes.Should().StartWith( cmdNullable.PrimaryPocoType.AbstractTypes, "This is how this is currenlty implemented." );
@@ -316,8 +314,8 @@ namespace CK.StObj.Engine.Tests.Poco
             cmdNullable.PrimaryPocoType.AbstractTypes.Should().HaveCount( 8 );
             cmdNullable.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                                .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>?",
                     "[AbstractPoco]IAbstractCommand?",
                     "[AbstractPoco]ICrisPoco?",
@@ -326,7 +324,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<IAbstractCommand>?",
                     "[AbstractPoco]ICommand<ICommand<object>>?",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>?"
-                } );
+                ] );
 
             cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
@@ -338,8 +336,8 @@ namespace CK.StObj.Engine.Tests.Poco
             cmd.PrimaryPocoType.AllAbstractTypes.Should().HaveCount( 9 );
             cmd.PrimaryPocoType.AllAbstractTypes.Select( t => t.ToString().Replace("CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "").Replace("CK.StObj.Engine.Tests.CrisLike.", "")
             )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>",
                     "[AbstractPoco]IAbstractCommand",
                     "[AbstractPoco]ICrisPoco",
@@ -349,7 +347,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<ICommand<object>>",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>",
                     "[AbstractPoco]ICommand<ICommand<ICommand<int>>>"
-                } );
+                ] );
 
             // AbstractTypes DOES NOT include ImplementationLess abstract poco.
             cmd.PrimaryPocoType.AllAbstractTypes.Should().StartWith( cmd.PrimaryPocoType.AbstractTypes, "This is how this is currenlty implemented." );
@@ -357,8 +355,8 @@ namespace CK.StObj.Engine.Tests.Poco
             cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 8 );
             cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                        .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>",
                     "[AbstractPoco]IAbstractCommand",
                     "[AbstractPoco]ICrisPoco",
@@ -367,7 +365,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<IAbstractCommand>",
                     "[AbstractPoco]ICommand<ICommand<object>>",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>"
-                } );
+                ] );
 
             cmd.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmd.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
@@ -403,13 +401,13 @@ namespace CK.StObj.Engine.Tests.Poco
             cmdNullable.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
             cmdNullable.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                                .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]IInput<object>?",
                     "[AbstractPoco]IAbstractInput?",
                     "[AbstractPoco]ICrisPoco?",
                     "[AbstractPoco]IInput<int>?"
-                } );
+                ] );
 
             cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
@@ -420,13 +418,13 @@ namespace CK.StObj.Engine.Tests.Poco
             cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
             cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                        .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]IInput<object>",
                     "[AbstractPoco]IAbstractInput",
                     "[AbstractPoco]ICrisPoco",
                     "[AbstractPoco]IInput<int>"
-                } );
+                ] );
 
             cmd.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmd.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
@@ -461,8 +459,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             cmdNullable.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]IInput<object>?",
                     "[AbstractPoco]IAbstractInput?",
                     "[AbstractPoco]ICrisPoco?",
@@ -471,7 +469,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]IInput<IAbstractInput>?",
                     "[AbstractPoco]IInput<IInput<object>>?",
                     "[AbstractPoco]IInput<IInput<IInput<object>>>?",
-                } );
+                ] );
             cmdNullable.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmdNullable.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                 .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
@@ -484,8 +482,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             cmd.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                        .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]IInput<object>",
                     "[AbstractPoco]IAbstractInput",
                     "[AbstractPoco]ICrisPoco",
@@ -494,7 +492,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]IInput<IAbstractInput>",
                     "[AbstractPoco]IInput<IInput<object>>",
                     "[AbstractPoco]IInput<IInput<IInput<object>>>",
-                } );
+                ] );
             cmd.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmd.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                         .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
@@ -505,8 +503,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void registering_purely_abstract_type()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IAbstractCommand ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( c );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IAbstractCommand )] );
             var pocoBuilder = r.CKTypeResult.PocoTypeSystemBuilder;
             var veryAbstract = pocoBuilder.FindByType<IAbstractPocoType>( typeof( IAbstractCommand ) );
             Throw.DebugAssert( veryAbstract != null );
@@ -529,20 +526,20 @@ namespace CK.StObj.Engine.Tests.Poco
             Throw.DebugAssert( iCmdGen != null );
             iCmdGen.Instances.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                        .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>",
                     "[AbstractPoco]ICommand<ICommand<object>>",
                     "[AbstractPoco]ICommand<IAbstractCommand>",
                     "[AbstractPoco]ICommand<ICrisPoco>",
                     "[AbstractPoco]ICommand<CK.Core.IPoco>",
                     "[AbstractPoco]ICommand<object>"
-                } );
+                ] );
 
             primary.NonNullable.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                        .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
-                .Should().BeEquivalentTo( new[]
-                {
+                .Should().BeEquivalentTo(
+                [
                     "[AbstractPoco]ICommand<object>",
                     "[AbstractPoco]IAbstractCommand",
                     "[AbstractPoco]ICrisPoco",
@@ -551,7 +548,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<IAbstractCommand>",
                     "[AbstractPoco]ICommand<ICommand<object>>",
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>"
-                } );
+                ] );
         }
 
 

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
 {
@@ -156,8 +156,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public void as_usual_writable_type_is_invariant()
         {
             // ISecondaryVerySimplePoco is required for IAbstractBase and IAbstract1 to be actually registered. 
-            var c = TestHelper.CreateTypeCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IInvalid ), typeof( ISecondaryVerySimplePoco ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IInvalid ), typeof( ISecondaryVerySimplePoco )],
                 $"Property type conflict between:{Environment.NewLine}" +
                 $"IList<CommonTypes.IAbstract1> CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests.IInvalid.List{Environment.NewLine}" +
                 $"And:{Environment.NewLine}" +

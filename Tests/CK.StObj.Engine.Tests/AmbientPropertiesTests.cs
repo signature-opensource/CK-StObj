@@ -6,7 +6,7 @@ using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 #pragma warning disable CA1018 // Mark attributes with AttributeUsageAttribute
@@ -77,8 +77,7 @@ namespace CK.StObj.Engine.Tests
         public void OneObjectDirectProperty()
         {
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( SimpleObjectDirect ) );
-                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleObjectDirect )] ).EngineMap;
                 Throw.DebugAssert( map != null );
                 map.StObjs.Obtain<SimpleObjectDirect>()!.OneIntValue.Should().Be( 3712, "Direct properties can be set by Attribute." );
             }
@@ -96,8 +95,7 @@ namespace CK.StObj.Engine.Tests
         public void OneObjectAmbientProperty()
         {
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( SimpleObjectAmbient ) );
-                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleObjectAmbient )] ).EngineMap;
                 Throw.DebugAssert( map != null );
                 map.StObjs.OrderedStObjs.Should().NotBeEmpty( "We registered SimpleObjectAmbient." );
                 map.StObjs.Obtain<SimpleObjectAmbient>()!.OneIntValue.Should().Be( 3712, "Same as Direct properties (above) regarding direct setting. The difference between Ambient and non-ambient lies in value propagation." );
@@ -134,16 +132,14 @@ namespace CK.StObj.Engine.Tests
         public void AmbientOrDirectPropertyDeclaredInBaseClassCanBeSet()
         {
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( SpecializedObjectDirect ) );
-                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SpecializedObjectDirect )] ).EngineMap;
                 Throw.DebugAssert( map != null );
 
                 map.StObjs.OrderedStObjs.Select( o => o.ClassType ).Should().Contain( new[] { typeof( SpecializedObjectDirect ), typeof( SimpleObjectDirect ) } );
                 map.StObjs.Obtain<SpecializedObjectDirect>()!.OneIntValue.Should().Be( 999, "Direct properties can be set by Attribute (or any IStObjStructuralConfigurator)." );
             }
             {
-                var collector = TestHelper.CreateTypeCollector( typeof( SpecializedObjectAmbient ) );
-                var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+                var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SpecializedObjectAmbient )] ).EngineMap;
                 Throw.DebugAssert( map != null );
 
                 map.StObjs.OrderedStObjs.Select( o => o.ClassType ).Should().Contain( new[] { typeof( SpecializedObjectAmbient ), typeof( SimpleObjectAmbient ) } );

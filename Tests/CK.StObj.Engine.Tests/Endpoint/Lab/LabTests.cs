@@ -2,15 +2,12 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
@@ -91,7 +88,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             fromE.B.Should().BeSameAs( fromG.B );
             fromE.MultiA.Should().NotBeSameAs( fromG.MultiA, "Unfortunately... But its content is okay, and anyway, see below: " +
                                                              "instances are always different for resolved IEnumerable<>." );
-            fromE.MultiA.Select( a => a.Name ).Should().BeEquivalentTo( new[] { "A instance", "A instance by factory" } );
+            fromE.MultiA.Select( a => a.Name ).Should().BeEquivalentTo( ["A instance", "A instance by factory"] );
             fromE.MultiA.ElementAt( 0 ).Should().BeSameAs( fromG.MultiA.ElementAt( 0 ) );
             fromE.MultiA.ElementAt( 1 ).Should().BeSameAs( fromG.MultiA.ElementAt( 1 ) );
 
@@ -168,7 +165,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var sing1 = sp.GetRequiredService<Sing1>();
             var sing2 = sp.GetRequiredService<Sing2>();
             var multi = sp.GetRequiredService<IEnumerable<IMultiSing>>();
-            multi.Select( m => m.Name ).Should().BeEquivalentTo( new[] { "Sing1", "Sing2" } );
+            multi.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2"] );
             // The multiple singletons are the ones.
             multi.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
             multi.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
@@ -192,7 +189,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var sing2 = sp.GetRequiredService<Sing2>();
             var multi = sp.GetRequiredService<IEnumerable<IMultiSing>>();
             // Seems okay but...
-            multi.Select( m => m.Name ).Should().BeEquivalentTo( new[] { "Sing1", "Sing2" } );
+            multi.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2"] );
             // ...the multiple singletons are NOT the same.
             multi.OfType<Sing1>().Single().Should().NotBeSameAs( sing1 );
             multi.OfType<Sing2>().Single().Should().NotBeSameAs( sing2 );
@@ -231,7 +228,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             var sing1 = CheckTrueSingleton<Sing1>( g, e, scopedG, scopedE );
 
             var mG = scopedG.ServiceProvider.GetServices<IMulti>();
-            mG.Select( m => m.Name ).Should().BeEquivalentTo( new[] { "Sing1", "Sing2", "Scop1", "Scop2" } );
+            mG.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2", "Scop1", "Scop2"] );
             mG.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
 
             var sing2 = CheckTrueSingleton<Sing2>( g, e, scopedG, scopedE );
@@ -239,7 +236,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             // The multi from the endpoint container is the complex one.
             var mE = scopedE.ServiceProvider.GetServices<IMulti>();
-            mE.Select( m => m.Name ).Should().BeEquivalentTo( new[] { "Sing1", "Sing2", "Scop1", "Scop2" } );
+            mE.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2", "Scop1", "Scop2"] );
             mE.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
             mE.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
             // The scoped from the 2 scopes are not the same.

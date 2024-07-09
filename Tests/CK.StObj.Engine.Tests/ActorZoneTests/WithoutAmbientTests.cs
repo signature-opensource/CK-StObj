@@ -5,7 +5,7 @@ using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
 
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.ActorZoneTests
 {
@@ -14,8 +14,8 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
     {
         // This is not how the real SqlDefaultDatabase is implemented: see WithAmbientTests for a more accurate reproduction.
         [RealObject( ItemKind = DependentItemKindSpec.Group,
-                Children = new Type[] 
-                { 
+                Children =
+                [
                     typeof( BasicPackage ), 
                     typeof( BasicActor ), 
                     typeof( BasicUser ), 
@@ -25,7 +25,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
                     typeof( SecurityZone ),
                     typeof( AuthenticationPackage ),
                     typeof( AuthenticationUser )
-                } )]
+                ] )]
         public class SqlDefaultDatabase : IRealObject
         {
             public string? ConnectionString { get; private set; }

@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -94,13 +94,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void mutable_struct_must_also_be_ReadOnlyCompliant_in_Poco_fields()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IFailedWithStruct2 ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IFailedWithStruct2 )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2.WithProperties':",
                 "  List<int>? Values" );
 
-            c = TestHelper.CreateTypeCollector( typeof( IFailedWithStruct1 ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IFailedWithStruct1 )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1.WithFields':", 
                 "  List<int> Values" );
         }
@@ -172,14 +170,12 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_IPoco_can_appear_in_named_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IRecordWithPoco ), typeof( IFailedWithStruct1 ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IRecordWithPoco ), typeof( IFailedWithStruct1 )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IRecordWithPoco.Pof':",
                 "  in '(CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1 IAmHere,int B) Inside':",
                 "    CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1 IAmHere" );
 
-            c = TestHelper.CreateTypeCollector( typeof( IRecordWithPoco2 ), typeof( IFailedWithStruct2 ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IRecordWithPoco2 ), typeof( IFailedWithStruct2 )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IRecordWithPoco2.Pof':",
                 "  CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2 IAmHere" );
         }
@@ -194,8 +190,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_list_can_appear_in_named_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHoldRecList ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IHoldRecList )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecList.P':",
                 "List<CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecList.Rec> R" );
         }
@@ -210,8 +205,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_array_can_appear_in_named_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHoldRecArray ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IHoldRecArray )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecArray.P':",
                 "  CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecArray.Rec[] R" );
         }
@@ -226,8 +220,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_dictionary_can_appear_in_named_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHoldRecDic ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IHoldRecDic )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecDic.P':",
                 "  Dictionary<int,CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecDic.Rec> R" );
         }
@@ -245,13 +238,11 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_IPoco_can_appear_in_anonymous_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IAnonymousRecordWithPoco ), typeof( IFailedWithStruct1 ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IAnonymousRecordWithPoco ), typeof( IFailedWithStruct1 )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IAnonymousRecordWithPoco.Pof':",
                 "  CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1 A" );
 
-            c = TestHelper.CreateTypeCollector( typeof( IAnonymousRecordWithPoco2 ), typeof( IFailedWithStruct2 ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IAnonymousRecordWithPoco2 ), typeof( IFailedWithStruct2 )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IAnonymousRecordWithPoco2.Pof':",
                 "  in '(CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2 IAmHere,int B) Inside':",
                 "    CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2 IAmHere" );
@@ -265,8 +256,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_list_can_appear_in_anonymous_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHoldAnonymousRecList ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IHoldAnonymousRecList )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecList.P':",
                 "List<int> R" );
         }
@@ -279,8 +269,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_array_can_appear_in_anonymous_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHoldAnonymousRecArray ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IHoldAnonymousRecArray )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecArray.P':",
                 "  in '(int[] R,bool B) Inside':",
                 "    int[] R" );
@@ -294,8 +283,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void no_dictionary_can_appear_in_anonymous_record()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IHoldRecAnonymousDic ) );
-            TestHelper.GetFailedCollectorResult( c,
+            TestHelper.GetFailedCollectorResult( [typeof( IHoldRecAnonymousDic )],
                 "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecAnonymousDic.P':",
                 "  Dictionary<int,long> R" );
         }
@@ -314,8 +302,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void generic_record_is_not_supported()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IWithGenericRecordStruct ) );
-            TestHelper.GetFailedCollectorResult( c, "Generic value type cannot be a Poco type" );
+            TestHelper.GetFailedCollectorResult( [typeof( IWithGenericRecordStruct )], "Generic value type cannot be a Poco type" );
         }
 
         // Error CS8170  Struct members cannot return 'this' or other instance members by reference.

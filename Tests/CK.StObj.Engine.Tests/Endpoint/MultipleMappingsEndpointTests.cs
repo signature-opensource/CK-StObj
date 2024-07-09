@@ -5,10 +5,9 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
@@ -81,7 +80,6 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                             typeof( SecondDIContainerDefinition ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
-            await TestHelper.StartHostedServicesAsync( auto.Services );
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
             var g = auto.Services;
@@ -105,15 +103,14 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyAuto ),
-                                            typeof( ManySingleton ),
-                                            typeof( ManyAuto2 ),
-                                            typeof( ManySingleton2 ),
-                                            typeof( ManyConsumer ),
-                                            typeof( FirstDIContainerDefinition ),
-                                            typeof( SecondDIContainerDefinition ));
+                                                  typeof( ManySingleton ),
+                                                  typeof( ManyAuto2 ),
+                                                  typeof( ManySingleton2 ),
+                                                  typeof( ManyConsumer ),
+                                                  typeof( FirstDIContainerDefinition ),
+                                                  typeof( SecondDIContainerDefinition ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
-            await TestHelper.StartHostedServicesAsync( auto.Services );
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
             var g = auto.Services;
@@ -140,14 +137,12 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyScoped ),
-                                            typeof( ManyConsumer ),
-                                            typeof( FirstDIContainerDefinition ),
-                                            typeof( SecondDIContainerDefinition ));
+                                                  typeof( ManyConsumer ),
+                                                  typeof( FirstDIContainerDefinition ),
+                                                  typeof( SecondDIContainerDefinition ));
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
-
-            await TestHelper.StartHostedServicesAsync( auto.Services );
 
             using var g = auto.Services.CreateScope();
             var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
@@ -186,8 +181,6 @@ namespace CK.StObj.Engine.Tests.Endpoint
             } );
 
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
-
-            await TestHelper.StartHostedServicesAsync( auto.Services );
 
             using var g = auto.Services.CreateScope();
             var e1 = g.ServiceProvider.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<FirstDIContainerDefinition.Data>>().Single();
@@ -278,8 +271,6 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                             typeof( ManyConsumer ),
                                             typeof( ManyAsSingletonDIContainerDefinition ) );
             using var auto = configuration.Run().CreateAutomaticServices();
-
-            await TestHelper.StartHostedServicesAsync( auto.Services );
 
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
 

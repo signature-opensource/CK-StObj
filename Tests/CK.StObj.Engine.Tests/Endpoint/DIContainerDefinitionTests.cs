@@ -5,11 +5,9 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
-// Ignore Spelling: App Backdoor
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
@@ -104,7 +102,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var backdoor = s.GetRequiredService<IDIContainer<BackdoorDIContainerDefinition.Data>>();
             backdoor.Name.Should().Be( "Backdoor" );
             endpoints.Should().Contain( appIdentity ).And.Contain( backdoor );
-            return new object[] { endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>() }; 
+            return [endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>()]; 
         }
 
         [DIContainerDefinition( DIContainerKind.Background )]
@@ -115,9 +113,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void DIContainerDefinitions_cannot_be_specialized()
         {
-            var c1 = TestHelper.CreateTypeCollector( typeof( NoWay1Definition ) );
-            TestHelper.GetFailedCollectorResult( c1 , "DIContainerDefinition type 'DIContainerDefinitionTests.NoWay1Definition' must directly specialize "
-                                                      + "DIContainerDefinition<TScopeData> (not 'DIContainerDefinitionTests.BackdoorDIContainerDefinition')." );
+            TestHelper.GetFailedCollectorResult( [typeof( NoWay1Definition )],
+                    "DIContainerDefinition type 'DIContainerDefinitionTests.NoWay1Definition' must directly specialize "
+                    + "DIContainerDefinition<TScopeData> (not 'DIContainerDefinitionTests.BackdoorDIContainerDefinition')." );
 
         }
 
@@ -148,8 +146,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void DIContainerDefinitions_cannot_use_the_same_ScopeData_type()
         {
-            var c1 = TestHelper.CreateTypeCollector( typeof( Dup1DIContainerDefinition ), typeof( Dup2DIContainerDefinition ) );
-            TestHelper.GetFailedCollectorResult( c1, "The generic parameter of 'DIContainerDefinitionTests.Dup2DIContainerDefinition' must be 'Dup2DIContainerDefinition.Data'." );
+            TestHelper.GetFailedCollectorResult( [typeof( Dup1DIContainerDefinition ), typeof( Dup2DIContainerDefinition )],
+                "The generic parameter of 'DIContainerDefinitionTests.Dup2DIContainerDefinition' must be 'Dup2DIContainerDefinition.Data'." );
         }
 
         [DIContainerDefinition( DIContainerKind.Endpoint )]
@@ -167,8 +165,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             const string msg = "Invalid DIContainerDefinition type 'DIContainerDefinitionTests.BadNameDefinition': "
                                + "DIContainerDefinition type name must end with \"DIContainerDefinition\" (the prefix becomes the container name).";
 
-            var c1 = TestHelper.CreateTypeCollector( typeof( BadNameDefinition ) );
-            TestHelper.GetFailedCollectorResult( c1, msg );
+            TestHelper.GetFailedCollectorResult( [typeof( BadNameDefinition )], msg );
         }
 
         [DIContainerDefinition( DIContainerKind.Endpoint )]
@@ -199,15 +196,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 const string msg = "Type 'DIContainerDefinitionTests.BadFrontDataDIContainerDefinition.Data' must not specialize BackendScopedData, " +
                                     "it must simply support the IScopedData interface because it is a Endpoint DI container.";
 
-                var c = TestHelper.CreateTypeCollector( typeof( BadFrontDataDIContainerDefinition ) );
-                TestHelper.GetFailedCollectorResult( c, msg );
+                TestHelper.GetFailedCollectorResult( [typeof( BadFrontDataDIContainerDefinition )], msg );
             }
 
             {
                 const string msg = "Type 'DIContainerDefinitionTests.BadBackDataDIContainerDefinition.Data' must specialize BackendScopedData because it is a Backend DI container.";
 
-                var c = TestHelper.CreateTypeCollector( typeof( BadBackDataDIContainerDefinition ) );
-                TestHelper.GetFailedCollectorResult( c, msg );
+                TestHelper.GetFailedCollectorResult( [typeof( BadBackDataDIContainerDefinition )], msg );
             }
         }
 

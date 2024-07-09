@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Reflection;
 using CK.Core;
 
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.SimpleObjects
 {

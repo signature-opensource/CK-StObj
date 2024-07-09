@@ -1,8 +1,6 @@
 using CK.Core;
-using CK.Testing.StObjEngine;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.ComponentModel;
 
 namespace CK.Testing
 {

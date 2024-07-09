@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -728,7 +728,7 @@ namespace CK.StObj.Engine.Tests
             Debug.Assert( bAnother != null );
             bAnother.Path.Should().Be( "{BasePath}comm/ands" );
 
-            b1.ExcludedTypes.Should().BeEquivalentTo( new[] { typeof( ActivityMonitor ), typeof( CK.Testing.StObjEngineTestHelper ) } );
+            b1.ExcludedTypes.Should().BeEquivalentTo( [typeof( ActivityMonitor ), typeof( CK.Testing.MonitorTestHelper )] );
             b1.OutputPath.Should().Be( new NormalizedPath( "Another/Relative" ) );
             b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
@@ -738,7 +738,7 @@ namespace CK.StObj.Engine.Tests
             c.TraceDependencySorterInput.Should().BeTrue();
             c.TraceDependencySorterOutput.Should().BeTrue();
             c.RevertOrderingNames.Should().BeTrue();
-            c.GlobalExcludedTypes.Should().BeEquivalentTo( new[] { typeof( ActivityMonitor ), typeof( CK.Testing.StObjEngineTestHelper ) } );
+            c.GlobalExcludedTypes.Should().BeEquivalentTo( [typeof( ActivityMonitor ), typeof( CK.Testing.MonitorTestHelper )] );
             c.Aspects.Should().HaveCount( 2 );
             c.Aspects[0].Should().BeAssignableTo<SampleAspectConfiguration>();
             c.Aspects[1].Should().BeAssignableTo<AnotherAspectConfiguration>();

@@ -25,26 +25,6 @@ namespace CK.Testing
     public static partial class EngineTestHelperExtensions
     {
         /// <summary>
-        /// Creates a new <see cref="TypeCollector"/> and registers the given types into it.
-        /// </summary>
-        /// <param name="helper">This helper.</param>
-        /// <param name="types">The types to register.</param>
-        /// <returns>The collector.</returns>
-        [Obsolete( "Use the EngineConfiguration.FirstBinPath.Types directly or a HashSet<Type>" )]
-        [EditorBrowsable(EditorBrowsableState.Never)]   
-        public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, IEnumerable<Type> types )
-        {
-            var c = new TypeCollector();
-            c.AddRange( types );
-            return c;
-        }
-
-        /// <inheritdoc cref="CreateTypeCollector(IBasicTestHelper, IEnumerable{Type})"/>
-        [Obsolete( "Use the EngineConfiguration.FirstBinPath.Types directly or a HashSet<Type>" )]
-        [EditorBrowsable( EditorBrowsableState.Never )]
-        public static TypeCollector CreateTypeCollector( this IBasicTestHelper helper, params Type[] types ) => CreateTypeCollector( helper, (IEnumerable<Type>)types );
-
-        /// <summary>
         /// Creates a default <see cref="EngineConfiguration"/> with the <see cref="EngineConfiguration.FirstBinPath"/> that has
         /// its <see cref="BinPathConfiguration.Path"/> set to the <see cref="IBasicTestHelper.ClosestSUTProjectFolder"/> and its
         /// <see cref="BinPathConfiguration.ProjectPath"/> sets to this <see cref="IBasicTestHelper.TestProjectFolder"/>.
@@ -126,44 +106,6 @@ namespace CK.Testing
                     errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
                         .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
                 }
-            }
-        }
-
-
-        /// <summary>
-        /// Starts any <see cref="IHostedService"/> in <paramref name="services"/>.
-        /// </summary>
-        /// <param name="helper">This helper.</param>
-        /// <param name="services">The service provider.</param>
-        /// <param name="cancellation">Optional cancellation token.</param>
-        /// <returns>The <paramref name="services"/>.</returns>
-        public static async Task<IServiceProvider> StartHostedServicesAsync( this IBasicTestHelper helper, IServiceProvider services, CancellationToken cancellation = default )
-        {
-            foreach( var service in services.GetServices<IHostedService>() )
-            {
-                await service.StartAsync( cancellation );
-            }
-            return services;
-        }
-
-        /// <summary>
-        /// Stops any <see cref="IHostedService"/> in <paramref name="services"/> and optionally disposes the provider if it is disposable.
-        /// </summary>
-        /// <param name="helper">This helper.</param>
-        /// <param name="services">The service provider.</param>
-        /// <param name="disposeServices">True to dispose the <paramref name="services"/>.</param>
-        /// <param name="cancellation">Optional cancellation token.</param>
-        /// <returns>The awaitable.</returns>
-        public static async Task StopHostedServicesAsync( this IBasicTestHelper helper, IServiceProvider services, bool disposeServices = false, CancellationToken cancellation = default )
-        {
-            foreach( var service in services.GetServices<IHostedService>() )
-            {
-                await service.StopAsync( cancellation );
-            }
-            if( disposeServices )
-            {
-                if( services is IAsyncDisposable dA ) await dA.DisposeAsync();
-                else if( services is IDisposable d ) d.Dispose();
             }
         }
 

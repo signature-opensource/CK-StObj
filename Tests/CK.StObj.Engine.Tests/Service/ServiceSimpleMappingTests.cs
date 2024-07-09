@@ -4,10 +4,11 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -125,8 +126,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_with_single_implementation()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ServiceS1S2Impl ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( ServiceS1S2Impl )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
             map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
@@ -145,8 +145,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_unification_works()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( ServiceUnifiedImpl ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( collector );
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( ServiceUnifiedImpl )] );
             var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
             interfaces.Should().HaveCount( 1 );
             var iSU = interfaces[0];
@@ -203,7 +202,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             bool solved = mode == "With Service Chaining";
 
-            var collector = TestHelper.CreateTypeCollector( typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) );
+            var collector = new List<Type> { typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) };
             if( solved ) collector.Add( typeof( ResolveByClassUnification ) );
 
             if( solved )
@@ -263,8 +262,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void simple_linked_list_of_service_classes()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( S1 ), typeof( S2 ), typeof( S3 ), typeof( S4 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S1 ), typeof( S2 ), typeof( S3 ), typeof( S4 )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( S1 ) );
             map.Services.Mappings[typeof( S1 )].ClassType.Should().BeSameAs( typeof( S1 ) );

@@ -2,17 +2,11 @@ using CK.Core;
 using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static CK.Testing.StObjEngineTestHelper;
-
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -40,8 +34,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void basic_set_tests()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( IEmptyPoco ), typeof( IPoco1 ) );
-            var ts = TestHelper.GetSuccessfulCollectorResult( c ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+            var ts = TestHelper.GetSuccessfulCollectorResult( [typeof( IEmptyPoco ), typeof( IPoco1 )] ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var empty = ts.FindByType( typeof( IEmptyPoco ) );
             var poco = ts.FindByType( typeof( IPoco ) );
             var poco1 = ts.FindByType( typeof( IPoco1 ) );
@@ -101,8 +94,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void NormalizedCultureInfo_implies_ExtendedCultureInfo()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ITestNormalizedCultureInfo ) );
-            var ts = TestHelper.GetSuccessfulCollectorResult( c ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+            var ts = TestHelper.GetSuccessfulCollectorResult( [typeof( ITestNormalizedCultureInfo )] ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var poco = ts.FindByType( typeof( ITestNormalizedCultureInfo ) );
             Throw.DebugAssert( poco != null );
 
@@ -145,8 +137,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Nullable_visit_doesnt_hide_type()
         {
-            var c = TestHelper.CreateTypeCollector( typeof( ITestNullNormalizedCultureInfo ) );
-            var ts = TestHelper.GetSuccessfulCollectorResult( c ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+            var ts = TestHelper.GetSuccessfulCollectorResult( [typeof( ITestNullNormalizedCultureInfo )] ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var poco = ts.FindByType( typeof( ITestNullNormalizedCultureInfo ) );
             Throw.DebugAssert( poco != null );
 

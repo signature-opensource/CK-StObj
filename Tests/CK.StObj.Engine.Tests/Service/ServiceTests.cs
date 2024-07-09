@@ -6,7 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using static CK.StObj.Engine.Tests.Service.OpenGenericSupportTests;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -40,8 +40,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void ReplaceAutoService_works_with_type()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SampleService ), typeof( SampleService2 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SampleService ), typeof( SampleService2 )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
@@ -56,8 +55,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void ReplaceAutoService_works_with_assembly_qualified_name_and_locally_defined_attribute()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SampleService ), typeof( SampleService2 ), typeof( SampleService3 ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SampleService ), typeof( SampleService2 ), typeof( SampleService3 )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
@@ -76,8 +74,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void IActivityMonitor_is_Scoped_by_default()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( UseActivityMonitor ) );
-            TestHelper.GetFailedCollectorResult( collector, "is marked as IsSingleton but parameter 'm' of type 'IActivityMonitor' in constructor is Scoped." );
+            TestHelper.GetFailedCollectorResult( [typeof( UseActivityMonitor )], "is marked as IsSingleton but parameter 'm' of type 'IActivityMonitor' in constructor is Scoped." );
         }
 
         public class Obj : IRealObject, ISampleService
@@ -225,8 +222,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void services_class_cyclic_dependencies_are_detected()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( StupidService1 ), typeof( StupidService2 ) );
-            TestHelper.GetFailedCollectorResult( collector, "Cyclic constructor dependency detected:" );
+            TestHelper.GetFailedCollectorResult( [typeof( StupidService1 ), typeof( StupidService2 )], "Cyclic constructor dependency detected:" );
         }
 
         public class StupidServiceViaInterface1 : IBase
@@ -247,8 +243,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void services_via_interfaces_cyclic_dependencies_are_detected()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( StupidServiceViaInterface1 ), typeof( StupidServiceViaInterface2 ) );
-            TestHelper.GetFailedCollectorResult( collector, "Service class dependency cycle detected:" );
+            TestHelper.GetFailedCollectorResult( [typeof( StupidServiceViaInterface1 ), typeof( StupidServiceViaInterface2 )], "Service class dependency cycle detected:" );
         }
 
         #region issue https://gitlab.com/signature-code/CK-Setup/issues/3 (wrong repository :D).

@@ -5,7 +5,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Linq;
-using static CK.Testing.StObjEngineTestHelper;
+using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -28,10 +28,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void class_scope_simple_tests()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SimpleClassSingleton ),
-                                                             typeof( SimpleClassScoped ),
-                                                             typeof( SimpleClassAmbient ) );
-            var r = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var r = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleClassSingleton ), typeof( SimpleClassScoped ), typeof( SimpleClassAmbient )] ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             r.Services.Mappings[typeof( SimpleClassSingleton )].IsScoped.Should().BeFalse();
             r.Services.Mappings[typeof( SimpleClassScoped )].IsScoped.Should().BeTrue();
@@ -43,8 +40,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_class_with_both_scopes_is_an_error()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( BuggyDoubleScopeClassAmbient ) );
-            TestHelper.GetFailedCollectorResult( collector, "An interface or an implementation cannot be both Scoped and Singleton" );
+            TestHelper.GetFailedCollectorResult( [typeof( BuggyDoubleScopeClassAmbient )], "An interface or an implementation cannot be both Scoped and Singleton" );
         }
 
         public class LifetimeErrorClassAmbientBecauseOfScoped : Core.ISingletonAutoService
@@ -57,9 +53,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_singleton_that_depends_on_scoped_is_an_error()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SimpleClassScoped ), 
-                                                             typeof( LifetimeErrorClassAmbientBecauseOfScoped ) );
-            TestHelper.GetFailedCollectorResult( collector, "is marked as IsSingleton but parameter 'd' of type 'SimpleClassScoped' in constructor is Scoped." );
+            TestHelper.GetFailedCollectorResult( [typeof( SimpleClassScoped ), typeof( LifetimeErrorClassAmbientBecauseOfScoped )],
+                "is marked as IsSingleton but parameter 'd' of type 'SimpleClassScoped' in constructor is Scoped." );
         }
 
         public interface IExternalService { }
@@ -74,8 +69,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_singleton_that_depends_on_an_unknown_external_is_not_possible()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( LifetimeOfExternalBoostToSingleton ) );
-            TestHelper.GetFailedCollectorResult( collector, "is marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." );
+            TestHelper.GetFailedCollectorResult( [typeof( LifetimeOfExternalBoostToSingleton )],
+                "is marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." );
         }
 
         [Test]
@@ -109,9 +104,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_singleton_that_depends_on_singleton()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SimpleClassSingleton ),
-                                                             typeof( SingletonThatDependsOnSingleton ) );
-            TestHelper.GetSuccessfulCollectorResult( collector );
+            TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleClassSingleton ), typeof( SingletonThatDependsOnSingleton )] );
         }
 
         public class AmbientThatDependsOnSingleton : IAutoService
@@ -124,9 +117,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_auto_service_that_depends_only_on_singleton_is_singleton()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( SimpleClassSingleton ),
-                                                             typeof( AmbientThatDependsOnSingleton ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleClassSingleton ), typeof( AmbientThatDependsOnSingleton )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.Services.Mappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
         }
@@ -138,8 +129,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_auto_service_that_depends_on_nothing_is_singleton()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( AmbientThatDependsOnNothing ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( AmbientThatDependsOnNothing )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.Services.Mappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
             map.Services.Mappings[typeof( AmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
@@ -155,8 +145,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_auto_service_that_depends_on_an_external_service_is_Scoped()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( AmbientThatDependsOnExternal ) );
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( AmbientThatDependsOnExternal )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.Services.Mappings[typeof( AmbientThatDependsOnExternal )].IsScoped.Should().BeTrue();
         }
@@ -287,19 +276,14 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void propagation_through_an_intermediate_service_1()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( Scoped ), typeof( Unknown ), typeof( OneSingleton ) );
-
-            TestHelper.GetFailedCollectorResult( collector, "OneSingleton' is marked as IsSingleton but parameter 'dep' of type 'IUnknown' in constructor is Scoped." );
+            TestHelper.GetFailedCollectorResult( [typeof( Scoped ), typeof( Unknown ), typeof( OneSingleton )],
+                "OneSingleton' is marked as IsSingleton but parameter 'dep' of type 'IUnknown' in constructor is Scoped." );
         }
 
         [Test]
         public void propagation_through_an_intermediate_service_2()
         {
-            var collector = TestHelper.CreateTypeCollector( typeof( Scoped ),
-                                                             typeof( Unknown ),
-                                                             typeof( ServiceFreeLifetime ) );
-
-            var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( Scoped ), typeof( Unknown ), typeof( ServiceFreeLifetime )] ).EngineMap;
             Throw.DebugAssert( map != null );
             map.Services.Mappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
         }
