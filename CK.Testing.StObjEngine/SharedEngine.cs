@@ -24,8 +24,34 @@ namespace CK.Testing
         static IStObjMap? _map;
         static AutomaticServices _services;
         static EngineConfiguration? _configuration;
+        static ExceptionDispatchInfo? _runLevel;
         static ExceptionDispatchInfo? _mapLevel;
         static ExceptionDispatchInfo? _serviceLevel;
+        static EngineResult? _runResult;
+
+
+        static EngineResult GetResult()
+        {
+            if( _runLevel != null ) _runLevel.Throw();
+            try
+            {
+                if( _runResult == null )
+                {
+                    if( _configuration == null )
+                    {
+                        _configuration = TestHelper.CreateDefaultEngineConfiguration();
+                        AutoConfigure?.Invoke( _configuration );
+                    }
+                    _runResult = _configuration.Run();
+                }
+                return _runResult;
+            }
+            catch( Exception ex )
+            {
+                _runLevel = ExceptionDispatchInfo.Capture( ex );
+                throw;
+            }
+        }
 
         static IStObjMap GetMap()
         {
@@ -34,12 +60,7 @@ namespace CK.Testing
             {
                 if( _map == null )
                 {
-                    if( _configuration == null )
-                    {
-                        _configuration = TestHelper.CreateDefaultEngineConfiguration();
-                        AutoConfigure?.Invoke( _configuration );
-                    }
-                    _map = _configuration.Run().LoadMap();
+                    _map = GetResult().LoadMap();
                 }
                 return _map;
             }
@@ -74,7 +95,7 @@ namespace CK.Testing
         public static Action<EngineConfiguration>? AutoConfigure { get; set; }
 
         /// <summary>
-        /// Sets a configuration: this resets existing <see cref="Map"/> and <see cref="Services"/>, the next
+        /// Sets a configuration: this resets existing <see cref="EngineResult"/>, <see cref="Map"/> and <see cref="Services"/>, the next
         /// access to them will trigger a run of the engine.
         /// <para>
         /// When set to null, <see cref="AutoConfigure"/> will be used to obtain a new configuration.
@@ -92,6 +113,7 @@ namespace CK.Testing
         public static void SetEngineConfiguration( EngineConfiguration? engineConfiguration ) 
         {
             _configuration = engineConfiguration?.Clone();
+            _runResult = null;
             _map = null;
             if( _services.Services != null )
             {
@@ -104,13 +126,18 @@ namespace CK.Testing
         /// <summary>
         /// Gets whether the last run failed. <see cref="ResetError"/> must be called to retry.
         /// </summary>
-        public static bool OnError => _mapLevel != null || _serviceLevel != null;
+        public static bool OnError => _runLevel != null || _mapLevel != null || _serviceLevel != null;
 
         /// <summary>
         /// Resets any error. An access to the <see cref="Map"/> or the <see cref="Services"/>
         /// will run the engine.
         /// </summary>
-        public static void ResetError() => _mapLevel = _serviceLevel = null;
+        public static void ResetError() => _runLevel = _mapLevel = _serviceLevel = null;
+
+        /// <summary>
+        /// Gets the <see cref="EngineResult"/> (that may be <see cref="RunStatus.Failed"/>).
+        /// </summary>
+        public static EngineResult EngineResult => GetResult();
 
         /// <summary>
         /// Gets the CKomposable map.
