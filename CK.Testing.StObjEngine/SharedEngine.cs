@@ -36,7 +36,7 @@ namespace CK.Testing
                 {
                     if( _configuration == null )
                     {
-                        _configuration = new EngineConfiguration();
+                        _configuration = TestHelper.CreateDefaultEngineConfiguration();
                         AutoConfigure?.Invoke( _configuration );
                     }
                     _map = _configuration.Run().LoadMap();
