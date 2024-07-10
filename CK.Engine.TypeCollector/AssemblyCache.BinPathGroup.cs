@@ -464,22 +464,12 @@ namespace CK.Engine.TypeCollector
                     isPFeature |= aRef.Kind.IsPFeatureOrDefiner();
                 }
                 cached._rawReferencedAssembly = rawRefBuilder.MoveToImmutable();
-                // If it is an engine, sets its kind and prevents any referenced PFeature
-                // to be a head unless it has been expcitly added.
+                // If it is an engine, sets its kind and forget any PFeature aspect.
                 if( isEngine )
                 {
                     cached._kind = cached._kind.SetEngine();
                     // An engine is not a PFeature.
                     isPFeature = false;
-                    foreach( var aRef in cached._rawReferencedAssembly )
-                    {
-                        if( aRef.Kind.IsPFeature()
-                            && _heads.TryGetValue( aRef, out var forced )
-                            && !forced )
-                        {
-                            _heads.Remove( aRef );
-                        }
-                    }
                 }
                 // If this assembly is a PFeature, builds the 2 sets of dependencies:
                 // the "all" one and the "curated" ones.
