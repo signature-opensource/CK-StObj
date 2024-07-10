@@ -342,6 +342,19 @@ namespace CK.Engine.TypeCollector
             bool HandleFile( IActivityMonitor monitor, NormalizedPath existingFile, out NormalizedPath appContextFullPath, out DateTime existingFileTime )
             {
                 Throw.DebugAssert( _explicitMode.HasValue );
+                if( existingFile.LastPart.StartsWith( "CK.GeneratedAssembly.", StringComparison.OrdinalIgnoreCase ) )
+                {
+                    appContextFullPath = default;
+                    existingFileTime = default;
+                    if( _explicitMode.Value )
+                    {
+                        monitor.Error( $"Generated assembly '{existingFile.LastPart}' cannot be an assembly to process." );
+                        return _success = false;
+                    }
+                    monitor.Warn( $"Ignoring '{existingFile.LastPart}'." );
+                    return true;
+                }
+
                 existingFileTime = File.GetLastWriteTimeUtc( existingFile );
                 if( _isAppContextFolder )
                 {
