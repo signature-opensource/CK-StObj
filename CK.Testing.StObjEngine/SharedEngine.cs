@@ -24,11 +24,40 @@ namespace CK.Testing
         static IStObjMap? _map;
         static AutomaticServices _services;
         static EngineConfiguration? _configuration;
+        static ExceptionDispatchInfo? _getEngineLevel;
         static ExceptionDispatchInfo? _runLevel;
         static ExceptionDispatchInfo? _mapLevel;
         static ExceptionDispatchInfo? _serviceLevel;
         static EngineResult? _runResult;
 
+        /// <summary>
+        /// Gets the engine configuration that has been used (or will be used) by <see cref="EngineResult"/>, <see cref="Map"/> or <see cref="AutomaticServices"/>.
+        /// <para>
+        /// When <paramref name="reset"/> is true, a new configuration is created (by <see cref="EngineTestHelperExtensions.CreateDefaultEngineConfiguration"/>)
+        /// <see cref="AutoConfigure"/> is called on it and any error are cleared.
+        /// </para>
+        /// </summary>
+        /// <param name="reset">True to reset the current configuration if any.</param>
+        /// <returns>The engine configuration.</returns>
+        public static EngineConfiguration GetEngineConfiguration( bool reset )
+        {
+            if( reset ) Reset( null );
+            if( _getEngineLevel != null ) _getEngineLevel.Throw();
+            try
+            {
+                if( _configuration == null )
+                {
+                    _configuration = TestHelper.CreateDefaultEngineConfiguration();
+                    AutoConfigure?.Invoke( _configuration );
+                }
+                return _configuration;
+            }
+            catch( Exception ex )
+            {
+                _getEngineLevel = ExceptionDispatchInfo.Capture( ex );
+                throw;
+            }
+        }
 
         static EngineResult GetResult()
         {
@@ -37,12 +66,7 @@ namespace CK.Testing
             {
                 if( _runResult == null )
                 {
-                    if( _configuration == null )
-                    {
-                        _configuration = TestHelper.CreateDefaultEngineConfiguration();
-                        AutoConfigure?.Invoke( _configuration );
-                    }
-                    _runResult = _configuration.Run();
+                    _runResult = GetEngineConfiguration( false ).Run();
                 }
                 return _runResult;
             }
@@ -102,7 +126,7 @@ namespace CK.Testing
         /// </para>
         /// <para>
         /// The internal configuration is cloned so the <paramref name="engineConfiguration"/> argument can be freely reused
-        /// without interfering with the current one.
+        /// without interfering with the current one. To retrieve the internal configuration, use <see cref="GetEngineConfiguration(bool)"/>.
         /// </para>
         /// <para>
         /// A failing run is not retried, instead the initial exception is rethrown immediately until <see cref="Reset"/>
@@ -120,7 +144,7 @@ namespace CK.Testing
                 _services.Dispose();
                 _services = default;
             }
-            _runLevel = _mapLevel = _serviceLevel = null;
+            _getEngineLevel = _runLevel = _mapLevel = _serviceLevel = null;
         }
 
         /// <summary>
