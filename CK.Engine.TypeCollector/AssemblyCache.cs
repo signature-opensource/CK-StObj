@@ -137,7 +137,7 @@ namespace CK.Engine.TypeCollector
             {
                 GetAssemblyNames( knownName ?? assembly.GetName(), out string assemblyName, out string assemblyFullName );
                 initialKind = AssemblyKind.None;
-                if( IsSystemSkipped( assemblyName ) )
+                if( CachedAssembly.IsSystemSkipped( assemblyName ) )
                 {
                     initialKind = AssemblyKind.SystemSkipped;
                 }
@@ -159,12 +159,6 @@ namespace CK.Engine.TypeCollector
                 {
                     Throw.ArgumentException( "Invalid assembly: the AssemmblyName.Name or assemblyName.FullName is null, empty or whitespace." );
                 }
-            }
-
-            static bool IsSystemSkipped( string assemblyName )
-            {
-                return assemblyName.StartsWith( "Microsoft." )
-                       || assemblyName.StartsWith( "System." );
             }
 
         }

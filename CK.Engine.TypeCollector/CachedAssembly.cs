@@ -234,6 +234,19 @@ namespace CK.Engine.TypeCollector
         }
 
         /// <summary>
+        /// Filters out "Microsoft.*", "System.*", "Azure.*" and "DotNet.*".  
+        /// </summary>
+        /// <param name="assemblyName">The simple assembly name.</param>
+        /// <returns>True if the assembly name should be <see cref="AssemblyKind.SystemSkipped"/>.</returns>
+        public static bool IsSystemSkipped( string assemblyName )
+        {
+            return assemblyName.StartsWith( "Microsoft." )
+                   || assemblyName.StartsWith( "System." )
+                   || assemblyName.StartsWith( "Azure." )
+                   || assemblyName.StartsWith( "DotNet." );
+        }
+
+        /// <summary>
         /// Gets "Assembly '<see cref="Name"/>".
         /// </summary>
         /// <returns>"Assembly 'Name'"</returns>
