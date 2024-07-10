@@ -352,7 +352,7 @@ namespace CK.Engine.TypeCollector
                         return _success = false;
                     }
                     monitor.Warn( $"Ignoring '{existingFile.LastPart}'." );
-                    return true;
+                    return false;
                 }
 
                 existingFileTime = File.GetLastWriteTimeUtc( existingFile );
