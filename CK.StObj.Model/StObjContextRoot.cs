@@ -99,7 +99,7 @@ namespace CK.Core
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static StObjMapInfo? GetMapInfo( Assembly a, IActivityMonitor? monitor = null )
         {
-            if( a == null ) throw new ArgumentNullException( nameof( a ) );
+            Throw.CheckNotNullArgument( a );
             lock( _alreadyHandled )
             {
                 return LockedGetMapInfo( a, ref monitor );

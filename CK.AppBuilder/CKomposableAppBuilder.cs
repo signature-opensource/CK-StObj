@@ -3,7 +3,6 @@ using CK.Monitoring;
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -121,7 +120,7 @@ namespace CK.Setup
                 if( !lastLog.IsEmptyPath )
                 {
                     NormalizedPath lastRun = lastLog.Combine( "../../../LastRun.log" );
-                    File.Copy( lastLog, lastRun );
+                    File.Copy( lastLog, lastRun, overwrite: true );
                 }
             }
         }

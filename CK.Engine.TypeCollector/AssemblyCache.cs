@@ -17,7 +17,7 @@ namespace CK.Engine.TypeCollector
         // Don't be tempted to move this excluder down to each BinPath as
         // this woult break the PFeature sharing accross BinPath (the CachedAssembly
         // would not be able to host the PFeatures, introducing another cache layer in the
-        // architecture. Exclusions can be Global or not.
+        // architecture. Exclusions must be Global.
         readonly Func<string, bool>? _assemblyExcluder;
         readonly NormalizedPath _appContextPath;
         // CachedAssembly are indexed by their Assembly and their simple name.
@@ -27,7 +27,7 @@ namespace CK.Engine.TypeCollector
         bool _registrationClosed;
 
         /// <inheritdoc />
-        public IReadOnlyCollection<CachedAssembly> Assemblies => _assemblies.Values;
+        public IReadOnlyDictionary<object,CachedAssembly> Assemblies => _assemblies;
 
         /// <inheritdoc />
         public CachedAssembly FindOrCreate( Assembly assembly )

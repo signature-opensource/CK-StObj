@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -433,6 +434,28 @@ namespace CK.Engine.TypeCollector
                         }
                     }
                 }
+
+                if( cached.Kind.IsPFeature() )
+                {
+                    foreach( var aRef in cached.PFeatures )
+                    {
+                        // aRef is no more a head unless it has been explictly added.
+                        if( _heads.TryGetValue( aRef, out var forced ) && !forced )
+                        {
+                            _heads.Remove( aRef );
+                        }
+                    }
+                    // If no existing head references this cached assembly, it
+                    // is a head (preserve any explicit add).
+                    if( !_heads.Any( h => h.Key.AllPFeatures.Contains( cached ) ) )
+                    {
+                        if( !_heads.TryGetValue( cached, out var forced ) && !forced )
+                        {
+                            _heads.Add( cached, false );
+                        }
+                    }
+                }
+
                 return cached;
             }
 
@@ -484,11 +507,6 @@ namespace CK.Engine.TypeCollector
                     {
                         if( aRef.Kind.IsPFeature() )
                         {
-                            // aRef is no more a head unless it has been explictly added.
-                            if( _heads.TryGetValue( aRef, out var forced ) && !forced )
-                            {
-                                _heads.Remove( aRef );
-                            }
                             // Closure set:
                             allPFeatures.Add( aRef );
                             allPFeatures.AddRange( aRef._allPFeatures );
@@ -524,7 +542,6 @@ namespace CK.Engine.TypeCollector
                     Throw.DebugAssert( allPFeatures != null && cached._kind is AssemblyKind.PFeature );
                     cached._pFeatures = pFeatures;
                     cached._allPFeatures = allPFeatures;
-                    _heads.Add( cached, false );
                 }
             }
 
