@@ -3,14 +3,12 @@
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
     <ProjectReference Include="..\..\..\StObjEngineTesting\Sample.Engine\Sample.Engine.csproj" />
     <ProjectReference Include="..\..\LibWithSampleModel\LibWithSampleModel.csproj" />
-    <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--04zcmka-develop" />
+    <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--04zdxpx-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
   </ItemGroup>
-
 </Project>
