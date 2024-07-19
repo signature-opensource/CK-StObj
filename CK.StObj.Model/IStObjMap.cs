@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Core
 {
@@ -93,5 +94,46 @@ namespace CK.Core
         /// <param name="serviceRegister">The global container configuration.</param>
         /// <returns>True on success, false on error. Errors have been logged to <see cref="StObjContextRoot.ServiceRegister.Monitor"/>.</returns>
         bool ConfigureServices( in StObjContextRoot.ServiceRegister serviceRegister );
+
+
+        public class EmptyCKomposableMap : IStObjMap, IStObjObjectMap, IStObjServiceMap
+        {
+            public IStObjObjectMap StObjs => this;
+
+            public SHA1Value GeneratedSignature => SHA1Value.Zero;
+
+            public IStObjServiceMap Services => this;
+
+            public IReadOnlyList<string> Names => ImmutableArray<string>.Empty;
+
+            public IReadOnlyCollection<VFeature> Features => ImmutableArray<VFeature>.Empty;
+
+            public IReadOnlyDictionary<Type, IStObjMultipleInterface> MultipleMappings => ImmutableDictionary<Type, IStObjMultipleInterface>.Empty;
+
+            IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => ImmutableDictionary<Type, IStObjFinalImplementation>.Empty;
+
+            IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => ImmutableArray<IStObjFinalImplementation>.Empty;
+
+            IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => ImmutableDictionary<Type, IStObjServiceClassDescriptor>.Empty;
+
+            IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => ImmutableArray<IStObjServiceClassDescriptor>.Empty;
+
+            IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => ImmutableArray<IStObjFinalImplementation>.Empty;
+
+            IEnumerable<StObjMapping> IStObjObjectMap.StObjs => ImmutableArray<StObjMapping>.Empty;
+
+            public bool ConfigureServices( in StObjContextRoot.ServiceRegister serviceRegister )
+            {
+                serviceRegister.Monitor.Warn( $"Empty CKomposable map has no services to configure." );
+                return true;
+            }
+
+            public IStObjFinalClass? ToLeaf( Type t ) => null;
+
+            object? IStObjObjectMap.Obtain( Type t ) => null;
+
+            IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => null;
+        }
+
     }
 }
