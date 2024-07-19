@@ -33,13 +33,17 @@ namespace Sample.Engine.Tests
         public void StupidCodeAttribute_works()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( ThingService ));
+            configuration.FirstBinPath.Types.Add( typeof( ThingService ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var thing = auto.Services.GetRequiredService<ThingService>();
             thing.GetValue( "ab" ).Should().Be( 2 );
             thing.GetAnotherValue( "abc" ).Should().Be( 9 );
-            thing.SaySomething( TestHelper.Monitor ).Should().Be( "Yes!" );
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
+            {
+                thing.SaySomething( TestHelper.Monitor ).Should().Be( "Yes!" );
+                logs.Should().Contain( "Hello World!" );
+            }
         }
 
     }
