@@ -11,8 +11,8 @@ namespace CK.Engine.TypeCollector
     /// the <see cref="AssemblyCache.BinPathGroup.HeadAssemblies"/>).
     /// </para>
     /// <para>
-    /// The final set is the <see cref="BinPathTypeGroup.ConfiguredTypes"/> that applied its <see cref="BinPathConfiguration"/>
-    /// to the initial one.
+    /// The final set is the <see cref="BinPathTypeGroup.ConfiguredTypes"/> that applied its <see cref="BinPathConfiguration.Types"/>
+    /// and <see cref="BinPathConfiguration.ExcludedTypes"/> to the initial one.
     /// </para>
     /// </summary>
     public interface IConfiguredTypeSet
