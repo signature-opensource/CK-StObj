@@ -291,13 +291,8 @@ namespace CK.Setup
                 Throw.CheckNotNullArgument( other );
                 Throw.CheckArgument( TypeSystem == other.TypeSystem );
                 if( other == this ) return true;
-                if( other is not TypeSet o )
-                {
-                    int otherCount = other.NonNullableTypes.Count;
-                    Throw.CheckArgument( "Invalid IPocoTypeSet implementation.", otherCount == 0 );
-                    return _raw.Count == otherCount;
-                }
-                return _raw.IsSupersetOf( o._raw );
+                Throw.CheckArgument( "Invalid IPocoTypeSet implementation.", other is RootNone || other is TypeSet );
+                return other is TypeSet o ? _raw.IsSupersetOf( o._raw ) : true;
             }
 
             public IEnumerator<IPocoType> GetEnumerator() => _raw.GetEnumerator();
