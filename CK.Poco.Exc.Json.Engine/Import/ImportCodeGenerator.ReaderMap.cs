@@ -111,7 +111,7 @@ namespace CK.Setup.PocoJson
                         case PocoTypeKind.SecondaryPoco:
                         case PocoTypeKind.PrimaryPoco:
                             {
-                                r = PocoReader;
+                                r = GetPocoReader( type );
                                 break;
                             }
                         case PocoTypeKind.Basic:
@@ -162,9 +162,14 @@ namespace CK.Setup.PocoJson
                 writer.Append( variableName ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
             }
 
-            static void PocoReader( ICodeWriter writer, string variableName )
+            static void PocoReader(ICodeWriter writer, string variableName)
             {
-                writer.Append( variableName ).Append( ".ReadJson( ref r, rCtx );" );
+                writer.Append(variableName).Append(".ReadJson( ref r, rCtx );");
+            }
+
+            static CodeReader GetPocoReader( IPocoType type )
+            {
+                return ( w, v ) => w.Append("System.Runtime.CompilerServices.Unsafe.As<").Append( type.ImplTypeName ).Append( ">(" ).Append( v ).Append(").ReadJson( ref r, rCtx );");
             }
 
             static CodeReader GetAbstractPocoReader( IPocoType type )
