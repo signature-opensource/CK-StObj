@@ -69,13 +69,13 @@ namespace CK.Setup
         /// <param name="e">The xml element to read.</param>
         public sealed override void InitializeFrom( XElement e )
         {
-            var arrays = e.Elements( EngineConfiguration.xArray );
+            var arrays = e.Elements( EngineConfiguration.xMultiple );
             bool hasArray = arrays.Any();
             bool hasMultipleArray = hasArray && arrays.Skip( 1 ).Any();
             bool hasMultipleElement = e.Elements().Skip( 1 ).Any();
             if( hasMultipleArray || (hasArray && hasMultipleElement) )
             {
-                Throw.InvalidDataException( $"Invalid <Array> usage: <Array> must be the single root element in:{Environment.NewLine}{e}" );
+                Throw.InvalidDataException( $"Invalid <Multiple> usage: <Multiple> must be the single root element in:{Environment.NewLine}{e}" );
             }
             if( hasArray )
             {
@@ -84,7 +84,7 @@ namespace CK.Setup
                 {
                     if( one.Name != e.Name )
                     {
-                        Throw.InvalidDataException( $"Invalid <Array> content: <Array> must only contain <{e.Name}> elements in:{Environment.NewLine}{e}" );
+                        Throw.InvalidDataException( $"Invalid <Multiple> content: <Multiple> must only contain <{e.Name}> elements in:{Environment.NewLine}{e}" );
                     }
                     if( inOthers )
                     {
@@ -94,23 +94,23 @@ namespace CK.Setup
                     }
                     else
                     {
-                        if( one.Elements( EngineConfiguration.xArray ).Any() )
+                        if( one.Elements( EngineConfiguration.xMultiple ).Any() )
                         {
-                            Throw.InvalidDataException( $"Invalid <Array> child in:{Environment.NewLine}{one}" );
+                            Throw.InvalidDataException( $"Invalid <Multiple> child in:{Environment.NewLine}{one}" );
                         }
-                        InitializeOneFrom( one );
+                        InitializeOnlyThisFrom( one );
                         inOthers = true;
                     }
                 }
             }
             else
             {
-                InitializeOneFrom( e );
+                InitializeOnlyThisFrom( e );
             }
         }
 
         /// <summary>
-        /// Appends an &lt;Array&gt; with this configuration and the <see cref="OtherConfigurations"/>
+        /// Appends an &lt;Multiple&gt; with this configuration and the <see cref="OtherConfigurations"/>
         /// if there are other configurations.
         /// <para>
         /// If there is no other configurations, this configuration alone is written.
@@ -121,35 +121,43 @@ namespace CK.Setup
         {
             if( OtherConfigurations.Count > 0 )
             {
-                var a = new XElement( EngineConfiguration.xArray );
+                var a = new XElement( EngineConfiguration.xMultiple );
                 var first = new XElement( e.Name );
-                WriteOneXml( first );
+                WriteOnlyThisXml( first );
                 a.Add( first );
                 foreach( var o in OtherConfigurations )
                 {
                     var oE = new XElement( e.Name );
-                    o.WriteOneXml( oE );
+                    o.WriteOnlyThisXml( oE );
                     a.Add( oE );
                 }
                 e.Add( a );
             }
             else
             {
-                WriteOneXml( e );
+                WriteOnlyThisXml( e );
             }
+        }
+
+        /// <inheritdoc />
+        public sealed override XElement ToOnlyThisXml()
+        {
+            var e = new XElement( AspectName );
+            WriteOnlyThisXml( e );
+            return e;
         }
 
         /// <summary>
         /// Initialize this configuration from the xml element regardless of any <see cref="OtherConfigurations"/>.
         /// </summary>
         /// <param name="e"></param>
-        protected abstract void InitializeOneFrom( XElement e );
+        protected abstract void InitializeOnlyThisFrom( XElement e );
 
         /// <summary>
         /// Writes this configuration object regardless of <see cref="OtherConfigurations"/>.
         /// </summary>
         /// <param name="e">The element to populate.</param>
-        protected abstract void WriteOneXml( XElement e );
+        protected abstract void WriteOnlyThisXml( XElement e );
     }
 
 }

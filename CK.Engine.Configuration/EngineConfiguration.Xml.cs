@@ -298,9 +298,9 @@ namespace CK.Setup
         static public readonly XName xForceRun = XNamespace.None + "ForceRun";
 
         /// <summary>
-        /// An Array element or attribute name.
+        /// A Multiple element or attribute name.
         /// </summary>
-        static public readonly XName xArray = XNamespace.None + "Array";
+        static public readonly XName xMultiple = XNamespace.None + "Multiple";
 
         #endregion
 

@@ -123,6 +123,7 @@ namespace CK.Engine.TypeCollector
             _interfaces = interfaces;
             _baseType = baseType;
             _csharpName = type.ToCSharpName();
+            _isTypeDefinition = type.IsGenericTypeDefinition;
             _genericTypeDefinition = genericTypeDefinition;
             _genericParameters = type.IsGenericTypeDefinition
                                     ? type.GetGenericArguments().Select( t => new CachedGenericParameter( t ) ).ToImmutableArray()

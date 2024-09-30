@@ -940,8 +940,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                     // The [IsMultiple] has been resolved as a singleton. It cannot contain a scope: this is an
                     // error that prevent the StObjMap to be registered, we use monitor.Fatal to signal this fatal
                     // error.
-                    monitor.Fatal( $"The IEnumerable<{t:C}> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint '{_endpointName}'): " +
-                                    $"'{_scopTypes.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
+                    monitor.Fatal( $"""
+                                The IEnumerable<{t:C}> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint '{_endpointName}'):
+                                {_scopTypes.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'.
+                                """ );
                     // Don't bother here: we return an empty result.
                     return new MultipleInfo( false, null, null, null, null, 0 );
                 }

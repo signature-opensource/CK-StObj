@@ -19,8 +19,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public class ManyScoped : IMany, IScopedAutoService { }
         public class ManySingleton : IMany, ISingletonAutoService { }
+
         // Will be singleton.
         public class ManyAuto : IMany, IAutoService { }
+
         // Will be scoped when registered by the StObjCollector
         // Can be anything when registered in the global or an endpoint.
         public class ManyNothing : IMany { }
@@ -71,7 +73,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task single_singleton_Async()
+        public void single_singleton()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyAuto ),
@@ -99,7 +101,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task multiple_singletons_Async()
+        public void multiple_singletons()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyAuto ),
@@ -133,7 +135,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task single_scoped_Async()
+        public void single_scoped()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyScoped ),
@@ -166,7 +168,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task global_can_register_multiple_services_Async()
+        public void global_can_register_multiple_services()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyScoped ),
@@ -256,31 +258,43 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
             public override void ConfigureContainerServices( IServiceCollection services,
-                                                            Func<IServiceProvider, Data> scopeData,
-                                                            IServiceProviderIsService globalServiceExists )
+                                                             Func<IServiceProvider, Data> scopeData,
+                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddSingleton<ManyNothing>();
                 services.AddSingleton<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
             }
         }
 
-        public async Task endpoints_can_register_multiple_singletons_when_the_multiple_has_been_auto_computed_as_singleton_Async()
+        [Test]
+        public void DI_ISSUE_endpoints_can_register_multiple_singletons_when_the_multiple_has_been_auto_computed_as_singleton()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( ManySingleton),
-                                            typeof( ManyConsumer ),
-                                            typeof( ManyAsSingletonDIContainerDefinition ) );
+            configuration.FirstBinPath.Types.Add( typeof( ManySingleton ),
+                                                  typeof( ManyConsumer ),
+                                                  typeof( ManyAsSingletonDIContainerDefinition ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
-            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
+            auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
             var e = auto.Services.GetRequiredService<DIContainerHub>().Containers.OfType<IDIContainer<ManyAsSingletonDIContainerDefinition.Data>>().Single();
             using var s1 = e.GetContainer().CreateScope();
 
-            var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
-            var m1Auto = s1.ServiceProvider.GetRequiredService<ManySingleton>();
-            var m1Endpoint = s1.ServiceProvider.GetRequiredService<ManyNothing>();
-            m1.All.Should().Contain( new IMany[] { m1Auto, m1Endpoint } );
+            var manySingleton = s1.ServiceProvider.GetRequiredService<ManySingleton>();
+            var manyNothingFromEndpoint = s1.ServiceProvider.GetRequiredService<ManyNothing>();
+
+            var en = s1.ServiceProvider.GetService<IEnumerable<IMany>>();
+            en.Should().Contain( [manySingleton, manyNothingFromEndpoint] );
+
+            // The ManyConsumer is resolved from the Global service provider. The endpoint registered ManyNothing
+            // is out of its scope.
+            // The solution is not yet(?) obvious.
+            // Should we forbid any endpoint registration of a [Multiple]S?
+            // A better approach may be to fully analyze this and to propagate a "Singleton - Endpoint" trait to dependencies...
+            // ManyConsumer would have to be explictly [ContainerConfiguredSingletonService]?
+            var manyConsumer = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+            manyConsumer.All.Should().NotBeSameAs( en );
+            manyConsumer.All.Should().Contain( [manySingleton] );
         }
 
         [Test]
@@ -288,8 +302,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManySingleton ),
-                                            typeof( ManyConsumer ),
-                                            typeof( ManyAsScopedDIContainerDefinition ) );
+                                                  typeof( ManyConsumer ),
+                                                  typeof( ManyAsScopedDIContainerDefinition ) );
             configuration.GetFailedAutomaticServices(
                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
                configureServices: s =>

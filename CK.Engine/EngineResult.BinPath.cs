@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Engine.TypeCollector;
 
 namespace CK.Setup
@@ -13,7 +13,6 @@ namespace CK.Setup
             readonly EngineResult _owner;
             readonly BinPathConfiguration _configuration;
             readonly BinPathGroup _group;
-            readonly RunStatus _status;
 
             internal BinPath( EngineResult owner, BinPathConfiguration c, BinPathGroup group )
             {

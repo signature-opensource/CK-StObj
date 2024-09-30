@@ -2,6 +2,7 @@ using CK.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.Setup
 {
@@ -54,6 +55,16 @@ namespace CK.Setup
         public IEnumerable<MultipleBinPathAspectConfiguration> AllConfigurations => _head != null
                                                                                       ? _head.AllConfigurations
                                                                                       : _configurations.Prepend( this );
+
+        /// <summary>
+        /// Creates an Xml element with this configuration only regardless of any <see cref="OtherConfigurations"/>.
+        /// <para>
+        /// <see cref="BinPathAspectConfiguration.ToXml()"/> always writes &lt;Multiple&gt; elements if <see cref="OtherConfigurations"/>
+        /// is not empty.
+        /// </para>
+        /// </summary>
+        /// <returns>The xml element.</returns>
+        public abstract XElement ToOnlyThisXml();
 
         void BaseBind( BinPathConfiguration? o, EngineAspectConfiguration? a ) => base.Bind( o, a );
 

@@ -165,7 +165,7 @@ namespace CK.StObj.Engine.Tests
         public HashSet<NormalizedPath> Barrels { get; }
         public string TypeFilterName { get; set; }
 
-        protected override void InitializeOneFrom( XElement e )
+        protected override void InitializeOnlyThisFrom( XElement e )
         {
             TargetProjectPath = e.Attribute( "TargetProjectPath" )?.Value;
             Barrels.Clear();
@@ -176,7 +176,7 @@ namespace CK.StObj.Engine.Tests
             TypeFilterName = (string?)e.Attribute( "TypeFilterName" ) ?? "TypeScript";
         }
 
-        protected override void WriteOneXml( XElement e )
+        protected override void WriteOnlyThisXml( XElement e )
         {
             e.Add( new XAttribute( "TargetProjectPath", TargetProjectPath ),
                    new XElement( "Barrels",
@@ -575,7 +575,7 @@ namespace CK.StObj.Engine.Tests
             string x2 = c1.ToXml().ToString().ReplaceLineEndings();
             x2.Should().Be( """
                 <TypeScript>
-                  <Array>
+                  <Multiple>
                     <TypeScript TargetProjectPath="P1" TypeFilterName="TypeScriptNumber1">
                       <Barrels>
                         <Barrel Path="B1" />
@@ -584,7 +584,7 @@ namespace CK.StObj.Engine.Tests
                     <TypeScript TargetProjectPath="P2" TypeFilterName="TypeScript2">
                       <Barrels />
                     </TypeScript>
-                  </Array>
+                  </Multiple>
                 </TypeScript>
                 """.ReplaceLineEndings() );
             var c2Back = new TypeScriptBinPathAspectConfiguration();
@@ -612,7 +612,7 @@ namespace CK.StObj.Engine.Tests
                       <ExcludedTypes />
                       <Types />
                       <TypeScript>
-                        <Array>
+                        <Multiple>
                           <TypeScript TargetProjectPath="P1" TypeFilterName="TypeScriptNumber1">
                             <Barrels>
                               <Barrel Path="B1" />
@@ -621,7 +621,7 @@ namespace CK.StObj.Engine.Tests
                           <TypeScript TargetProjectPath="P2" TypeFilterName="TypeScript2">
                             <Barrels />
                           </TypeScript>
-                        </Array>
+                        </Multiple>
                       </TypeScript>
                     </BinPath>
                   </BinPaths>
