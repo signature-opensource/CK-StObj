@@ -106,6 +106,13 @@ namespace CK.StObj.Engine.Tests
         }
     }
 
+    public enum CKGenIntegrationMode
+    {
+        Inline,
+        NpmPackage,
+        None
+    }
+
     public class TypeScriptAspectConfiguration : EngineAspectConfiguration
     {
         public TypeScriptAspectConfiguration()
@@ -164,6 +171,7 @@ namespace CK.StObj.Engine.Tests
         public NormalizedPath TargetProjectPath { get; set; }
         public HashSet<NormalizedPath> Barrels { get; }
         public string TypeFilterName { get; set; }
+        public CKGenIntegrationMode IntegrationMode { get; set; }
 
         protected override void InitializeOnlyThisFrom( XElement e )
         {
@@ -174,6 +182,9 @@ namespace CK.StObj.Engine.Tests
                                      .Select( c => new NormalizedPath( (string?)c.Attribute( "Path" ) ?? c.Value ) ) );
 
             TypeFilterName = (string?)e.Attribute( "TypeFilterName" ) ?? "TypeScript";
+
+            var tsIntegrationMode = (string?)e.Attribute( "IntegrationMode" );
+            IntegrationMode = tsIntegrationMode == null ? CKGenIntegrationMode.Inline : Enum.Parse<CKGenIntegrationMode>( tsIntegrationMode, ignoreCase: true );
         }
 
         protected override void WriteOnlyThisXml( XElement e )
@@ -181,7 +192,10 @@ namespace CK.StObj.Engine.Tests
             e.Add( new XAttribute( "TargetProjectPath", TargetProjectPath ),
                    new XElement( "Barrels",
                                     Barrels.Select( p => new XElement( "Barrel", new XAttribute( EngineConfiguration.xPath, p ) ) ) ),
-                   new XAttribute( "TypeFilterName", TypeFilterName )
+                   new XAttribute( "TypeFilterName", TypeFilterName ),
+                   IntegrationMode is not CKGenIntegrationMode.Inline
+                        ? new XAttribute( "IntegrationMode", IntegrationMode.ToString() )
+                        : null
                 );
         }
     }
@@ -824,6 +838,68 @@ namespace CK.StObj.Engine.Tests
                                  element.Attributes()
                                         .OrderBy( a => a.Name.ToString() ),
                                  element.Value );
+        }
+
+        [Test]
+        public void parsing_with_Mutiple_and_reload()
+        {
+            const string text = """
+                <Setup Engine="CK.Setup.StObjEngine, CK.StObj.Engine">
+
+                  <Aspect Type="CK.StObj.Engine.Tests.TypeScriptAspectConfiguration, CK.StObj.Engine.Tests" />
+
+                  <BinPaths>
+                    <BinPath>
+                      <TypeScript>
+                        <Multiple>
+
+                          <TypeScript TargetProjectPath="{ProjectPath}Clients/NpmPackage"
+                                      AutoInstallYarn ="true"
+                                      IntegrationMode = "NpmPackage"
+                                      TypeFilterName="TypeScriptN">
+                          </TypeScript>
+
+                          <TypeScript TargetProjectPath="{ProjectPath}Clients/Inline"
+                                AutoInstallYarn ="true"
+                                IntegrationMode = "Inline"
+                                TypeFilterName="TypeScriptI">
+                          </TypeScript>
+                        </Multiple>
+                      </TypeScript>
+                    </BinPath>
+                  </BinPaths>
+
+                </Setup>
+                
+                """;
+
+            var c = new EngineConfiguration( XElement.Parse( text ) );
+            CheckTheTwoConfigurations( c );
+
+            var tsConfig = c.FirstBinPath.FindAspect<TypeScriptBinPathAspectConfiguration>();
+            Throw.DebugAssert( tsConfig != null );
+            var e = tsConfig.ToXml();
+            tsConfig.InitializeFrom( e );
+
+            CheckTheTwoConfigurations( c );
+
+            static void CheckTheTwoConfigurations( EngineConfiguration c )
+            {
+                var tsConfig = c.FirstBinPath.FindAspect<TypeScriptBinPathAspectConfiguration>();
+                Throw.DebugAssert( tsConfig != null );
+                tsConfig.AllConfigurations.Should().HaveCount( 2 );
+                tsConfig.TypeFilterName.Should().Be( "TypeScriptN" );
+                tsConfig.OtherConfigurations.Should().HaveCount( 1 );
+
+                var tsConfig2 = tsConfig.OtherConfigurations.Single();
+                tsConfig.OtherConfigurations.Single().TypeFilterName.Should().Be( "TypeScriptI" );
+
+                tsConfig2.AllConfigurations.Should().HaveCount( 2 );
+                tsConfig2.AllConfigurations.Should().BeEquivalentTo( [tsConfig, tsConfig2] );
+
+                tsConfig.AllConfigurations.Should().BeEquivalentTo( [tsConfig, tsConfig2] );
+            }
+
         }
 
     }

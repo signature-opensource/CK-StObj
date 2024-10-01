@@ -162,9 +162,18 @@ namespace CK.Setup
                 other._head = null;
                 other.Bind( null, null );
             }
-            if( _head != null && other._head == _head )
+            else if( _head != null && other._head == _head )
             {
                 _head.DoRemoveOtherConfiguration( other );
+            }
+        }
+
+        private protected void DoRemoveAllOtherConfiguration()
+        {
+            MultipleBinPathAspectConfiguration? next;
+            while( (next = OtherConfigurations.FirstOrDefault()) != null )
+            {
+                DoRemoveOtherConfiguration( next );
             }
         }
     }

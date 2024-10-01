@@ -63,10 +63,11 @@ namespace CK.Setup
         /// <param name="other">The configuration to remove.</param>
         public void RemoveOtherConfiguration( TSelf other ) => DoRemoveOtherConfiguration( other );
 
-        /// <summary>
-        /// Rehydrates this instance from the xml element.
-        /// </summary>
-        /// <param name="e">The xml element to read.</param>
+        /// <inheritdoc />
+        /// <remarks>
+        /// This first removes all <see cref="OtherConfigurations"/>: this is intended to be used with <see cref="BinPathAspectConfiguration.ToXml()"/>
+        /// that generates the &lt;Multiple&gt; with the other configurations.
+        /// </remarks>
         public sealed override void InitializeFrom( XElement e )
         {
             var arrays = e.Elements( EngineConfiguration.xMultiple );
@@ -77,6 +78,7 @@ namespace CK.Setup
             {
                 Throw.InvalidDataException( $"Invalid <Multiple> usage: <Multiple> must be the single root element in:{Environment.NewLine}{e}" );
             }
+            DoRemoveAllOtherConfiguration();
             if( hasArray )
             {
                 bool inOthers = false;
