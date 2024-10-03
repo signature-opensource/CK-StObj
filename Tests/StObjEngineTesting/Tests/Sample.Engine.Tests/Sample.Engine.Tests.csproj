@@ -6,7 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
     <ProjectReference Include="..\..\Sample.Engine\Sample.Engine.csproj" />
-    <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--052zkui-develop" />
+    <PackageReference Include="CK.Testing.Nunit" Version="0.0.0--053bu1w-develop" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
