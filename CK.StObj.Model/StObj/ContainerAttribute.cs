@@ -7,20 +7,19 @@
 
 using System;
 
-namespace CK.Core
+namespace CK.Core;
+
+/// <summary>
+/// Parameter attribute that can be use to designate the container of the object among 
+/// StObjConstruct method parameters.
+/// </summary>
+[AttributeUsage( AttributeTargets.Parameter, Inherited=false, AllowMultiple=false )]
+public class ContainerAttribute : Attribute
 {
     /// <summary>
-    /// Parameter attribute that can be use to designate the container of the object among 
-    /// StObjConstruct method parameters.
+    /// Initializes a new <see cref="ContainerAttribute"/>.
     /// </summary>
-    [AttributeUsage( AttributeTargets.Parameter, Inherited=false, AllowMultiple=false )]
-    public class ContainerAttribute : Attribute
+    public ContainerAttribute()
     {
-        /// <summary>
-        /// Initializes a new <see cref="ContainerAttribute"/>.
-        /// </summary>
-        public ContainerAttribute()
-        {
-        }
     }
 }

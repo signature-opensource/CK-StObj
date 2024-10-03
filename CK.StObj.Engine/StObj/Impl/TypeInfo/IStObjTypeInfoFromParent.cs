@@ -9,20 +9,19 @@ using System;
 using System.Collections.Generic;
 using CK.Core;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// This interface applies to base types (above real objects root) as well as <see cref="RealObjectClassInfo"/>
+/// (via the <see cref="RealObjectClassInfo.Generalization"/>).
+/// </summary>
+internal interface IStObjTypeInfoFromParent
 {
-    /// <summary>
-    /// This interface applies to base types (above real objects root) as well as <see cref="RealObjectClassInfo"/>
-    /// (via the <see cref="RealObjectClassInfo.Generalization"/>).
-    /// </summary>
-    internal interface IStObjTypeInfoFromParent
-    {
-        int SpecializationDepth { get; }
-        Type Container { get; }
-        IReadOnlyList<AmbientPropertyInfo> AmbientProperties { get; }
-        IReadOnlyList<InjectObjectInfo> InjectObjects { get; }
-        IReadOnlyList<StObjPropertyInfo> StObjProperties { get; }
-        DependentItemKind ItemKind { get; }
-        TrackAmbientPropertiesMode TrackAmbientProperties { get; }
-    }
+    int SpecializationDepth { get; }
+    Type Container { get; }
+    IReadOnlyList<AmbientPropertyInfo> AmbientProperties { get; }
+    IReadOnlyList<InjectObjectInfo> InjectObjects { get; }
+    IReadOnlyList<StObjPropertyInfo> StObjProperties { get; }
+    DependentItemKind ItemKind { get; }
+    TrackAmbientPropertiesMode TrackAmbientProperties { get; }
 }

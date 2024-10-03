@@ -7,20 +7,19 @@
 
 using CK.Core;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// This interface allows dynamic configuration of items.
+/// It can be supported by attributes (to be applied on Structured Object type or on its members) or be 
+/// used globally as a configuration of StObjCollector object.
+/// </summary>
+public interface IStObjStructuralConfigurator
 {
     /// <summary>
-    /// This interface allows dynamic configuration of items.
-    /// It can be supported by attributes (to be applied on Structured Object type or on its members) or be 
-    /// used globally as a configuration of StObjCollector object.
+    /// Enables configuration of items before setup process.
     /// </summary>
-    public interface IStObjStructuralConfigurator
-    {
-        /// <summary>
-        /// Enables configuration of items before setup process.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="o">The item to configure.</param>
-        void Configure( IActivityMonitor monitor, IStObjMutableItem o );
-    }
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="o">The item to configure.</param>
+    void Configure( IActivityMonitor monitor, IStObjMutableItem o );
 }

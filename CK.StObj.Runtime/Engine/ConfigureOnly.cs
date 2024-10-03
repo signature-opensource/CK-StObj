@@ -1,29 +1,28 @@
 using CK.Core;
 using System;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Wrapper around any service used to communicate the fact that the registered service
+/// should only be used by the other following aspects only from
+/// their <see cref="IStObjEngineAspect.Configure"/> method.
+/// </summary>
+/// <typeparam name="T">Actual service type.</typeparam>
+public readonly struct ConfigureOnly<T>
 {
     /// <summary>
-    /// Wrapper around any service used to communicate the fact that the registered service
-    /// should only be used by the other following aspects only from
-    /// their <see cref="IStObjEngineAspect.Configure"/> method.
+    /// The wrapped service instance.
     /// </summary>
-    /// <typeparam name="T">Actual service type.</typeparam>
-    public readonly struct ConfigureOnly<T>
-    {
-        /// <summary>
-        /// The wrapped service instance.
-        /// </summary>
-        public readonly T Service;
+    public readonly T Service;
 
-        /// <summary>
-        /// Initializes a new ConfigureOnly wrapper.
-        /// </summary>
-        /// <param name="service">Actual instance. Must not be null.</param>
-        public ConfigureOnly( T service )
-        {
-            Throw.CheckNotNullArgument( service );
-            Service = service;
-        }
+    /// <summary>
+    /// Initializes a new ConfigureOnly wrapper.
+    /// </summary>
+    /// <param name="service">Actual instance. Must not be null.</param>
+    public ConfigureOnly( T service )
+    {
+        Throw.CheckNotNullArgument( service );
+        Service = service;
     }
 }

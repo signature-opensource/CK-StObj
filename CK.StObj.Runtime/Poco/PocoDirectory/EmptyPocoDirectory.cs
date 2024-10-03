@@ -4,30 +4,29 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Null object pattern implementation: the singleton <see cref="Default"/> can be
+/// used instead of null reference.
+/// </summary>
+public class EmptyPocoDirectory : IPocoDirectory
 {
     /// <summary>
-    /// Null object pattern implementation: the singleton <see cref="Default"/> can be
-    /// used instead of null reference.
+    /// Gets an empty <see cref="IPocoDirectory"/>.
     /// </summary>
-    public class EmptyPocoDirectory : IPocoDirectory
-    {
-        /// <summary>
-        /// Gets an empty <see cref="IPocoDirectory"/>.
-        /// </summary>
-        public static IPocoDirectory Default { get; } = new EmptyPocoDirectory();
+    public static IPocoDirectory Default { get; } = new EmptyPocoDirectory();
 
-        EmptyPocoDirectory() {}
+    EmptyPocoDirectory() {}
 
-        IReadOnlyList<IPocoFamilyInfo> IPocoDirectory.Families => Array.Empty<IPocoFamilyInfo>();
+    IReadOnlyList<IPocoFamilyInfo> IPocoDirectory.Families => Array.Empty<IPocoFamilyInfo>();
 
-        IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoDirectory.AllInterfaces => ImmutableDictionary<Type, IPocoInterfaceInfo>.Empty;
+    IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoDirectory.AllInterfaces => ImmutableDictionary<Type, IPocoInterfaceInfo>.Empty;
 
-        IReadOnlyDictionary<string, IPocoFamilyInfo> IPocoDirectory.NamedFamilies => ImmutableDictionary<string, IPocoFamilyInfo>.Empty;
+    IReadOnlyDictionary<string, IPocoFamilyInfo> IPocoDirectory.NamedFamilies => ImmutableDictionary<string, IPocoFamilyInfo>.Empty;
 
-        IReadOnlyDictionary<Type, IReadOnlyList<IPocoFamilyInfo>> IPocoDirectory.OtherInterfaces => ImmutableDictionary<Type, IReadOnlyList<IPocoFamilyInfo>>.Empty;
+    IReadOnlyDictionary<Type, IReadOnlyList<IPocoFamilyInfo>> IPocoDirectory.OtherInterfaces => ImmutableDictionary<Type, IReadOnlyList<IPocoFamilyInfo>>.Empty;
 
-        IPocoInterfaceInfo? IPocoDirectory.Find( Type pocoInterface ) => null;
+    IPocoInterfaceInfo? IPocoDirectory.Find( Type pocoInterface ) => null;
 
-    }
 }

@@ -7,17 +7,16 @@
 
 using System;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Unifies <see cref="CovariantPropertyInfo"/> and <see cref="StObjPropertyInfo"/>.
+/// </summary>
+internal interface INamedPropertyInfo
 {
-    /// <summary>
-    /// Unifies <see cref="CovariantPropertyInfo"/> and <see cref="StObjPropertyInfo"/>.
-    /// </summary>
-    internal interface INamedPropertyInfo
-    {
-        string Name { get; }
+    string Name { get; }
 
-        Type DeclaringType { get; }
+    Type DeclaringType { get; }
 
-        string Kind { get; }
-    }
+    string Kind { get; }
 }

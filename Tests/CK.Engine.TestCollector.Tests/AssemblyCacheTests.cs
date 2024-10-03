@@ -4,10 +4,9 @@ using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.Engine.TestCollector.Tests
+namespace CK.Engine.TestCollector.Tests;
+
+[TestFixture]
+public class AssemblyCacheTests
 {
-    [TestFixture]
-    public class AssemblyCacheTests
-    {
-    }
 }

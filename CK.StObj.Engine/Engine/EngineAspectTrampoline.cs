@@ -3,55 +3,54 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace CK.Setup
+namespace CK.Setup;
 
+
+sealed class EngineAspectTrampoline<T>
 {
-    sealed class EngineAspectTrampoline<T>
+    readonly T _holder;
+    readonly List<Func<IActivityMonitor, T, bool>?> _postActions;
+
+    public EngineAspectTrampoline( T holder )
     {
-        readonly T _holder;
-        readonly List<Func<IActivityMonitor, T, bool>?> _postActions;
+        _holder = holder;
+        _postActions = new List<Func<IActivityMonitor, T, bool>?>();
+    }
 
-        public EngineAspectTrampoline( T holder )
-        {
-            _holder = holder;
-            _postActions = new List<Func<IActivityMonitor, T, bool>?>();
-        }
+    public void Push( Func<IActivityMonitor, T, bool> deferredAction )
+    {
+        if( deferredAction == null ) throw new ArgumentNullException( nameof( deferredAction ) );
+        _postActions.Add( deferredAction );
+    }
 
-        public void Push( Func<IActivityMonitor, T, bool> deferredAction )
+    public bool Execute( IActivityMonitor m, Func<bool> onError )
+    {
+        bool trampolineSuccess = true;
+        int i = 0;
+        using( m.OpenInfo( $"Executing initial {_postActions.Count} deferred actions." )
+                .ConcludeWith( () => $"Executed {i} actions." ) )
         {
-            if( deferredAction == null ) throw new ArgumentNullException( nameof( deferredAction ) );
-            _postActions.Add( deferredAction );
-        }
-
-        public bool Execute( IActivityMonitor m, Func<bool> onError )
-        {
-            bool trampolineSuccess = true;
-            int i = 0;
-            using( m.OpenInfo( $"Executing initial {_postActions.Count} deferred actions." )
-                    .ConcludeWith( () => $"Executed {i} actions." ) )
+            while( i < _postActions.Count )
             {
-                while( i < _postActions.Count )
+                var a = _postActions[i];
+                Debug.Assert( a != null );
+                _postActions[i++] = null;
+                try
                 {
-                    var a = _postActions[i];
-                    Debug.Assert( a != null );
-                    _postActions[i++] = null;
-                    try
+                    if( !a( m, _holder ) )
                     {
-                        if( !a( m, _holder ) )
-                        {
-                            m.Error( "A deferred action failed." );
-                            trampolineSuccess = onError();
-                        }
-                    }
-                    catch( Exception ex )
-                    {
-                        m.Error( ex );
+                        m.Error( "A deferred action failed." );
                         trampolineSuccess = onError();
                     }
                 }
-                _postActions.Clear();
+                catch( Exception ex )
+                {
+                    m.Error( ex );
+                    trampolineSuccess = onError();
+                }
             }
-            return trampolineSuccess;
+            _postActions.Clear();
         }
+        return trampolineSuccess;
     }
 }

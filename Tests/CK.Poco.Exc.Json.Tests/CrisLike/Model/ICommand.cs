@@ -1,12 +1,11 @@
 using CK.Core;
 using System;
 
-namespace CK.CrisLike
+namespace CK.CrisLike;
+
+/// <summary>
+/// Any type that extends this interface defines a new command type without result.
+/// </summary>
+public interface ICommand : IAbstractCommand
 {
-    /// <summary>
-    /// Any type that extends this interface defines a new command type without result.
-    /// </summary>
-    public interface ICommand : IAbstractCommand
-    {
-    }
 }

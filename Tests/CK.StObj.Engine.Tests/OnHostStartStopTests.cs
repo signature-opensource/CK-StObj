@@ -10,119 +10,118 @@ using System.Threading;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.StObj.Engine.Tests.Service
+namespace CK.StObj.Engine.Tests.Service;
+
+[TestFixture]
+public class OnHostStartStopTests
 {
-    [TestFixture]
-    public class OnHostStartStopTests
+    public interface ISqlCallContext : IScopedAutoService
     {
-        public interface ISqlCallContext : IScopedAutoService
+        bool Disposed { get; }
+    }
+
+    public class SqlStandardCallContext : ISqlCallContext, IDisposable
+    {
+        public bool Disposed { get; private set; }
+
+        public void Dispose() => Disposed = true; 
+    }
+
+    public interface IMailerService : ISingletonAutoService
+    {
+        void SendMail( IActivityMonitor monitor, string mail );
+    }
+
+    public class MailerService : IMailerService
+    {
+        public void SendMail( IActivityMonitor monitor, string mail )
         {
-            bool Disposed { get; }
+            monitor.Info( $"Sending mail: '{mail}'." );
         }
 
-        public class SqlStandardCallContext : ISqlCallContext, IDisposable
+        public void Shutdown( IActivityMonitor monitor, ISqlCallContext ctx )
         {
-            public bool Disposed { get; private set; }
+            ctx.Disposed.Should().BeFalse();
+            monitor.Info( "Mail Service Shutdown." );
+        }
+    }
 
-            public void Dispose() => Disposed = true; 
+    public class O1 : IRealObject
+    {
+        void OnHostStart( IActivityMonitor m, ISqlCallContext ctx )
+        {
+            ctx.Disposed.Should().BeFalse();
+            m.Info( $"O1 is starting." );
         }
 
-        public interface IMailerService : ISingletonAutoService
+        void OnHostStop( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
         {
-            void SendMail( IActivityMonitor monitor, string mail );
+            ctx.Disposed.Should().BeFalse();
+            m.Info( $"O1 is stopping." );
+        }
+    }
+
+    public class O1Spec : O1
+    {
+        ValueTask OnHostStartAsync( IActivityMonitor m, CancellationToken cancel )
+        {
+            m.Info( $"O1Spec is starting." );
+            return default;
         }
 
-        public class MailerService : IMailerService
+        ValueTask OnHostStopAsync( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
         {
-            public void SendMail( IActivityMonitor monitor, string mail )
-            {
-                monitor.Info( $"Sending mail: '{mail}'." );
-            }
+            ctx.Disposed.Should().BeFalse();
+            m.Info( $"O1Spec is stopping." );
+            return default;
+        }
+    }
 
-            public void Shutdown( IActivityMonitor monitor, ISqlCallContext ctx )
-            {
-                ctx.Disposed.Should().BeFalse();
-                monitor.Info( "Mail Service Shutdown." );
-            }
+    public class O2 : IRealObject
+    {
+        void StObjConstruct( O1 o1 ) { }
+    }
+
+    public class O2Spec : O2
+    {
+        void StObjConstruct( O1Spec o1Spec ) { }
+
+        Task OnHostStartAsync( IActivityMonitor m )
+        {
+            m.Info( $"O2Spec is starting." );
+            return Task.CompletedTask;
         }
 
-        public class O1 : IRealObject
+        Task OnHostStopAsync( IActivityMonitor m, ISqlCallContext ctx, MailerService mail )
         {
-            void OnHostStart( IActivityMonitor m, ISqlCallContext ctx )
-            {
-                ctx.Disposed.Should().BeFalse();
-                m.Info( $"O1 is starting." );
-            }
-
-            void OnHostStop( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
-            {
-                ctx.Disposed.Should().BeFalse();
-                m.Info( $"O1 is stopping." );
-            }
+            m.Info( $"O2Spec is stopping." );
+            mail.Shutdown( m, ctx );
+            return Task.CompletedTask;
         }
+    }
 
-        public class O1Spec : O1
+
+    [Test]
+    public async Task HostedServiceLifetimeTrigger_at_work_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( OnHostStartStopTests ).GetNestedTypes() );
+        using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
         {
-            ValueTask OnHostStartAsync( IActivityMonitor m, CancellationToken cancel )
-            {
-                m.Info( $"O1Spec is starting." );
-                return default;
-            }
-
-            ValueTask OnHostStopAsync( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
-            {
-                ctx.Disposed.Should().BeFalse();
-                m.Info( $"O1Spec is stopping." );
-                return default;
-            }
-        }
-
-        public class O2 : IRealObject
+            services.AddScoped( sp => TestHelper.Monitor );
+            services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
+        } );
+        using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
         {
-            void StObjConstruct( O1 o1 ) { }
-        }
-
-        public class O2Spec : O2
-        {
-            void StObjConstruct( O1Spec o1Spec ) { }
-
-            Task OnHostStartAsync( IActivityMonitor m )
+            var initializers = auto.Services.GetRequiredService<IEnumerable<Microsoft.Extensions.Hosting.IHostedService>>();
+            foreach( var i in initializers )
             {
-                m.Info( $"O2Spec is starting." );
-                return Task.CompletedTask;
+                await i.StartAsync( default );
+                await i.StopAsync( default );
             }
-
-            Task OnHostStopAsync( IActivityMonitor m, ISqlCallContext ctx, MailerService mail )
-            {
-                m.Info( $"O2Spec is stopping." );
-                mail.Shutdown( m, ctx );
-                return Task.CompletedTask;
-            }
-        }
-
-
-        [Test]
-        public async Task HostedServiceLifetimeTrigger_at_work_Async()
-        {
-            var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( OnHostStartStopTests ).GetNestedTypes() );
-            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
-            {
-                services.AddScoped( sp => TestHelper.Monitor );
-                services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
-            } );
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
-            {
-                var initializers = auto.Services.GetRequiredService<IEnumerable<Microsoft.Extensions.Hosting.IHostedService>>();
-                foreach( var i in initializers )
-                {
-                    await i.StartAsync( default );
-                    await i.StopAsync( default );
-                }
-                entries.Select( e => e.Text ).Concatenate( "|" )
-                    .Should().Be( "Calling: 1 'OnHostStart' method and 2 'OnHostStartAsync' methods.|O1 is starting.|O1Spec is starting.|O2Spec is starting."
-                                  + "|Calling: 2 'OnHostStopAsync' methods and 1 'OnHostStop' method.|O2Spec is stopping.|Mail Service Shutdown.|O1Spec is stopping.|O1 is stopping." );
-            }
+            entries.Select( e => e.Text ).Concatenate( "|" )
+                .Should().Be( "Calling: 1 'OnHostStart' method and 2 'OnHostStartAsync' methods.|O1 is starting.|O1Spec is starting.|O2Spec is starting."
+                              + "|Calling: 2 'OnHostStopAsync' methods and 1 'OnHostStop' method.|O2Spec is stopping.|Mail Service Shutdown.|O1Spec is stopping.|O1 is stopping." );
         }
     }
 }

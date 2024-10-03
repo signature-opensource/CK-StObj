@@ -7,31 +7,29 @@
 
 using System.Reflection;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Associates an <see cref="IAutoImplementorMethod"/> to use for a <see cref="Method"/>
+/// that is abstract or virtual.
+/// </summary>
+public readonly struct ImplementableMethodInfo
 {
-    /// <summary>
-    /// Associates an <see cref="IAutoImplementorMethod"/> to use for a <see cref="Method"/>
-    /// that is abstract or virtual.
-    /// </summary>
-    public readonly struct ImplementableMethodInfo
+    internal ImplementableMethodInfo( MethodInfo m, IAutoImplementorMethod impl )
     {
-        internal ImplementableMethodInfo( MethodInfo m, IAutoImplementorMethod impl )
-        {
-            Method = m;
-            ImplementorToUse = impl;
-        }
-
-        /// <summary>
-        /// Abstract method that has to be automatically implemented
-        /// or virtual method that can be overridden.
-        /// </summary>
-        public readonly MethodInfo Method;
-
-        /// <summary>
-        /// The <see cref="IAutoImplementorMethod"/> to use.
-        /// </summary>
-        public readonly IAutoImplementorMethod ImplementorToUse;
-
+        Method = m;
+        ImplementorToUse = impl;
     }
+
+    /// <summary>
+    /// Abstract method that has to be automatically implemented
+    /// or virtual method that can be overridden.
+    /// </summary>
+    public readonly MethodInfo Method;
+
+    /// <summary>
+    /// The <see cref="IAutoImplementorMethod"/> to use.
+    /// </summary>
+    public readonly IAutoImplementorMethod ImplementorToUse;
 
 }

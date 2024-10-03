@@ -10,35 +10,34 @@ using System.Collections.Generic;
 using System.Reflection;
 using CK.Core;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// This interface collects information specific to base types (above real objects root).
+/// </summary>
+internal interface IStObjTypeRootParentInfo
 {
     /// <summary>
-    /// This interface collects information specific to base types (above real objects root).
+    /// Gets the StObjConstruct methods (and a capture of their parameters) from top
+    /// down to the root of the real objects serialization path.
     /// </summary>
-    internal interface IStObjTypeRootParentInfo
-    {
-        /// <summary>
-        /// Gets the StObjConstruct methods (and a capture of their parameters) from top
-        /// down to the root of the real objects serialization path.
-        /// </summary>
-        IReadOnlyList<(MethodInfo, ParameterInfo[])> StObjConstructCollector { get; }
+    IReadOnlyList<(MethodInfo, ParameterInfo[])> StObjConstructCollector { get; }
 
-        /// <summary>
-        /// Gets the StObjInitialize methods from top down to the root of the real
-        /// objects serialization path.
-        /// </summary>
-        IReadOnlyList<MethodInfo> StObjInitializeCollector { get; }
+    /// <summary>
+    /// Gets the StObjInitialize methods from top down to the root of the real
+    /// objects serialization path.
+    /// </summary>
+    IReadOnlyList<MethodInfo> StObjInitializeCollector { get; }
 
-        /// <summary>
-        /// Gets the RegisterStartupServices methods from top down to the root of the real objects serialization path.
-        /// </summary>
-        IReadOnlyList<MethodInfo> RegisterStartupServicesCollector { get; }
+    /// <summary>
+    /// Gets the RegisterStartupServices methods from top down to the root of the real objects serialization path.
+    /// </summary>
+    IReadOnlyList<MethodInfo> RegisterStartupServicesCollector { get; }
 
 
-        /// <summary>
-        /// Gets the ConfigureServices methods (and a capture of their parameters) from top
-        /// down to the root of the real objects serialization path.
-        /// </summary>
-        IReadOnlyList<ParameterInfo[]> ConfigureServicesCollector { get; }
-    }
+    /// <summary>
+    /// Gets the ConfigureServices methods (and a capture of their parameters) from top
+    /// down to the root of the real objects serialization path.
+    /// </summary>
+    IReadOnlyList<ParameterInfo[]> ConfigureServicesCollector { get; }
 }

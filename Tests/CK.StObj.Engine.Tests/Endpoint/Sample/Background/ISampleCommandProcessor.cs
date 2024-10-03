@@ -1,10 +1,9 @@
-﻿namespace CK.StObj.Engine.Tests.Endpoint
+﻿namespace CK.StObj.Engine.Tests.Endpoint;
+
+/// <summary>
+/// A simple command processor.
+/// </summary>
+public interface ISampleCommandProcessor
 {
-    /// <summary>
-    /// A simple command processor.
-    /// </summary>
-    public interface ISampleCommandProcessor
-    {
-        void Process( object command );
-    }
+    void Process( object command );
 }

@@ -9,22 +9,21 @@ using System.Reflection;
 using CK.Core;
 using NUnit.Framework;
 
-namespace CK.StObj.Engine.Tests.SimpleObjects
+namespace CK.StObj.Engine.Tests.SimpleObjects;
+
+public interface IAmNotHere : IRealObject { }
+
+[RealObject( ItemKind = DependentItemKindSpec.Container )]
+public class PackageForAB : IRealObject
 {
-    public interface IAmNotHere : IRealObject { }
+    public int ConstructCount { get; protected set; }
 
-    [RealObject( ItemKind = DependentItemKindSpec.Container )]
-    public class PackageForAB : IRealObject
+    // Adds an optional parameter otherwise parameter less StObjConstruct are not called.
+    void StObjConstruct( IAmNotHere? opt = null )
     {
-        public int ConstructCount { get; protected set; }
-
-        // Adds an optional parameter otherwise parameter less StObjConstruct are not called.
-        void StObjConstruct( IAmNotHere? opt = null )
-        {
-            Assert.That( ConstructCount, Is.EqualTo( 0 ), "First construct." );
-            SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
-            ConstructCount = ConstructCount + 1;
-        }
-        
+        Assert.That( ConstructCount, Is.EqualTo( 0 ), "First construct." );
+        SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
+        ConstructCount = ConstructCount + 1;
     }
+    
 }

@@ -2,55 +2,55 @@ using CK.CodeGen;
 using CK.Core;
 using System.Linq;
 
-namespace CK.Setup.PocoJson
+namespace CK.Setup.PocoJson;
+
+sealed partial class ImportCodeGenerator
 {
-    sealed partial class ImportCodeGenerator
+    void GenerateReadAny( ReaderFunctionMap functionMap )
     {
-        void GenerateReadAny( ReaderFunctionMap functionMap )
+        // Configures the _anyReaders dictionary in the type initializer.
+        var ctor = _importerType.FindOrCreateFunction( "static Importer()" );
+
+        ctor.GeneratedByComment().NewLine()
+            .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
+
+        foreach( var t in _nameMap.SerializedObservableTypes )
         {
-            // Configures the _anyReaders dictionary in the type initializer.
-            var ctor = _importerType.FindOrCreateFunction( "static Importer()" );
+            Throw.DebugAssert( t.IsSerializedObservable );
+            Throw.DebugAssert( t.Kind is not PocoTypeKind.Any and not PocoTypeKind.AbstractPoco and not PocoTypeKind.UnionType );
 
-            ctor.GeneratedByComment().NewLine()
-                .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
-
-            foreach( var t in _nameMap.SerializedObservableTypes )
+            var typeName = _nameMap.GetName( t );
+            var readFunction = functionMap.GetReadFunctionName( t );
+            if( t.Type.IsValueType )
             {
-                Throw.DebugAssert( t.IsSerializedObservable );
-                Throw.DebugAssert( t.Kind is not PocoTypeKind.Any and not PocoTypeKind.AbstractPoco and not PocoTypeKind.UnionType );
-
-                var typeName = _nameMap.GetName( t );
-                var readFunction = functionMap.GetReadFunctionName( t );
-                if( t.Type.IsValueType )
+                // We cannot directly use the GetReadFunctionName for value types when the type is a value type: the ReaderFunction
+                // here returns an object: it has to be explicitly boxed.
+                ctor.OpenBlock()
+                    .Append( "// Type: " ).Append( t.ImplTypeName ).NewLine()
+                    .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
+                    .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
+                    .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" );
+                bool hasLegacyName = _legacyNameMap.GetName( t ) != typeName;
+                if( hasLegacyName )
                 {
-                    // We cannot directly use the GetReadFunctionName for value types when the type is a value type: the ReaderFunction
-                    // here returns an object: it has to be explicitly boxed.
-                    ctor.OpenBlock()
-                        .Append( "// Type: " ).Append( t.ImplTypeName ).NewLine()
-                        .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
-                        .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
-                        .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" );
-                    bool hasLegacyName = _legacyNameMap.GetName( t ) != typeName;
-                    if( hasLegacyName )
-                    {
-                        ctor.Append( "// Legacy name." ).NewLine()
-                            .Append( "_anyReaders.Add( " ).AppendSourceString( _legacyNameMap.GetName( t ) ).Append( ", d );" );
-                    }
-                    ctor.CloseBlock();
+                    ctor.Append( "// Legacy name." ).NewLine()
+                        .Append( "_anyReaders.Add( " ).AppendSourceString( _legacyNameMap.GetName( t ) ).Append( ", d );" );
                 }
-                else
+                ctor.CloseBlock();
+            }
+            else
+            {
+                ctor.Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( "," ).Append( readFunction ).Append( ");" ).NewLine();
+                string legacyName = _legacyNameMap.GetName( t );
+                if( legacyName != typeName )
                 {
-                    ctor.Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( "," ).Append( readFunction ).Append( ");" ).NewLine();
-                    string legacyName = _legacyNameMap.GetName( t );
-                    if( legacyName != typeName )
-                    {
-                        ctor.Append( "_anyReaders.Add( " ).AppendSourceString( legacyName ).Append( "," ).Append( readFunction ).Append( "); // Legacy name." ).NewLine();
-                    }
+                    ctor.Append( "_anyReaders.Add( " ).AppendSourceString( legacyName ).Append( "," ).Append( readFunction ).Append( "); // Legacy name." ).NewLine();
                 }
             }
+        }
 
-            _importerType.GeneratedByComment()
-                         .Append( @"
+        _importerType.GeneratedByComment()
+                     .Append( @"
 static internal readonly object oFalse = false;
 static internal readonly object oTrue = true;
 
@@ -94,6 +94,5 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
 }
 " );
 
-        }
     }
 }
