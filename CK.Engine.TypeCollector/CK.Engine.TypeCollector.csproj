@@ -4,7 +4,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="0.0.0--053buja-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="0.0.0--053czwm-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Engine.Configuration\CK.Engine.Configuration.csproj" />
