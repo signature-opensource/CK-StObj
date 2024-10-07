@@ -13,7 +13,7 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="0.0.0--053ijhz-develop" />
+    <PackageReference Include="CK.CodeGen" Version="0.0.0--053im5u-develop" />
     <PackageReference Include="CK.Globalization" Version="0.0.0--053iji0-develop" />
     <PackageReference Include="CK.Setup.Dependency" Version="0.0.0--053ijhz-develop" />
   </ItemGroup>
