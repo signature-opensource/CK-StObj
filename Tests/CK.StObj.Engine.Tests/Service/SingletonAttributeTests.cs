@@ -52,12 +52,11 @@ public class SingletonAttributeTests
     }
 
     [Test]
-    public void without_SingletonServiceAttribute_scope_requires_manual_registration()
+    public async Task without_SingletonServiceAttribute_scope_requires_manual_registration_Async()
     {
-        using var _ = TestHelper.Monitor.OpenInfo( nameof( without_SingletonServiceAttribute_scope_requires_manual_registration ) );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
-        var map = configuration.RunSuccessfully().FirstBinPath.LoadMap();
+        var map = (await configuration.RunSuccessfullyAsync().ConfigureAwait( false )).FirstBinPath.LoadMap();
 
         using var auto1 = map.CreateAutomaticServices();
         auto1.Services.Invoking( s => s.GetService<SomeScoped>() ).Should().Throw<InvalidOperationException>();
@@ -75,11 +74,11 @@ public class SingletonAttributeTests
 
 
     [Test]
-    public void SingletonServiceAttribute_enables_services_to_not_have_public_constructor()
+    public async Task SingletonServiceAttribute_enables_services_to_not_have_public_constructor_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
-        using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
         {
             services.AddSingleton( sp => NotConstructibleService.Create() );
         } );

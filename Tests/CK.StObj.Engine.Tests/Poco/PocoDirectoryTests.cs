@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 
@@ -19,11 +20,11 @@ public class PocoDirectoryTests
     }
 
     [Test]
-    public void simple_Poco_found_by_name_previous_name_or_interface_type()
+    public async Task simple_Poco_found_by_name_previous_name_or_interface_type_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f0 = d.Find( "Test" );
@@ -38,11 +39,11 @@ public class PocoDirectoryTests
     }
 
     [Test]
-    public void GeneratedPoco_factory_instance_can_be_found_by_its_type()
+    public async Task GeneratedPoco_factory_instance_can_be_found_by_its_type_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync()).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = d.Create<ICmdTest>();
@@ -75,14 +76,14 @@ public class PocoDirectoryTests
     public interface ICmdNoNameC : ICmdNoNameA, ICmdNoNameB { }
 
     [Test]
-    public void when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName()
+    public async Task when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
         {
-            configuration.RunSuccessfully();
+            await configuration.RunSuccessfullyAsync();
             entries.Where( x => x.MaskedLevel == LogLevel.Warn )
                    .Select( x => x.Text )
                    .Should()

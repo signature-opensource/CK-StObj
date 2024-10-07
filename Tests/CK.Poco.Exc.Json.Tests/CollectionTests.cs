@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests;
@@ -30,11 +31,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void arrays_serialization()
+    public async Task arrays_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithArray ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
@@ -111,11 +112,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void lists_serialization()
+    public async Task lists_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithLists ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -191,11 +192,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void sets_serialization()
+    public async Task sets_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithSets ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -253,11 +254,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void dictionaries_serialization()
+    public async Task dictionaries_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithDictionaries ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -356,11 +357,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void dictionaries_with_string_keys_can_be_objects_or_use_arrays()
+    public async Task dictionaries_with_string_keys_can_be_objects_or_use_arrays_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithDynamicObject ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -403,11 +404,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void PocoTypeSet_filtering_can_lead_to_invalid_Poco()
+    public async Task PocoTypeSet_filtering_can_lead_to_invalid_Poco_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllCollectionOfObjects ), typeof( IThing ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -519,11 +520,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void lists_serialization_with_abstracts()
+    public async Task lists_serialization_with_abstracts_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithListsA ), typeof( ISecondary ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -598,11 +599,11 @@ public partial class CollectionTests
     }
 
     [Test]
-    public void dictionaries_serialization_with_abstracts()
+    public async Task dictionaries_serialization_with_abstracts_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithDicsA ), typeof( ISecondary ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

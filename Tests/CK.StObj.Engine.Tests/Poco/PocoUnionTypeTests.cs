@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -159,11 +160,11 @@ public partial class PocoUnionTypeTests
     }
 
     [Test]
-    public void Union_property_implementation_guards_the_setter_when_not_nullable()
+    public async Task Union_property_implementation_guards_the_setter_when_not_nullable_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IPocoWithUnionType ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -287,11 +288,11 @@ public partial class PocoUnionTypeTests
     }
 
     [Test]
-    public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed()
+    public async Task Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IPocoWithUnionTypeNoNullable ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

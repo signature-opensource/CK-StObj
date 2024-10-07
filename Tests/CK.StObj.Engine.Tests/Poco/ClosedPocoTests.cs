@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -60,7 +61,7 @@ public class ClosedPocoTests
 
     [TestCase( "OnlyTheFinalUserAndDocumentCloPocs" )]
     [TestCase( "AllBaseUserAndDocumentCloPocs" )]
-    public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_ICommand( string mode )
+    public async Task closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_ICommand_Async( string mode )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         if( mode == "AllBaseUserAndDocumentCloPocs" )
@@ -71,7 +72,7 @@ public class ClosedPocoTests
         {
             configuration.FirstBinPath.Types.Add( typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) );
         }
-        var engineResult = configuration.Run();
+        var engineResult = await configuration.RunAsync();
 
         var pocoDirectory = engineResult.FirstBinPath.PocoTypeSystemBuilder.PocoDirectory;
         Throw.DebugAssert( pocoDirectory != null );
@@ -135,7 +136,7 @@ public class ClosedPocoTests
 
     [TestCase( "IUserFinalCloPoc only" )]
     [TestCase( "All commands" )]
-    public void a_closed_poco_commmand_works_fine( string mode )
+    public async Task a_closed_poco_commmand_works_fine_Async( string mode )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         if( mode == "All commands" )
@@ -148,7 +149,7 @@ public class ClosedPocoTests
             configuration.FirstBinPath.Types.Add( typeof( IUserFinalCloPoc ) );
         }
 
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
         var factoryCloPoc = auto.Services.GetService<IPocoFactory<IUserCloPoc>>();
         factoryCloPoc.Should().NotBeNull();
         auto.Services.GetService<IPocoFactory<IOther1UserCloPoc>>().Should().BeSameAs( factoryCloPoc );
@@ -157,11 +158,11 @@ public class ClosedPocoTests
     }
 
     [Test]
-    public void IPocoFactory_exposes_the_IsClosedPoco_and_ClosureInterface_properties()
+    public async Task IPocoFactory_exposes_the_IsClosedPoco_and_ClosureInterface_properties_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IUserFinalCloPoc ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var fUser = auto.Services.GetRequiredService<IPocoFactory<IUserCloPoc>>();
         fUser.IsClosedPoco.Should().BeTrue();
@@ -184,12 +185,12 @@ public class ClosedPocoTests
     }
 
     [Test]
-    public void the_ClosureInterface_is_available_if_a_closure_interface_exists_even_if_the_Poco_is_not_a_IClosedPoco()
+    public async Task the_ClosureInterface_is_available_if_a_closure_interface_exists_even_if_the_Poco_is_not_a_IClosedPoco_Async()
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( INotClosedByDesign ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<INotClosedByDesign>>();
             f.IsClosedPoco.Should().BeFalse();
@@ -198,7 +199,7 @@ public class ClosedPocoTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IExtendNotClosedByDesign ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
             f.IsClosedPoco.Should().BeFalse();
@@ -207,7 +208,7 @@ public class ClosedPocoTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
             f.Name.Should().Be( "CK.StObj.Engine.Tests.Poco.ClosedPocoTests.INotClosedByDesign" );

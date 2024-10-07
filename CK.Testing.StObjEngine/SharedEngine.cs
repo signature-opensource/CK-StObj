@@ -9,7 +9,7 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.Testing;
 
 /// <summary>
-/// Basic helper that works on a shared engine configurationand keeps
+/// Basic helper that works on a shared engine configuration and keeps
 /// a long lived CKomposable map and automatic services.
 /// <para>
 /// The basic usage is simply to get the <see cref="AutomaticServices"/> property (or the <see cref="Map"/>).
@@ -66,7 +66,9 @@ public static class SharedEngine
         {
             if( _runResult == null )
             {
-                _runResult = GetEngineConfiguration( false ).Run();
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+                _runResult = GetEngineConfiguration( false ).RunAsync().Result;
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
             }
             return _runResult;
         }

@@ -7,6 +7,7 @@ using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -49,11 +50,11 @@ public class PocoGenericTests
     public interface ITopCommand : ICommand<object> { }
 
     [Test]
-    public void generic_AbstractType_parameter_and_argument()
+    public async Task generic_AbstractType_parameter_and_argument_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ITopCommand ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
         Throw.DebugAssert( ts != null );
@@ -80,11 +81,11 @@ public class PocoGenericTests
     public interface IIntCommand : ITopCommand, ICommand<int> { }
 
     [Test]
-    public void MinimalAbstractTypes_considers_generic_parameter_covariance()
+    public async Task MinimalAbstractTypes_considers_generic_parameter_covariance_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IIntCommand ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -120,7 +121,7 @@ public class PocoGenericTests
     // At the Type System level, we cannot tell that IC : IComman<int>, ICommand<string> is invalid.
     // Cris checks that all the ICommand<TResult> of a command can be resolved to the most precise
     // existing type. This uses the MinimalAbstractTypes that resolves this with co (out) and contra (in)
-    // generic parameter constraints (we don't use in constraint but it is implemented).
+    // generic parameter constraints (we don't use "in" constraint but it is implemented).
     IPocoType GetCommandResult( IPrimaryPocoType cmd )
     {
         // The Single must not throw!
@@ -142,11 +143,11 @@ public class PocoGenericTests
     public interface IS5Command : IS4Command, ICommand<ICommand<ICommand<object>>> { }
 
     [Test]
-    public void commands_with_multiple_returns()
+    public async Task commands_with_multiple_returns_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IS5Command ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -198,12 +199,12 @@ public class PocoGenericTests
     public interface IS6NoWayCommand2 : IS5Command, ICommand<int> { }
 
     [Test]
-    public void conflicting_commands_with_multiple_returns()
+    public async Task conflicting_commands_with_multiple_returns_Async()
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IS6NoWayCommand1 ) );
-            var engineResult = configuration.RunSuccessfully();
+            var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
 
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -214,7 +215,7 @@ public class PocoGenericTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IS6NoWayCommand2 ) );
-            var engineResult = configuration.RunSuccessfully();
+            var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
 
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -239,13 +240,13 @@ public class PocoGenericTests
     public interface ICommandWithInt : ICommand<int> { }
 
     [Test]
-    public void ImplementationLess_allows_partial_type_system()
+    public async Task ImplementationLess_allows_partial_type_system_Async()
     {
         // With only the IS6ExcludeIS5Command, the ITopCommand : ICommand<object> returns an object.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ) );
-            var engineResult = configuration.RunSuccessfully();
+            var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
             var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
@@ -257,7 +258,7 @@ public class PocoGenericTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
-            var engineResult = configuration.RunSuccessfully();
+            var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
             var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
@@ -269,7 +270,7 @@ public class PocoGenericTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
-            var engineResult = configuration.RunSuccessfully();
+            var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
             var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
@@ -279,11 +280,11 @@ public class PocoGenericTests
     }
 
     [Test]
-    public void MinimalAbstractTypes_considers_recurse_generic_parameter_covariance()
+    public async Task MinimalAbstractTypes_considers_recurse_generic_parameter_covariance_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IS6Command ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
         Throw.DebugAssert( ts != null );
 
@@ -388,11 +389,11 @@ public class PocoGenericTests
     public interface IObjectInput : IIntInput, IInput<object> { }
 
     [Test]
-    public void MinimalAbstractTypes_considers_generic_parameter_contravariance()
+    public async Task MinimalAbstractTypes_considers_generic_parameter_contravariance_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IObjectInput ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
         var cmdNullable = ts.FindByType<ISecondaryPocoType>( typeof( IObjectInput ) );
@@ -443,11 +444,11 @@ public class PocoGenericTests
     public interface IExt6Input : IExt5Input, IInput<object> { }
 
     [Test]
-    public void MinimalAbstractTypes_considers_recurse_generic_parameter_contravariance()
+    public async Task MinimalAbstractTypes_considers_recurse_generic_parameter_contravariance_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IExt6Input ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
         var cmdNullable = ts.FindByType<IPrimaryPocoType>( typeof( IBaseInput ) );
@@ -512,11 +513,11 @@ public class PocoGenericTests
 
     [TestCase( true )]
     [TestCase( false )]
-    public void explicit_registering_abstract_generic_poco( bool registerGeneric )
+    public async Task explicit_registering_abstract_generic_poco_Async( bool registerGeneric )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IS5Command ) );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
         var primary = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );

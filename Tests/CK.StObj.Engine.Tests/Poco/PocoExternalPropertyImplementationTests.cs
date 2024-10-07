@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Text;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -47,11 +48,11 @@ public class PocoExternalPropertyImplementationTests
     }
 
     [Test]
-    public void some_poco_properties_can_be_handled_by_independent_CodeGenerator()
+    public async Task some_poco_properties_can_be_handled_by_independent_CodeGenerator_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();
         var o = f.Create();

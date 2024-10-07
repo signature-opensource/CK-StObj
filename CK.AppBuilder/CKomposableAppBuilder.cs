@@ -17,7 +17,7 @@ namespace CK.Setup;
 ///     <item>
 ///     This helper is used from an executable project named "XXX.Builder" whose Program.cs can be as simple as:
 ///     <code>
-///     return CK.Setup.CKomposableAppBuilder.Run();
+///     return await CK.Setup.CKomposableAppBuilder.RunAsync();
 ///     </code>
 ///     </item>
 ///     <item>The application to setup is a project named "XXX.Host".</item>
@@ -28,7 +28,6 @@ namespace CK.Setup;
 public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
 {
     readonly NormalizedPath _parentFolderPath;
-    readonly NormalizedPath _rootLogPath;
     readonly IActivityMonitor _monitor;
     readonly NormalizedPath _msBuildOutputPath;
     readonly NormalizedPath _builderFolderPath;
@@ -103,9 +102,9 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             {
                 configuration = new EngineConfiguration() { BasePath = builderFolder };
             }
-            var b = new CKomposableAppBuilder( parentPath, rootLogPath, monitor, msBuildOutputPath, applicationName, builderFolder, configuration );
+            var b = new CKomposableAppBuilder( parentPath, monitor, msBuildOutputPath, applicationName, builderFolder, configuration );
             configure?.Invoke( monitor, b );
-            var engineResult = b.EngineConfiguration.Run( monitor );
+            var engineResult = await b.EngineConfiguration.RunAsync( monitor ).ConfigureAwait( false );
             return engineResult != null && engineResult.Status != RunStatus.Failed ? 0 : 1;
         }
         catch( Exception ex )
@@ -128,7 +127,6 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
     }
 
     CKomposableAppBuilder( NormalizedPath parentPath,
-                           NormalizedPath rootLogPath,
                            IActivityMonitor monitor,
                            NormalizedPath msBuildOutputPath,
                            string applicationName,
@@ -136,7 +134,6 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                            EngineConfiguration configuration )
     {
         _parentFolderPath = parentPath;
-        _rootLogPath = rootLogPath;
         _monitor = monitor;
         _msBuildOutputPath = msBuildOutputPath;
         _applicationName = applicationName;

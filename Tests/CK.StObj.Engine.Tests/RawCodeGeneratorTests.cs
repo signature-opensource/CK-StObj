@@ -3,6 +3,7 @@ using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests;
@@ -31,12 +32,12 @@ public class RawCodeGeneratorTests
     }
 
     [Test]
-    public void ICSCodeGenerator_on_regular_class()
+    public async Task ICSCodeGenerator_on_regular_class_Async()
     {
         CGen.Called = false;
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( Holder ) );
-        configuration.Run().LoadMap();
+        (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
         CGen.Called.Should().BeTrue();
     }
 
@@ -46,12 +47,12 @@ public class RawCodeGeneratorTests
     }
 
     [Test]
-    public void ICodeGenerator_on_static_class()
+    public async Task ICodeGenerator_on_static_class_Async()
     {
         CGen.Called = false;
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( StaticHolder ) );
-        configuration.Run().LoadMap();
+        (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
         CGen.Called.Should().BeTrue();
     }
 
@@ -61,12 +62,12 @@ public class RawCodeGeneratorTests
     }
 
     [Test]
-    public void ICodeGenerator_on_raw_interface()
+    public async Task ICodeGenerator_on_raw_interface_Async()
     {
         CGen.Called = false;
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( RawInterface ) );
-        configuration.Run().LoadMap();
+        (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
         CGen.Called.Should().BeTrue();
     }
 
@@ -76,12 +77,12 @@ public class RawCodeGeneratorTests
     }
 
     [Test]
-    public void ICodeGenerator_on_enum()
+    public async Task ICodeGenerator_on_enum_Async()
     {
         CGen.Called = false;
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( EvenOnAnEnumItWorks ) );
-        configuration.Run().LoadMap();
+        (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
         CGen.Called.Should().BeTrue();
     }
 

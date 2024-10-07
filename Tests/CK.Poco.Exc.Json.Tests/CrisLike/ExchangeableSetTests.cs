@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text.Json;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests.CrisLike;
@@ -84,11 +85,11 @@ public class ExchangeableSetTests
     }
 
     [Test]
-    public void not_serializable_and_not_exchangeable_attributes_are_handled()
+    public async Task not_serializable_and_not_exchangeable_attributes_are_handled_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
         var thing = CreateThing( directory );
@@ -128,11 +129,11 @@ public class ExchangeableSetTests
     }
 
     [Test]
-    public void PocoTypeSet_restrictions_cannot_be_spoofed_for_Poco_and_Record_fields()
+    public async Task PocoTypeSet_restrictions_cannot_be_spoofed_for_Poco_and_Record_fields_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
         var poco = directory.Create<ICannotBeSpoofed>();
@@ -173,11 +174,11 @@ public class ExchangeableSetTests
     }
 
     [Test]
-    public void PocoTypeSet_restrictions_cannot_be_spoofed_for_anonymous_records_fields()
+    public async Task PocoTypeSet_restrictions_cannot_be_spoofed_for_anonymous_records_fields_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
         var poco = directory.Create<ICannotBeSpoofed2>();

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -22,11 +23,11 @@ public class PocoWithCollectionsTests
     }
 
     [Test]
-    public void readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance()
+    public async Task readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ISimpleCollections ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
         p.Strings.Should().NotBeNull().And.BeEmpty();
@@ -45,11 +46,11 @@ public class PocoWithCollectionsTests
     }
 
     [Test]
-    public void non_null_Array_property_are_initialized_to_the_Array_Empty()
+    public async Task non_null_Array_property_are_initialized_to_the_Array_Empty_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithArray ), typeof( IWithArraySetter ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();
         var p = f.Create();
@@ -60,11 +61,11 @@ public class PocoWithCollectionsTests
     }
 
     [Test]
-    public void read_only_Array_property_are_definitely_empty()
+    public async Task read_only_Array_property_are_definitely_empty_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithArray ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
         var p = f.Create();

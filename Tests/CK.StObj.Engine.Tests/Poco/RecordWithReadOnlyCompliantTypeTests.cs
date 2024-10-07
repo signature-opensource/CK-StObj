@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -25,11 +26,11 @@ public class RecordWithReadOnlyCompliantTypeTests
     }
 
     [Test]
-    public void record_struct_is_supported()
+    public async Task record_struct_is_supported_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithRecordStruct ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStruct>>().Create();
         p.Thing1.Should().BeNull();
@@ -134,11 +135,11 @@ public class RecordWithReadOnlyCompliantTypeTests
     }
 
     [Test]
-    public void nesting_typed_and_anonymous_record_is_possible()
+    public async Task nesting_typed_and_anonymous_record_is_possible_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithComplexRecords ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithComplexRecords>>().Create();
 

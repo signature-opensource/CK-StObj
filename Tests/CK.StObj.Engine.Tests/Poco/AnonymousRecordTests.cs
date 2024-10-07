@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -33,11 +34,11 @@ public class AnonymousRecordTests
     }
 
     [Test]
-    public void non_nullable_string_defaults_to_empty_and_DateTime_defaults_to_Util_UtcMinValue()
+    public async Task non_nullable_string_defaults_to_empty_and_DateTime_defaults_to_Util_UtcMinValue_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithValueTuple ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
 
@@ -59,11 +60,11 @@ public class AnonymousRecordTests
     }
 
     [Test]
-    public void nullables_are_let_to_null()
+    public async Task nullables_are_let_to_null_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithValueTuple2 ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
 
@@ -183,11 +184,11 @@ public class AnonymousRecordTests
 
 
     [Test]
-    public void long_value_tuples_are_handled()
+    public async Task long_value_tuples_are_handled_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithLongTuple ) );
-        var engineResult = configuration.Run();
+        var engineResult = await configuration.RunAsync().ConfigureAwait( false );
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 

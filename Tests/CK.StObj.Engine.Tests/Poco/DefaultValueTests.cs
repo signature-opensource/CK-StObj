@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -28,11 +29,11 @@ public class DefaultValueTests
     }
 
     [Test]
-    public void default_values_on_simple_field()
+    public async Task default_values_on_simple_field_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IThing ), typeof( IThingHolder ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();
         h.Value.Should().NotBeNull();

@@ -16,13 +16,13 @@ namespace CK.StObj.Engine.Tests.Endpoint;
 public class FrontEndpointTests
 {
     [Test]
-    public void global_DI_automatically_falls_back_to_default_value_provider_for_Ambient_services()
+    public async Task global_DI_automatically_falls_back_to_default_value_provider_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( FakeTenantInfo ),
                                         typeof( DefaultTenantProvider ) );
 
-        using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+        using var auto = (await configuration.RunAsync()).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -56,7 +56,7 @@ public class FrontEndpointTests
     }
 
     [Test]
-    public void Front_endpoint_default_for_Ambient_services()
+    public async Task Front_endpoint_default_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
@@ -66,7 +66,7 @@ public class FrontEndpointTests
                                         typeof( DefaultCultureProvider ),
                                         typeof( FakeAuthenticationInfo ),
                                         typeof( DefaultAuthenticationInfoProvider ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
         // the defaults.
@@ -105,7 +105,7 @@ public class FrontEndpointTests
 
 
     [Test]
-    public void Ambient_services_are_painful_when_they_are_not_AutoService()
+    public async Task Ambient_services_are_painful_when_they_are_not_AutoService_Async()
     {
         {
             const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<FakeAuthenticationInfo>'. " +
@@ -123,7 +123,7 @@ public class FrontEndpointTests
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( FakeAuthenticationInfo ),
                                             typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
-            configuration.GetFailedAutomaticServices( msg );
+            await configuration.GetFailedAutomaticServicesAsync( msg );
         }
     }
 }

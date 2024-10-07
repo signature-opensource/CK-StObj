@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -70,11 +71,11 @@ public class DefaultImplementationMethodsTests
     }
 
     [Test]
-    public void Default_Implementation_Methods_are_supported()
+    public async Task Default_Implementation_Methods_are_supported_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IActualRoot ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var fA = d.Find( "CK.StObj.Engine.Tests.Poco.DefaultImplementationMethodsTests.IActualRoot" );
@@ -199,11 +200,11 @@ public class DefaultImplementationMethodsTests
 
     [Test]
     [Ignore( "Not ready yet." )]
-    public void poco_can_have_Abstract_and_DefaultImplementationMethods()
+    public async Task poco_can_have_Abstract_and_DefaultImplementationMethods_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var poco = auto.Services.GetRequiredService<PocoDirectory>();
 

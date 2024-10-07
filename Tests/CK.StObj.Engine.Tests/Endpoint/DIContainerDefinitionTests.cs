@@ -7,6 +7,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint;
@@ -47,11 +48,11 @@ public class DIContainerDefinitionTests
     }
 
     [Test]
-    public void DIContainerHub_exposes_the_DIContainerDefinitions()
+    public async Task DIContainerHub_exposes_the_DIContainerDefinitions_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var manager = auto.Services.GetRequiredService<DIContainerHub>();
         manager.ContainerDefinitions.Should().HaveCount( 2 );
@@ -60,11 +61,11 @@ public class DIContainerDefinitionTests
     }
 
     [Test]
-    public void EndpointTypes_are_available_in_containers_as_well_as_the_IEnumerable_of_IEndpoint()
+    public async Task EndpointTypes_are_available_in_containers_as_well_as_the_IEnumerable_of_IEndpoint_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // From the root (singleton) container.
         var o1 = GetEndpointsAndOtherTrueSingletons( auto.Services );

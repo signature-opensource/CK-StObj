@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Sample.Model;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace Sample.Engine.Tests;
@@ -30,11 +31,11 @@ public class SimpleTests
     }
 
     [Test]
-    public void StupidCodeAttribute_works()
+    public async Task StupidCodeAttribute_works_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ThingService ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var thing = auto.Services.GetRequiredService<ThingService>();
         thing.GetValue( "ab" ).Should().Be( 2 );

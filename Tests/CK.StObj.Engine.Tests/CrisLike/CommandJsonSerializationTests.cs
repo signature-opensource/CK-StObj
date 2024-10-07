@@ -7,6 +7,7 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.CrisLike;
@@ -51,7 +52,7 @@ public class CommandJsonSerializationTests
     }
 
     [Test]
-    public void command_json_roundtrip()
+    public async Task command_json_roundtrip_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
@@ -62,7 +63,7 @@ public class CommandJsonSerializationTests
                                         typeof( IDeviceCommand ),
                                         typeof( IFullAuthCommand ),
                                         typeof( IFullAuthCommandWithResult ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var services = auto.Services;
 

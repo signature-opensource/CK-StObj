@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service;
@@ -92,7 +92,7 @@ public class ServiceSimpleMappingTests
     // Current exclusion semantics is what it is, not perfect and used rarely and quite always on leaf types, so let it be.
     [Test]
     [Ignore( "Exclusion needs rework." )]
-    public void service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous()
+    public async Task service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous_Async()
     {
         //{
         //    var collector = TestHelper.CreateStObjCollector();
@@ -108,7 +108,7 @@ public class ServiceSimpleMappingTests
             var configuration = TestHelper.CreateDefaultEngineConfiguration( generateSourceFiles: false, compileOption: Setup.CompileOption.None );
             configuration.FirstBinPath.Types.Add( typeof( ServiceS1Impl ), typeof( ServiceS2Impl ) );
             configuration.FirstBinPath.ExcludedTypes.Add( typeof( ISBase ) );
-            var r = configuration.RunSuccessfully();
+            var r = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var map = r.FirstBinPath.EngineMap;
 
             map.Services.Mappings.ContainsKey( typeof( ISBase ) ).Should().BeFalse();
@@ -293,11 +293,11 @@ public class ServiceSimpleMappingTests
     }
 
     [Test]
-    public void Linked_list_of_service_abstract_classes()
+    public async Task Linked_list_of_service_abstract_classes_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
-        var map = configuration.Run().LoadMap();
+        var map = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
 
         var final = map.Services.Mappings[typeof( ISBase )];
         final.FinalType.Should().NotBeSameAs( typeof( AbstractS1 ) );

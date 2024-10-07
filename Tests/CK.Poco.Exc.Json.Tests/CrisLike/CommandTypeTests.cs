@@ -7,6 +7,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests.CrisLike;
@@ -57,7 +58,7 @@ public interface IAccountCommand : ICommand
 public class CommandTypeTests
 {
     [Test]
-    public void commands_serialization()
+    public async Task commands_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
@@ -68,7 +69,7 @@ public class CommandTypeTests
                                         typeof( IBatchCommand ),
                                         typeof( ICrisResult ),
                                         typeof( ICrisResultError ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -154,7 +155,7 @@ public class CommandTypeTests
     }
 
     [Test]
-    public void serialization_with_abstract()
+    public async Task serialization_with_abstract_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
@@ -164,7 +165,7 @@ public class CommandTypeTests
                                         typeof( IBatchCommand ),
                                         typeof( ICrisResult ),
                                         typeof( ICrisResultError ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

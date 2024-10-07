@@ -3,6 +3,7 @@ using CK.Core;
 using CK.Engine.TypeCollector;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CK.Setup;
 
@@ -19,12 +20,12 @@ public static class CKEngine
     /// <param name="configuration">This configuration.</param>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>A <see cref="EngineResult"/> or null if this configuration is invalid.</returns>
-    public static EngineResult? Run( this EngineConfiguration configuration, IActivityMonitor monitor )
+    public static Task<EngineResult?> RunAsync( this EngineConfiguration configuration, IActivityMonitor monitor )
     {
         Throw.CheckNotNullArgument( monitor );
         if( !configuration.NormalizeConfiguration( monitor ) )
         {
-            return null;
+            return Task.FromResult<EngineResult?>( null );
         }
         var typeGroups = BinPathTypeGroup.Run( monitor, configuration );
         var groups = typeGroups.Groups.Select( tG => new BinPathGroup( tG ) ).ToImmutableArray();
@@ -37,11 +38,11 @@ public static class CKEngine
             {
                 groups[i]._runningGroup = r.Groups[i];
             }
-            return new EngineResult( r.Success ? RunStatus.Succeed : RunStatus.Failed, configuration, groups );
+            return Task.FromResult<EngineResult?>( new EngineResult( r.Success ? RunStatus.Succeed : RunStatus.Failed, configuration, groups ) );
         }
         else
         {
-            return new EngineResult( RunStatus.Failed, configuration, groups );
+            return Task.FromResult<EngineResult?>( new EngineResult( RunStatus.Failed, configuration, groups ) );
         }
     }
 

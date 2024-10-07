@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.StObj.Engine.Tests.Service.OpenGenericSupportTests;
 using static CK.Testing.MonitorTestHelper;
 
@@ -92,12 +93,12 @@ namespace CK.StObj.Engine.Tests.Service
 
 
         [Test]
-        public void a_RealObject_class_can_be_an_IAutoService_but_an_interface_cannot()
+        public async Task a_RealObject_class_can_be_an_IAutoService_but_an_interface_cannot_Async()
         {
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( Obj ) );
-                using var auto = configuration.Run().CreateAutomaticServices();
+                using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
                 auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
                 auto.Map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
@@ -109,7 +110,7 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( ObjInvalid ) );
-                configuration.GetFailedAutomaticServices( "IRealObject interface cannot be a IAutoService (type is an interface)." );
+                await configuration.GetFailedAutomaticServicesAsync( "IRealObject interface cannot be a IAutoService (type is an interface)." );
             }
         }
 
@@ -118,11 +119,11 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void a_RealObject_class_and_IAutoService_with_specialization()
+        public async Task a_RealObject_class_and_IAutoService_with_specialization_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ObjSpec ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
             auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
@@ -148,11 +149,11 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void a_RealObject_class_and_IAutoService_with_deep_specializations()
+        public async Task a_RealObject_class_and_IAutoService_with_deep_specializations_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ObjSpecFinal ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             // On generated data.
             auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
@@ -192,11 +193,11 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void service_can_be_implemented_by_RealObjects()
+        public async Task service_can_be_implemented_by_RealObjects_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ODep ), typeof( OBase ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var oDep = auto.Services.GetRequiredService<ODep>();
             auto.Services.GetRequiredService<IBase>().Should().BeSameAs( oDep );
@@ -268,11 +269,11 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void scoped_dependency_detection()
+        public async Task scoped_dependency_detection_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
             auto.Map.Services.Mappings[typeof( A )].IsScoped.Should().BeTrue();
@@ -306,11 +307,11 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void StObjGen_attribute_excludes_the_type()
+        public async Task StObjGen_attribute_excludes_the_type_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( SampleServiceGenerated ), typeof( SampleService ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
         }

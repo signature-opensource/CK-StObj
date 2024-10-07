@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -33,11 +34,11 @@ public class PocoCovariantPropertyTests
     }
 
     [Test]
-    public void intrinsic_from_IList_to_IReadOnlyList()
+    public async Task intrinsic_from_IList_to_IReadOnlyList_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IActualRootA ), typeof( IActualSubA ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var a = d.Create<IActualRootA>();
@@ -53,11 +54,11 @@ public class PocoCovariantPropertyTests
     }
 
     [Test]
-    public void intrinsic_from_concrete_List_to_IReadOnlyList()
+    public async Task intrinsic_from_concrete_List_to_IReadOnlyList_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var a = d.Create<IActualRootAConcrete>();

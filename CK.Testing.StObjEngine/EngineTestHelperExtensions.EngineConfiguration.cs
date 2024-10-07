@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing;
@@ -14,34 +15,34 @@ namespace CK.Testing;
 public static partial class EngineTestHelperExtensions
 {
     /// <summary>
-    /// Calls the <see cref="CKEngine.Run(EngineConfiguration, IActivityMonitor)"/> on the <see cref="Monitoring.IMonitorTestHelperCore.Monitor"/>.
+    /// Calls the <see cref="CKEngine.RunAsync(EngineConfiguration, IActivityMonitor)"/> on the <see cref="Monitoring.IMonitorTestHelperCore.Monitor"/>.
     /// </summary>
     /// <param name="configuration">This configuration.</param>
     /// <returns>The engine result.</returns>
-    public static EngineResult Run( this EngineConfiguration configuration )
+    public static async Task<EngineResult> RunAsync( this EngineConfiguration configuration )
     {
         // Temporary workaround: the GeneratedAssemblyName must be based on the Signature
         // This means that Aspects must be able to impact the Signature in their initialization
-        // easily (Apsects should be refacored with template method).
+        // easily (Apsects should be refactored with template method).
         // Future:
         //  - GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix.Signature[base64Url].dll
         //  - The code that computes the SHA1 based on the generated code can be removed.
         //  - Finding an external StObjMap is easy (File.Exists in the AppContext.BaseDirectory). 
         configuration.GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yMMdHHmsfffff" );
-        var r = configuration.Run( TestHelper.Monitor );
+        var r = await configuration.RunAsync( TestHelper.Monitor ).ConfigureAwait( false );
         r.Should().NotBeNull( "The configuration is invalid." );
         return r!;
     }
 
     /// <summary>
-    /// Calls the <see cref="CKEngine.Run(EngineConfiguration, IActivityMonitor)"/> on the <see cref="Monitoring.IMonitorTestHelperCore.Monitor"/>.
+    /// Calls the <see cref="CKEngine.RunAsync(EngineConfiguration, IActivityMonitor)"/> on the <see cref="Monitoring.IMonitorTestHelperCore.Monitor"/>.
     /// </summary>
     /// <param name="configuration">This configuration.</param>
     /// <param name="allowSkippedRun">False to forbid a <see cref="RunStatus.Skipped"/>.</param>
     /// <returns>The engine result.</returns>
-    public static EngineResult RunSuccessfully( this EngineConfiguration configuration, bool allowSkippedRun = true )
+    public static async Task<EngineResult> RunSuccessfullyAsync( this EngineConfiguration configuration, bool allowSkippedRun = true )
     {
-        var r = Run( configuration );
+        var r = await RunAsync( configuration ).ConfigureAwait( false );
         if( allowSkippedRun )
         {
             if( r.Status is RunStatus.Failed )
@@ -69,18 +70,18 @@ public static partial class EngineTestHelperExtensions
     /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
     /// <param name="configureServices">Optional services configuration.</param>
     /// <param name="binPathName">The <see cref="BinPathConfiguration.Name"/>. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
-    public static void GetFailedAutomaticServices( this EngineConfiguration configuration,
-                                                   string message,
-                                                   IEnumerable<string>? otherMessages = null,
-                                                   Action<IServiceCollection>? configureServices = null,
-                                                   SimpleServiceContainer? startupServices = null,
-                                                   string binPathName = "First" )
+    public static async Task GetFailedAutomaticServicesAsync( this EngineConfiguration configuration,
+                                                              string message,
+                                                              IEnumerable<string>? otherMessages = null,
+                                                              Action<IServiceCollection>? configureServices = null,
+                                                              SimpleServiceContainer? startupServices = null,
+                                                              string binPathName = "First" )
     {
         using( TestHelper.Monitor.CollectEntries( out var entries ) )
         {
             bool loadMapSucceed = false;
             bool addedStobjMapSucceed = false;
-            var engineResult = configuration.Run();
+            var engineResult = await configuration.RunAsync();
             if( engineResult.Status == RunStatus.Succeed )
             {
                 var map = engineResult.FindRequiredBinPath( binPathName ).TryLoadMap( TestHelper.Monitor );

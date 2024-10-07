@@ -4,6 +4,7 @@ using CK.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -18,11 +19,11 @@ public class PocoClassAndItsFactoryTests
     }
 
     [Test]
-    public void poco_knows_its_Factory()
+    public async Task poco_knows_its_Factory_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IPocoKnowsItsFactory ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
         var o = f.Create();

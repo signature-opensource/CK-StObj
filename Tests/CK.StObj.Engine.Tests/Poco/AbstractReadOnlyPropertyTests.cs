@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -64,12 +65,12 @@ public class AbstractReadOnlyPropertyTests
     }
 
     [Test]
-    public void non_nullable_abstract_IPoco_field_must_have_a_concrete_writable_field()
+    public async Task non_nullable_abstract_IPoco_field_must_have_a_concrete_writable_field_Async()
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IResolveSome>();
@@ -81,7 +82,7 @@ public class AbstractReadOnlyPropertyTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IResolveSome2>();
@@ -103,12 +104,12 @@ public class AbstractReadOnlyPropertyTests
     }
 
     [Test]
-    public void nullable_abstract_IPoco_field_without_writable_keeps_a_default_null_value()
+    public async Task nullable_abstract_IPoco_field_without_writable_keeps_a_default_null_value_Async()
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract>();
@@ -117,7 +118,7 @@ public class AbstractReadOnlyPropertyTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract2>();
@@ -199,11 +200,11 @@ public class AbstractReadOnlyPropertyTests
     [TestCase( typeof( int ), typeof( IAutoIntPrimary2 ), typeof( IAutoIntExtension2 ) )]
     [TestCase( typeof( (int, string) ), typeof( IAutoAnonymousRecordPrimary1 ), typeof( IAutoAnonymousRecordExtension1 ) )]
     [TestCase( typeof( (int, string) ), typeof( IAutoAnonymousRecordPrimary2 ), typeof( IAutoAnonymousRecordExtension2 ) )]
-    public void auto_initialized_property_can_be_exposed_as_nullable_properties( Type tAutoProperty, Type tPrimary, Type tExtension )
+    public async Task auto_initialized_property_can_be_exposed_as_nullable_properties_Async( Type tAutoProperty, Type tPrimary, Type tExtension )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( tPrimary, tExtension );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
@@ -240,11 +241,11 @@ public class AbstractReadOnlyPropertyTests
 
     [TestCase( typeof( IAutoIAbstract1 ) )]
     [TestCase( typeof( IAutoIAbstract2 ) )]
-    public void object_abstract_readonly_property_can_be_nullable_AbstractPoco( Type tPrimary )
+    public async Task object_abstract_readonly_property_can_be_nullable_AbstractPoco_Async( Type tPrimary )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( tPrimary );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
@@ -289,11 +290,11 @@ public class AbstractReadOnlyPropertyTests
     }
 
     [Test]
-    public void abstract_properties_samples()
+    public async Task abstract_properties_samples_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var impl = d.Create<IImplementThem>();

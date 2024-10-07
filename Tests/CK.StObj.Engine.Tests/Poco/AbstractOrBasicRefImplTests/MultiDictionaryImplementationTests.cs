@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests;
@@ -48,13 +49,13 @@ public class MultiDictionaryImplementationTests : CommonTypes
     [TestCase( typeof( IPocoWithDictionaryOfPrimary ) )]
     [TestCase( typeof( IPocoWithDictionaryOfSecondary ) )]
     [TestCase( typeof( IPocoWithDictionaryOfOtherSecondary ) )]
-    public void IDictionary_implementation_supports_all_the_required_types( Type type )
+    public async Task IDictionary_implementation_supports_all_the_required_types_Async( Type type )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                         typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                         type );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithDictionary)d.Find( type )!.Create();
@@ -99,14 +100,14 @@ public class MultiDictionaryImplementationTests : CommonTypes
     }
 
     [Test]
-    public void IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required()
+    public async Task IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                         typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                         typeof( IPocoWithDictionaryOfAbstractBase ), typeof( IPocoWithDictionaryOfAbstract1 ),
                                         typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithDictionaryOfClosed ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -150,11 +151,11 @@ public class MultiDictionaryImplementationTests : CommonTypes
     }
 
     [Test]
-    public void IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
+    public async Task IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IAbstractBasicRefDic ), typeof( IBasicRefDics ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var pBase = d.Create<IBasicRefDics>();

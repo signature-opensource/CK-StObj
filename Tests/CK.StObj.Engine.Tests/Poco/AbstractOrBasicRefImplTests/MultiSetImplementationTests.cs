@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests;
@@ -49,11 +50,11 @@ public class MultiSetImplementationTests : CommonTypes
     [TestCase( typeof( IPocoWithSetOfGuid ) )]
     [TestCase( typeof( IPocoWithSetOfReadOnlyCompliantNamedRecord ) )]
     [TestCase( typeof( IPocoWithSetOfReadOnlyCompliantAnonymousRecord ) )]
-    public void ISet_implementation_supports_all_the_required_types( Type type )
+    public async Task ISet_implementation_supports_all_the_required_types_Async( Type type )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( type );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithSet)d.Find( type )!.Create();
@@ -88,11 +89,11 @@ public class MultiSetImplementationTests : CommonTypes
     }
 
     [Test]
-    public void ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
+    public async Task ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var pBase = d.Create<IBasicRefSets>();

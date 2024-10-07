@@ -9,6 +9,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using static CK.Testing.MonitorTestHelper;
 
@@ -106,12 +107,12 @@ public class DynamicGenerationTests
             public A TheA { get; private set; }
         }
 
-        public static void DoTest()
+        public static async Task DoTestAsync()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( B ), typeof( ASpec ) );
             configuration.AddAspect( new FakeAspectConfiguration() );
-            var result = configuration.RunSuccessfully();
+            var result = await configuration.RunSuccessfullyAsync();
 
             //var container = new SimpleServiceContainer();
             //var configurator = new StObjPropertyConfigurator();
@@ -156,9 +157,9 @@ public class DynamicGenerationTests
     }
 
     [Test]
-    public void ConstructCalledAndStObjProperties()
+    public Task ConstructCalledAndStObjPropertiesAsync()
     {
-        CConstructCalledAndStObjProperties.DoTest();
+        return CConstructCalledAndStObjProperties.DoTestAsync();
     }
 
     public class PostBuildSet
@@ -223,13 +224,12 @@ public class DynamicGenerationTests
             }
         }
 
-        public void DoTest()
+        public static async Task DoTestAsync()
         {
-
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( BSpec ), typeof( ASpec ) );
             configuration.AddAspect( new FakeAspectConfiguration() );
-            var result = configuration.RunSuccessfully();
+            var result = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var engineMap = result.FirstBinPath.EngineMap;
 
             // Check collector result.
@@ -269,9 +269,9 @@ public class DynamicGenerationTests
     }
 
     [Test]
-    public void PostBuildAndInjectObjects()
+    public Task PostBuildAndInjectObjectsAsync()
     {
-        new PostBuildSet().DoTest();
+        return PostBuildSet.DoTestAsync();
     }
 
 
@@ -370,11 +370,11 @@ public class DynamicGenerationTests
             public abstract double Hup { get; }
         }
 
-        public void DoTest()
+        public static async Task DoTestAsync()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( AutomaticallyImplemented ) );
-            var map = configuration.Run().LoadMap();
+            var map = (await configuration.RunAsync()).LoadMap();
 
             var a = map.GetType().Assembly;
             Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
@@ -387,9 +387,9 @@ public class DynamicGenerationTests
     }
 
     [Test]
-    public void ICSCodeGenratorType_implements_interface()
+    public Task ICSCodeGenratorType_implements_interface_Async()
     {
-        new CTypeImplementor().DoTest();
+        return CTypeImplementor.DoTestAsync();
     }
 
     public class ContextBoundDelegationAttributeDI
@@ -410,7 +410,7 @@ public class DynamicGenerationTests
         {
         }
 
-        public void DoTest()
+        public static void DoTest()
         {
             var extraServices = new SimpleServiceContainer();
             extraServices.Add<Func<string>>( () => "Hello World!" );
@@ -428,7 +428,7 @@ public class DynamicGenerationTests
     [Test]
     public void ContextBoundDelegation_dependency_injection()
     {
-        new ContextBoundDelegationAttributeDI().DoTest();
+        ContextBoundDelegationAttributeDI.DoTest();
     }
 
     public class MultiPassCodeGenerationParameterInjectionDI
@@ -484,13 +484,13 @@ public class DynamicGenerationTests
         {
         }
 
-        public void DoTest()
+        public static async Task DoTestAsync()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
-                configuration.Run().LoadMap();
+                (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
                 entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                                 .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
             }
@@ -499,9 +499,9 @@ public class DynamicGenerationTests
     }
 
     [Test]
-    public void MultiPass_code_generation_can_use_parameter_injection()
+    public Task MultiPass_code_generation_can_use_parameter_injection_Async()
     {
-        new MultiPassCodeGenerationParameterInjectionDI().DoTest();
+        return MultiPassCodeGenerationParameterInjectionDI.DoTestAsync();
     }
 
 

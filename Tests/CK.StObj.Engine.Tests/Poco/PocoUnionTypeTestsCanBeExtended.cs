@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -53,11 +54,11 @@ public class PocoUnionTypeTestsCanBeExtended
     }
 
     [Test]
-    public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
+    public async Task Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

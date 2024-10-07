@@ -16,7 +16,7 @@ namespace CK.Testing;
 /// Extends <see cref="IBasicTestHelper"/> or <see cref="IMonitorTestHelper"/> with engine related helpers.
 /// <para>
 /// Extends <see cref="EngineConfiguration"/> objects with configuration helper methods and run methods
-/// like <see cref="RunSuccessfully(EngineConfiguration, bool)"/>.
+/// like <see cref="RunSuccessfullyAsync(EngineConfiguration, bool)"/>.
 /// <para>
 /// Extends the CKomposable <see cref="EngineResult"/> with <see cref="IStObjMap"/> load capabilites
 /// and <see cref="AutomaticServices"/> creation.

@@ -33,7 +33,7 @@ public partial class BackgroundEndpointTests
                                         typeof( FakeTenantInfo ),
                                         typeof( DefaultTenantProvider ),
                                         typeof( TransactionalCallContextLike ) );
-        using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -103,7 +103,7 @@ public partial class BackgroundEndpointTests
                                               typeof( SampleCommandMemory ),
                                               typeof( BackgroundDIContainerDefinition ),
                                               typeof( BackgroundExecutorService ) );
-        await using var app = configuration.Run().LoadMap().CreateServicedApplication( configureServices: services =>
+        await using var app = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateServicedApplication( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -137,7 +137,7 @@ public partial class BackgroundEndpointTests
 
         ConfigurationManager config = new ConfigurationManager();
         config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );
-        await using var app = configuration.Run().LoadMap().CreateServicedApplication( configureServices: services =>
+        await using var app = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateServicedApplication( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -185,7 +185,7 @@ public partial class BackgroundEndpointTests
         ConfigurationManager config = new ConfigurationManager();
         config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );
         var hostBuilderSetting = new HostApplicationBuilderSettings() { Configuration = config, DisableDefaults = true };
-        await using var app = configuration.Run().LoadMap().CreateServicedApplication( hostBuilderSetting, configureServices: services =>
+        await using var app = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateServicedApplication( hostBuilderSetting, configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );

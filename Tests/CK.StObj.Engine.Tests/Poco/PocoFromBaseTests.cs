@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -32,11 +33,11 @@ namespace CK.StObj.Engine.Tests.Poco
     public class PocoFromBaseTests
     {
         [Test]
-        public void IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute()
+        public async Task IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IPocoFromBase ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.IPocoFromBase" );

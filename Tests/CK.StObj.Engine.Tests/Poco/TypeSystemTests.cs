@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco;
@@ -254,13 +255,13 @@ public class TypeSystemTests
     [TestCase( typeof( IWithPower ), new[] { "Required", "Power" } )]
     [TestCase( typeof( IWithOptional ), new[] { "Required", "Optional" } )]
     [TestCase( typeof( IWithAll ), new[] { "Required", "Optional", "Power" } )]
-    public void AbstractPocoField_test( Type impl, string[] names )
+    public async Task AbstractPocoField_test_Async( Type impl, string[] names )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IAbstractPoco ),
                                         typeof( IWithList ),
                                         impl );
-        var engineResult = configuration.RunSuccessfully();
+        var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
         var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );

@@ -8,6 +8,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 #pragma warning disable IDE0051 // Remove unused private members
@@ -291,7 +292,7 @@ public class FullServiceTests
     }
 
     [Test]
-    public void code_generation_is_so_easy_on_real_objects()
+    public async Task code_generation_is_so_easy_on_real_objects_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
@@ -300,7 +301,7 @@ public class FullServiceTests
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
-            var map = configuration.Run().LoadMap();
+            var map = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
 
             using var auto = map.CreateAutomaticServices( startupServices: startupServices );
 
@@ -327,14 +328,14 @@ public class FullServiceTests
     }
 
     [Test]
-    public void code_generation_is_also_easy_on_services()
+    public async Task code_generation_is_also_easy_on_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ServiceCanTalk ) );
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Services.GetRequiredService<ServiceCanTalk>()
                 .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
@@ -345,7 +346,7 @@ public class FullServiceTests
     }
 
     [Test]
-    public void Service_implemented_by_a_real_object_can_be_overridden()
+    public async Task Service_implemented_by_a_real_object_can_be_overridden_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
@@ -355,7 +356,7 @@ public class FullServiceTests
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
-            using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             // We are using here the ScopedImplementation.
             var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
             s.DoSomething( TestHelper.Monitor );
@@ -373,7 +374,7 @@ public class FullServiceTests
     }
 
     [Test]
-    public void Initially_registered_StartupServices_may_be_used_as_configurator_or_options()
+    public async Task Initially_registered_StartupServices_may_be_used_as_configurator_or_options_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
@@ -383,7 +384,7 @@ public class FullServiceTests
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
-            using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             // We are using here the ScopedImplementation.
             var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
             s.Should().BeOfType<ScopedImplementation>();
@@ -397,7 +398,7 @@ public class FullServiceTests
     }
 
     [Test]
-    public void superseding_a_IRealObject_implemented_service_by_a_wrapper()
+    public async Task superseding_a_IRealObject_implemented_service_by_a_wrapper_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
@@ -407,7 +408,7 @@ public class FullServiceTests
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
-            using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
             auto.ServiceCollection.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
 
@@ -419,7 +420,7 @@ public class FullServiceTests
     }
 
     [Test]
-    public void superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object()
+    public async Task superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( BDependency ), typeof( A ), typeof( B ) );
@@ -429,7 +430,7 @@ public class FullServiceTests
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
-            using var auto = configuration.Run().LoadMap().CreateAutomaticServices( startupServices: startupServices );
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
             entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
@@ -440,7 +441,7 @@ public class FullServiceTests
     }
 
     [Test]
-    public void any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false()
+    public async Task any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
@@ -450,8 +451,8 @@ public class FullServiceTests
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Invalid, 1000 ) )
         {
-            configuration.GetFailedAutomaticServices( "But SuperStartupService has been told to fail miserably.",
-                                                                   startupServices: startupServices );
+            await configuration.GetFailedAutomaticServicesAsync( "But SuperStartupService has been told to fail miserably.",
+                                                                 startupServices: startupServices );
 
             entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." && e.MaskedLevel == LogLevel.Info );
         }
@@ -469,16 +470,15 @@ public class FullServiceTests
     }
 
     [Test]
-    public void ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime()
+    public async Task ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime_Async()
     {
-        using var _ = TestHelper.Monitor.OpenInfo( nameof( ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime ) );
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ServiceWithValueTypeCtorParameters ) );
 
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn, 1000 ) )
             {
-                using var auto = configuration.Run().CreateAutomaticServices();
+                using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
                 auto.Services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
 
                 entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
@@ -488,7 +488,7 @@ public class FullServiceTests
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+                using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
                 {
                     services.AddSingleton( typeof( bool ), true );
 
@@ -516,19 +516,19 @@ public class FullServiceTests
     }
 
     [Test]
-    public void varying_params_requires_an_explicit_registration_in_the_DI_container_at_runtime()
+    public async Task varying_params_requires_an_explicit_registration_in_the_DI_container_at_runtime_Async()
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
-            using var auto = configuration.Run().CreateAutomaticServices();
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
-            using var auto = configuration.Run().CreateAutomaticServices( configureServices: services =>
+            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
             {
                 services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
 
@@ -547,11 +547,11 @@ public class FullServiceTests
     }
 
     [Test]
-    public void ValueType_ctor_parameters_with_default_value_are_ignored()
+    public async Task ValueType_ctor_parameters_with_default_value_are_ignored_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
     }

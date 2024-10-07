@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests;
@@ -43,11 +44,11 @@ public partial class WriteReadAnyTests
     }
 
     [Test]
-    public void ReadAnyJson_tests()
+    public async Task ReadAnyJson_tests_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -331,7 +332,7 @@ public partial class WriteReadAnyTests
 
 
     [TestCase( new int[] { 1, 3712, 42, -1, 57 } )]
-    public void roundtrip_and_write_read_any_big( int[] seeds )
+    public async Task roundtrip_and_write_read_any_big_Async( int[] seeds )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
@@ -348,7 +349,7 @@ public partial class WriteReadAnyTests
                                         typeof( IDispatchMission ),
                                         typeof( ISimpleMission ),
                                         typeof( IPickingMission ) );
-        using var auto = configuration.Run().CreateAutomaticServices();
+        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
