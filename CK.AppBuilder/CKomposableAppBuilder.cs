@@ -67,10 +67,43 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
 
     /// <summary>
     /// Shell method that handles the run of a setup from a ".App" to its ".Host" project.
+    /// The configuration is provided from the CKSetup.xml.
     /// </summary>
-    /// <param name="configure">Optional code that can configure the <see cref="EngineConfiguration"/>.</param>
     /// <returns>The standard main result (0 on success, non zero on error).</returns>
-    public static async Task<int> RunAsync( Action<IActivityMonitor, ICKomposableAppBuilder>? configure = null )
+    public static Task<int> RunAsync()
+    {
+        return DoRunAsync( null );
+    }
+
+    /// <summary>
+    /// Shell method that handles the run of a setup from a ".App" to its ".Host" project.
+    /// <para>
+    /// The <paramref name="configure"/> can alter the CKSetup.xml (if it exists).
+    /// </para>
+    /// </summary>
+    /// <param name="configure">Configure the <see cref="EngineConfiguration"/>.</param>
+    /// <returns>The standard main result (0 on success, non zero on error).</returns>
+    public static Task<int> RunAsync( Action<IActivityMonitor, ICKomposableAppBuilder> configure )
+    {
+        Throw.CheckNotNullArgument( configure );
+        return DoRunAsync( configure );
+    }
+
+    /// <summary>
+    /// Shell method that handles the run of a setup from a ".App" to its ".Host" project.
+    /// <para>
+    /// The <paramref name="configure"/> can alter the CKSetup.xml (if it exists).
+    /// </para>
+    /// </summary>
+    /// <param name="configure">Configure the <see cref="EngineConfiguration"/>.</param>
+    /// <returns>The standard main result (0 on success, non zero on error).</returns>
+    public static Task<int> RunAsync( Func<IActivityMonitor, ICKomposableAppBuilder, Task> configure )
+    {
+        Throw.CheckNotNullArgument( configure );
+        return DoRunAsync( configure );
+    }
+
+    static async Task<int> DoRunAsync( object? configure = null )
     {
         NormalizedPath appContext = AppContext.BaseDirectory;
         var builderFolder = appContext.RemoveLastPart( 2 );
@@ -103,7 +136,14 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                 configuration = new EngineConfiguration() { BasePath = builderFolder };
             }
             var b = new CKomposableAppBuilder( parentPath, monitor, msBuildOutputPath, applicationName, builderFolder, configuration );
-            configure?.Invoke( monitor, b );
+            if( configure is Func<IActivityMonitor, ICKomposableAppBuilder, Task> a )
+            {
+                await a.Invoke( monitor, b ).ConfigureAwait( false );
+            }
+            else if( configure is Action<IActivityMonitor, ICKomposableAppBuilder> s )
+            {
+                s.Invoke( monitor, b );
+            }
             var engineResult = await b.EngineConfiguration.RunAsync( monitor ).ConfigureAwait( false );
             return engineResult != null && engineResult.Status != RunStatus.Failed ? 0 : 1;
         }
