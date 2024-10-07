@@ -3,6 +3,7 @@ using CK.Monitoring;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CK.Setup;
 
@@ -70,7 +71,7 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
     /// </summary>
     /// <param name="configure">Optional code that can configure the <see cref="EngineConfiguration"/>.</param>
     /// <returns>The standard main result (0 on success, non zero on error).</returns>
-    public static int Run( Action<IActivityMonitor, ICKomposableAppBuilder>? configure = null )
+    public static async Task<int> RunAsync( Action<IActivityMonitor, ICKomposableAppBuilder>? configure = null )
     {
         NormalizedPath appContext = AppContext.BaseDirectory;
         var builderFolder = appContext.RemoveLastPart( 2 );
@@ -115,7 +116,8 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
         finally
         {
             monitor.MonitorEnd();
-            GrandOutput.Default?.Dispose();
+            var d = GrandOutput.Default;
+            if( d != null ) await d.DisposeAsync().ConfigureAwait( false );
             NormalizedPath lastLog = Directory.EnumerateFiles( rootLogPath.AppendPart( "Text" ) ).OrderBy( f => File.GetLastWriteTimeUtc( f ) ).LastOrDefault();
             if( !lastLog.IsEmptyPath )
             {
