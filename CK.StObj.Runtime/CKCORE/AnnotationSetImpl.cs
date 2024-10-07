@@ -27,8 +27,7 @@ public struct AnnotationSetImpl : IAnnotationSet
         if( annotation == null ) throw new ArgumentNullException( nameof( annotation ) );
         if( _a == null )
         {
-            _a = annotation is object[]
-                    ? new object?[] { annotation }
+            _a = annotation is object[]? new object?[] { annotation }
                     : annotation;
         }
         else

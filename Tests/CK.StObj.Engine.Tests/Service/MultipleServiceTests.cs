@@ -26,7 +26,7 @@ public class MultipleServiceTests
     public void simple_Multiple_services_discovery()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( S1 ), typeof( S2 ));
+        configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         auto.Map.Services.Mappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
@@ -90,11 +90,11 @@ public class MultipleServiceTests
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( MayWork ));
+            configuration.FirstBinPath.Types.Add( typeof( MayWork ) );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-               using var auto = configuration.Run().CreateAutomaticServices();
+                using var auto = configuration.Run().CreateAutomaticServices();
                 var resolved = auto.Services.GetRequiredService<MayWork>();
                 resolved.Ints.Should().BeEmpty();
 
@@ -104,7 +104,7 @@ public class MultipleServiceTests
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( MayWork ));
+            configuration.FirstBinPath.Types.Add( typeof( MayWork ) );
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
@@ -159,7 +159,7 @@ public class MultipleServiceTests
         }
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( UserGoogle ), typeof( UserOffice ));
+        configuration.FirstBinPath.Types.Add( typeof( UserGoogle ), typeof( UserOffice ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         auto.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
@@ -190,7 +190,7 @@ public class MultipleServiceTests
     public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces_on_RealObjects_and_is_Singleton()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ));
+        configuration.FirstBinPath.Types.Add( typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         auto.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
@@ -247,7 +247,7 @@ public class MultipleServiceTests
 
             using var auto = config.Run().CreateAutomaticServices( configureServices: services =>
             {
-                services.AddSingleton<IOfficialHostedService,HNot>();
+                services.AddSingleton<IOfficialHostedService, HNot>();
             } );
 
             auto.Map.Services.Mappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );

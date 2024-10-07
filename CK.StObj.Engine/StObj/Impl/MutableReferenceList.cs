@@ -37,7 +37,7 @@ internal class MutableReferenceList : List<MutableReference>, IStObjMutableRefer
         return m != null ? IndexOf( m ) : Int32.MinValue;
     }
 
-    IStObjMutableReference IReadOnlyList<IStObjMutableReference>.this[int index] => this[index]; 
+    IStObjMutableReference IReadOnlyList<IStObjMutableReference>.this[int index] => this[index];
 
     IEnumerator<IStObjMutableReference> IEnumerable<IStObjMutableReference>.GetEnumerator() => GetEnumerator();
 

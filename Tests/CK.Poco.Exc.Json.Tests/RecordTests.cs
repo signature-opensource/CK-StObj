@@ -47,13 +47,13 @@ public class RecordTests
     public void simple_nullable_tuple_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithNullableRecord>>();
-        var o = f.Create( o => { o.Hop = new Thing("Hip", 42); } );
+        var o = f.Create( o => { o.Hop = new Thing( "Hip", 42 ); } );
         o.ToString().Should().Be( @"{""Hop"":{""Name"":""Hip"",""Count"":42}}" );
 
         var o2 = JsonTestHelper.Roundtrip( directory, o );

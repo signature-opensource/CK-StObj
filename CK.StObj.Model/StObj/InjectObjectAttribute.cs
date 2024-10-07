@@ -23,7 +23,7 @@ public class InjectObjectAttribute : Attribute, Setup.IAmbientPropertyOrInjectOb
         set { _isOptional = value; }
     }
 
-    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsOptionalDefined => _isOptional.HasValue; 
+    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsOptionalDefined => _isOptional.HasValue;
 
-    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsAmbientProperty => false; 
+    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsAmbientProperty => false;
 }

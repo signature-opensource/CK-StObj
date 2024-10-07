@@ -13,7 +13,7 @@ internal class MutableParameter : MutableReferenceWithValue, IStObjMutableParame
 
     internal MutableParameter( MutableItem owner, ParameterInfo param, bool isContainer )
         : base( owner, isContainer
-                        ? StObjMutableReferenceKind.ConstructParameter|StObjMutableReferenceKind.Container
+                        ? StObjMutableReferenceKind.ConstructParameter | StObjMutableReferenceKind.Container
                         : StObjMutableReferenceKind.ConstructParameter )
     {
         _param = param;
@@ -47,7 +47,7 @@ internal class MutableParameter : MutableReferenceWithValue, IStObjMutableParame
 
     public override string ToString()
     {
-        string s = $"{StObjContextRoot.ConstructMethodName} parameter '{Name}' (n°{Index+1}) for '{Owner}'";
+        string s = $"{StObjContextRoot.ConstructMethodName} parameter '{Name}' (n°{Index + 1}) for '{Owner}'";
         if( (Kind & StObjMutableReferenceKind.Container) != 0 ) s += " (Container)";
         return s;
     }
@@ -57,5 +57,5 @@ internal class MutableParameter : MutableReferenceWithValue, IStObjMutableParame
         Value = value;
     }
 
-    IStObjResult IStObjFinalParameter.Owner => Owner; 
+    IStObjResult IStObjFinalParameter.Owner => Owner;
 }

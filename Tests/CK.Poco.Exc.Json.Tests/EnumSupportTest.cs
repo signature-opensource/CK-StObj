@@ -13,7 +13,7 @@ namespace CK.Poco.Exc.Json.Tests;
 [TestFixture]
 public class EnumSupportTest
 {
-    [ExternalName("WorkingCode")]
+    [ExternalName( "WorkingCode" )]
     public enum Code
     {
         None,
@@ -48,7 +48,7 @@ public class EnumSupportTest
     public void enum_serialization_roundtrip()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( ITest ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ITest ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -69,7 +69,7 @@ public class EnumSupportTest
         o2.Result.Should().Be( Code.None );
     }
 
-    [ExternalName("ULCode")]
+    [ExternalName( "ULCode" )]
     public enum CodeOnULong : ulong
     {
         None,
@@ -88,7 +88,7 @@ public class EnumSupportTest
     public void enum_serialization_with_ulong_underlying_type()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithULong ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithULong ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -115,7 +115,7 @@ public class EnumSupportTest
     public void enum_serialization_in_list()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithList ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithList ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

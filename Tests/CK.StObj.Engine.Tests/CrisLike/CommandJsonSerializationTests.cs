@@ -61,7 +61,7 @@ public class CommandJsonSerializationTests
                                         typeof( ICriticalCommand ),
                                         typeof( IDeviceCommand ),
                                         typeof( IFullAuthCommand ),
-                                        typeof( IFullAuthCommandWithResult ));
+                                        typeof( IFullAuthCommandWithResult ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var services = auto.Services;

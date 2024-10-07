@@ -138,7 +138,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                             .NewLine();
             }
             _rootCtor.Append( $"_multipleMappings = new Dictionary<Type, IStObjMultipleInterface>({engineMap.MultipleMappings.Count});" ).NewLine();
-            foreach( var (t,m) in engineMap.MultipleMappings )
+            foreach( var (t, m) in engineMap.MultipleMappings )
             {
                 _rootCtor.Append( "_multipleMappings.Add(" ).AppendTypeOf( t )
                          .Append( ", new GMultiple( " )
@@ -173,7 +173,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                  .Append( "object[] registerParam = new object[]{ register.Monitor, register.StartupServices };" ).NewLine();
 
         // Calls the RegisterStartupServices methods.
-        foreach( MutableItem m in orderedStObjs ) 
+        foreach( MutableItem m in orderedStObjs )
         {
             foreach( var reg in m.RealObjectType.AllRegisterStartupServices )
             {

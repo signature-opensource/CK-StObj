@@ -726,7 +726,7 @@ public class ConfigurationTests
         b1.Assemblies.Should().BeEquivalentTo( "An.Assembly.Name", "Another.Assembly" );
 
         b1.Types.Should().HaveCount( 3 );
-        var t1 = b1.Types.Single( tc => tc.Type == typeof(IActivityMonitor) );
+        var t1 = b1.Types.Single( tc => tc.Type == typeof( IActivityMonitor ) );
         t1.Kind.Should().Be( ConfigurableAutoServiceKind.IsScoped );
         var t2 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
         t2.Kind.Should().Be( ConfigurableAutoServiceKind.IsMultipleService | ConfigurableAutoServiceKind.IsSingleton );

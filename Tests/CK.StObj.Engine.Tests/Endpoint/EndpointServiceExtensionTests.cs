@@ -105,8 +105,8 @@ public class EndpointServiceExtensionTests
     public void specialized_Ambient_services_that_are_AutoServices_can_share_the_SpecDefaultProvider()
     {
         TestHelper.GetSuccessfulCollectorResult( [typeof( SpecAutoAmbientThing ),
-                                                  typeof( AutoAmbientThing ),
-                                                  typeof( SpecAutoAmbientThingProvider )] );
+            typeof( AutoAmbientThing ),
+            typeof( SpecAutoAmbientThingProvider )] );
     }
 
 

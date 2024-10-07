@@ -35,7 +35,7 @@ sealed class AnonymousRecordWriter : JsonCodeWriter
         {
             if( writers.NameMap.TypeSet.Contains( f.Type ) )
             {
-                writers.GetWriter( f.Type ).GenerateWrite( exporterType, f.Type, $"v.Item{f.Index + 1}");
+                writers.GetWriter( f.Type ).GenerateWrite( exporterType, f.Type, $"v.Item{f.Index + 1}" );
             }
         }
         exporterType.Append( "w.WriteEndArray();" ).NewLine()

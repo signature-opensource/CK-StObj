@@ -16,10 +16,10 @@ public class ObjectBLevel2 : ObjectBLevel1, IAbstractionBOnLevel2
 {
     IAbstractionALevel3? _a3;
 
-    void StObjConstruct( [Container]PackageForABLevel1 package, IAbstractionALevel3 a3 )
+    void StObjConstruct( [Container] PackageForABLevel1 package, IAbstractionALevel3 a3 )
     {
         Assert.That( ConstructCount, Is.EqualTo( 2 ), "ObjectB, ObjectBLevel1 construct have been called." );
-        Assert.That( a3.ConstructCount, Is.GreaterThanOrEqualTo( 4 ), "ObjectA, ObjectALevel1, ObjectALevel2 and ObjectALevel3.StObjConstruct have been called.");
+        Assert.That( a3.ConstructCount, Is.GreaterThanOrEqualTo( 4 ), "ObjectA, ObjectALevel1, ObjectALevel2 and ObjectALevel3.StObjConstruct have been called." );
 
         SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
         a3.MethofOfALevel3();

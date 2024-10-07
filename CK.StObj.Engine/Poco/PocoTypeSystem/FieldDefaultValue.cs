@@ -59,7 +59,7 @@ sealed class FieldDefaultValue : IPocoFieldDefaultValue
         if( a == null ) return null;
         var value = a.Value;
         if( value == null ) return null;
-        if( ReferenceEquals( value, String.Empty ) ) return StringDefault; 
+        if( ReferenceEquals( value, String.Empty ) ) return StringDefault;
         return new FieldDefaultValue( value, WriteSourceValue( value, sbPool ) );
     }
 

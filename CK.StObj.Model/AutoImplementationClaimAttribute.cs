@@ -11,7 +11,7 @@ namespace CK.Core;
 /// can be created anywhere: as long as the name is "AutoImplementationClaimAttribute" (regardless of the namespace), it will be honored.
 /// </para>
 /// </summary>
-[AttributeUsage( AttributeTargets.Class|AttributeTargets.Method|AttributeTargets.Property|AttributeTargets.Event, AllowMultiple = false, Inherited = false )]
+[AttributeUsage( AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event, AllowMultiple = false, Inherited = false )]
 public sealed class AutoImplementationClaimAttribute : Attribute
 {
 }

@@ -134,7 +134,7 @@ partial class MutableItem
                     source.RealObjectType.Type.Name, c.Name, c.Type.Name,
                     sourceName,
                     RealObjectType.Type.Name );
-                monitor.Warn( msg ); 
+                monitor.Warn( msg );
             }
             if( doSetOrMerge )
             {

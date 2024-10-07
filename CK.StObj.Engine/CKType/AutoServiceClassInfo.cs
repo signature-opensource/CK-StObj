@@ -161,7 +161,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     /// Gets the final service kind.
     /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
     /// </summary>
-    public AutoServiceKind? FinalTypeKind  => _serviceKind;
+    public AutoServiceKind? FinalTypeKind => _serviceKind;
 
     /// <summary>
     /// Gets the multiple interfaces that are marked with <see cref="CKTypeKind.IsMultipleService"/>
@@ -681,7 +681,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     }
 
     readonly ref struct CtorParameterData
-     {
+    {
         public readonly bool Success;
         public readonly AutoServiceClassInfo? Class;
         public readonly AutoServiceInterfaceInfo? Interface;
@@ -714,7 +714,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                 isEnumerable = true;
                 tParam = tParam.GetGenericArguments()[0];
             }
-            else 
+            else
             {
                 var genKind = collector.KindDetector.GetValidKind( monitor, tGen );
                 if( genKind != CKTypeKind.None )

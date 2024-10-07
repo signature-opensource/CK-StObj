@@ -38,7 +38,7 @@ public sealed class PocoTypeRawSet : IReadOnlyPocoTypeSet, ILightPocoTypeSet
     /// </summary>
     /// <param name="typeSystem">The type system that defines the types manipulated by this set.</param>
     /// <param name="filter">The filter to apply to fill the set.</param>
-    public PocoTypeRawSet( IPocoTypeSystem typeSystem, Func<IPocoType,bool> filter )
+    public PocoTypeRawSet( IPocoTypeSystem typeSystem, Func<IPocoType, bool> filter )
         : this( typeSystem, false )
     {
         Throw.CheckNotNullArgument( filter );
@@ -228,7 +228,7 @@ public sealed class PocoTypeRawSet : IReadOnlyPocoTypeSet, ILightPocoTypeSet
         }
         for( ; i < count; i++ )
         {
-            var l = tA[ i ];
+            var l = tA[i];
             var r = l | oA[i];
             if( l != r ) return false;
         }

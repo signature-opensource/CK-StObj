@@ -13,7 +13,7 @@ public interface IBasicRefPocoType : IPocoType
     /// Gets the base type. This is null when this type specializes <see cref="object"/>.
     /// This is nullable if <see cref="IPocoType.IsNullable"/> is true.
     /// </summary>
-    IBasicRefPocoType? BaseType {  get; }
+    IBasicRefPocoType? BaseType { get; }
 
     /// <summary>
     /// Gets the base types chain up to the one that specializes <c>object</c>.

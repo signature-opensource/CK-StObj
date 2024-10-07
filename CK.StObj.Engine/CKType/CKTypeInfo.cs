@@ -70,7 +70,7 @@ public class CKTypeInfo
                 // See the Composite below. This flattens the members and their attributes
                 // on the type from the outside instead of handling this inside the TypeAttributesCache.
                 var tUp = t;
-                while( tUp.BaseType != null && tUp.BaseType != typeof(object) )
+                while( tUp.BaseType != null && tUp.BaseType != typeof( object ) )
                 {
                     _attributes = new Composite( _attributes, new TypeAttributesCache( monitor, tUp.BaseType, services, alsoRegister ) );
                     tUp = tUp.BaseType;

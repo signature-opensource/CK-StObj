@@ -22,7 +22,7 @@ public class DifferentKindOfProperties
     {
         [StObjProperty]
         [AmbientProperty]
-        public ObjA? TwoAttributes { get; set; } 
+        public ObjA? TwoAttributes { get; set; }
     }
 
     public class ObjSpecA : ObjA
@@ -31,7 +31,7 @@ public class DifferentKindOfProperties
         public new ObjB? NoProblem { get; set; }
     }
 
-    [StObjProperty( PropertyName = "NoProblem", PropertyType = typeof(object) )]
+    [StObjProperty( PropertyName = "NoProblem", PropertyType = typeof( object ) )]
     public class ObjSpecA2 : ObjA
     {
     }
@@ -62,7 +62,7 @@ public class DifferentKindOfProperties
     {
     }
 
-    [StObjProperty( PropertyName = "Albert", PropertyType = typeof(object) )]
+    [StObjProperty( PropertyName = "Albert", PropertyType = typeof( object ) )]
     public class DuplicateStObjProperty : IRealObject
     {
         [StObjProperty]
@@ -126,7 +126,7 @@ public class DifferentKindOfProperties
     public class CB3 : CB2
     {
         [InjectObject]
-        public new CA3 A 
+        public new CA3 A
         {
             get { return (CA3)base.A; }
             set

@@ -108,7 +108,7 @@ public abstract class ExportCodeWriterMap
     /// <param name="type">One of the type that can be handled by the keyed writer.</param>
     /// <param name="factory">Factory methid that will be called for the first missing key.</param>
     /// <returns>The writer.</returns>
-    public ExportCodeWriter GetWriter( object key, IPocoType type, Func<object,IPocoType,ExportCodeWriter> factory )
+    public ExportCodeWriter GetWriter( object key, IPocoType type, Func<object, IPocoType, ExportCodeWriter> factory )
     {
         Throw.CheckNotNullArgument( key );
         ExportCodeWriter? w;

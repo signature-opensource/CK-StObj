@@ -118,7 +118,7 @@ public class PocoTests
     public void poco_property_supports_DefaultValueAttribute_from_System_ComponentModel()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IDefTest ));
+        configuration.FirstBinPath.Types.Add( typeof( IDefTest ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IDefTest>>();
@@ -213,7 +213,7 @@ public class PocoTests
 
     public interface IInvalidDefaultValue4 : IPoco
     {
-        [DefaultValue( typeof(DateTime), "2021-01-31" )]
+        [DefaultValue( typeof( DateTime ), "2021-01-31" )]
         int Auto { get; }
     }
 
@@ -271,27 +271,27 @@ public class PocoTests
     {
         {
             TestHelper.GetSuccessfulCollectorResult( [typeof( IRootTest ),
-                                                      typeof( ISubTest ),
-                                                      typeof( IRootBestTest ),
-                                                      typeof( ISubBestTest )] );
+                typeof( ISubTest ),
+                typeof( IRootBestTest ),
+                typeof( ISubBestTest )] );
         }
 
         {
             TestHelper.GetSuccessfulCollectorResult( [typeof( IRootTest ),
-                                                      typeof( ISubTest ),
-                                                      typeof( IRootBestTest ),
-                                                      typeof( ISubBestTest ),
-                                                      typeof( IRootAbsoluteBestTest )] );
+                typeof( ISubTest ),
+                typeof( IRootBestTest ),
+                typeof( ISubBestTest ),
+                typeof( IRootAbsoluteBestTest )] );
         }
 
         // Without registering the IDefBase Poco:
         {
             TestHelper.GetFailedCollectorResult( [typeof( IRootTest ),
-                                                  typeof( ISubTest ),
-                                                  typeof( IRootBestTest ),
-                                                  typeof( ISubBestTest ),
-                                                  typeof( IRootAbsoluteBestTest ),
-                                                  typeof( IRootBuggyOtherFamily )],
+                typeof( ISubTest ),
+                typeof( IRootBestTest ),
+                typeof( ISubBestTest ),
+                typeof( IRootAbsoluteBestTest ),
+                typeof( IRootBuggyOtherFamily )],
                 $"Property type conflict between:{Environment.NewLine}" +
                 $"PocoTests.IDefBase CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub{Environment.NewLine}" +
                 $"And:{Environment.NewLine}" +
@@ -301,12 +301,12 @@ public class PocoTests
         // With IDefBase Poco registration:
         {
             TestHelper.GetFailedCollectorResult( [typeof( IRootTest ),
-                                                  typeof( ISubTest ),
-                                                  typeof( IRootBestTest ),
-                                                  typeof( ISubBestTest ),
-                                                  typeof( IRootAbsoluteBestTest ),
-                                                  typeof( IRootBuggyOtherFamily ),
-                                                  typeof( IDefBase )],
+                typeof( ISubTest ),
+                typeof( IRootBestTest ),
+                typeof( ISubBestTest ),
+                typeof( IRootAbsoluteBestTest ),
+                typeof( IRootBuggyOtherFamily ),
+                typeof( IDefBase )],
                 $"Property type conflict between:{Environment.NewLine}" +
                 $"PocoTests.IDefBase CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub{Environment.NewLine}" +
                 $"And:{Environment.NewLine}" +
@@ -344,7 +344,7 @@ public class PocoTests
     public void Poco_properties_can_carry_context_bound_attributes()
     {
         TestHelper.GetSuccessfulCollectorResult( [typeof( ISome )] );
-        SpecialAttributeImpl.GotType.Should().Be( typeof(ISome ) );
+        SpecialAttributeImpl.GotType.Should().Be( typeof( ISome ) );
         SpecialAttributeImpl.GotProperty.Name.Should().Be( "Prop" );
     }
 

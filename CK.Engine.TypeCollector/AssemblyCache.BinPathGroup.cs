@@ -179,7 +179,7 @@ public sealed partial class AssemblyCache
             _systemSkipped.Clear();
             if( !_success ) return false;
 
-            using var _ = monitor.OpenInfo( $"Collecting types from head PFeatures: '{_heads.Keys.Select( a => a.Name).Concatenate("', '")}'." );
+            using var _ = monitor.OpenInfo( $"Collecting types from head PFeatures: '{_heads.Keys.Select( a => a.Name ).Concatenate( "', '" )}'." );
             using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
             hasher.Append( _path.Path );
 

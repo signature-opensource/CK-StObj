@@ -6,7 +6,7 @@ namespace CK.Core;
 /// <summary>
 /// Unifies <see cref="IStObjFinalImplementation"/> and <see cref="IStObjServiceClassDescriptor"/>.
 /// </summary>
-public interface IStObjFinalClass 
+public interface IStObjFinalClass
 {
     /// <summary>
     /// Gets the class type of the most specialized type.

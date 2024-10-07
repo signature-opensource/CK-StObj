@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Service
     }
 
     [TestFixture]
-    public class ServiceTests 
+    public class ServiceTests
     {
         public interface ISampleService : IAutoService
         {
@@ -195,7 +195,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void service_can_be_implemented_by_RealObjects()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( ODep ), typeof( OBase ));
+            configuration.FirstBinPath.Types.Add( typeof( ODep ), typeof( OBase ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var oDep = auto.Services.GetRequiredService<ODep>();
@@ -309,7 +309,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void StObjGen_attribute_excludes_the_type()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( SampleServiceGenerated ), typeof( SampleService ));
+            configuration.FirstBinPath.Types.Add( typeof( SampleServiceGenerated ), typeof( SampleService ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             auto.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();

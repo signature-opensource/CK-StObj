@@ -40,6 +40,6 @@ public abstract class DIContainerDefinition<TScopeData> : DIContainerDefinition
     /// <param name="scopeData">Accessor to the current scoped data.</param>
     /// <param name="globalServiceExists">Provides a way to detect if a service is available.</param>
     public abstract void ConfigureContainerServices( IServiceCollection services,
-                                                    Func<IServiceProvider,TScopeData> scopeData,     
+                                                    Func<IServiceProvider, TScopeData> scopeData,
                                                     IServiceProviderIsService globalServiceExists );
 }

@@ -20,7 +20,7 @@ namespace CK.StObj.Engine.Tests.Poco
     {
         IList<(int Power, string Name)> Values { get; }
 
-        [DefaultValue(3712)]
+        [DefaultValue( 3712 )]
         int Power { get; set; }
     }
 
@@ -35,7 +35,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( IPocoFromBase ));
+            configuration.FirstBinPath.Types.Add( typeof( IPocoFromBase ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();

@@ -98,7 +98,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
         {
             // When IsModel was used the assembly was analyzed :-(.
             if( (foundLegacy & 2) != 0 ) found = 2;
-            else if( (foundLegacy & (1|4)) != 0 ) found = 1;
+            else if( (foundLegacy & (1 | 4)) != 0 ) found = 1;
         }
         var k = found switch { 1 => AssemblyKind.PFeature, 2 => AssemblyKind.Engine, 4 => AssemblyKind.PFeatureDefiner, _ => AssemblyKind.None };
         if( excluded ) k |= AssemblyKind.Excluded;

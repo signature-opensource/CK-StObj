@@ -172,7 +172,7 @@ sealed partial class PocoTypeSystem : IPocoTypeSetManager
                           bool allowEmptyRecords,
                           bool allowEmptyPocos,
                           bool autoIncludeCollections,
-                          Func<IPocoType,bool> lowLevelFilter )
+                          Func<IPocoType, bool> lowLevelFilter )
         {
             _raw = raw;
             _autoIncludeCollections = autoIncludeCollections;
@@ -333,7 +333,7 @@ sealed partial class PocoTypeSystem : IPocoTypeSetManager
         return new TypeSet( workingSet, allowEmptyRecords, allowEmptyPocos, autoIncludeCollections, lowLevelFilter );
     }
 
-    [Conditional("DEBUG")]
+    [Conditional( "DEBUG" )]
     static void CheckTypeSetRules( IPocoTypeSet set )
     {
         foreach( var t in set.NonNullableTypes )

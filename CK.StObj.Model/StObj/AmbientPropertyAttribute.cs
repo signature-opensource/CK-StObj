@@ -47,9 +47,9 @@ public class AmbientPropertyAttribute : Attribute, Setup.IAmbientPropertyOrInjec
     /// <summary>
     /// Gets whether <see cref="ResolutionSource"/> has been set.
     /// </summary>
-    public bool IsResolutionSourceDefined => _source.HasValue; 
+    public bool IsResolutionSourceDefined => _source.HasValue;
 
-    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsOptionalDefined => _isOptional.HasValue; 
+    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsOptionalDefined => _isOptional.HasValue;
 
-    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsAmbientProperty =>  true; 
+    bool Setup.IAmbientPropertyOrInjectObjectAttribute.IsAmbientProperty => true;
 }

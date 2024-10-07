@@ -239,7 +239,7 @@ public partial class StObjCollector
 
     void SafeTypesHandler( IActivityMonitor monitor,
                            IEnumerable<Type> types,
-                           Action<IActivityMonitor,CKTypeCollector,Type> a,
+                           Action<IActivityMonitor, CKTypeCollector, Type> a,
                            bool defineExternalCall = true )
     {
         Debug.Assert( types != null );
@@ -368,7 +368,7 @@ public partial class StObjCollector
                     }
                 }
             }
-            if( error ) return (typeResult, null, null); 
+            if( error ) return (typeResult, null, null);
 
             StObjObjectEngineMap engineMap = typeResult.RealObjects.EngineMap;
             IDependencySorterResult? sortResult = null;
@@ -408,7 +408,7 @@ public partial class StObjCollector
                                                new DependencySorterOptions()
                                                {
                                                    SkipDependencyToContainer = true,
-                                                   HookInput = _traceDepencySorterInput ? i => i.Trace(monitor) : null,
+                                                   HookInput = _traceDepencySorterInput ? i => i.Trace( monitor ) : null,
                                                    HookOutput = _traceDepencySorterOutput ? i => i.Trace( monitor ) : null,
                                                    ReverseName = RevertOrderingNames
                                                } );
@@ -485,7 +485,7 @@ public partial class StObjCollector
     {
         var concreteClasses = typeResult.ConcreteClasses;
         int nbItems = 0;
-        for( int i = concreteClasses.Count-1; i >= 0; --i )
+        for( int i = concreteClasses.Count - 1; i >= 0; --i )
         {
             var pathTypes = (IReadOnlyList<MutableItem>)concreteClasses[i];
             Debug.Assert( pathTypes.Count > 0, "At least the final concrete class exists." );

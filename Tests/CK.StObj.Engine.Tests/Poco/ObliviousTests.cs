@@ -12,7 +12,7 @@ namespace CK.StObj.Engine.Tests.Poco;
 
 [TestFixture]
 public class ObliviousTests
-{ 
+{
     [ExternalName( "ExternalNameForVerySimplePoco" )]
     public interface IVerySimplePoco : IPoco
     {
@@ -29,10 +29,10 @@ public class ObliviousTests
     public List<int> ListV = null!; // Oblivious
     public List<int?> ListNV = null!; // Oblivious
 
-    public List<object> ListR = null!; 
+    public List<object> ListR = null!;
     public List<object?> ListNR = null!;// Oblivious
 
-    public List<IVerySimplePoco> ListPR = null!; 
+    public List<IVerySimplePoco> ListPR = null!;
     public List<IVerySimplePoco?> ListPNR = null!;// Oblivious
 
     public List<ISecondaryVerySimplePoco> ListSecPR = null!;
@@ -53,8 +53,8 @@ public class ObliviousTests
     public void oblivious_List( bool revert )
     {
         var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IVerySimplePoco ),
-                                                          typeof( ISecondaryVerySimplePoco ),
-                                                          typeof( IProperListDefinition )] );
+            typeof( ISecondaryVerySimplePoco ),
+            typeof( IProperListDefinition )] );
         var ts = r.PocoTypeSystemBuilder;
 
         if( !revert )
@@ -536,7 +536,7 @@ public class ObliviousTests
         if( mode == "ObliviousLast" ) tO = (IRecordPocoType?)ts.FindByType( GetType().GetField( nameof( AnonymousSampleO ) )!.FieldType );
         Debug.Assert( tO != null );
 
-        (tO.IsAnonymous && tO.IsOblivious ).Should().BeTrue();
+        (tO.IsAnonymous && tO.IsOblivious).Should().BeTrue();
         t1.IsOblivious.Should().BeFalse();
         t2.IsOblivious.Should().BeFalse();
         t3.IsOblivious.Should().BeFalse();

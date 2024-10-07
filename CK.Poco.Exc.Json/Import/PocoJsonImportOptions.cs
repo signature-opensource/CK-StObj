@@ -7,7 +7,7 @@ namespace CK.Poco.Exc.Json;
 /// <summary>
 /// Describes dynamic deserialization options.
 /// </summary>
-public sealed class PocoJsonImportOptions : IMCDeserializationOptions 
+public sealed class PocoJsonImportOptions : IMCDeserializationOptions
 {
     /// <summary>
     /// Gets a singleton default option:

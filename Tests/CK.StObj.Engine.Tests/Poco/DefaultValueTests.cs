@@ -18,7 +18,7 @@ public class DefaultValueTests
 {
     public interface IThing : IPoco
     {
-        [DefaultValue(3712)]
+        [DefaultValue( 3712 )]
         int Power { get; set; }
     }
 
@@ -31,7 +31,7 @@ public class DefaultValueTests
     public void default_values_on_simple_field()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IThing ), typeof( IThingHolder ));
+        configuration.FirstBinPath.Types.Add( typeof( IThing ), typeof( IThingHolder ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();

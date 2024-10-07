@@ -25,7 +25,7 @@ public class PocoWithCollectionsTests
     public void readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( ISimpleCollections ));
+        configuration.FirstBinPath.Types.Add( typeof( ISimpleCollections ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();

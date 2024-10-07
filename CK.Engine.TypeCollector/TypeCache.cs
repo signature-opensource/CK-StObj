@@ -42,7 +42,7 @@ public sealed partial class TypeCache
                 }
                 else
                 {
-                    nullableValueType = typeof(Nullable<>).MakeGenericType( type );
+                    nullableValueType = typeof( Nullable<> ).MakeGenericType( type );
                 }
             }
             // Only then can we work on the type.
@@ -57,7 +57,7 @@ public sealed partial class TypeCache
                                      var b = Get( i );
                                      if( maxDepth < b.TypeDepth ) maxDepth = b.TypeDepth;
                                      return b;
-                                 } )   
+                                 } )
                                  .ToImmutableArray();
 
             var tBase = type.BaseType;
@@ -70,7 +70,7 @@ public sealed partial class TypeCache
             }
 
             knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
-            c = new CachedType( this, type, maxDepth+1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );                
+            c = new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );
         }
         return c;
     }

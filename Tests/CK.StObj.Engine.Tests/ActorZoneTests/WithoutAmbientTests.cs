@@ -16,12 +16,12 @@ public class WithoutAmbientTests
     [RealObject( ItemKind = DependentItemKindSpec.Group,
             Children =
             [
-                typeof( BasicPackage ), 
-                typeof( BasicActor ), 
-                typeof( BasicUser ), 
-                typeof( BasicGroup ), 
-                typeof( ZonePackage ), 
-                typeof( ZoneGroup ), 
+                typeof( BasicPackage ),
+                typeof( BasicActor ),
+                typeof( BasicUser ),
+                typeof( BasicGroup ),
+                typeof( ZonePackage ),
+                typeof( ZoneGroup ),
                 typeof( SecurityZone ),
                 typeof( AuthenticationPackage ),
                 typeof( AuthenticationUser )

@@ -93,7 +93,7 @@ sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGeneratorWithFin
         }
 
         var exists = _registeredFilters.FirstOrDefault( f => name.Equals( f.Name, StringComparison.OrdinalIgnoreCase ) );
-        if( exists.Name != null  )
+        if( exists.Name != null )
         {
             if( typeSet != exists.Set )
             {
@@ -109,7 +109,7 @@ sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGeneratorWithFin
 
     bool ICSCodeGeneratorWithFinalization.FinalImplement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
     {
-        Throw.DebugAssert( _pocoDirectory != null && _registeredFilters  != null && _filterPartCount != null );
+        Throw.DebugAssert( _pocoDirectory != null && _registeredFilters != null && _filterPartCount != null );
         _filterPartCount.Append( _registeredFilters.Count );
         var pocoDirectoryCtor = _pocoDirectory.FindOrCreateFunction( "internal PocoDirectory_CK()" );
 

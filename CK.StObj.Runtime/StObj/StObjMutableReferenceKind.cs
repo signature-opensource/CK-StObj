@@ -24,7 +24,7 @@ public enum StObjMutableReferenceKind
     /// Container reference.
     /// </summary>
     Container = 1,
-    
+
     /// <summary>
     /// Requires reference.
     /// </summary>

@@ -45,7 +45,7 @@ public class RecordAnonymousTests
     public void simple_nullable_tuple_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -78,7 +78,7 @@ public class RecordAnonymousTests
     public void IPoco_collections_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithCollections ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -126,7 +126,7 @@ public class RecordAnonymousTests
     public void collections_of_records_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithRecord ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -157,7 +157,7 @@ public class RecordAnonymousTests
     public void collections_of_nullable_records_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -180,24 +180,24 @@ public class RecordAnonymousTests
 
     public interface IWithRecordWithPoco : IPoco
     {
-        IList<(int,IWithRecord)> Recs { get; }
+        IList<(int, IWithRecord)> Recs { get; }
     }
 
     [Test]
     public void collections_of_records_with_Poco_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof(CommonPocoJsonSupport), typeof(IWithRecordWithPoco), typeof(IWithRecord));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithPoco ), typeof( IWithRecord ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var o = directory.Create<IWithRecordWithPoco>();
-        o.Recs.Add((1, directory.Create<IWithRecord>()));
+        o.Recs.Add( (1, directory.Create<IWithRecord>()) );
 
-        o.ToString().Should().Be($$$"""{"Recs":[[1,{"Records":[]}]]}""");
+        o.ToString().Should().Be( $$$"""{"Recs":[[1,{"Records":[]}]]}""" );
 
-        JsonTestHelper.Roundtrip(directory, o);
+        JsonTestHelper.Roundtrip( directory, o );
     }
 
     public interface IWithRecordWithNullablePoco : IPoco
@@ -210,18 +210,18 @@ public class RecordAnonymousTests
     public void collections_of_records_with_nullable_Poco_serialization()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof(CommonPocoJsonSupport), typeof(IWithRecordWithNullablePoco), typeof(IWithRecord));
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithNullablePoco ), typeof( IWithRecord ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var o = directory.Create<IWithRecordWithNullablePoco>();
-        o.Recs.Add((1, directory.Create<IWithRecord>()));
-        o.Recs.Add((2, null));
+        o.Recs.Add( (1, directory.Create<IWithRecord>()) );
+        o.Recs.Add( (2, null) );
 
-        o.ToString().Should().Be($$$"""{"Recs":[[1,{"Records":[]}],[2,null]]}""");
+        o.ToString().Should().Be( $$$"""{"Recs":[[1,{"Records":[]}],[2,null]]}""" );
 
-        JsonTestHelper.Roundtrip(directory, o);
+        JsonTestHelper.Roundtrip( directory, o );
     }
 
 }

@@ -71,7 +71,7 @@ public class SimpleObjectsTests
         var map = TestHelper.GetSuccessfulCollectorResult( types ).EngineMap;
         Debug.Assert( map != null, "No initialization error." );
 
-        IStObjResult oa = map.StObjs.ToHead( typeof(ObjectA) )!;
+        IStObjResult oa = map.StObjs.ToHead( typeof( ObjectA ) )!;
         oa.Container!.ClassType.Should().Be( typeof( PackageForAB ) );
         oa.LeafSpecialization.ClassType.Should().Be( typeof( ObjectALevel3 ) );
 
@@ -189,7 +189,7 @@ public class SimpleObjectsTests
             var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleObjects.LoggerInjection.LoggerInjected )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjResult theObject = map.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) )!;
+            IStObjResult theObject = map.StObjs.ToLeaf( typeof( SimpleObjects.LoggerInjection.LoggerInjected ) )!;
             Assert.That( theObject, Is.Not.Null );
             Assert.That( theObject.FinalImplementation.Implementation, Is.Not.Null.And.InstanceOf<SimpleObjects.LoggerInjection.LoggerInjected>() );
         }
@@ -263,7 +263,7 @@ public class SimpleObjectsTests
     public void StObjConstruct_StObjInitialize_RegisterStartupServices_and_ConfigureServices_of_the_hierarchy_are_called()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ));
+        configuration.FirstBinPath.Types.Add( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         auto.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
@@ -292,7 +292,7 @@ public class SimpleObjectsTests
 
     public class C3InC2SpecializeC1 : C1
     {
-        void StObjConstruct( [Container]C2InC1 c2 )
+        void StObjConstruct( [Container] C2InC1 c2 )
         {
         }
     }

@@ -50,7 +50,7 @@ public class CovarianceHelperTests
         var set = new CovariantHelpers.CovNotNullValueHashSet<int>() { 1, 2, 3 };
         IReadOnlySet<object> nSet = set;
 
-        var empty = new object[] {};
+        var empty = new object[] { };
         var set2 = new object[] { 1, 2, 3 };
         var superSet2 = new object[] { 1, 2, 3, this };
         var subSet2 = new object[] { 1, 2 };
@@ -144,7 +144,7 @@ public class CovarianceHelperTests
         var set = new CovariantHelpers.CovNotNullValueHashSet<int>() { 1, 2, 3 };
         IReadOnlySet<int?> nSet = set;
 
-        var empty = new int?[] {};
+        var empty = new int?[] { };
         var set2 = new int?[] { 1, 2, 3 };
         var superSet2 = new int?[] { 1, 2, 3, null };
         var subSet2 = new int?[] { 1, 2 };

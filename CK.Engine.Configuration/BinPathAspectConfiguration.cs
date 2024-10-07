@@ -68,7 +68,7 @@ public abstract class BinPathAspectConfiguration
     public XElement ToXml()
     {
         var e = new XElement( _name );
-        WriteXml(  e );
+        WriteXml( e );
         return e;
     }
 

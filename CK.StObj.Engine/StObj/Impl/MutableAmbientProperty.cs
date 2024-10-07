@@ -36,18 +36,18 @@ internal class MutableAmbientProperty : MutableReferenceWithValue, IStObjAmbient
         : base( owner, StObjMutableReferenceKind.AmbientProperty )
     {
         _info = null!;
-        Type = typeof(object);
+        Type = typeof( object );
         IsOptional = false;
         _maxSpecializationDepthSet = Int32.MaxValue;
     }
 
-    IStObjMutableItem IStObjAmbientProperty.Owner => Owner; 
+    IStObjMutableItem IStObjAmbientProperty.Owner => Owner;
 
     public override string Name => _info.Name;
 
     internal override string KindName => "AmbientProperty";
 
-    internal override Type UnderlyingType => _info.PropertyType; 
+    internal override Type UnderlyingType => _info.PropertyType;
 
     public override string ToString() => $"Ambient Property '{Name}' of '{Owner.ToString()}'";
 

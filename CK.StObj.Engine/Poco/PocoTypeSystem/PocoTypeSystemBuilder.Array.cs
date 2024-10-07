@@ -26,7 +26,7 @@ public sealed partial class PocoTypeSystemBuilder
     }
 
     IPocoType RegisterArray( Type t, IPocoType tItem, IPocoType? nonSecondaryConcreteCollection )
-    { 
+    {
         var chsarpName = tItem.CSharpName + "[]";
         if( !_typeCache.TryGetValue( chsarpName, out var result ) )
         {

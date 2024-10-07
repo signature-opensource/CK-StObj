@@ -424,7 +424,7 @@ public sealed class StObjEngine
                     }
                     else
                     {
-                        _monitor.Error( errorPath.ToStringPath( elementSeparator: $"{Environment.NewLine}-> ") );
+                        _monitor.Error( errorPath.ToStringPath( elementSeparator: $"{Environment.NewLine}-> " ) );
                     }
                 }
                 // Always runs the aspects Termination.
@@ -505,7 +505,7 @@ public sealed class StObjEngine
                                                         configurator,
                                                         group.SimilarConfigurations.Select( b => b.Name! ) );
             stObjC.RevertOrderingNames = _config.Configuration.RevertOrderingNames;
-            using( _monitor.OpenInfo( group.IsUnifiedPure ? "Registering only IPoco and IRealObjects (Purely Unified BinPath).": "Registering types." ) )
+            using( _monitor.OpenInfo( group.IsUnifiedPure ? "Registering only IPoco and IRealObjects (Purely Unified BinPath)." : "Registering types." ) )
             {
                 // First handles the explicit kind of Types.
                 // These are services: we don't care.

@@ -24,7 +24,7 @@ public class OnHostStartStopTests
     {
         public bool Disposed { get; private set; }
 
-        public void Dispose() => Disposed = true; 
+        public void Dispose() => Disposed = true;
     }
 
     public interface IMailerService : ISingletonAutoService

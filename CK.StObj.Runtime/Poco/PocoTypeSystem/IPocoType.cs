@@ -56,7 +56,7 @@ public interface IPocoType : IAnnotationSet
     /// are not).
     /// </para>
     /// </summary>
-    [MemberNotNullWhen(false,nameof(StructuralFinalType))]
+    [MemberNotNullWhen( false, nameof( StructuralFinalType ) )]
     bool IsPolymorphic { get; }
 
     /// <summary>

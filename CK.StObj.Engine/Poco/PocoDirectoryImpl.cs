@@ -426,7 +426,7 @@ public sealed class PocoDirectoryImpl : CSCodeGeneratorType
                                          ref string actualTypeName,
                                          out string? nonNullableActualTypeNameIfNullable )
     {
-        Throw.DebugAssert( !string.IsNullOrWhiteSpace( actualTypeName  ) );
+        Throw.DebugAssert( !string.IsNullOrWhiteSpace( actualTypeName ) );
         nonNullableActualTypeNameIfNullable = null;
         if( isNullable )
         {

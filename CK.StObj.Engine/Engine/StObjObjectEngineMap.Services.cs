@@ -16,7 +16,7 @@ sealed partial class StObjObjectEngineMap
 
     #region Service to Object mappings.
 
-    readonly Dictionary<Type,MutableItem> _serviceToObjectMap;
+    readonly Dictionary<Type, MutableItem> _serviceToObjectMap;
     readonly List<MutableItem> _serviceRealObjects;
     readonly IReadOnlyDictionary<Type, IStObjFinalImplementation> _serviceToObjectMapExposed;
 
@@ -75,7 +75,7 @@ sealed partial class StObjObjectEngineMap
             return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassDescriptor>( kv.Key, kv.Value ) ).GetEnumerator();
         }
 
-        public bool TryGetValue( Type key, [MaybeNullWhen(false)]out IStObjServiceClassDescriptor value )
+        public bool TryGetValue( Type key, [MaybeNullWhen( false )] out IStObjServiceClassDescriptor value )
         {
             value = null;
             if( !_map.TryGetValue( key, out var c ) ) return false;

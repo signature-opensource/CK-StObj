@@ -195,7 +195,7 @@ public static class CKTypeKindExtension
         }
         if( isAmbient )
         {
-            if( k != AmbientServiceFlags && k != (AmbientServiceFlags|CKTypeKind.IsAutoService) )
+            if( k != AmbientServiceFlags && k != (AmbientServiceFlags | CKTypeKind.IsAutoService) )
             {
                 AddConflict( "an ambient service info can only be a required endpoint and background scoped service (and optionally a IScopedAutoService)." );
             }

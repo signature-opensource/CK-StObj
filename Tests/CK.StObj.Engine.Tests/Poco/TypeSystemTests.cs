@@ -22,7 +22,7 @@ public class TypeSystemTests
     [CKTypeDefiner]
     // This is currently ignored: an AbstractPoco has no use of an ExternalName, its CSharpName is always used.
     // TODO: this should be an error.
-    [ExternalName( "IGNORED" )] 
+    [ExternalName( "IGNORED" )]
     public interface ILinkedListPart : IPoco
     {
         ILinkedListPart? Next { get; set; }
@@ -91,10 +91,10 @@ public class TypeSystemTests
     public void AllTypes_and_identity_test()
     {
         var r = TestHelper.GetSuccessfulCollectorResult( [typeof( ILinkedListPart ),
-                                                          typeof( IPartWithAnonymous ),
-                                                          typeof( IPartWithRecAnonymous ),
-                                                          typeof( IWithList ),
-                                                          typeof( IWithAllBasicTypes )] );
+            typeof( IPartWithAnonymous ),
+            typeof( IPartWithRecAnonymous ),
+            typeof( IWithList ),
+            typeof( IWithAllBasicTypes )] );
         var builder = r.PocoTypeSystemBuilder;
 
         const int basicTypesCount = 26; // See IWithAllBasicTypes.

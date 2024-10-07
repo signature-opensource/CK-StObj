@@ -68,7 +68,7 @@ public class AbstractReadOnlyPropertyTests
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ));
+            configuration.FirstBinPath.Types.Add( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -80,7 +80,7 @@ public class AbstractReadOnlyPropertyTests
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ));
+            configuration.FirstBinPath.Types.Add( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -107,7 +107,7 @@ public class AbstractReadOnlyPropertyTests
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( IWithNullAbstract ));
+            configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -116,7 +116,7 @@ public class AbstractReadOnlyPropertyTests
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ));
+            configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
             using var auto = configuration.Run().CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -202,7 +202,7 @@ public class AbstractReadOnlyPropertyTests
     public void auto_initialized_property_can_be_exposed_as_nullable_properties( Type tAutoProperty, Type tPrimary, Type tExtension )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(tPrimary, tExtension);
+        configuration.FirstBinPath.Types.Add( tPrimary, tExtension );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -238,12 +238,12 @@ public class AbstractReadOnlyPropertyTests
         new IPoco? Auto { get; }
     }
 
-    [TestCase(typeof( IAutoIAbstract1 ) )]
-    [TestCase(typeof( IAutoIAbstract2 ) )]
+    [TestCase( typeof( IAutoIAbstract1 ) )]
+    [TestCase( typeof( IAutoIAbstract2 ) )]
     public void object_abstract_readonly_property_can_be_nullable_AbstractPoco( Type tPrimary )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(tPrimary);
+        configuration.FirstBinPath.Types.Add( tPrimary );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -292,7 +292,7 @@ public class AbstractReadOnlyPropertyTests
     public void abstract_properties_samples()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ));
+        configuration.FirstBinPath.Types.Add( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();

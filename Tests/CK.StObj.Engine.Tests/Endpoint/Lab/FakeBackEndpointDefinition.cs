@@ -37,7 +37,7 @@ abstract class FakeBackDIContainerDefinition : DIContainerDefinition<FakeBackDIC
     // This enables the endpoint to inject new service types or override registrations of existing
     // services registered in the endpoint container.
     public override void ConfigureContainerServices( IServiceCollection services,
-                                                    Func<IServiceProvider,Data> scopeData,
+                                                    Func<IServiceProvider, Data> scopeData,
                                                     IServiceProviderIsService globalServiceExists )
     {
         // When registering a monitor, don't forget to register its ParallelLogger.

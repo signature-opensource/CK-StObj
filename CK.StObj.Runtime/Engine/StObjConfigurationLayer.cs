@@ -21,7 +21,7 @@ public class StObjConfigurationLayer : IStObjTypeFilter, IStObjStructuralConfigu
     /// </summary>
     public StObjConfigurationLayer? Next
     {
-        get  => _next;
+        get => _next;
         internal set => _next = value;
     }
 

@@ -37,7 +37,7 @@ public class DynamicAssembly : IDynamicAssembly
     }
 
     /// <inheritdoc />
-    public Dictionary<object,object?> Memory => _memory;
+    public Dictionary<object, object?> Memory => _memory;
 
     /// <inheritdoc />
     public ModuleBuilder StubModuleBuilder { get; }
@@ -48,4 +48,4 @@ public class DynamicAssembly : IDynamicAssembly
     /// <inheritdoc />
     public string NextUniqueNumber() => (++_typeID).ToString();
 
-} 
+}

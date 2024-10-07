@@ -231,7 +231,7 @@ public class ExtNullabilityInfoTests
         int? v = 5;
 
         o = v;
-        o.GetType().Should().Be( typeof(int) );
+        o.GetType().Should().Be( typeof( int ) );
         v = null;
 
         o = v;

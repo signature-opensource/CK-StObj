@@ -21,7 +21,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
 {
     readonly Dictionary<object, MutableItem> _map;
     readonly IReadOnlyList<MutableItem> _finaImplementations;
-    readonly IReadOnlyDictionary<Assembly,bool> _assemblies;
+    readonly IReadOnlyDictionary<Assembly, bool> _assemblies;
 
     // Ultimate result: StObjCollector.GetResult sets this if no error occurred
     // during Real objects processing.
@@ -44,7 +44,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
     /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
     internal StObjObjectEngineMap( IReadOnlyList<string> names,
                                    IReadOnlyList<MutableItem> allSpecializations,
-                                   IReadOnlyDictionary<Assembly,bool> assemblies )
+                                   IReadOnlyDictionary<Assembly, bool> assemblies )
     {
         Debug.Assert( names != null );
         Names = names;
@@ -58,7 +58,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
 
         _serviceToObjectMap = new Dictionary<Type, MutableItem>();
         _serviceRealObjects = new List<MutableItem>();
-        _serviceToObjectMapExposed = _serviceToObjectMap.AsIReadOnlyDictionary<Type,MutableItem,IStObjFinalImplementation>();
+        _serviceToObjectMapExposed = _serviceToObjectMap.AsIReadOnlyDictionary<Type, MutableItem, IStObjFinalImplementation>();
     }
 
     internal void AddClassMapping( Type t, MutableItem m )
@@ -99,7 +99,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
     /// last items of the <see cref="RealObjectCollectorResult.ConcreteClasses"/>.
     /// </summary>
     internal IReadOnlyCollection<MutableItem> FinalImplementations => _finaImplementations;
-    
+
     /// <summary>
     /// Gets all the mappings from object (including <see cref="RealObjectInterfaceKey"/>) to
     /// <see cref="MutableItem"/>.
@@ -155,7 +155,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
     IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
 
     internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
-                                          Dictionary<Type,ITypeAttributesCache> allTypesAttributesCache,
+                                          Dictionary<Type, ITypeAttributesCache> allTypesAttributesCache,
                                           IDIContainerAnalysisResult? endpointResult,
                                           IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
     {

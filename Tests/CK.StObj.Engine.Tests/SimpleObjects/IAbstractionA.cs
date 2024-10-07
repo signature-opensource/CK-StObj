@@ -12,6 +12,6 @@ namespace CK.StObj.Engine.Tests.SimpleObjects;
 public interface IAbstractionA : IRealObject
 {
     int ConstructCount { get; }
-    
+
     void MethofOfA();
 }

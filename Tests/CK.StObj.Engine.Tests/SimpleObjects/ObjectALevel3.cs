@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects;
 public class ObjectALevel3 : ObjectALevel2, IAbstractionALevel3
 {
     // Adds monitor parameter otherwise parameter less StObjConstruct are not called.
-    void StObjConstruct( IActivityMonitor m  ) 
+    void StObjConstruct( IActivityMonitor m )
     {
         Assert.That( ConstructCount, Is.EqualTo( 3 ), "ObjectA, ObjectALevel1 and ObjectALevel2 construct have been called." );
         SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );

@@ -26,6 +26,6 @@ internal class StObjPropertyInfo : INamedPropertyInfo
 
     string INamedPropertyInfo.Name => Name;
 
-    string INamedPropertyInfo.Kind => "[StObjProperty]"; 
+    string INamedPropertyInfo.Kind => "[StObjProperty]";
 
 }

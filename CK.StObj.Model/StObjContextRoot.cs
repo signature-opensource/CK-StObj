@@ -106,7 +106,7 @@ public abstract partial class StObjContextRoot
         }
     }
 
-    static StObjMapInfo? LockedGetMapInfo( Assembly a, [AllowNull]ref IActivityMonitor monitor )
+    static StObjMapInfo? LockedGetMapInfo( Assembly a, [AllowNull] ref IActivityMonitor monitor )
     {
         if( _alreadyHandled.TryGetValue( a, out var info ) )
         {
@@ -158,7 +158,7 @@ public abstract partial class StObjContextRoot
         }
     }
 
-    static void LockedEnsureMonitor( [AllowNull]ref IActivityMonitor monitor )
+    static void LockedEnsureMonitor( [AllowNull] ref IActivityMonitor monitor )
     {
         if( monitor == null )
         {
@@ -179,7 +179,7 @@ public abstract partial class StObjContextRoot
         }
     }
 
-    static List<StObjMapInfo> LockedGetAvailableMapInfos( [NotNullIfNotNull("monitor")] ref IActivityMonitor? monitor )
+    static List<StObjMapInfo> LockedGetAvailableMapInfos( [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
     {
         var all = AppDomain.CurrentDomain.GetAssemblies();
         if( all.Length != _allAssemblyCount )

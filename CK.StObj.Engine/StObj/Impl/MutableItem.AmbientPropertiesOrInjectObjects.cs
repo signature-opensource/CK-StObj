@@ -108,7 +108,7 @@ partial class MutableItem
             return IndexOf( item ) >= 0;
         }
 
-        public int Count => _count; 
+        public int Count => _count;
 
         public IEnumerator<MutableInjectObject> GetEnumerator()
         {
@@ -145,7 +145,7 @@ partial class MutableItem
         {
             foreach( var k in _leafData.DirectPropertiesToSet )
             {
-                if( k.Value != System.Type.Missing ) RootGeneralization.AddPreConstructProperty( k.Key, k.Value, valueCollector ); 
+                if( k.Value != System.Type.Missing ) RootGeneralization.AddPreConstructProperty( k.Key, k.Value, valueCollector );
             }
             _leafData.DirectPropertiesToSet.Clear();
         }
@@ -183,7 +183,7 @@ partial class MutableItem
                     #region AmbientProperty is a StObj.
 
                     MutableItem? highestSetSource = null;
-                    MutableItem? highestSetResolved = null; 
+                    MutableItem? highestSetResolved = null;
 
                     MutableItem? source = this;
                     AmbientPropertyInfo? sourceProp = a.AmbientPropertyInfo;
@@ -200,7 +200,7 @@ partial class MutableItem
                     }
                     if( resolved._trackedAmbientProperties != null )
                     {
-                        if( resolved._trackAmbientPropertiesMode == TrackAmbientPropertiesMode.AddPropertyHolderAsChildren 
+                        if( resolved._trackAmbientPropertiesMode == TrackAmbientPropertiesMode.AddPropertyHolderAsChildren
                             || resolved._trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiresThis )
                         {
                             highestSetSource = source;
@@ -237,7 +237,7 @@ partial class MutableItem
                         }
                         if( resolved._trackedAmbientProperties != null )
                         {
-                            if( resolved._trackAmbientPropertiesMode == TrackAmbientPropertiesMode.AddPropertyHolderAsChildren 
+                            if( resolved._trackAmbientPropertiesMode == TrackAmbientPropertiesMode.AddPropertyHolderAsChildren
                                 || resolved._trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiresThis )
                             {
                                 highestSetSource = source;
@@ -259,7 +259,7 @@ partial class MutableItem
                 }
                 else
                 {
-                    RootGeneralization.AddPreConstructProperty( a.AmbientPropertyInfo.SettablePropertyInfo, value, valueCollector ); 
+                    RootGeneralization.AddPreConstructProperty( a.AmbientPropertyInfo.SettablePropertyInfo, value, valueCollector );
                 }
             }
         }

@@ -76,7 +76,7 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                 {
                     readerMap.GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
                 }
-                pocoClass.Append("break;")
+                pocoClass.Append( "break;" )
                          .CloseBlock();
             }
         }

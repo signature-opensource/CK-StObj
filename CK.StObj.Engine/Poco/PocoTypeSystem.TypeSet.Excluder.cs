@@ -67,59 +67,59 @@ sealed partial class PocoTypeSystem
                 switch( t )
                 {
                     case ICompositePocoType composite:
+                    {
+                        // For PocoFields, whether AbstractReadOnly fields' types have been included or not
+                        // is transparent here: if such field's type has been included, then if the type
+                        // is excluded, its occurence will be decremented just like for regular fields.
+                        // There may remain a single AbstractReadOnly field in a Poco and this is fine
+                        // since it has been included.
+
+                        // Instead of handling the owner's type in DoExclude based on allowEmptyRecord/Poco,
+                        // we simply artificially boost the back reference count here.
+
+                        // Allower may have allowed an empty anonymous record. This is invalid (an empty value tuple
+                        // is basically invalid). Rule 12.
+                        bool allowEmpty = composite.Kind == PocoTypeKind.AnonymousRecord
+                                            ? false
+                                            : composite.Kind == PocoTypeKind.Record
+                                                ? allowEmptyRecord
+                                                : allowEmptyPoco;
+
+                        var fieldCount = allowEmpty ? int.MaxValue : composite.Fields.Count( f => source.Contains( f.Type ) );
+                        // If fieldCount = 0, we are coming from a source that allowed the empties and we no more allow them. 
+                        if( fieldCount == 0 )
                         {
-                            // For PocoFields, whether AbstractReadOnly fields' types have been included or not
-                            // is transparent here: if such field's type has been included, then if the type
-                            // is excluded, its occurence will be decremented just like for regular fields.
-                            // There may remain a single AbstractReadOnly field in a Poco and this is fine
-                            // since it has been included.
-
-                            // Instead of handling the owner's type in DoExclude based on allowEmptyRecord/Poco,
-                            // we simply artificially boost the back reference count here.
-
-                            // Allower may have allowed an empty anonymous record. This is invalid (an empty value tuple
-                            // is basically invalid). Rule 12.
-                            bool allowEmpty = composite.Kind == PocoTypeKind.AnonymousRecord
-                                                ? false
-                                                : composite.Kind == PocoTypeKind.Record
-                                                    ? allowEmptyRecord
-                                                    : allowEmptyPoco;
-
-                            var fieldCount = allowEmpty ? int.MaxValue : composite.Fields.Count( f => source.Contains( f.Type ) );
-                            // If fieldCount = 0, we are coming from a source that allowed the empties and we no more allow them. 
-                            if( fieldCount == 0 )
-                            {
-                                toBeExcluded ??= new List<IPocoType>();
-                                toBeExcluded.Add( composite );
-                                // Set to 1 otherwise DoExclude will early exit.
-                                fieldCount = 1;
-                            }
-                            backRefCount[t.Index >> 1] = fieldCount;
-                            break;
+                            toBeExcluded ??= new List<IPocoType>();
+                            toBeExcluded.Add( composite );
+                            // Set to 1 otherwise DoExclude will early exit.
+                            fieldCount = 1;
                         }
+                        backRefCount[t.Index >> 1] = fieldCount;
+                        break;
+                    }
                     case IUnionPocoType u:
                         // Allower ensures these.
                         Throw.DebugAssert( "At least one type in the union is included.", u.AllowedTypes.Any( source.Contains ) );
                         backRefCount[t.Index >> 1] = u.AllowedTypes.Count( source.Contains );
                         break;
                     case IAbstractPocoType abs:
+                    {
+                        // Allower ensures these.
+                        Throw.DebugAssert( "Generic AbstractPoco require all their GenericArguments.", t is not IAbstractPocoType a || a.GenericArguments.All( a => source.Contains( a.Type ) ) );
+                        // The count is the number of primaries: back references are for generic arguments and we don't need
+                        // to track them (as soon as a back reference is excluded, the abstract is excluded).
+                        int primaryCount = abs.PrimaryPocoTypes.Count;
+                        // Allower may have included an abstract without implementations.
+                        // Fix this now (Rule 7).
+                        if( primaryCount == 0 )
                         {
-                            // Allower ensures these.
-                            Throw.DebugAssert( "Generic AbstractPoco require all their GenericArguments.", t is not IAbstractPocoType a || a.GenericArguments.All( a => source.Contains( a.Type ) ) );
-                            // The count is the number of primaries: back references are for generic arguments and we don't need
-                            // to track them (as soon as a back reference is excluded, the abstract is excluded).
-                            int primaryCount = abs.PrimaryPocoTypes.Count;
-                            // Allower may have included an abstract without implementations.
-                            // Fix this now (Rule 7).
-                            if( primaryCount == 0 )
-                            {
-                                toBeExcluded ??= new List<IPocoType>();
-                                toBeExcluded.Add( abs );
-                                primaryCount = 1;
-                            }
-                            backRefCount[t.Index >> 1] = primaryCount;
-                            break;
+                            toBeExcluded ??= new List<IPocoType>();
+                            toBeExcluded.Add( abs );
+                            primaryCount = 1;
                         }
+                        backRefCount[t.Index >> 1] = primaryCount;
+                        break;
+                    }
                     default:
                         Throw.DebugAssert( t.Kind == PocoTypeKind.Enum
                                            || t is ICollectionPocoType
@@ -169,44 +169,44 @@ sealed partial class PocoTypeSystem
             switch( t )
             {
                 case IAbstractPocoType a:
+                {
+                    if( isRoot )
                     {
-                        if( isRoot )
+                        foreach( var p in a.PrimaryPocoTypes )
                         {
-                            foreach( var p in a.PrimaryPocoTypes )
-                            {
-                                DoExclude( p, false );
-                            }
+                            DoExclude( p, false );
                         }
-                        break;
                     }
+                    break;
+                }
 
                 case ISecondaryPocoType secondary:
                     DoExclude( secondary.PrimaryPocoType, false );
                     break;
                 case IPrimaryPocoType primary:
+                {
+                    foreach( var s in primary.SecondaryTypes )
                     {
-                        foreach( var s in primary.SecondaryTypes )
-                        {
-                            DoExclude( s, false );
-                        }
-                        foreach( var abs in primary.AbstractTypes )
-                        {
-                            DecrementRefCount( abs );
-                        }
-                        // Handle the IPoco that doesn't appear in the AbstractTypes.
-                        DecrementRefCount( Poco );
-                        break;
+                        DoExclude( s, false );
                     }
+                    foreach( var abs in primary.AbstractTypes )
+                    {
+                        DecrementRefCount( abs );
+                    }
+                    // Handle the IPoco that doesn't appear in the AbstractTypes.
+                    DecrementRefCount( Poco );
+                    break;
+                }
 
                 case IBasicRefPocoType basic:
+                {
+                    foreach( var s in basic.Specializations )
                     {
-                        foreach( var s in basic.Specializations )
-                        {
-                            DoExclude( s, false );
-                        }
-
-                        break;
+                        DoExclude( s, false );
                     }
+
+                    break;
+                }
             }
         }
 

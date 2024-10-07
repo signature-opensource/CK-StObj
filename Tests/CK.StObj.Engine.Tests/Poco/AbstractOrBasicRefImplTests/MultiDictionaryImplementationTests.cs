@@ -23,7 +23,7 @@ public class MultiDictionaryImplementationTests : CommonTypes
     [CKTypeDefiner]
     public interface IWithReadOnlyDictionary : IPoco
     {
-        IReadOnlyDictionary<int,IAbstractBase> Dictionary { get; }
+        IReadOnlyDictionary<int, IAbstractBase> Dictionary { get; }
         object ConcreteDictionary { get; }
     }
 
@@ -85,17 +85,17 @@ public class MultiDictionaryImplementationTests : CommonTypes
 
     public interface IPocoWithDictionaryOfAbstractBase : IPoco
     {
-        IDictionary<string,IAbstractBase> Dictionary { get; }
+        IDictionary<string, IAbstractBase> Dictionary { get; }
     }
 
     public interface IPocoWithDictionaryOfAbstract1 : IPoco
     {
-        IDictionary<string,IAbstract1> Dictionary { get; }
+        IDictionary<string, IAbstract1> Dictionary { get; }
     }
 
     public interface IPocoWithDictionaryOfClosed : IPoco
     {
-        IDictionary<string,IClosed> Dictionary { get; }
+        IDictionary<string, IClosed> Dictionary { get; }
     }
 
     [Test]
@@ -131,22 +131,22 @@ public class MultiDictionaryImplementationTests : CommonTypes
     }
 
     [CKTypeDefiner]
-    public interface IAbstractBasicRefDic: IPoco
+    public interface IAbstractBasicRefDic : IPoco
     {
-        IReadOnlyDictionary<int,object> StringDic { get; }
-        IReadOnlyDictionary<int,object> ExtendedCultureInfoDic { get; }
-        IReadOnlyDictionary<int,object> NormalizedCultureInfoDic { get; }
-        IReadOnlyDictionary<int,object> MCStringDic { get; }
-        IReadOnlyDictionary<int,object> CodeStringDic { get; }
+        IReadOnlyDictionary<int, object> StringDic { get; }
+        IReadOnlyDictionary<int, object> ExtendedCultureInfoDic { get; }
+        IReadOnlyDictionary<int, object> NormalizedCultureInfoDic { get; }
+        IReadOnlyDictionary<int, object> MCStringDic { get; }
+        IReadOnlyDictionary<int, object> CodeStringDic { get; }
     }
 
     public interface IBasicRefDics : IAbstractBasicRefDic
     {
-        new IDictionary<int,string> StringDic { get; }
-        new IDictionary<int,ExtendedCultureInfo> ExtendedCultureInfoDic { get; }
-        new IDictionary<int,NormalizedCultureInfo> NormalizedCultureInfoDic { get; }
-        new IDictionary<int,MCString> MCStringDic { get; }
-        new IDictionary<int,CodeString> CodeStringDic { get; }
+        new IDictionary<int, string> StringDic { get; }
+        new IDictionary<int, ExtendedCultureInfo> ExtendedCultureInfoDic { get; }
+        new IDictionary<int, NormalizedCultureInfo> NormalizedCultureInfoDic { get; }
+        new IDictionary<int, MCString> MCStringDic { get; }
+        new IDictionary<int, CodeString> CodeStringDic { get; }
     }
 
     [Test]
@@ -163,6 +163,6 @@ public class MultiDictionaryImplementationTests : CommonTypes
         pBase.NormalizedCultureInfoDic.Should().NotBeNull();
         pBase.MCStringDic.Should().NotBeNull();
         pBase.CodeStringDic.Should().NotBeNull();
-        pBase.NormalizedCultureInfoDic.Should().BeAssignableTo<IReadOnlyDictionary<int,ExtendedCultureInfo>>();
+        pBase.NormalizedCultureInfoDic.Should().BeAssignableTo<IReadOnlyDictionary<int, ExtendedCultureInfo>>();
     }
 }

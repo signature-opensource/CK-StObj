@@ -195,7 +195,7 @@ sealed class ExtNullabilityInfo : IExtNullabilityInfo
                              && !typeDefinition.IsValueType
                              && typeDefinition.IsGenericTypeDefinition
                              && typeDefinition.GetGenericArguments().Length == GenericTypeArguments.Count );
-        var t = typeDefinition.MakeGenericType(GenericTypeArguments.Select( a => a.Type ).ToArray() );
+        var t = typeDefinition.MakeGenericType( GenericTypeArguments.Select( a => a.Type ).ToArray() );
         return new ExtNullabilityInfo( t, _subTypes, nullable ?? _isNullable, _useReadState, _homogeneous );
     }
 
@@ -224,6 +224,6 @@ sealed class ExtNullabilityInfo : IExtNullabilityInfo
         return _isNullable ? b.Append( '?' ) : b;
     }
 
-    public override string ToString() => ToString( new StringBuilder() ).ToString(); 
+    public override string ToString() => ToString( new StringBuilder() ).ToString();
 
 }

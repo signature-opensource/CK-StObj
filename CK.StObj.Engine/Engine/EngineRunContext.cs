@@ -51,7 +51,7 @@ sealed partial class EngineRunContext : IStObjEngineRunContext, IStObjEnginePost
 
     internal void RunAspects( Func<bool> onError, bool postCode )
     {
-        using( _monitor.OpenInfo( $"Running Aspects ({(postCode ? "Post" : "Pre" )} Code Generation)." ) )
+        using( _monitor.OpenInfo( $"Running Aspects ({(postCode ? "Post" : "Pre")} Code Generation)." ) )
         {
             foreach( var a in _startContext.Aspects )
             {

@@ -32,7 +32,7 @@ public readonly struct DefaultValueInfo
     /// <param name="defaultValue">The default value. When null, <see cref="Allowed"/> is true.</param>
     public DefaultValueInfo( IPocoFieldDefaultValue? defaultValue )
     {
-        if( (_def = defaultValue ) != null )
+        if( (_def = defaultValue) != null )
         {
             _requiresInit = true;
             _allowed = false;

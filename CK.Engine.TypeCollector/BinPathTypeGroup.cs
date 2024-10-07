@@ -31,7 +31,7 @@ public sealed partial class BinPathTypeGroup
 
     // Regular group.
     BinPathTypeGroup( ImmutableArray<BinPathConfiguration> configurations,
-                      string groupName,   
+                      string groupName,
                       AssemblyCache.BinPathGroup assemblyGroup,
                       IConfiguredTypeSet configuredTypes,
                       SHA1Value signature )

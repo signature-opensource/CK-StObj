@@ -327,7 +327,7 @@ public abstract class MultiPassCodeGeneration
         Throw.DebugAssert( _currentParameters != null );
         RunResult result = RunResult.Retry;
         Throw.DebugAssert( HasWaitingServices && _currentParameterValues != null );
-        for( int i = _currentWaitingParameters.Count-1; i >= 0; i-- )
+        for( int i = _currentWaitingParameters.Count - 1; i >= 0; i-- )
         {
             var p = _currentWaitingParameters[i];
             var s = context.CurrentRun.ServiceContainer.GetService( p.ParameterType );

@@ -21,7 +21,7 @@ public class CustomAttributeProviderComposite : ICKCustomAttributeProvider
     /// <param name="providers">Multiple providers. Must not be null.</param>
     public CustomAttributeProviderComposite( IEnumerable<ICKCustomAttributeProvider> providers )
     {
-        Throw.CheckNotNullArgument( providers ); 
+        Throw.CheckNotNullArgument( providers );
         _providers = providers;
     }
 

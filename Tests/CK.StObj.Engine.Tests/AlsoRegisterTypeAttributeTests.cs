@@ -11,7 +11,7 @@ namespace CK.StObj.Engine.Tests;
 [TestFixture]
 public class AlsoRegisterTypeAttributeTests
 {
-    [AlsoRegisterType(typeof( INestedPoco ))]
+    [AlsoRegisterType( typeof( INestedPoco ) )]
     public class StartingPoint : IRealObject
     {
         public interface INestedPoco : IPoco

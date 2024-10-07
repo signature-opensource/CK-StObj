@@ -47,7 +47,7 @@ public enum AssemblyKind
 
 public static class AssemblyKindExtensions
 {
-    public static bool IsSkipped( this AssemblyKind kind ) => (kind | AssemblyKind.SystemSkipped|AssemblyKind.AutoSkipped) != 0;
+    public static bool IsSkipped( this AssemblyKind kind ) => (kind | AssemblyKind.SystemSkipped | AssemblyKind.AutoSkipped) != 0;
     public static bool IsExcluded( this AssemblyKind kind ) => (kind & AssemblyKind.Excluded) != 0;
     public static bool IsNone( this AssemblyKind kind ) => (kind & ~AssemblyKind.Excluded) == 0;
     public static bool IsPFeature( this AssemblyKind kind ) => (kind & AssemblyKind.PFeature) != 0;
@@ -55,7 +55,7 @@ public static class AssemblyKindExtensions
     public static bool IsEngine( this AssemblyKind kind ) => (kind & AssemblyKind.Engine) != 0;
 
     public static bool IsPFeatureOrDefiner( this AssemblyKind kind ) => (kind & (AssemblyKind.PFeature | AssemblyKind.PFeatureDefiner)) != 0;
-    
+
     // Thes two ones are warnings and Excluded is removed.
     public static bool IsExcludedEngine( this AssemblyKind kind ) => (kind & (AssemblyKind.Engine | AssemblyKind.Excluded)) == (AssemblyKind.Engine | AssemblyKind.Excluded);
     public static bool IsExcludedPFeatureDefiner( this AssemblyKind kind ) => (kind & (AssemblyKind.PFeatureDefiner | AssemblyKind.Excluded)) == (AssemblyKind.PFeatureDefiner | AssemblyKind.Excluded);

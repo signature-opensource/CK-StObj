@@ -41,7 +41,7 @@ public readonly struct ObliviousReferenceTypeSorter
             || t.Type.IsValueType
             || !t.IsOblivious )
         {
-            Throw.ArgumentException( nameof(t), $"The type must not be 'object', nor a value type and be the oblivious one: {t}." );
+            Throw.ArgumentException( nameof( t ), $"The type must not be 'object', nor a value type and be the oblivious one: {t}." );
         }
         // Finds the first type that can be assigned to the new one:
         // the new one must appear before it.

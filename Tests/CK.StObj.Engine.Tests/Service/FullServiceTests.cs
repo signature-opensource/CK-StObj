@@ -14,7 +14,7 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service;
 
-public class FullServiceTests 
+public class FullServiceTests
 {
     /// <summary>
     /// This service is scoped: its implementation automatically injected
@@ -95,7 +95,7 @@ public class FullServiceTests
     /// <summary>
     /// A real object that depends on B and wants to substitute its implementation.
     /// </summary>
-    [ReplaceAutoService(typeof(B))]
+    [ReplaceAutoService( typeof( B ) )]
     public abstract class BDependency : IRealObject, IAutoServiceCanBeImplementedByRealObject
     {
         B? _theB;
@@ -301,7 +301,7 @@ public class FullServiceTests
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
         {
             var map = configuration.Run().LoadMap();
-            
+
             using var auto = map.CreateAutomaticServices( startupServices: startupServices );
 
             auto.Services.GetRequiredService<IBIsRealObject>()

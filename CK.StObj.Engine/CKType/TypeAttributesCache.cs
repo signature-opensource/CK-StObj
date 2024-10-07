@@ -153,7 +153,7 @@ public class TypeAttributesCache : ITypeAttributesCache
     /// <summary>
     /// Get the Type that is managed by this cache.
     /// </summary>
-    public Type Type { get; } 
+    public Type Type { get; }
 
     /// <summary>
     /// Gets whether an attribute that is assignable to the given <paramref name="attributeType"/> 
@@ -168,8 +168,8 @@ public class TypeAttributesCache : ITypeAttributesCache
         Throw.CheckNotNullArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
         Throw.CheckNotNullArgument( attributeType );
         return _all.Any( e => e.M == m && attributeType.IsAssignableFrom( e.Attr.GetType() ) )
-                || ( m.DeclaringType == Type 
-                     && m.GetCustomAttributes(false).Any( a => attributeType.IsAssignableFrom( a.GetType()) ) );
+                || (m.DeclaringType == Type
+                     && m.GetCustomAttributes( false ).Any( a => attributeType.IsAssignableFrom( a.GetType() ) ));
     }
 
     /// <summary>
@@ -210,7 +210,7 @@ public class TypeAttributesCache : ITypeAttributesCache
         if( m.DeclaringType == Type )
         {
             return fromCache
-                    .Concat( m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && a is T).Select( a => (T)(object)a ) );
+                    .Concat( m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && a is T ).Select( a => (T)(object)a ) );
         }
         return fromCache;
     }
@@ -239,7 +239,7 @@ public class TypeAttributesCache : ITypeAttributesCache
     /// <typeparam name="T">Type of the attributes.</typeparam>
     /// <param name="memberOnly">True to ignore attributes of the type itself.</param>
     /// <returns>Enumeration of attributes (possibly empty).</returns>
-    public IEnumerable<T> GetAllCustomAttributes<T>( bool memberOnly = false)
+    public IEnumerable<T> GetAllCustomAttributes<T>( bool memberOnly = false )
     {
         var fromCache = _all.Where( e => e.Attr is T && (!memberOnly || e.M != Type) ).Select( e => (T)e.Attr );
         var fromMembers = _typeMembers.SelectMany( m => m.GetCustomAttributes( false ) )

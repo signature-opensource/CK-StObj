@@ -70,7 +70,7 @@ public sealed class DIContainerHubImpl : CSCodeGeneratorType
         {
             scope.Append( "(DIContainerDefinition)" ).Append( e.DIContainerDefinition.CodeInstanceAccessor ).Append( "," ).NewLine();
         }
-        scope.Append("};").NewLine();
+        scope.Append( "};" ).NewLine();
 
         scope.Append( "_ambientMappings = ImmutableArray.Create<AmbientServiceMapping>( " ).NewLine();
         for( int i = 0; i < endpointResult.AmbientServiceMappings.Count; i++ )

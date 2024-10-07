@@ -23,9 +23,9 @@ internal class MutableReference : IStObjMutableReference
     {
         Owner = owner;
         _kind = kind;
-        if( _kind == StObjMutableReferenceKind.Requires 
-            || _kind == StObjMutableReferenceKind.Group 
-            || _kind == StObjMutableReferenceKind.RealObject 
+        if( _kind == StObjMutableReferenceKind.Requires
+            || _kind == StObjMutableReferenceKind.Group
+            || _kind == StObjMutableReferenceKind.RealObject
             || (_kind & StObjMutableReferenceKind.Container) != 0 )
         {
             StObjRequirementBehavior = StObjRequirementBehavior.ErrorIfNotStObj;

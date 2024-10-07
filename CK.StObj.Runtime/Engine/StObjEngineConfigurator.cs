@@ -17,7 +17,7 @@ public sealed class StObjEngineConfigurator
     public void AddLayer( StObjConfigurationLayer configurator )
     {
         if( configurator == null ) throw new ArgumentNullException( nameof( configurator ) );
-        if( configurator.Host != null ) throw new ArgumentException( $"{nameof(StObjConfigurationLayer)} is already hosted.", nameof( configurator ) );
+        if( configurator.Host != null ) throw new ArgumentException( $"{nameof( StObjConfigurationLayer )} is already hosted.", nameof( configurator ) );
         configurator.Next = _first;
         _first = configurator;
         configurator.Host = this;
@@ -30,7 +30,7 @@ public sealed class StObjEngineConfigurator
     public void RemoveConfigurator( StObjConfigurationLayer configurator )
     {
         if( configurator == null ) throw new ArgumentNullException( nameof( configurator ) );
-        if( configurator.Host != this ) throw new ArgumentException( $"{nameof(StObjConfigurationLayer)} is not hosted by this {nameof(StObjEngineConfigurator)}.", nameof( configurator ) );
+        if( configurator.Host != this ) throw new ArgumentException( $"{nameof( StObjConfigurationLayer )} is not hosted by this {nameof( StObjEngineConfigurator )}.", nameof( configurator ) );
         StObjConfigurationLayer? prev = null;
         StObjConfigurationLayer? x = _first;
         while( x != configurator )

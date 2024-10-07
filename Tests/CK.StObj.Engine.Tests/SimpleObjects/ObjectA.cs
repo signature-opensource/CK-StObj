@@ -12,15 +12,15 @@ using CK.Core;
 namespace CK.StObj.Engine.Tests.SimpleObjects;
 
 
-[RealObject( Container=typeof(PackageForAB) )] 
+[RealObject( Container = typeof( PackageForAB ) )]
 public class ObjectA : IAbstractionA
 {
     public int ConstructCount { get; protected set; }
 
     void StObjConstruct( IActivityMonitor m )
-    { 
-        Assert.That( ConstructCount, Is.EqualTo( 0 ), "First StObjConstruct.");
-        SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance|BindingFlags.NonPublic ) );
+    {
+        Assert.That( ConstructCount, Is.EqualTo( 0 ), "First StObjConstruct." );
+        SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
         ConstructCount = ConstructCount + 1;
         m.Info( $"This is the setup logger." );
     }

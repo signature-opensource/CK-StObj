@@ -93,7 +93,7 @@ public partial class SecondaryPocoTests
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
                                         typeof( ISecondary ),
                                         typeof( IOtherSecondary ),
-                                        typeof( IWithCollections ));
+                                        typeof( IWithCollections ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

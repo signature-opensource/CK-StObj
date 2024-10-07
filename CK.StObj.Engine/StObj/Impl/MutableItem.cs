@@ -34,7 +34,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
         /// Useless to store it at each level.
         /// </summary>
         public readonly MutableItem LeafSpecialization;
-        
+
         /// <summary>
         /// Ambient Properties are shared by the inheritance chain (it is
         /// not null only at the specialization level).
@@ -53,7 +53,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
         public readonly MutableInjectObject[] AllInjectObjects;
 
         // Direct properties are collected at leaf level and are allocated only if needed (by SetDirectPropertyValue).
-        public Dictionary<PropertyInfo,object> DirectPropertiesToSet;
+        public Dictionary<PropertyInfo, object> DirectPropertiesToSet;
 
         /// <summary>
         /// Available only at the leaf level.
@@ -107,7 +107,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
     MutableReferenceList _requiredBy;
     MutableReferenceList _children;
     MutableReferenceList _groups;
-    
+
     IReadOnlyList<MutableParameter> _constructParameterEx;
     /// <summary>
     /// This is the projection of <see cref="RealObjectClassInfo.BaseTypeInfo"/>'s <see cref="IStObjTypeRootParentInfo.StObjConstructCollector"/>.
@@ -357,9 +357,9 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
     /// <summary>
     /// Never null: it is this item if <see cref="Specialization"/> is null.
     /// </summary>
-    internal MutableItem FinalImplementation => _leafData.LeafSpecialization; 
+    internal MutableItem FinalImplementation => _leafData.LeafSpecialization;
 
-    internal MutableItem RootGeneralization => _leafData.RootGeneralization; 
+    internal MutableItem RootGeneralization => _leafData.RootGeneralization;
 
     #region IStObjMutableItem is called during Configuration
 
@@ -375,13 +375,13 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
         set { _trackAmbientPropertiesMode = value; }
     }
 
-    IStObjMutableReference IStObjMutableItem.Container => _container; 
+    IStObjMutableReference IStObjMutableItem.Container => _container;
 
     IStObjMutableReferenceList IStObjMutableItem.Children => _children;
 
     IStObjMutableReferenceList IStObjMutableItem.Requires => _requires;
 
-    IStObjMutableReferenceList IStObjMutableItem.RequiredBy => _requiredBy; 
+    IStObjMutableReferenceList IStObjMutableItem.RequiredBy => _requiredBy;
 
     IStObjMutableReferenceList IStObjMutableItem.Groups => _groups;
 
@@ -389,9 +389,9 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     public IReadOnlyList<IStObjMutableParameter> ConstructParameters => _constructParameterEx;
 
-    public IEnumerable<(Type,IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAboveRoot => _constructParametersAbove?.Select( mp => (mp.Item1.DeclaringType!, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
+    public IEnumerable<(Type, IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAboveRoot => _constructParametersAbove?.Select( mp => (mp.Item1.DeclaringType!, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) );
 
-    IReadOnlyList<IStObjAmbientProperty> IStObjMutableItem.SpecializedAmbientProperties => _ambientPropertiesEx; 
+    IReadOnlyList<IStObjAmbientProperty> IStObjMutableItem.SpecializedAmbientProperties => _ambientPropertiesEx;
 
     IReadOnlyList<IStObjMutableInjectObject> IStObjMutableItem.SpecializedInjectObjects => _ambientInjectObjectsEx;
 
@@ -424,7 +424,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
         }
         if( p == null || !p.CanWrite )
         {
-            monitor.Error( $"Unable to set direct property '{RealObjectType.Type.FullName}.{propertyName}' structural value. It must exist and be writable (on type '{_leafData.LeafSpecialization.RealObjectType.Type.FullName}'). (Source:{sourceDescription})"  );
+            monitor.Error( $"Unable to set direct property '{RealObjectType.Type.FullName}.{propertyName}' structural value. It must exist and be writable (on type '{_leafData.LeafSpecialization.RealObjectType.Type.FullName}'). (Source:{sourceDescription})" );
             return false;
         }
         if( _leafData.DirectPropertiesToSet == null ) _leafData.DirectPropertiesToSet = new Dictionary<PropertyInfo, object>();
@@ -460,7 +460,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
             return mp.SetConfiguration( RealObjectType.SpecializationDepth, monitor, type, behavior );
         }
         monitor.Error( $"Unable to configure unexisting Ambient property '{RealObjectType.Type.FullName}.{propertyName}'. It must exist, be writable and marked with AmbientPropertyAttribute. (Source:{sourceDescription})" );
-        return false;        
+        return false;
     }
 
     bool IStObjMutableItem.SetStObjPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription )
@@ -498,7 +498,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
                 else
                 {
                     _prepareState = PrepareState.RecursePreparing;
-                    
+
                     ResolveDirectReferences( monitor );
                     if( _dContainer != null ) result &= _dContainer.PrepareDependentItem( monitor, valueCollector );
                     // Prepares Generalization and inherits from it as needed.
@@ -519,7 +519,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
                         _itemKind = DependentItemKind.Item;
                     }
                     if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.Unknown ) _trackAmbientPropertiesMode = TrackAmbientPropertiesMode.None;
-                    
+
                     // Allocates Ambient Properties tracking now that we know the final configuration for it.
                     Debug.Assert( _trackAmbientPropertiesMode != TrackAmbientPropertiesMode.Unknown );
                     if( _trackAmbientPropertiesMode != TrackAmbientPropertiesMode.None )
@@ -663,7 +663,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     //    // Since we are obliged here to do in advance what the SetupOrderer will do (to remove dependencies to containers, see PrepareDependentItem above),
     //    // we must apply the "Container inheritance"...
-        
+
     //    // TODO... Here or in DependencySorter... ?
     //    //    All this Container discovering stuff duplicates DependencySorter work...
     //    //    
@@ -723,11 +723,11 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     #region IDependentItem/Ref Members
 
-    string IDependentItem.FullName => _dFullName; 
+    string IDependentItem.FullName => _dFullName;
 
-    IDependentItemRef? IDependentItem.Generalization => Generalization; 
+    IDependentItemRef? IDependentItem.Generalization => Generalization;
 
-    IDependentItemContainerRef? IDependentItem.Container => _dContainer; 
+    IDependentItemContainerRef? IDependentItem.Container => _dContainer;
 
     IEnumerable<IDependentItemRef> IDependentItemGroup.Children
     {
@@ -744,7 +744,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
         }
     }
 
-    DependentItemKind IDependentItemContainerTyped.ItemKind => _itemKind; 
+    DependentItemKind IDependentItemContainerTyped.ItemKind => _itemKind;
 
     IEnumerable<IDependentItemGroupRef> IDependentItem.Groups
     {
@@ -763,22 +763,22 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     IEnumerable<IDependentItemRef> IDependentItem.Requires
     {
-        get 
+        get
         {
             Debug.Assert( _dRequires != null, "Built from the HashSet in PrepareDependentItem." );
             IEnumerable<IDependentItemRef> r = _dRequires;
             if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiresThis )
             {
                 Debug.Assert( _trackedAmbientProperties != null );
-                r = r.Concat( _trackedAmbientProperties.Select( a => a.Owner ) ); 
+                r = r.Concat( _trackedAmbientProperties.Select( a => a.Owner ) );
             }
-            return r; 
+            return r;
         }
     }
 
     IEnumerable<IDependentItemRef>? IDependentItem.RequiredBy
     {
-        get 
+        get
         {
             IEnumerable<IDependentItemRef>? r = _dRequiredBy;
             if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiredByThis )
@@ -793,14 +793,14 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     object? IDependentItem.StartDependencySort( IActivityMonitor m ) => null;
 
-    string IDependentItemRef.FullName => _dFullName; 
+    string IDependentItemRef.FullName => _dFullName;
 
-    bool IDependentItemRef.Optional => false; 
+    bool IDependentItemRef.Optional => false;
     #endregion
 
     #region IStObj Members
 
-    public object InitialObject => _leafData.StructuredObject; 
+    public object InitialObject => _leafData.StructuredObject;
 
     /// <summary>
     /// Gets the type of the structure object.
@@ -809,7 +809,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     IStObjFinalImplementation IStObj.FinalImplementation => FinalImplementation;
 
-    IStObj? IStObj.Generalization => Generalization; 
+    IStObj? IStObj.Generalization => Generalization;
 
     IStObj? IStObj.Specialization => Specialization;
 
@@ -821,23 +821,23 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     IReadOnlyCollection<Type> IStObjFinalClass.UniqueMappings => FinalImplementation.RealObjectType.UniqueMappingTypes;
 
-    IStObjResult? IStObjResult.Generalization => Generalization; 
+    IStObjResult? IStObjResult.Generalization => Generalization;
 
-    IStObjResult? IStObjResult.Specialization => Specialization; 
+    IStObjResult? IStObjResult.Specialization => Specialization;
 
-    IStObjResult IStObjResult.RootGeneralization => _leafData.RootGeneralization; 
+    IStObjResult IStObjResult.RootGeneralization => _leafData.RootGeneralization;
 
-    IStObjResult IStObjResult.LeafSpecialization => _leafData.LeafSpecialization; 
+    IStObjResult IStObjResult.LeafSpecialization => _leafData.LeafSpecialization;
 
-    IStObjResult? IStObjResult.ConfiguredContainer => IsOwnContainer ? _dContainer : null; 
+    IStObjResult? IStObjResult.ConfiguredContainer => IsOwnContainer ? _dContainer : null;
 
-    IStObjResult? IStObjResult.Container => _dContainer; 
+    IStObjResult? IStObjResult.Container => _dContainer;
 
-    IReadOnlyList<IStObjResult> IStObjResult.Requires  => _dRequires; 
+    IReadOnlyList<IStObjResult> IStObjResult.Requires => _dRequires;
 
-    IReadOnlyList<IStObjResult> IStObjResult.Children => _dChildren; 
+    IReadOnlyList<IStObjResult> IStObjResult.Children => _dChildren;
 
-    IReadOnlyList<IStObjResult> IStObjResult.Groups => _dGroups; 
+    IReadOnlyList<IStObjResult> IStObjResult.Groups => _dGroups;
 
     IReadOnlyList<IStObjTrackedAmbientPropertyInfo> IStObjResult.TrackedAmbientProperties => _trackedAmbientProperties;
 

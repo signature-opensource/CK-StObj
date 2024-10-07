@@ -50,7 +50,7 @@ public sealed class CommonImpl : ICSCodeGenerator
         using( monitor.OpenInfo( $"IPocoSerializableServiceEngine is available. Starting Json serialization code generation." ) )
         {
             var ns = c.Assembly.Code.Global.FindOrCreateNamespace( "CK.Poco.Exc.JsonGen" );
-            
+
             var exporterType = ns.CreateType( "internal static class Exporter" );
             var export = new ExportCodeGenerator( exporterType, s.SerializableNames, c );
             if( !export.Run( monitor ) ) return CSCodeGenerationResult.Failed;

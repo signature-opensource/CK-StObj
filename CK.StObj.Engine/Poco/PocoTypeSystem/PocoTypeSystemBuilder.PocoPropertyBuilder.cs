@@ -400,7 +400,7 @@ public sealed partial class PocoTypeSystemBuilder
                                         $"have a setter {{ get; set; }} or be abstract: 'I{reg.CSharpName} {p.Name} {{ get; }}'." );
                         return false;
                     }
-                    if( !c.IsAbstractReadOnly  )
+                    if( !c.IsAbstractReadOnly )
                     {
                         _fieldAccessKind = PocoFieldAccessKind.MutableReference;
                         return AddWritable( monitor, p, reg );

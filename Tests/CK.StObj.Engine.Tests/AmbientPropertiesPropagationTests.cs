@@ -93,7 +93,7 @@ public partial class AmbientPropertiesPropagationTests
                 collector.RegisterType( TestHelper.Monitor, typeof( InheritedBaseObjectWithSet ) );
                 var result = collector.GetResult( TestHelper.Monitor ).EngineMap;
                 Debug.Assert( result != null, "No initialization error." );
-                Assert.That( result.StObjs.ToHead( typeof(InheritedBaseObjectWithSet) )!.Container!.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container has changed." );
+                Assert.That( result.StObjs.ToHead( typeof( InheritedBaseObjectWithSet ) )!.Container!.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container has changed." );
                 Assert.That( result.StObjs.Obtain<InheritedBaseObjectWithSet>()!.OneStringValue, Is.EqualTo( "OnInheritedWithSet" ), "Property does not change since it is set on the class itself." );
             }
             {
@@ -106,7 +106,7 @@ public partial class AmbientPropertiesPropagationTests
                 collector.RegisterType( TestHelper.Monitor, typeof( InheritedBaseObjectWithoutSet ) );
                 var result = collector.GetResult( TestHelper.Monitor ).EngineMap;
                 Debug.Assert( result != null, "No initialization error." );
-                Assert.That( result.StObjs.ToHead( typeof(InheritedBaseObjectWithSet) )!.Container, Is.Null, "Container of InheritedSimpleObjectWithSet has NOT changed (no container)." );
+                Assert.That( result.StObjs.ToHead( typeof( InheritedBaseObjectWithSet ) )!.Container, Is.Null, "Container of InheritedSimpleObjectWithSet has NOT changed (no container)." );
                 Assert.That( result.StObjs.ToHead( typeof( InheritedBaseObjectWithoutSet ) )!.Container!.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet has changed." );
 
                 Assert.That( result.StObjs.Obtain<InheritedBaseObjectWithoutSet>()!.OneStringValue, Is.EqualTo( "OnAnotherContainer" ), "Here, the container's value takes precedence since Property is NOT set on the class itself but on its Generalization." );

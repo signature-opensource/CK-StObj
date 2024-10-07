@@ -19,7 +19,7 @@ public interface IDynamicAssembly
     /// that has no dynamically emitted counterpart in a dynamic assembly.
     /// </summary>
     static readonly Type PurelyGeneratedType = typeof( PurelyGenerated );
-    
+
     /// <summary>
     /// Provides a new unique number that can be used for generating unique names inside this dynamic assembly.
     /// </summary>

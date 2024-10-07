@@ -12,7 +12,7 @@ public interface IStObjFinalParameter : IStObjReference
     /// This owner corresponds to the exact type of the object that has the StObjConstruct method for parameters.
     /// </summary>
     new IStObjResult Owner { get; }
-    
+
     /// <summary>
     /// Gets the name of the construct parameter.
     /// </summary>

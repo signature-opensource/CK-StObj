@@ -123,7 +123,7 @@ public class FromTheOutsideIdeaTests
         }
     }
 
-    [Explicit("This hook cannot work. This is kept here for memory.")]
+    [Explicit( "This hook cannot work. This is kept here for memory." )]
     public void Scope_and_resolution_hook()
     {
         var builder = new ServiceCollection();
@@ -142,7 +142,7 @@ public class FromTheOutsideIdeaTests
         // But this creates a ServiceHook in the primary container during the second call.
         // There is no way to make this hook work. We need to only think in terms of IServiceCollection configuration
         // and rely on a simple, definitely built, service provider.
-        builder.AddScoped( typeof( MQTTServer ), sp => sp.GetRequiredService<ServiceHook>().GetService( typeof(MQTTServer) )! );
+        builder.AddScoped( typeof( MQTTServer ), sp => sp.GetRequiredService<ServiceHook>().GetService( typeof( MQTTServer ) )! );
         builder.AddScoped( typeof( MQTTCaller ) );
 
         builder.AddScoped( typeof( HttpContextAccessor ), sp => sp.GetRequiredService<ServiceHook>().GetService( typeof( HttpContextAccessor ) )! );

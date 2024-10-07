@@ -82,7 +82,7 @@ sealed class ConfiguredTypeSet : IConfiguredTypeSet
         CheckInvariants( this );
     }
 
-    [Conditional("DEBUG")]
+    [Conditional( "DEBUG" )]
     static void CheckInvariants( ConfiguredTypeSet set )
     {
         Throw.DebugAssert( set.AllTypes.IsSupersetOf( set._configuredTypes.AsDictionary.Keys ) );

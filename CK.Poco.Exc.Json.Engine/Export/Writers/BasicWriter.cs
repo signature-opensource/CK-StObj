@@ -7,7 +7,7 @@ sealed class BasicWriter : JsonCodeWriter
 {
     readonly Action<ICodeWriter, string> _rawWrite;
 
-    public BasicWriter( ExportCodeWriterMap map, Action<ICodeWriter,string> rawWrite )
+    public BasicWriter( ExportCodeWriterMap map, Action<ICodeWriter, string> rawWrite )
         : base( map )
     {
         _rawWrite = rawWrite;

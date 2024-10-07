@@ -157,7 +157,7 @@ public partial class WriteReadAnyTests
 
     public interface IMultiMission : IMission
     {
-        IDictionary<string,IMission> Missions { get; }
+        IDictionary<string, IMission> Missions { get; }
 
         public static new IMultiMission CreateRandom( PocoDirectory directory, Random r )
         {
@@ -176,7 +176,7 @@ public partial class WriteReadAnyTests
 
     public interface IMultiMission2 : IMission
     {
-        IDictionary<string,IMission> Missions { get; }
+        IDictionary<string, IMission> Missions { get; }
 
         IList<IVerySimpleMission> VerySimpleMissions { get; }
 
@@ -347,7 +347,7 @@ public partial class WriteReadAnyTests
                                         typeof( IMultiMission2 ),
                                         typeof( IDispatchMission ),
                                         typeof( ISimpleMission ),
-                                        typeof( IPickingMission ));
+                                        typeof( IPickingMission ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

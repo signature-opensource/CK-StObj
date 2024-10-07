@@ -28,7 +28,7 @@ public class RecordWithReadOnlyCompliantTypeTests
     public void record_struct_is_supported()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IWithRecordStruct ));
+        configuration.FirstBinPath.Types.Add( typeof( IWithRecordStruct ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStruct>>().Create();
@@ -99,7 +99,7 @@ public class RecordWithReadOnlyCompliantTypeTests
             "  List<int>? Values" );
 
         TestHelper.GetFailedCollectorResult( [typeof( IFailedWithStruct1 )],
-            "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1.WithFields':", 
+            "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1.WithFields':",
             "  List<int> Values" );
     }
 
@@ -126,7 +126,7 @@ public class RecordWithReadOnlyCompliantTypeTests
     {
         public record struct MyThingDetail( int Power = 42, string Name = "Einstein" );
 
-        public record struct Funny( MyThingDetail FP, (string S, (IWithRecordStruct.ThingDetail P, MyThingDetail F) Inner ) A );
+        public record struct Funny( MyThingDetail FP, (string S, (IWithRecordStruct.ThingDetail P, MyThingDetail F) Inner) A );
 
         ref (MyThingDetail F, MyThingDetail P) A { get; }
 

@@ -17,7 +17,7 @@ public class UnionTypeSupportTest
 
         class UnionTypes
         {
-            public (string,int,decimal) Thing { get; }
+            public (string, int, decimal) Thing { get; }
         }
     }
 

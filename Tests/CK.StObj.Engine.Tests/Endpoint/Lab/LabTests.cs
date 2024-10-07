@@ -410,7 +410,7 @@ public partial class LabTests
         // We MUST manually handle the registrations... And we can do very bad things!
         var ubiqWithAlice = ubiq.CleanClone( restoreInitialValues: true );
         ubiqWithAlice.Override( new FakeAuthenticationInfo( "Alice (class)", 3712 ) );
-        ubiqWithAlice.Override( typeof(IFakeAuthenticationInfo), new FakeAuthenticationInfo( "Alice (interface)", 3712 ) );
+        ubiqWithAlice.Override( typeof( IFakeAuthenticationInfo ), new FakeAuthenticationInfo( "Alice (interface)", 3712 ) );
         using var scopedForAlice = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
         var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
         withAlice.AuthInfo.UserName.Should().Be( "Alice (interface)" );
@@ -433,7 +433,7 @@ public partial class LabTests
         // And overriding the interface, sets the class.
         var ubiqWithTenantByI = ubiq.CleanClone( restoreInitialValues: true );
         ubiqWithTenantByI.IsLocked.Should().BeFalse();
-        ubiqWithTenantByI.Override( typeof(IFakeTenantInfo), new FakeTenantInfo( "AnotherTenant" ) );
+        ubiqWithTenantByI.Override( typeof( IFakeTenantInfo ), new FakeTenantInfo( "AnotherTenant" ) );
         using var scopedDiffTenantByI = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByI, TestHelper.Monitor ) );
         var withTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
         withTenantByI.AuthInfo.UserName.Should().Be( "Bob" );

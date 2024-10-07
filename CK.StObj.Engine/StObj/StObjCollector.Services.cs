@@ -58,7 +58,7 @@ public partial class StObjCollector
             _params = new List<CtorParameter>();
             foreach( var p in Class.ConstructorParameters )
             {
-                if( p.ServiceInterface != null && Family.Interfaces.Contains( p.ServiceInterface ))
+                if( p.ServiceInterface != null && Family.Interfaces.Contains( p.ServiceInterface ) )
                 {
                     if( !p.IsEnumerable )
                     {
@@ -69,7 +69,7 @@ public partial class StObjCollector
             }
             if( success )
             {
-            Debug.Assert( Class.Interfaces != null );
+                Debug.Assert( Class.Interfaces != null );
                 _isHeadCandidate = !Family.Interfaces.Except( Class.Interfaces ).Any();
                 _isHead = _isHeadCandidate
                           && Family.Classes.Where( c => c != this )
@@ -96,7 +96,7 @@ public partial class StObjCollector
     sealed class InterfaceFamily
     {
         readonly HashSet<AutoServiceInterfaceInfo> _interfaces;
-        readonly Dictionary<AutoServiceClassInfo,SCRClass> _classes;
+        readonly Dictionary<AutoServiceClassInfo, SCRClass> _classes;
 
         public IReadOnlyCollection<AutoServiceInterfaceInfo> Interfaces => _interfaces;
 
@@ -150,7 +150,7 @@ public partial class StObjCollector
                                                                .Where( c => c.ConstructParameters != null
                                                                             && c.ConstructParameters
                                                                                     .Any( p => headCandidates.Select( x => x.Class.ClassType ).Any( o => p.ParameterType.IsAssignableFrom( o ) ) ) )
-                                                               .Select( c => $"{c.Type.FullName}.StObjConstruct( {c.ConstructParameters.Select( p => p.ParameterType.Name ).Concatenate() } )" )
+                                                               .Select( c => $"{c.Type.FullName}.StObjConstruct( {c.ConstructParameters.Select( p => p.ParameterType.Name ).Concatenate()} )" )
                                                                .FirstOrDefault();
 
                             if( couldUseStObjConstruct != null )

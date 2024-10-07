@@ -36,7 +36,7 @@ public class AnonymousRecordTests
     public void non_nullable_string_defaults_to_empty_and_DateTime_defaults_to_Util_UtcMinValue()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IWithValueTuple ));
+        configuration.FirstBinPath.Types.Add( typeof( IWithValueTuple ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
@@ -62,7 +62,7 @@ public class AnonymousRecordTests
     public void nullables_are_let_to_null()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IWithValueTuple2 ));
+        configuration.FirstBinPath.Types.Add( typeof( IWithValueTuple2 ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
@@ -157,7 +157,7 @@ public class AnonymousRecordTests
 
     public interface IWithLongTuple : IPoco
     {
-        ref ( string F1,
+        ref (string F1,
               string F2,
               string F3,
               string F4,
@@ -177,7 +177,8 @@ public class AnonymousRecordTests
               string F18,
               string F19,
               string F20
-            ) Long { get; }
+            ) Long
+        { get; }
     }
 
 
@@ -185,7 +186,7 @@ public class AnonymousRecordTests
     public void long_value_tuples_are_handled()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IWithLongTuple ));
+        configuration.FirstBinPath.Types.Add( typeof( IWithLongTuple ) );
         var engineResult = configuration.Run();
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;

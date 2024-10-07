@@ -31,5 +31,5 @@ public interface IStObjValueResolver
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="parameter">Parameter of a StObjConstruct method.</param>
     void ResolveParameterValue( IActivityMonitor monitor, IStObjFinalParameter parameter );
-    
+
 }

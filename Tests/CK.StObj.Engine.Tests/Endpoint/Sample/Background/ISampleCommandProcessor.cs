@@ -1,4 +1,4 @@
-﻿namespace CK.StObj.Engine.Tests.Endpoint;
+namespace CK.StObj.Engine.Tests.Endpoint;
 
 /// <summary>
 /// A simple command processor.

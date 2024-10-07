@@ -94,7 +94,7 @@ public abstract class MultipleBinPathAspectConfiguration : BinPathAspectConfigur
         if( other._head != null )
         {
             other._head.DoRemoveOtherConfiguration( other );
-            Throw.DebugAssert( other._head == null ); 
+            Throw.DebugAssert( other._head == null );
         }
         if( _head != null )
         {

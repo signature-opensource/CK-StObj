@@ -163,7 +163,7 @@ public class CommandTypeTests
                                         typeof( IHaveListOfCommandObject ),
                                         typeof( IBatchCommand ),
                                         typeof( ICrisResult ),
-                                        typeof( ICrisResultError ));
+                                        typeof( ICrisResultError ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

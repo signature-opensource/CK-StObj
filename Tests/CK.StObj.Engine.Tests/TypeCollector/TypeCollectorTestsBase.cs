@@ -27,7 +27,7 @@ public class TypeCollectorTestsBase
             registerTypes( existing );
             var r = existing.GetResult( TestHelper.Monitor );
             r.LogErrorAndWarnings( TestHelper.Monitor );
-            (r.HasFatalError || error ).Should().Be( false, "There must be no error." );
+            (r.HasFatalError || error).Should().Be( false, "There must be no error." );
             return r;
         }
     }

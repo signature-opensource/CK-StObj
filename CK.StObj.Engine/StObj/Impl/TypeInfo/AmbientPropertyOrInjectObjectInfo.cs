@@ -20,7 +20,7 @@ internal abstract class AmbientPropertyOrInjectObjectInfo : CovariantPropertyInf
         _isOptional = isOptional;
     }
 
-    public bool IsOptional => _isOptional; 
+    public bool IsOptional => _isOptional;
 
     protected override void SetGeneralizationInfo( IActivityMonitor monitor, CovariantPropertyInfo g )
     {
@@ -43,23 +43,23 @@ internal abstract class AmbientPropertyOrInjectObjectInfo : CovariantPropertyInf
     /// The "Property Covariance" trick can be supported here because ambient properties are conceptually "read only" properties:
     /// they must be settable only to enable the framework (and no one else) to actually set their values.
     /// </summary>
-    static public void CreateAmbientPropertyListForExactType( 
-        IActivityMonitor monitor, 
-        Type t, 
+    static public void CreateAmbientPropertyListForExactType(
+        IActivityMonitor monitor,
+        Type t,
         int definerSpecializationDepth,
-        List<StObjPropertyInfo> stObjProperties, 
+        List<StObjPropertyInfo> stObjProperties,
         out IList<AmbientPropertyInfo>? apListResult,
         out IList<InjectObjectInfo>? injectedListResult )
     {
         Debug.Assert( stObjProperties != null );
-        
+
         var properties = t.GetProperties( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly )
                           .Where( p => !p.Name.Contains( '.', StringComparison.Ordinal ) );
         apListResult = null;
         injectedListResult = null;
         foreach( var p in properties )
         {
-            StObjPropertyAttribute? stObjAttr = p.GetCustomAttribute<StObjPropertyAttribute>(false);
+            StObjPropertyAttribute? stObjAttr = p.GetCustomAttribute<StObjPropertyAttribute>( false );
             if( stObjAttr != null )
             {
                 string nP = String.IsNullOrEmpty( stObjAttr.PropertyName ) ? p.Name : stObjAttr.PropertyName;

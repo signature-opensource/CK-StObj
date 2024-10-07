@@ -29,7 +29,7 @@ sealed class EngineConfigureContext : IStObjEngineConfigureContext
             BaseProvider = null;
             // If the aspects registered a specific object activator, keep it
             // instead of the default one.
-            if( GetService( typeof(ISimpleObjectActivator) ) == null )
+            if( GetService( typeof( ISimpleObjectActivator ) ) == null )
             {
                 monitor.Info( "No explicit ISimpleObjectActivator has been registered. Using a default SimpleObjectActivator." );
                 this.Add( _defaultActivator );
@@ -39,7 +39,7 @@ sealed class EngineConfigureContext : IStObjEngineConfigureContext
         protected override object? GetDirectService( Type serviceType )
         {
             object? s = base.GetDirectService( serviceType );
-            if( s == null && (serviceType == typeof(IActivityMonitor) || serviceType == typeof(ActivityMonitor)) )
+            if( s == null && (serviceType == typeof( IActivityMonitor ) || serviceType == typeof( ActivityMonitor )) )
             {
                 s = _c._monitor;
             }

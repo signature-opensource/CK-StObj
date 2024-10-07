@@ -32,13 +32,13 @@ internal abstract class MutableReferenceOptional : MutableReference
 
     public bool IsOptional { get; set; }
 
-    internal MutableItem? CachedResolvedStObj 
-    { 
-        get 
+    internal MutableItem? CachedResolvedStObj
+    {
+        get
         {
             Debug.Assert( _resolved != UnresolvedMarker, "ResolveToStObj must have been called before." );
-            return _resolved; 
-        } 
+            return _resolved;
+        }
     }
 
     internal override MutableItem? ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
@@ -58,8 +58,8 @@ internal abstract class MutableReferenceOptional : MutableReference
         return _resolved = base.ResolveToStObj( monitor, collector );
     }
 
-    protected override void WarnOrErrorIfStObjRequired(IActivityMonitor monitor, bool skipWarnOnValueType, string text)
+    protected override void WarnOrErrorIfStObjRequired( IActivityMonitor monitor, bool skipWarnOnValueType, string text )
     {
-        if( !IsOptional ) base.WarnOrErrorIfStObjRequired(monitor, skipWarnOnValueType, text);
+        if( !IsOptional ) base.WarnOrErrorIfStObjRequired( monitor, skipWarnOnValueType, text );
     }
 }

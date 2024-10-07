@@ -56,7 +56,7 @@ public sealed partial class PocoTypeSystemBuilder
             Throw.DebugAssert( family.Interfaces[0].PocoInterface == primary.Type );
             _typeCache.Add( primary.Type, primary.ObliviousType );
             _typeCache.Add( primary.CSharpName, primary );
-            if( family.Interfaces.Count  > 1 )
+            if( family.Interfaces.Count > 1 )
             {
                 var secondaries = new ISecondaryPocoType[family.Interfaces.Count - 1];
                 int iSecondary = 0;
@@ -117,7 +117,7 @@ public sealed partial class PocoTypeSystemBuilder
         // these parameters are used for covariance detection, they must be resolved
         // before analyzing fields.
         bool success = true;
-        foreach( var (t,d) in _typeDefinitions )
+        foreach( var (t, d) in _typeDefinitions )
         {
             success &= d.InitializeGenericInstanceArguments( this, monitor );
         }
@@ -175,7 +175,7 @@ public sealed partial class PocoTypeSystemBuilder
                                      .All( x => x.PocoType.IsOblivious
                                                 &&
                                                 (
-                                                    (x.Type.IsValueType && (x.PocoType.IsNullable == (Nullable.GetUnderlyingType(x.Type) != null)))
+                                                    (x.Type.IsValueType && (x.PocoType.IsNullable == (Nullable.GetUnderlyingType( x.Type ) != null)))
                                                     ||
                                                     (!x.Type.IsValueType && x.PocoType.IsNullable)
                                                 )

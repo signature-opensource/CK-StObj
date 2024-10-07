@@ -108,7 +108,7 @@ public sealed partial class PocoTypeSystemBuilder
         ICollectionPocoType? regularCollection = null;
         if( tI is ISecondaryPocoType sec )
         {
-            var tListPrimary = (isList ? typeof(List<>) : typeof(HashSet<>) ).MakeGenericType( sec.PrimaryPocoType.Type );
+            var tListPrimary = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( sec.PrimaryPocoType.Type );
             nonSecondaryConcreteCollection = DoRegisterConcreteListOrSet( isList, tListPrimary, listOrHashSet, sec.PrimaryPocoType, null, null );
             Throw.DebugAssert( sec.IsRegular );
         }

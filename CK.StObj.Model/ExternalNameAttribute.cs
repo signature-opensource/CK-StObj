@@ -25,7 +25,7 @@ namespace CK.Core;
 /// be set on the primary interface.
 /// </para>
 /// </summary>
-[AttributeUsage( AttributeTargets.Interface|AttributeTargets.Class|AttributeTargets.Enum, AllowMultiple = false, Inherited = false )]
+[AttributeUsage( AttributeTargets.Interface | AttributeTargets.Class | AttributeTargets.Enum, AllowMultiple = false, Inherited = false )]
 public class ExternalNameAttribute : Attribute
 {
     /// <summary>

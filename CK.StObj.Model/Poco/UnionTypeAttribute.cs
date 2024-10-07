@@ -38,7 +38,7 @@ namespace CK.Core;
 /// to avoid any warnings (unused fields).
 /// </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+[AttributeUsage( AttributeTargets.Property, AllowMultiple = false )]
 public class UnionTypeAttribute : Attribute
 {
     /// <summary>

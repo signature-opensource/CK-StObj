@@ -19,7 +19,7 @@ public class CKTypeKindDetector
     /// Mask for public information defined in the <see cref="CKTypeKind"/> enumeration.
     /// Internally other flags are used.
     /// </summary>
-    public const CKTypeKind MaskPublicInfo = (CKTypeKind)(PrivateStart-1);
+    public const CKTypeKind MaskPublicInfo = (CKTypeKind)(PrivateStart - 1);
 
     // The type is a service that is scoped because its ctor references a scoped service.
     const CKTypeKind IsScopedReasonReference = (CKTypeKind)(PrivateStart << 3);
@@ -122,17 +122,17 @@ public class CKTypeKindDetector
         return SetLifetimeOrProcessType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
     }
 
-    CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
+    CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind )
     {
-        Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", ( kind & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
-        Throw.DebugAssert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass )!, ( kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null );
-        Throw.DebugAssert( "At least, something must be set.", ( kind & CKTypeKindExtension.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKindExtension.AmbientServiceFlags) != 0 );
+        Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", (kind & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
+        Throw.DebugAssert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass )!, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null );
+        Throw.DebugAssert( "At least, something must be set.", (kind & CKTypeKindExtension.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKindExtension.AmbientServiceFlags) != 0 );
 
         // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
         // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
         // not be called for an already registered type.)
         var exist = RawGet( m, t );
-        if( (exist & (CKTypeKind.IsDefiner|CKTypeKind.IsSuperDefiner)) != 0 )
+        if( (exist & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) != 0 )
         {
             Throw.Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
         }
@@ -345,7 +345,7 @@ public class CKTypeKindDetector
                         {
                             allBases = allBases.Where( i => !i.IsAssignableFrom( baseType ) ).Append( baseType );
                         }
-                        foreach( var i in allBases  )
+                        foreach( var i in allBases )
                         {
                             var kI = RawGet( m, i ) & ~(CKTypeKind.IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsExcludedType);
                             if( (k & CKTypeKind.IsDefiner) == 0 // We are not yet a Definer...

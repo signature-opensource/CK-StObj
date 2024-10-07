@@ -13,7 +13,7 @@ using static CK.Testing.MonitorTestHelper;
 namespace CK.StObj.Engine.Tests.Service;
 
 [TestFixture]
-public class ServiceSimpleMappingTests 
+public class ServiceSimpleMappingTests
 {
     // The 2 services below can be singleton: IAutoService would lead to singletons.
     // Specifying scoped is not the default.
@@ -91,7 +91,7 @@ public class ServiceSimpleMappingTests
     //
     // Current exclusion semantics is what it is, not perfect and used rarely and quite always on leaf types, so let it be.
     [Test]
-    [Ignore("Exclusion needs rework.")]
+    [Ignore( "Exclusion needs rework." )]
     public void service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous()
     {
         //{

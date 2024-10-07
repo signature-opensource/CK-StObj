@@ -93,11 +93,11 @@ class ExtMemberInfoBase : IExtMemberInfo
         get
         {
             return _customAttributesData ??= _o switch
-                {
-                    MemberInfo m => (IReadOnlyList<CustomAttributeData>)m.GetCustomAttributesData(),
-                    ParameterInfo p => (IReadOnlyList<CustomAttributeData>)p.GetCustomAttributesData(),
-                    _ => Throw.NotSupportedException<CustomAttributeData[]>(),
-                };
+            {
+                MemberInfo m => (IReadOnlyList<CustomAttributeData>)m.GetCustomAttributesData(),
+                ParameterInfo p => (IReadOnlyList<CustomAttributeData>)p.GetCustomAttributesData(),
+                _ => Throw.NotSupportedException<CustomAttributeData[]>(),
+            };
         }
     }
 
@@ -109,7 +109,7 @@ class ExtMemberInfoBase : IExtMemberInfo
         {
             if( _typeName == null )
             {
-                var t = _type.IsByRef ? _type.GetElementType() : _type; 
+                var t = _type.IsByRef ? _type.GetElementType() : _type;
                 _typeName = t.ToCSharpName();
             }
             return _typeName;

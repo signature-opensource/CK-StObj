@@ -93,7 +93,7 @@ public abstract class AmbientServiceHub : IAmbientAutoService
     /// </summary>
     /// <typeparam name="T">The ambient service type.</typeparam>
     /// <returns>The initial value.</returns>
-    public T GetInitialValue<T>() => (T)Get( typeof(T) ).Initial;
+    public T GetInitialValue<T>() => (T)Get( typeof( T ) ).Initial;
 
     /// <summary>
     /// Gets the current value for a type (that must be an Ambient service type).
@@ -107,7 +107,7 @@ public abstract class AmbientServiceHub : IAmbientAutoService
     /// </summary>
     /// <typeparam name="T">The ambient service type.</typeparam>
     /// <returns>The current value.</returns>
-    public T GetCurrentValue<T>() => (T)Get( typeof(T) ).Current;
+    public T GetCurrentValue<T>() => (T)Get( typeof( T ) ).Current;
 
     /// <summary>
     /// Gets whether at least one value is overridden.
@@ -224,7 +224,7 @@ public abstract class AmbientServiceHub : IAmbientAutoService
             {
                 if( !_entries[iImpl].AmbientServiceType.IsAssignableFrom( tInstance ) )
                 {
-                    Throw.ArgumentException( nameof(tInstance), $"Instance must be a specialization of '{_entries[iImpl].AmbientServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
+                    Throw.ArgumentException( nameof( tInstance ), $"Instance must be a specialization of '{_entries[iImpl].AmbientServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
                 }
             }
         }

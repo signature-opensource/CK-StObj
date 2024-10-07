@@ -30,7 +30,7 @@ public abstract class ExportCodeWriter
     /// <param name="key">The key that identifies this writer.</param>
     /// <param name="handleTypes">True to track the types in the <see cref="HandledTypes"/>.</param>
     protected ExportCodeWriter( ExportCodeWriterMap map, object key, bool handleTypes = false )
-        : this( map, handleTypes ) 
+        : this( map, handleTypes )
     {
         Throw.CheckNotNullArgument( key );
         _key = key;

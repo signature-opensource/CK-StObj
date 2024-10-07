@@ -166,7 +166,7 @@ public static class PocoJsonImportExtensions
     {
         if( utf8JsonStream is RecyclableMemoryStream r )
         {
-            return ReadJson( @this, r.GetReadOnlySequence(), options ); 
+            return ReadJson( @this, r.GetReadOnlySequence(), options );
         }
         options ??= PocoJsonImportOptions.Default;
         Utf8JsonStreamReader sr = Utf8JsonStreamReader.Create( utf8JsonStream,

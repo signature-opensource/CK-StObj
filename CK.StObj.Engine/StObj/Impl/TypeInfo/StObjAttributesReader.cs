@@ -68,7 +68,7 @@ internal class StObjAttributesReader
             CombineTypes( ref children, attr.Children );
             CombineTypes( ref group, attr.Groups );
         }
-        var r = new RealObjectAttribute(){ Container = container, ItemKind = itemKind };
+        var r = new RealObjectAttribute() { Container = container, ItemKind = itemKind };
         if( requires != null ) r.Requires = requires.ToArray();
         if( requiredBy != null ) r.RequiredBy = requiredBy.ToArray();
         if( children != null ) r.Children = children.ToArray();

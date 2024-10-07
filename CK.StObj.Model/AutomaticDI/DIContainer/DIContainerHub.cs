@@ -74,7 +74,7 @@ public abstract class DIContainerHub : ISingletonAutoService
 
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        [EditorBrowsable(EditorBrowsableState.Never)]
+        [EditorBrowsable( EditorBrowsableState.Never )]
         public void Deconstruct( out Type t, out int i )
         {
             t = AmbientServiceType;

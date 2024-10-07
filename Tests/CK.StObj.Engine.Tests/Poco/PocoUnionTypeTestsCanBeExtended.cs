@@ -48,7 +48,7 @@ public class PocoUnionTypeTestsCanBeExtended
 
         new class UnionTypes
         {
-            public (string,List<string?>) AnotherThing { get; }
+            public (string, List<string?>) AnotherThing { get; }
         }
     }
 
@@ -56,7 +56,7 @@ public class PocoUnionTypeTestsCanBeExtended
     public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ));
+        configuration.FirstBinPath.Types.Add( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -72,7 +72,7 @@ public class PocoUnionTypeTestsCanBeExtended
         p.Thing.Should().Be( "It works!" );
 
         p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>( "Null is forbidden." );
-        p.Invoking( x => x.Thing = new Dictionary<string,object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
+        p.Invoking( x => x.Thing = new Dictionary<string, object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
 
         // AnotherThing allows int, double?, string? and List<string?>?
         p.AnotherThing = 34;

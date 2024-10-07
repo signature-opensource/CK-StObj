@@ -31,7 +31,7 @@ internal class CovariantPropertyInfo : INamedPropertyInfo
         _index = index;
     }
 
-    public string Name => _p.Name; 
+    public string Name => _p.Name;
     public Type PropertyType => _p.PropertyType;
     public Type DeclaringType => _p.DeclaringType!;
     public PropertyInfo PropertyInfo => _p;
@@ -53,7 +53,7 @@ internal class CovariantPropertyInfo : INamedPropertyInfo
     /// </summary>
     public PropertyInfo SettablePropertyInfo => _settablePropertyInfo!;
 
-    public virtual string Kind => KindName; 
+    public virtual string Kind => KindName;
 
     void SetTopDefinerSettablePropertyInfo( IActivityMonitor monitor )
     {

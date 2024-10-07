@@ -73,7 +73,7 @@ sealed class GeneratedRootContext : IStObjMap, IStObjObjectMap, IStObjServiceMap
 
     public IReadOnlyCollection<VFeature> Features => throw new NotImplementedException();
 
-    public IReadOnlyDictionary<Type, IStObjMultipleInterface> MultipleMappings => ImmutableDictionary<Type,IStObjMultipleInterface>.Empty;
+    public IReadOnlyDictionary<Type, IStObjMultipleInterface> MultipleMappings => ImmutableDictionary<Type, IStObjMultipleInterface>.Empty;
 
     IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => Array.Empty<IStObjFinalImplementation>();
 

@@ -42,5 +42,5 @@ internal class AmbientPropertyInfo : AmbientPropertyOrInjectObjectInfo
         Generalization = gen;
     }
 
-    public override string Kind  => KindName; 
+    public override string Kind => KindName;
 }

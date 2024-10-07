@@ -78,7 +78,7 @@ public class PocoDirectoryTests
     public void when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ));
+        configuration.FirstBinPath.Types.Add( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
         {
@@ -99,7 +99,7 @@ public class PocoDirectoryTests
     public void PocoName_attribute_must_be_on_the_primary_interface()
     {
         var c = new[] { typeof( ICmdSecondary ) };
-        TestHelper.GetFailedCollectorResult( c, $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName(false)}'." );
+        TestHelper.GetFailedCollectorResult( c, $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName( false )}'." );
     }
 
     [ExternalName( "Cmd1" )]

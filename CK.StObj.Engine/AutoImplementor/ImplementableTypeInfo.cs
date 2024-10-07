@@ -163,7 +163,7 @@ public class ImplementableTypeInfo
             // implementation... This works for C# because the name mangling is deterministic: the method name
             // starts with the interface full name followed by '.' method name. Since a dot in a "regular" method
             // name is not possible, this does the job...
-            bool isVirtual = (mGet != null && mGet.IsVirtual && !mGet.Name.Contains('.'))
+            bool isVirtual = (mGet != null && mGet.IsVirtual && !mGet.Name.Contains( '.' ))
                              || (mSet != null && mSet.IsVirtual && mSet.Name.Contains( '.' ));
             if( !isVirtual ) continue;
 
@@ -251,7 +251,7 @@ public class ImplementableTypeInfo
             TypeAttributes tA = TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;
             TypeBuilder b = assembly.StubModuleBuilder.DefineType( assembly.GetAutoImplementedTypeName( AbstractType ), tA, AbstractType );
             // Relayed constructors replicates all their potential attributes (except attributes on parameters).
-            b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, (param,attributeData) => false );
+            b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, ( param, attributeData ) => false );
             foreach( var am in MethodsToImplement )
             {
                 b.ImplementEmptyStubMethod( am.Method, false );
@@ -327,6 +327,6 @@ public class ImplementableTypeInfo
     /// Overridden to return a readable string with the <see cref="AbstractType"/> name and the <see cref="StubType"/> if there is one.
     /// </summary>
     /// <returns>A readable string.</returns>
-    public override string ToString() => $"{AbstractType.Name} => {_stubType?.Name ?? "(no stub type)" }";
+    public override string ToString() => $"{AbstractType.Name} => {_stubType?.Name ?? "(no stub type)"}";
 
 }

@@ -49,9 +49,13 @@ public class ClosedPocoTests
 
     public readonly Type[] BaseUserAndDocumentCloPocs =
     [
-        typeof(ICloPoc), typeof(ICloPocPart),
-        typeof(IAuthenticatedCloPocPart), typeof(ICultureDependentCloPocPart),
-        typeof(IUserCloPoc), typeof(IDocumentCloPoc), typeof(ICultureUserCloPoc)
+        typeof( ICloPoc ),
+        typeof( ICloPocPart ),
+        typeof( IAuthenticatedCloPocPart ),
+        typeof( ICultureDependentCloPocPart ),
+        typeof( IUserCloPoc ),
+        typeof( IDocumentCloPoc ),
+        typeof( ICultureUserCloPoc )
     ];
 
     [TestCase( "OnlyTheFinalUserAndDocumentCloPocs" )]

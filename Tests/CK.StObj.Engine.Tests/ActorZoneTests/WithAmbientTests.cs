@@ -119,7 +119,7 @@ public class WithAmbientTests
     {
         [AmbientProperty]
         public SqlDefaultDatabase? Database { get; set; }
-        
+
         [AmbientProperty]
         public string? Schema { get; set; }
     }
@@ -133,7 +133,7 @@ public class WithAmbientTests
     {
         [InjectObject]
         public BasicUser UserHome { get; private set; }
-        
+
         [InjectObject]
         public BasicGroup GroupHome { get; private set; }
     }
@@ -291,7 +291,7 @@ public class WithAmbientTests
 
 
 
-    [TestCase("UseStObjConstruct")]
+    [TestCase( "UseStObjConstruct" )]
     [TestCase( "UseSetDirectProperty" )]
     public void LayeredArchitecture_and_SqlDatabase_configurations( string mode )
     {
@@ -331,7 +331,7 @@ public class WithAmbientTests
         var authenticationUser = map.StObjs.Obtain<AuthenticationUser>();
         Debug.Assert( authenticationUser != null );
         authenticationUser.Schema.Should().Be( "CK" );
-        
+
         var authenticationDetail = map.StObjs.Obtain<AuthenticationDetail>();
         Debug.Assert( authenticationDetail != null );
         authenticationDetail.Schema.Should().Be( "CKAuth" );

@@ -60,6 +60,6 @@ partial class StObjCollector
         SetAutoServiceKind( monitor, "Microsoft.AspNetCore.DataProtection.IDataProtectionProvider, Microsoft.AspNetCore.DataProtection.Abstractions", ConfigurableAutoServiceKind.IsSingleton, isOptional: true );
 
         // The CK.AspNet.ScopedHttpContext is only available in the Global DI.
-        SetAutoServiceKind( monitor, "CK.AspNet.ScopedHttpContext, CK.AspNet", ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped, isOptional: true );
+        SetAutoServiceKind( monitor, "CK.AspNet.ScopedHttpContext, CK.AspNet", ConfigurableAutoServiceKind.IsContainerConfiguredService | ConfigurableAutoServiceKind.IsScoped, isOptional: true );
     }
 }

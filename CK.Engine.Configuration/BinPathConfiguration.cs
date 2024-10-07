@@ -14,7 +14,7 @@ namespace CK.Setup;
 /// </summary>
 public sealed partial class BinPathConfiguration
 {
-    readonly Dictionary<string,BinPathAspectConfiguration> _aspects;
+    readonly Dictionary<string, BinPathAspectConfiguration> _aspects;
     readonly HashSet<string> _assemblies;
     readonly TypeConfigurationSet _types;
     readonly HashSet<Type> _excludedTypes;

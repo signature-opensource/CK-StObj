@@ -27,7 +27,7 @@ interface IDIContainerInternal : IDIContainer
 {
     bool ConfigureServices( IActivityMonitor monitor,
                             IStObjMap stObjMap,
-                            Dictionary<Type,Mapping> mappings,
+                            Dictionary<Type, Mapping> mappings,
                             ServiceDescriptor[] commonDescriptors );
 }
 
@@ -456,7 +456,7 @@ sealed class ScopeDataHolder
         //      - the BackendScopedData inheritance is checked at setup time for Backend contexts.
         // - We can then access the AmbientServiceHub instance that is the code generated class with its AmbientServiceHub_CK.At( mappingIndex )
         //   hidden accessor.
-        return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).AmbientServiceHub! ).At( index );
+        return Unsafe.As<AmbientServiceHub_CK>( Unsafe.As<DIContainerDefinition.BackendScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data ).AmbientServiceHub! ).At( index );
     }
 }
 
@@ -668,7 +668,7 @@ sealed class DIContainer<TScopedData> : IDIContainer<TScopedData>, IDIContainerI
                                 success = false;
                             }
                         }
-                        else  
+                        else
                         {
                             // Silently skips IActivityMonitor and IParallelLogger that are "by design".
                             if( s != typeof( IActivityMonitor ) && s != typeof( IParallelLogger ) )

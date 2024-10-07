@@ -27,7 +27,7 @@ public sealed partial class AssemblyCache : IAssemblyCache
     bool _registrationClosed;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<object,CachedAssembly> Assemblies => _assemblies;
+    public IReadOnlyDictionary<object, CachedAssembly> Assemblies => _assemblies;
 
     /// <inheritdoc />
     public CachedAssembly FindOrCreate( Assembly assembly )
@@ -118,7 +118,7 @@ public sealed partial class AssemblyCache : IAssemblyCache
                 _binPaths.Add( k, binPath );
             }
         }
-        else 
+        else
         {
             if( binPath.Success )
             {

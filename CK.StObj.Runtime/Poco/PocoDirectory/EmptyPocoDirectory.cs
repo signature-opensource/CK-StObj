@@ -17,7 +17,7 @@ public class EmptyPocoDirectory : IPocoDirectory
     /// </summary>
     public static IPocoDirectory Default { get; } = new EmptyPocoDirectory();
 
-    EmptyPocoDirectory() {}
+    EmptyPocoDirectory() { }
 
     IReadOnlyList<IPocoFamilyInfo> IPocoDirectory.Families => Array.Empty<IPocoFamilyInfo>();
 

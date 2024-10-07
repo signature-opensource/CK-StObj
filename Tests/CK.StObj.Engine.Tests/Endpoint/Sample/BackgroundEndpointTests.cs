@@ -57,8 +57,8 @@ public partial class BackgroundEndpointTests
         var backExecutor = auto.Services.GetRequiredService<BackgroundExecutorService>();
         backExecutor.CheckBackgroundServices = sp =>
         {
-            var iTenantInfo = sp.GetService( typeof( IFakeTenantInfo  ) );
-            var cTenantInfo = sp.GetService( typeof(FakeTenantInfo) );
+            var iTenantInfo = sp.GetService( typeof( IFakeTenantInfo ) );
+            var cTenantInfo = sp.GetService( typeof( FakeTenantInfo ) );
             var ambientHub = sp.GetService( typeof( AmbientServiceHub ) );
 
             ambientHub.Should().NotBeNull();
@@ -141,7 +141,7 @@ public partial class BackgroundEndpointTests
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
-            
+
             OptionsServiceCollectionExtensions.AddOptions( services );
             services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
         } );
@@ -189,7 +189,7 @@ public partial class BackgroundEndpointTests
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
-            
+
             OptionsServiceCollectionExtensions.AddOptions( services );
             services.Configure<SomeCommandProcessingOptions>( config.GetRequiredSection( "Opt" ) );
         } );

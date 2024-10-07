@@ -33,7 +33,7 @@ sealed class EngineTerminateContext : IStObjEngineTerminateContext
     {
         using( _monitor.OpenInfo( "Terminating Aspects." ) )
         {
-            for( int i = _runContext.Aspects.Count-1; i >= 0; --i )
+            for( int i = _runContext.Aspects.Count - 1; i >= 0; --i )
             {
                 IStObjEngineAspect a = _runContext.Aspects[i];
                 using( _monitor.OpenInfo( $"Aspect: {a.GetType().FullName}." ) )

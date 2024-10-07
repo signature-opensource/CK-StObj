@@ -79,7 +79,7 @@ public class MultipleMappingsEndpointTests
         configuration.FirstBinPath.Types.Add( typeof( ManyAuto ),
                                         typeof( ManyConsumer ),
                                         typeof( FirstDIContainerDefinition ),
-                                        typeof( SecondDIContainerDefinition ));
+                                        typeof( SecondDIContainerDefinition ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
@@ -141,7 +141,7 @@ public class MultipleMappingsEndpointTests
         configuration.FirstBinPath.Types.Add( typeof( ManyScoped ),
                                               typeof( ManyConsumer ),
                                               typeof( FirstDIContainerDefinition ),
-                                              typeof( SecondDIContainerDefinition ));
+                                              typeof( SecondDIContainerDefinition ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
@@ -175,7 +175,7 @@ public class MultipleMappingsEndpointTests
                                         typeof( ManyScoped2 ),
                                         typeof( ManyConsumer ),
                                         typeof( FirstDIContainerDefinition ),
-                                        typeof( SecondDIContainerDefinition ));
+                                        typeof( SecondDIContainerDefinition ) );
         using var auto = configuration.Run().CreateAutomaticServices( configureServices: s =>
         {
             s.AddScoped<ManyNothing>();
@@ -243,7 +243,7 @@ public class MultipleMappingsEndpointTests
         configuration.FirstBinPath.Types.Add( typeof( ManySingleton ),
                                         typeof( ManyConsumer ),
                                         typeof( ManyAsScopedDIContainerDefinition ) );
-        configuration.GetFailedAutomaticServices( 
+        configuration.GetFailedAutomaticServices(
             "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
     }
 
@@ -308,8 +308,8 @@ public class MultipleMappingsEndpointTests
            "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
            configureServices: s =>
            {
-                s.AddScoped<ManyNothing>();
-                s.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+               s.AddScoped<ManyNothing>();
+               s.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
            } );
     }
 

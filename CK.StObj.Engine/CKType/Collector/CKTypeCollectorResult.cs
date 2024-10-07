@@ -16,7 +16,7 @@ public class CKTypeCollectorResult
 {
     readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
-    internal CKTypeCollectorResult( Dictionary<Assembly,bool> assemblies,
+    internal CKTypeCollectorResult( Dictionary<Assembly, bool> assemblies,
                                     PocoTypeSystemBuilder pocoTypeSystemBuilder,
                                     RealObjectCollectorResult c,
                                     AutoServiceCollectorResult s,
@@ -41,7 +41,7 @@ public class CKTypeCollectorResult
     /// associated to a boolean that states whether this is a VFeature or an infrastructure
     /// assembly (only required by Roslyn compiler as meta data reference).
     /// </summary>
-    public Dictionary<Assembly,bool> Assemblies { get; }
+    public Dictionary<Assembly, bool> Assemblies { get; }
 
     /// <summary>
     /// Gets the results for <see cref="IRealObject"/> objects.

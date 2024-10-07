@@ -6,7 +6,7 @@ namespace Sample.Model;
 /// <summary>
 /// Stupid attribute that defines the code of a method that must be abstract or virtual.
 /// </summary>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+[AttributeUsage( AttributeTargets.Method, AllowMultiple = false )]
 public class StupidCodeAttribute : ContextBoundDelegationAttribute
 {
     public StupidCodeAttribute( string actualCode )

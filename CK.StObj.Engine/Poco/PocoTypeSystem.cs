@@ -91,7 +91,7 @@ sealed partial class PocoTypeSystem : IPocoTypeSystem
 
     public IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type ) => _typeDefinitions.GetValueOrDefault( type );
 
-    public T? FindByType<T>( Type type ) where T: class, IPocoType => _typeCache.GetValueOrDefault( type ) as T;
+    public T? FindByType<T>( Type type ) where T : class, IPocoType => _typeCache.GetValueOrDefault( type ) as T;
 
     public IPocoTypeSetManager SetManager => this;
 }

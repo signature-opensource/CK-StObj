@@ -45,7 +45,7 @@ partial class PocoTypeSystemBuilder
         IPocoType? _visitedRoot;
 
         public PocoCycleAndDefaultVisitor( int nonNullableCount )
-            : base( new MiniTypeSet( nonNullableCount ) ) 
+            : base( new MiniTypeSet( nonNullableCount ) )
         {
             _path = new List<List<IPocoField>>();
         }
@@ -110,20 +110,20 @@ partial class PocoTypeSystemBuilder
                         _cycleFound = true;
                     }
                     else for( int i = 0; i < _typedPathCount; ++i )
-                    {
-                        int max = _path[i].Count;
-                        if( i == _typedPathCount - 1 ) --max;
-                        for( int iField = 0; iField < max; iField++ )
                         {
-                            IPocoField? f = _path[i][iField];
-                            IPocoType tFP = f.Type;
-                            if( tFP is ISecondaryPocoType s ) tFP = s.PrimaryPocoType;
-                            if( tP == tFP )
+                            int max = _path[i].Count;
+                            if( i == _typedPathCount - 1 ) --max;
+                            for( int iField = 0; iField < max; iField++ )
                             {
-                                _cycleFound = true;
+                                IPocoField? f = _path[i][iField];
+                                IPocoType tFP = f.Type;
+                                if( tFP is ISecondaryPocoType s ) tFP = s.PrimaryPocoType;
+                                if( tP == tFP )
+                                {
+                                    _cycleFound = true;
+                                }
                             }
                         }
-                    }
                 }
             }
         }
@@ -202,7 +202,7 @@ partial class PocoTypeSystemBuilder
                 else
                 {
                     Throw.DebugAssert( _path[_typedPathCount].Count == 0 );
-                    _path[_typedPathCount].Add( field ); 
+                    _path[_typedPathCount].Add( field );
                 }
                 _typedPathCount++;
             }

@@ -44,11 +44,11 @@ public sealed class PocoExtendedProtocolName
     /// <param name="protocol">The full protocol name.</param>
     /// <param name="result">The parsed result.</param>
     /// <returns>true if protocol was successfully parsed; otherwise, false.</returns>
-    public static bool TryParse( string protocol, [NotNullWhen(true)] out PocoExtendedProtocolName? result )
+    public static bool TryParse( string protocol, [NotNullWhen( true )] out PocoExtendedProtocolName? result )
     {
         Throw.CheckNotNullOrEmptyArgument( protocol );
         result = null;
-        if( protocol[protocol.Length-1] != ']' ) return false;
+        if( protocol[protocol.Length - 1] != ']' ) return false;
         int idx = protocol.IndexOf( '[' );
         if( idx <= 0 ) return false;
         result = new PocoExtendedProtocolName( protocol, protocol.Substring( 0, idx ) );

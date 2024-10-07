@@ -109,21 +109,21 @@ public class PocoTypeNameMap : IPocoTypeNameMap
                 MakeCSharpName( t, out name, out nullableName );
                 return;
             case PocoTypeKind.AnonymousRecord:
-                {
-                    var r = (IRecordPocoType)t;
-                    var fields = r.Fields.Where( f => _typeSet.Contains( f.Type ) );
-                    Throw.DebugAssert( fields.Any() );
-                    MakeAnonymousRecord( r, fields, out name, out nullableName );
-                    return;
-                }
+            {
+                var r = (IRecordPocoType)t;
+                var fields = r.Fields.Where( f => _typeSet.Contains( f.Type ) );
+                Throw.DebugAssert( fields.Any() );
+                MakeAnonymousRecord( r, fields, out name, out nullableName );
+                return;
+            }
             case PocoTypeKind.UnionType:
-                {
-                    var u = (IUnionPocoType)t;
-                    var allowed = u.AllowedTypes.Where( _typeSet.Contains );
-                    Throw.DebugAssert( allowed.Any() );
-                    MakeUnionType( u, allowed, out name, out nullableName );
-                    return;
-                }
+            {
+                var u = (IUnionPocoType)t;
+                var allowed = u.AllowedTypes.Where( _typeSet.Contains );
+                Throw.DebugAssert( allowed.Any() );
+                MakeUnionType( u, allowed, out name, out nullableName );
+                return;
+            }
         }
         if( t is INamedPocoType namedType )
         {

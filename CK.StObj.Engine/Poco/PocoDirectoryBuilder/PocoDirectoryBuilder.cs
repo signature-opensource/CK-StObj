@@ -69,14 +69,14 @@ partial class PocoDirectoryBuilder
     bool IsPocoButNotDefiner( IActivityMonitor monitor, Type t ) => (_kindDetector.GetNonDefinerKind( monitor, t ) & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco;
 
     public bool RegisterInterface( IActivityMonitor monitor, Type t, CKTypeKind rawKind ) => DoRegisterInterface( monitor, t, rawKind ) != null;
-    
+
     InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t, CKTypeKind rawKind )
     {
         Throw.DebugAssert( t.IsInterface && t.IsVisible && !t.IsGenericTypeDefinition && (rawKind & (CKTypeKind.IsPoco | CKTypeKind.IsExcludedType)) == CKTypeKind.IsPoco );
         if( (rawKind & CKTypeKind.IsDefiner) != 0 )
         {
             // Keep IPoco itself exclusion exception here.
-            if( t != typeof(IPoco) ) _definers.Add( t );
+            if( t != typeof( IPoco ) ) _definers.Add( t );
             return null;
         }
         if( !_all.TryGetValue( t, out var p ) )
@@ -208,7 +208,7 @@ partial class PocoDirectoryBuilder
             p.SetGetMethod( m );
         }
         {
-            MethodBuilder m = tBF.DefineMethod( "get_PocoClassType", MethodAttributes.Public | MethodAttributes.Virtual |  MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( Type ), Type.EmptyTypes );
+            MethodBuilder m = tBF.DefineMethod( "get_PocoClassType", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( Type ), Type.EmptyTypes );
             ILGenerator g = m.GetILGenerator();
             g.Emit( OpCodes.Ldtoken, tB );
             g.Emit( OpCodes.Call, _typeFromToken );
@@ -290,7 +290,7 @@ partial class PocoDirectoryBuilder
         bool mustBeClosed = false;
         foreach( var i in interfaces )
         {
-            mustBeClosed |= typeof( IClosedPoco ).IsAssignableFrom( i ); 
+            mustBeClosed |= typeof( IClosedPoco ).IsAssignableFrom( i );
             var bases = i.GetInterfaces();
             if( closure == null || maxICount < bases.Length )
             {
@@ -323,7 +323,7 @@ partial class PocoDirectoryBuilder
             Debug.Assert( maxICount < expanded.Count );
             if( closure == null )
             {
-                monitor.Error( $"Poco family '{interfaces.Select( b => b.ToCSharpName() ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
+                monitor.Error( $"Poco family '{interfaces.Select( b => b.ToCSharpName() ).Concatenate( "', '" )}' must be closed but none of these interfaces covers the other ones." );
                 return null;
             }
             monitor.Trace( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.ToCSharpName() ).Concatenate()}." );
@@ -409,7 +409,7 @@ partial class PocoDirectoryBuilder
                     else
                     {
                         // Quick check of UnionType attribute existence.
-                        bool hasUnionType = extP.CustomAttributesData.Any( a => a.AttributeType == typeof(UnionTypeAttribute) );
+                        bool hasUnionType = extP.CustomAttributesData.Any( a => a.AttributeType == typeof( UnionTypeAttribute ) );
                         if( hasUnionType && cacheUnionTypesDef == null )
                         {
                             Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
@@ -453,7 +453,7 @@ partial class PocoDirectoryBuilder
                     MethodAttributes mA = method.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.VtableLayoutMask);
                     var mB = tB.DefineMethod( method.Name, mA, method.ReturnType, method.GetParameters().Select( p => p.ParameterType ).ToArray() );
                     ILGenerator g = mB.GetILGenerator();
-                    if( method.ReturnType != typeof(void) )
+                    if( method.ReturnType != typeof( void ) )
                     {
                         var local = g.DeclareLocal( method.ReturnType );
                         g.Emit( OpCodes.Ldfld, local );
@@ -529,7 +529,7 @@ partial class PocoDirectoryBuilder
         // Handles UnionType definition.
         if( unionTypesDef != null )
         {
-            if( p.Type != typeof(object) )
+            if( p.Type != typeof( object ) )
             {
                 monitor.Error( $"{pocoProperty} is a UnionType: its type can only be 'object' or 'object?'." );
                 return false;
@@ -551,7 +551,7 @@ partial class PocoDirectoryBuilder
                 bool canBeExtended = pocoProperty.UnionTypeDefinition.CanBeExtended;
                 if( canBeExtended != attr.CanBeExtended )
                 {
-                    monitor.Error( $"{pocoProperty} is a UnionType that can{(canBeExtended ? "" : "not")} be extended but '{p.DeclaringType.ToCSharpName(false)}.{p.Name}' can{(canBeExtended ? "not" : "")} be extended. All property definitions of a IPoco family must agree on this." );
+                    monitor.Error( $"{pocoProperty} is a UnionType that can{(canBeExtended ? "" : "not")} be extended but '{p.DeclaringType.ToCSharpName( false )}.{p.Name}' can{(canBeExtended ? "not" : "")} be extended. All property definitions of a IPoco family must agree on this." );
                     return false;
                 }
                 if( !canBeExtended )

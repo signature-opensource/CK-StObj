@@ -1,4 +1,4 @@
-﻿namespace CK.Setup;
+namespace CK.Setup;
 
 /// <summary>
 /// Unifies <see cref="IAbstractPocoField"/> and <see cref="IPocoField"/> (that itself unifies <see cref="IPrimaryPocoField"/>

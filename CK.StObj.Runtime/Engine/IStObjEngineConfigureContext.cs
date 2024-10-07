@@ -51,7 +51,7 @@ public interface IStObjEngineConfigureContext
     /// </summary>
     /// <typeparam name="T">Actual type of the service.</typeparam>
     /// <param name="service">Strongly typed wrapper around a necessary not null service instance.</param>
-    void AddConfigureOnlyService<T>( ConfigureOnly<T> service ); 
+    void AddConfigureOnlyService<T>( ConfigureOnly<T> service );
 
     /// <summary>
     /// Gets the root of the <see cref="StObjConfigurationLayer"/> chain of responsibility.

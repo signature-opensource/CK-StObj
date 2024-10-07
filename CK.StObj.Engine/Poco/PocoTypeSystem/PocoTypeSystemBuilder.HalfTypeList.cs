@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace CK.Setup;
@@ -19,7 +19,7 @@ public sealed partial class PocoTypeSystemBuilder
         {
             get
             {
-                var t = _allTypes[index>>1];
+                var t = _allTypes[index >> 1];
                 if( (index & 1) == 0 ) return t;
                 return t.Nullable;
             }
@@ -32,7 +32,7 @@ public sealed partial class PocoTypeSystemBuilder
             foreach( var t in _allTypes )
             {
                 yield return t;
-                yield return t.Nullable;  
+                yield return t.Nullable;
             }
         }
 

@@ -171,9 +171,9 @@ public class DynamicGenerationTests
             /// <summary>
             /// StObjInitialize is NOT called on setup instances.
             /// </summary>
-            public bool StObjInitializeOnACalled; 
+            public bool StObjInitializeOnACalled;
 
-            void StObjConstruct( IActivityMonitor monitor, [Container]BSpec bIsTheContainerOfA )
+            void StObjConstruct( IActivityMonitor monitor, [Container] BSpec bIsTheContainerOfA )
             {
                 monitor.Trace( $"At A level: StObjPower = '{StObjPower}'." );
             }
@@ -218,7 +218,7 @@ public class DynamicGenerationTests
 
         public abstract class BSpec : B
         {
-            void StObjConstruct( )
+            void StObjConstruct()
             {
             }
         }
@@ -394,7 +394,7 @@ public class DynamicGenerationTests
 
     public class ContextBoundDelegationAttributeDI
     {
-        public class AttributeImpl 
+        public class AttributeImpl
         {
             // Attributes can depend on any service registered in the root initial service container.
             // Aspects typically configure this container (The SqlServer aspect for instance publishes
@@ -456,7 +456,7 @@ public class DynamicGenerationTests
         {
             public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
             {
-                return new CSCodeGenerationResult( nameof(DoImplement) );
+                return new CSCodeGenerationResult( nameof( DoImplement ) );
             }
 
             CSCodeGenerationResult DoImplement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )

@@ -97,6 +97,6 @@ public class OpenGenericSupportTests
         configuration.FirstBinPath.Types.Add( typeof( ADeviceHost ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
-        auto.Services.GetService<ADeviceHost>().Should().NotBeNull(); 
+        auto.Services.GetService<ADeviceHost>().Should().NotBeNull();
     }
 }

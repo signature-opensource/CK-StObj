@@ -25,7 +25,7 @@ sealed class DIContainerHub_CK : DIContainerHub
     // the GeneratedRootContext.GenStObj.
     static readonly DIContainerDefinition[] _containerDefinitions;
     internal static readonly ImmutableArray<AmbientServiceMapping> _ambientMappings;
-    internal static Dictionary<Type,AutoServiceKind> _endpointServices;
+    internal static Dictionary<Type, AutoServiceKind> _endpointServices;
     internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceEndpointDescriptors;
     internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ambientServiceBackendDescriptors;
 
@@ -59,11 +59,11 @@ sealed class DIContainerHub_CK : DIContainerHub
         Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetAmbientService( sp, 2 );
         Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetAmbientService( sp, 3 );
         _ambientServiceBackendDescriptors = [
-                new ServiceDescriptor( typeof( IFakeTenantInfo), back0, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( FakeTenantInfo), back0, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( IFakeAuthenticationInfo), back1, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( FakeAuthenticationInfo), back2, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( FakeCultureInfo), back3, ServiceLifetime.Scoped ),
+                new ServiceDescriptor( typeof( IFakeTenantInfo ), back0, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( FakeTenantInfo ), back0, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( IFakeAuthenticationInfo ), back1, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( FakeAuthenticationInfo ), back2, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( FakeCultureInfo ), back3, ServiceLifetime.Scoped ),
         ];
         // These declarations are only here as the defaults.
         // In practice they are overridden by the endpoint container definition ConfigureServices.
@@ -71,11 +71,11 @@ sealed class DIContainerHub_CK : DIContainerHub
         Func<IServiceProvider, object> front1 = sp => ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
         Func<IServiceProvider, object> front3 = sp => ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
         _ambientServiceEndpointDescriptors = [
-                new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( FakeTenantInfo), front0, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( IFakeAuthenticationInfo), front1, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( FakeAuthenticationInfo), front1, ServiceLifetime.Scoped ),
-                new ServiceDescriptor( typeof( FakeCultureInfo),front3, ServiceLifetime.Scoped ),
+                new ServiceDescriptor( typeof( IFakeTenantInfo ), front0, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( FakeTenantInfo ), front0, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( IFakeAuthenticationInfo ), front1, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( FakeAuthenticationInfo ), front1, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( FakeCultureInfo ), front3, ServiceLifetime.Scoped ),
         ];
     }
 
@@ -90,7 +90,7 @@ sealed class DIContainerHub_CK : DIContainerHub
 
     public override IReadOnlyList<DIContainerDefinition> ContainerDefinitions => _containerDefinitions;
 
-    public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;
+    public override IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
 
     public override IReadOnlyList<IDIContainer> Containers => _containers;
 

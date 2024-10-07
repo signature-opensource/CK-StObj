@@ -83,7 +83,7 @@ public class PocoGenericTests
     public void MinimalAbstractTypes_considers_generic_parameter_covariance()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IIntCommand ));
+        configuration.FirstBinPath.Types.Add( typeof( IIntCommand ) );
         var engineResult = configuration.RunSuccessfully();
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -97,19 +97,19 @@ public class PocoGenericTests
                 "[AbstractPoco]ICommand<object>?",
                 "[AbstractPoco]IAbstractCommand?",
                 "[AbstractPoco]ICrisPoco?",
-                "[AbstractPoco]ICommand<int>?" ] );
+                "[AbstractPoco]ICommand<int>?"] );
 
         cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
         cmdNullable.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Should().Be( "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<int>?" );
 
         var cmd = cmdNullable.NonNullable;
         cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
-        cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace("CK.StObj.Engine.Tests.CrisLike.", "") )
+        cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
             .Should().BeEquivalentTo( [
                 "[AbstractPoco]ICommand<object>",
                 "[AbstractPoco]IAbstractCommand",
                 "[AbstractPoco]ICrisPoco",
-                "[AbstractPoco]ICommand<int>" ] );
+                "[AbstractPoco]ICommand<int>"] );
 
         cmd.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
         cmd.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Should().Be( "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<int>" );
@@ -145,7 +145,7 @@ public class PocoGenericTests
     public void commands_with_multiple_returns()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IS5Command ));
+        configuration.FirstBinPath.Types.Add( typeof( IS5Command ) );
         var engineResult = configuration.RunSuccessfully();
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
@@ -244,7 +244,7 @@ public class PocoGenericTests
         // With only the IS6ExcludeIS5Command, the ITopCommand : ICommand<object> returns an object.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(  typeof( IS6ExcludeIS5Command ) );
+            configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -256,7 +256,7 @@ public class PocoGenericTests
         // With IS6ExcludeIS5Command and IS5Command bu no command that return a int, IS5Command is fine.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(  typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
+            configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -268,7 +268,7 @@ public class PocoGenericTests
         // With IS6ExcludeIS5Command, IS5Command and a command that return a int, the return cannot be resolved.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add(  typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
+            configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
             var engineResult = configuration.RunSuccessfully();
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -282,7 +282,7 @@ public class PocoGenericTests
     public void MinimalAbstractTypes_considers_recurse_generic_parameter_covariance()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(  typeof( IS6Command ) );
+        configuration.FirstBinPath.Types.Add( typeof( IS6Command ) );
         var engineResult = configuration.RunSuccessfully();
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
         Throw.DebugAssert( ts != null );
@@ -334,7 +334,7 @@ public class PocoGenericTests
         var cmd = cmdNullable.NonNullable;
         // AllAbstractTypes includes ImplementationLess abstract poco.
         cmd.PrimaryPocoType.AllAbstractTypes.Should().HaveCount( 9 );
-        cmd.PrimaryPocoType.AllAbstractTypes.Select( t => t.ToString().Replace("CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "").Replace("CK.StObj.Engine.Tests.CrisLike.", "")
+        cmd.PrimaryPocoType.AllAbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" ).Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
         )
             .Should().BeEquivalentTo(
             [
@@ -449,7 +449,7 @@ public class PocoGenericTests
         configuration.FirstBinPath.Types.Add( typeof( IExt6Input ) );
         var engineResult = configuration.RunSuccessfully();
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
-        
+
         var cmdNullable = ts.FindByType<IPrimaryPocoType>( typeof( IBaseInput ) );
         Throw.DebugAssert( cmdNullable != null );
         Throw.DebugAssert( cmdNullable.IsNullable );
@@ -521,7 +521,7 @@ public class PocoGenericTests
 
         var primary = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
         Throw.DebugAssert( primary != null && primary.IsNullable );
-        
+
         var iCmdGen = ts.FindGenericTypeDefinition( typeof( ICommand<> ) );
         Throw.DebugAssert( iCmdGen != null );
         iCmdGen.Instances.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )

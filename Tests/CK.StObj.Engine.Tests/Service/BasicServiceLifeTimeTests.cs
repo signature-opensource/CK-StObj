@@ -231,8 +231,8 @@ public class BasicServiceLifetimeTests
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnSingleton ) );
         collector.RegisterType( TestHelper.Monitor, typeof( SimpleClassSingleton ) );
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAnotherExternalService ) );
-        var map = collector.GetResult(TestHelper.Monitor).EngineMap;
-        Throw.DebugAssert(map != null);
+        var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
+        Throw.DebugAssert( map != null );
         bool isScoped = map.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
         isScoped.Should().Be( mode == "UnknwonLifetimeExternalService" );
     }

@@ -38,7 +38,7 @@ public sealed class PocoJsonExportOptions
     {
         UseCamelCase = false,
         TypeFilterName = "AllSerializable",
-        WriterOptions = new JsonWriterOptions{ Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
+        WriterOptions = new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
     };
 
     /// <summary>

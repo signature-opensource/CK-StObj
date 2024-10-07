@@ -94,7 +94,7 @@ public partial class CollectionTests
 
     [RegisterPocoType( typeof( List<int> ) )]
     [RegisterPocoType( typeof( List<object> ) )]
-    [RegisterPocoType( typeof(object[]) ) ]
+    [RegisterPocoType( typeof( object[] ) )]
     public interface IWithLists : IPoco
     {
         IList<object> ListOfList { get; }
@@ -167,7 +167,7 @@ public partial class CollectionTests
         string Name { get; set; }
     }
 
-    [ExternalName("Concrete")]
+    [ExternalName( "Concrete" )]
     public interface IConcrete : ISomeAbstract
     {
     }
@@ -239,7 +239,7 @@ public partial class CollectionTests
 
     [RegisterPocoType( typeof( long ) )]
     [RegisterPocoType( typeof( Dictionary<string, object> ) )]
-    [RegisterPocoType( typeof( Dictionary<int,object> ) )]
+    [RegisterPocoType( typeof( Dictionary<int, object> ) )]
     [RegisterPocoType( typeof( object[] ) )]
     public interface IWithDictionaries : IPoco
     {
@@ -582,17 +582,17 @@ public partial class CollectionTests
     [RegisterPocoType( typeof( object[] ) )]
     public interface IWithDicsA : IPoco
     {
-        IDictionary<NormalizedCultureInfo,ISomeAbstract> DicOfAbstract { get; }
+        IDictionary<NormalizedCultureInfo, ISomeAbstract> DicOfAbstract { get; }
 
         IDictionary<NormalizedCultureInfo, IConcrete> DicOfConcrete { get; }
 
-        IDictionary<NormalizedCultureInfo,ISecondary> DicOfSecondary { get; }
+        IDictionary<NormalizedCultureInfo, ISecondary> DicOfSecondary { get; }
 
-        IDictionary<int,ISomeAbstract?> DicOfNullableAbstract { get; }
+        IDictionary<int, ISomeAbstract?> DicOfNullableAbstract { get; }
 
-        IDictionary<int,IConcrete?> DicOfNullableConcrete { get; }
+        IDictionary<int, IConcrete?> DicOfNullableConcrete { get; }
 
-        IDictionary<int,ISecondary?> DicOfNullableSecondary { get; }
+        IDictionary<int, ISecondary?> DicOfNullableSecondary { get; }
 
         object? Result { get; set; }
     }

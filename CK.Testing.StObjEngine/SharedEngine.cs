@@ -134,7 +134,7 @@ public static class SharedEngine
     /// </para>
     /// </summary>
     /// <param name="engineConfiguration">The new configuration to apply.</param>
-    public static void Reset( EngineConfiguration? engineConfiguration = null ) 
+    public static void Reset( EngineConfiguration? engineConfiguration = null )
     {
         _configuration = engineConfiguration?.Clone();
         _runResult = null;

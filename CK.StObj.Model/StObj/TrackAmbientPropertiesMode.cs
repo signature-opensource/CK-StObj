@@ -17,7 +17,7 @@ public enum TrackAmbientPropertiesMode
     /// Tracking mode is not applicable or is not known.
     /// </summary>
     Unknown = 0,
-    
+
     /// <summary>
     /// Ambient Properties are not tracked at all.
     /// </summary>

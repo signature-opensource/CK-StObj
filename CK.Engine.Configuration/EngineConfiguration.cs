@@ -171,7 +171,7 @@ public sealed partial class EngineConfiguration
             {
                 if( FileUtil.IndexOfInvalidFileNameChars( value ) >= 0 )
                 {
-                    Throw.ArgumentException( nameof(value), $"Invalid file character in file name '{value}'." );
+                    Throw.ArgumentException( nameof( value ), $"Invalid file character in file name '{value}'." );
                 }
                 Throw.CheckArgument( value == GeneratedAssemblyNamePrefix
                                      || (value.Length > GeneratedAssemblyNamePrefix.Length + 2

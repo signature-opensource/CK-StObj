@@ -17,7 +17,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set is a proper subset of other; otherwise, false.</returns>
-    public static bool IsProperSubsetOf<T,TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
+    public static bool IsProperSubsetOf<T, TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
     {
         Throw.CheckNotNullArgument( other );
         // No set is a proper subset of itself.
@@ -54,7 +54,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set is a subset of other; otherwise, false.</returns>
-    public static bool IsSubsetOf<T,TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull 
+    public static bool IsSubsetOf<T, TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
     {
         Throw.CheckNotNullArgument( other );
         // The empty set is a subset of any set, and a set is a subset of itself.
@@ -78,7 +78,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set is a proper superset of other; otherwise, false.</returns>
-    public static bool IsProperSupersetOf<T,TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
+    public static bool IsProperSupersetOf<T, TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
     {
         Throw.CheckNotNullArgument( other );
         // The empty set isn't a proper superset of any set, and a set is never a strict superset of itself.
@@ -102,7 +102,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set is a superset of other; otherwise, false.</returns>
-    public static bool IsSupersetOf<T,TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
+    public static bool IsSupersetOf<T, TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
     {
         Throw.CheckNotNullArgument( other );
         // A set is always a superset of itself.
@@ -123,7 +123,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set overlaps other; otherwise, false.</returns>
-    public static bool Overlaps<T,TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
+    public static bool Overlaps<T, TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
     {
         Throw.CheckNotNullArgument( other );
         if( set.Count == 0 ) return false;
@@ -144,7 +144,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set has the same unique elements as other; otherwise, false.</returns>
-    public static bool SetEquals<T,TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
+    public static bool SetEquals<T, TA>( HashSet<T> set, IEnumerable<TA> other ) where T : notnull
     {
         Throw.CheckNotNullArgument( other );
         if( other == set ) return true;
@@ -167,7 +167,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set is a proper subset of other; otherwise, false.</returns>
-    public static bool NullableIsProperSubsetOf<T,TA>( HashSet<T?> set, IEnumerable<TA?> other )
+    public static bool NullableIsProperSubsetOf<T, TA>( HashSet<T?> set, IEnumerable<TA?> other )
     {
         Throw.CheckNotNullArgument( other );
         if( other == set ) return false;
@@ -205,7 +205,7 @@ public static partial class CovariantHelpers
     /// <param name="set">The set.</param>
     /// <param name="other">The collection to challenge.</param>
     /// <returns>true if the set is a proper superset of other; otherwise, false.</returns>
-    public static bool NullableIsProperSupersetOf<T,TA>( HashSet<T?> set, IEnumerable<TA?> other )
+    public static bool NullableIsProperSupersetOf<T, TA>( HashSet<T?> set, IEnumerable<TA?> other )
     {
         Throw.CheckNotNullArgument( other );
         if( set.Count == 0 || other == set ) return false;

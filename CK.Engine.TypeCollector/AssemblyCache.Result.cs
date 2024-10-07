@@ -31,7 +31,7 @@ public sealed partial class AssemblyCache
         public bool Success => _success;
 
         /// <inheritdoc />
-        public IReadOnlyDictionary<object,CachedAssembly> Assemblies => _cache.Assemblies;
+        public IReadOnlyDictionary<object, CachedAssembly> Assemblies => _cache.Assemblies;
 
         /// <inheritdoc />
         public CachedAssembly FindOrCreate( Assembly assembly ) => _cache.FindOrCreate( assembly );

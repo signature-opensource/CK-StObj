@@ -147,7 +147,7 @@ partial class PocoType
             get
             {
                 var t = _baseType;
-                while ( t != null )
+                while( t != null )
                 {
                     yield return t;
                     t = t.BaseType;
@@ -163,7 +163,7 @@ partial class PocoType
         {
             if( _specializations.Length == 0 )
             {
-                _specializations = new IBasicRefPocoType[]{ s };
+                _specializations = new IBasicRefPocoType[] { s };
             }
             else
             {

@@ -238,7 +238,7 @@ public partial class AmbientPropertiesTests
     {
         public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
         {
-            if( o.ClassType == typeof( C1 ) ) o.SetAmbientPropertyConfiguration( monitor, "Ambient", typeof(TypeToMap), StObjRequirementBehavior.ErrorIfNotStObj );
+            if( o.ClassType == typeof( C1 ) ) o.SetAmbientPropertyConfiguration( monitor, "Ambient", typeof( TypeToMap ), StObjRequirementBehavior.ErrorIfNotStObj );
         }
     }
 
@@ -264,7 +264,7 @@ public partial class AmbientPropertiesTests
         Assert.That( map.StObjs.Obtain<C2>(), Is.SameAs( map.StObjs.Obtain<C1>() ) );
         Assert.That( map.StObjs.Obtain<O2InC2>(), Is.SameAs( map.StObjs.Obtain<O1InC1>() ) );
     }
-    
+
     #endregion
 
 }

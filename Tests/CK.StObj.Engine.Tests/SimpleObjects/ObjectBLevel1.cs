@@ -17,7 +17,7 @@ public class ObjectBLevel1 : ObjectB
     // Adds monitor parameter otherwise parameter less StObjConstruct are not called.
     void StObjConstruct( IActivityMonitor m )
     {
-        Assert.That( ConstructCount, Is.EqualTo( 1 ), "ObjectB.StObjConstruct has been called.");
+        Assert.That( ConstructCount, Is.EqualTo( 1 ), "ObjectB.StObjConstruct has been called." );
         SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
         ConstructCount = ConstructCount + 1;
     }

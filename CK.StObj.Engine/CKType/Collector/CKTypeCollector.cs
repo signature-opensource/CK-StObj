@@ -21,7 +21,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     readonly IServiceProvider _serviceProvider;
     readonly ExtMemberInfoFactory _memberInfoFactory;
     readonly PocoDirectoryBuilder _pocoBuilder;
-    readonly Dictionary<Assembly,bool> _assemblies;
+    readonly Dictionary<Assembly, bool> _assemblies;
     readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
     readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
     readonly List<RealObjectClassInfo> _roots;
@@ -48,10 +48,10 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     {
         Throw.CheckNotNullArgument( serviceProvider );
         Throw.CheckNotNullArgument( tempAssembly );
-        _typeFilter = typeFilter ?? ((m,type) => type.FullName != null);
+        _typeFilter = typeFilter ?? (( m, type ) => type.FullName != null);
         _tempAssembly = tempAssembly;
         _serviceProvider = serviceProvider;
-        _assemblies = new Dictionary<Assembly,bool>();
+        _assemblies = new Dictionary<Assembly, bool>();
         _objectCollector = new Dictionary<Type, RealObjectClassInfo?>();
         _regularTypeCollector = new Dictionary<Type, TypeAttributesCache?>();
         _roots = new List<RealObjectClassInfo>();
@@ -283,7 +283,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
                     pocoDirectory = EmptyPocoDirectory.Default;
                 }
             }
-            var pocoTypeSystemBuilder = new PocoTypeSystemBuilder( _memberInfoFactory, pocoDirectory ); 
+            var pocoTypeSystemBuilder = new PocoTypeSystemBuilder( _memberInfoFactory, pocoDirectory );
             using( monitor.OpenInfo( "Initializing Poco Type System builder." ) )
             {
                 if( !pocoTypeSystemBuilder.Initialize( monitor ) )
@@ -317,7 +317,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
         List<Type> abstractTails = new List<Type>();
         var deepestConcretes = new List<(MutableItem, ImplementableTypeInfo)>();
 
-        Debug.Assert( _roots.All( info => info != null && !info.IsExcluded && info.Generalization == null),
+        Debug.Assert( _roots.All( info => info != null && !info.IsExcluded && info.Generalization == null ),
             "_roots contains only not Excluded types." );
         foreach( RealObjectClassInfo newOne in _roots )
         {

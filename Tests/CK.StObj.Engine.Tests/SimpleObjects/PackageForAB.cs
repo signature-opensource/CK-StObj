@@ -25,5 +25,5 @@ public class PackageForAB : IRealObject
         SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
         ConstructCount = ConstructCount + 1;
     }
-    
+
 }

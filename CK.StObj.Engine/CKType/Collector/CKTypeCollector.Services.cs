@@ -70,7 +70,7 @@ public partial class CKTypeCollector
 
     internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IActivityMonitor monitor,
                                                                               IEnumerable<Type> interfaces,
-                                                                              Action<IActivityMonitor,Type,CKTypeKind,CKTypeCollector>? multipleImplementation = null )
+                                                                              Action<IActivityMonitor, Type, CKTypeKind, CKTypeCollector>? multipleImplementation = null )
     {
         foreach( var iT in interfaces )
         {
@@ -249,7 +249,7 @@ public partial class CKTypeCollector
             _engineMap = engineMap;
         }
 
-        public (bool Success, bool InitializationError) TryClassUnification( AutoServiceClassInfo root, AutoServiceClassInfo[] allLeaves  )
+        public (bool Success, bool InitializationError) TryClassUnification( AutoServiceClassInfo root, AutoServiceClassInfo[] allLeaves )
         {
             Debug.Assert( allLeaves.Length > 1
                           && NextUpperAmbiguity( allLeaves[0] ) != null
@@ -277,7 +277,7 @@ public partial class CKTypeCollector
                 Debug.Assert( _rootAmbiguity.MostSpecialized != null );
                 initializationError |= !_root.SetMostSpecialized( _monitor, _engineMap, _rootAmbiguity.MostSpecialized );
             }
-            return (allSuccess,initializationError);
+            return (allSuccess, initializationError);
         }
 
         public void CollectRemainingAmbiguities( List<IReadOnlyList<AutoServiceClassInfo>> ambiguities )

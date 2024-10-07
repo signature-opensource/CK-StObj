@@ -14,7 +14,7 @@ namespace CK.Core;
 /// When defined on a class, there can be no real .Net property with the <see cref="PropertyName"/> on the
 /// object.
 /// </summary>
-[AttributeUsage( AttributeTargets.Property|AttributeTargets.Class, AllowMultiple=true, Inherited=true )]
+[AttributeUsage( AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = true, Inherited = true )]
 public class StObjPropertyAttribute : Attribute
 {
 
@@ -26,7 +26,7 @@ public class StObjPropertyAttribute : Attribute
     {
         ResolutionSource = PropertyResolutionSource.FromContainerAndThenGeneralization;
     }
-    
+
     /// <summary>
     /// Initialize a new attribute on a class: <see cref="PropertyName"/> and <see cref="PropertyType"/> must 
     /// be defined (not null). There may not be any real property for it.
@@ -51,7 +51,7 @@ public class StObjPropertyAttribute : Attribute
     /// name, when set, takes precedence over the property name.
     /// </summary>
     public string? PropertyName { get; set; }
-    
+
     /// <summary>
     /// Gets or sets the type of the StObj property. When the attribute is set on an actual 
     /// property and this type is set, it takes precedence over the actual property type.

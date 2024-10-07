@@ -85,7 +85,7 @@ public partial class PocoUnionTypeTests
 
         class UnionTypes
         {
-            public (int,object) Thing { get; }
+            public (int, object) Thing { get; }
         }
     }
 
@@ -162,7 +162,7 @@ public partial class PocoUnionTypeTests
     public void Union_property_implementation_guards_the_setter_when_not_nullable()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( IPocoWithUnionType ));
+        configuration.FirstBinPath.Types.Add( typeof( IPocoWithUnionType ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

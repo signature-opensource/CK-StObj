@@ -102,7 +102,7 @@ public class DIContainerDefinitionTests
         var backdoor = s.GetRequiredService<IDIContainer<BackdoorDIContainerDefinition.Data>>();
         backdoor.Name.Should().Be( "Backdoor" );
         endpoints.Should().Contain( appIdentity ).And.Contain( backdoor );
-        return [endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>()]; 
+        return [endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>()];
     }
 
     [DIContainerDefinition( DIContainerKind.Background )]

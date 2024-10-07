@@ -30,7 +30,7 @@ public partial class Build : CodeCakeHost
                  globalInfo.GetDotnetSolution().Clean();
                  Cake.CleanDirectories( globalInfo.ReleasesFolder.ToString() );
                  Cake.CleanDirectory( "Tests/LocalTestHelper/LocalTestStore" );
-                
+
              } );
 
         Task( "Build" )
@@ -38,7 +38,7 @@ public partial class Build : CodeCakeHost
             .IsDependentOn( "Clean" )
             .Does( () =>
              {
-                globalInfo.GetDotnetSolution().Build();
+                 globalInfo.GetDotnetSolution().Build();
              } );
 
         Task( "Unit-Testing" )
@@ -47,8 +47,8 @@ public partial class Build : CodeCakeHost
                                  || Cake.ReadInteractiveOption( "RunUnitTests", "Run Unit Tests?", 'Y', 'N' ) == 'Y' )
             .Does( () =>
              {
-                
-              globalInfo.GetDotnetSolution().SolutionTest();
+
+                 globalInfo.GetDotnetSolution().SolutionTest();
              } );
 
         Task( "Create-NuGet-Packages" )
@@ -56,7 +56,7 @@ public partial class Build : CodeCakeHost
             .IsDependentOn( "Unit-Testing" )
             .Does( () =>
              {
-                globalInfo.GetDotnetSolution().Pack();
+                 globalInfo.GetDotnetSolution().Pack();
              } );
 
         Task( "Push-NuGet-Packages" )
@@ -64,7 +64,7 @@ public partial class Build : CodeCakeHost
             .WithCriteria( () => globalInfo.IsValid )
             .Does( async () =>
              {
-                await globalInfo.PushArtifactsAsync();
+                 await globalInfo.PushArtifactsAsync();
              } );
 
         // The Default task for this script can be set here.

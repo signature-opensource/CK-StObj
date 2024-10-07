@@ -36,7 +36,7 @@ sealed partial class ExportCodeGenerator
                                                     "Poco.Exc.Json.PocoJsonWriteContext wCtx )" );
 
         wAny.GeneratedByComment()
-            .Append( "return " ).Append( _exporterType.FullName ).Append(".WriteAny( w, o, wCtx );" );
+            .Append( "return " ).Append( _exporterType.FullName ).Append( ".WriteAny( w, o, wCtx );" );
 
         var wPoco = pocoDirectory
                         .CreateFunction( "bool CK.Core.IPocoDirectoryJsonExportGenerated.WriteJson( " +

@@ -85,7 +85,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
                                "(and contraposition) !IsPolymorphic => StructuralFinalType != null.",
                                _allTypes.All( t => t.IsPolymorphic || t.StructuralFinalType != null ) );
 
-            monitor.Info( _allTypes.Where( t => !t.IsRegular && (t.IsStructuralFinalType && (t is not ICollectionPocoType c || !c.IsAbstractCollection) ) )
+            monitor.Info( _allTypes.Where( t => !t.IsRegular && (t.IsStructuralFinalType && (t is not ICollectionPocoType c || !c.IsAbstractCollection)) )
                                    .Select( t => $"{t} - {t.IsRegular}, {t.IsStructuralFinalType && (t is not ICollectionPocoType c || !c.IsAbstractCollection)}" )
                                    .Concatenate( Environment.NewLine ) );
             Throw.DebugAssert( "IsStructuralFinalType && !Abstract collection => IsRegularType",
@@ -407,7 +407,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
             return RegisterReadOnlyDictionary( monitor, nType, ctx );
         }
         // Generic AbstractPoco is the last chance...
-        if( t.IsInterface && typeof(IPoco).IsAssignableFrom( t ) )
+        if( t.IsInterface && typeof( IPoco ).IsAssignableFrom( t ) )
         {
             return OnAbstractPoco( monitor, nType, tGen );
         }
@@ -457,7 +457,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
                     else success = false;
                 }
             }
-            PocoType.PocoGenericTypeDefinition? typeDefinition = null; 
+            PocoType.PocoGenericTypeDefinition? typeDefinition = null;
             (IPocoGenericParameter Parameter, IPocoType Type)[]? arguments = null;
             if( tGen != null )
             {

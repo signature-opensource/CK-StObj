@@ -110,21 +110,21 @@ sealed partial class ImportCodeGenerator
                         break;
                     case PocoTypeKind.SecondaryPoco:
                     case PocoTypeKind.PrimaryPoco:
-                        {
-                            r = GetPocoReader( type );
-                            break;
-                        }
+                    {
+                        r = GetPocoReader( type );
+                        break;
+                    }
                     case PocoTypeKind.Basic:
                         r = GetBasicTypeCodeReader( type );
                         break;
                     case PocoTypeKind.Array:
-                        {
-                            var tA = (ICollectionPocoType)type;
-                            r = tA.ItemTypes[0].Type == typeof( byte )
-                                       ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.ReadMoreData(ref r);" )
-                                       : GetArrayCodeReader( tA, functionMap );
-                            break;
-                        }
+                    {
+                        var tA = (ICollectionPocoType)type;
+                        r = tA.ItemTypes[0].Type == typeof( byte )
+                                   ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.ReadMoreData(ref r);" )
+                                   : GetArrayCodeReader( tA, functionMap );
+                        break;
+                    }
                     case PocoTypeKind.List:
                     case PocoTypeKind.HashSet:
                         r = GetListOrSetCodeReader( (ICollectionPocoType)type, functionMap );
@@ -134,22 +134,22 @@ sealed partial class ImportCodeGenerator
                         break;
                     case PocoTypeKind.Record:
                     case PocoTypeKind.AnonymousRecord:
-                        Throw.DebugAssert("Record always have a regular type.",type.RegularType!=null);
+                        Throw.DebugAssert( "Record always have a regular type.", type.RegularType != null );
                         r = type.IsRegular ? GetRecordCodeReader( type ) : GetReader( type.RegularType, functionMap );
                         break;
                     case PocoTypeKind.Enum:
+                    {
+                        var tE = (IEnumPocoType)type;
+                        r = ( w, v ) =>
                         {
-                            var tE = (IEnumPocoType)type;
-                            r = ( w, v ) =>
-                            {
-                                w.OpenBlock()
-                                 .Append( "var " );
-                                GenerateRead( w, tE.UnderlyingType, "u", false );
-                                w.NewLine().Append( v ).Append( "=(" ).Append( tE.CSharpName ).Append( ")u;" )
-                                 .CloseBlock();
-                            };
-                            break;
-                        }
+                            w.OpenBlock()
+                             .Append( "var " );
+                            GenerateRead( w, tE.UnderlyingType, "u", false );
+                            w.NewLine().Append( v ).Append( "=(" ).Append( tE.CSharpName ).Append( ")u;" )
+                             .CloseBlock();
+                        };
+                        break;
+                    }
                     default: throw new NotSupportedException( type.Kind.ToString() );
                 }
                 _readers[type.Index >> 1] = r;
@@ -164,7 +164,7 @@ sealed partial class ImportCodeGenerator
 
         static CodeReader GetPocoReader( IPocoType type )
         {
-            return ( w, v ) => w.Append("System.Runtime.CompilerServices.Unsafe.As<").Append( type.ImplTypeName ).Append( ">(" ).Append( v ).Append(").ReadJson( ref r, rCtx );");
+            return ( w, v ) => w.Append( "System.Runtime.CompilerServices.Unsafe.As<" ).Append( type.ImplTypeName ).Append( ">(" ).Append( v ).Append( ").ReadJson( ref r, rCtx );" );
         }
 
         static CodeReader GetAbstractPocoReader( IPocoType type )
@@ -266,7 +266,7 @@ sealed partial class ImportCodeGenerator
             }
             if( type.Type == typeof( ExtendedCultureInfo ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ResolveCulture( r.GetString(), rCtx );").NewLine()
+                return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ResolveCulture( r.GetString(), rCtx );" ).NewLine()
                                                 .Append( "if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( SimpleUserMessage ) )

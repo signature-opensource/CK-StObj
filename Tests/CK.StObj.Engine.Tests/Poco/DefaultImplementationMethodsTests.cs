@@ -198,11 +198,11 @@ public class DefaultImplementationMethodsTests
     }
 
     [Test]
-    [Ignore("Not ready yet.")]
+    [Ignore( "Not ready yet." )]
     public void poco_can_have_Abstract_and_DefaultImplementationMethods()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add(typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ));
+        configuration.FirstBinPath.Types.Add( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
         using var auto = configuration.Run().CreateAutomaticServices();
 
         var poco = auto.Services.GetRequiredService<PocoDirectory>();

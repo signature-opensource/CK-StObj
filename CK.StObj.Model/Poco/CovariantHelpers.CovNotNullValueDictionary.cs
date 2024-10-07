@@ -36,7 +36,7 @@ public static partial class CovariantHelpers
         /// </summary>
         /// <param name="dictionary">The initial content.</param>
         public CovNotNullValueDictionary( IDictionary<TKey, TValue> dictionary )
-            : base( dictionary ) 
+            : base( dictionary )
         {
         }
 

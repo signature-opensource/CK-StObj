@@ -80,7 +80,7 @@ class CachedType : ICachedType
 
         public Type Type => _type;
 
-        public bool IsTypeDefinition  => _nonNullable.IsTypeDefinition;
+        public bool IsTypeDefinition => _nonNullable.IsTypeDefinition;
 
         public int TypeDepth => _nonNullable.TypeDepth;
 
@@ -110,7 +110,7 @@ class CachedType : ICachedType
     internal CachedType( TypeCache cache,
                          Type type,
                          int typeDepth,
-                         Type? nullableValueType, 
+                         Type? nullableValueType,
                          CachedAssembly assembly,
                          ImmutableArray<ICachedType> interfaces,
                          ICachedType? baseType,

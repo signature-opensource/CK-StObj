@@ -69,7 +69,7 @@ public partial class ConformantDITests
         {
             var services = new ServiceCollection();
             // This is the right way!
-            services.AddScoped<IActivityMonitor,ActivityMonitor>();
+            services.AddScoped<IActivityMonitor, ActivityMonitor>();
             services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
 
             CheckValid( services );

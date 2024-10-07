@@ -424,7 +424,7 @@ partial class PocoType
                                     && keyType == nonSecondaryConcreteCollection.ItemTypes[0]) );
             Throw.DebugAssert( valueType is ISecondaryPocoType == (nonSecondaryConcreteCollection != null) );
             _nonSecondaryConcreteCollection = nonSecondaryConcreteCollection ?? this;
-            
+
             _def = new FieldDefaultValue( $"new {implTypeName}()" );
             // Register back references (key is embedded, value has its own PocoTypeRef).
             _nextRefKey = ((PocoType)keyType).AddBackRef( this );

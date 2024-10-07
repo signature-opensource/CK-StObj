@@ -93,7 +93,7 @@ partial class PocoType
         #endregion
     }
 
-    interface IAbstractPocoImpl 
+    interface IAbstractPocoImpl
     {
         void AddImplementationLessSpecialization( ImplementationLessAbstractPoco s );
     }
@@ -130,7 +130,7 @@ partial class PocoType
 
         public override IPocoType? StructuralFinalType => null;
 
-        [MemberNotNullWhen( true, nameof(GenericTypeDefinition), nameof(GenericArguments))]
+        [MemberNotNullWhen( true, nameof( GenericTypeDefinition ), nameof( GenericArguments ) )]
         public bool IsGenericType => _genericTypeDefinition != null;
 
         public IPocoGenericTypeDefinition? GenericTypeDefinition => _genericTypeDefinition;
@@ -323,7 +323,7 @@ partial class PocoType
         public AbstractPocoBase( PocoTypeSystemBuilder s,
                                  List<IAbstractPocoType> abstracts,
                                  IPrimaryPocoType[] primaries )
-            : base( s, typeof(IPoco), typeof( IPoco ).ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
+            : base( s, typeof( IPoco ), typeof( IPoco ).ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
         {
             _abstracts = abstracts;
             _primaries = primaries;

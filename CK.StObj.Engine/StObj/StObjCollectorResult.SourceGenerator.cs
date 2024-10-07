@@ -642,7 +642,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
     static void GenerateVFeatures( IActivityMonitor monitor, IFunctionScope rootStaticCtor, ITypeScope rootType, IReadOnlyCollection<VFeature> features )
     {
         using var region = rootStaticCtor.Region();
-        monitor.Info( $"Generating VFeatures: {features.Select( f => f.ToString()).Concatenate()}." );
+        monitor.Info( $"Generating VFeatures: {features.Select( f => f.ToString() ).Concatenate()}." );
 
         rootStaticCtor.Append( "_vFeatures = new VFeature[]{ " );
         bool atLeastOne = false;
@@ -652,7 +652,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
             atLeastOne = true;
             rootStaticCtor.Append( "new VFeature( " )
                     .AppendSourceString( f.Name )
-                    .Append(',')
+                    .Append( ',' )
                     .Append( "CSemVer.SVersion.Parse( " )
                     .AppendSourceString( f.Version.ToNormalizedString() )
                     .Append( " ) )" );

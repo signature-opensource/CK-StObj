@@ -36,12 +36,12 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
             case PocoTypeKind.Basic:
                 return CreateBasicTypeCodeWriter( this, t );
             case PocoTypeKind.Array:
-                {
-                    var type = Unsafe.As<ICollectionPocoType>( t );
-                    return type.ItemTypes[0].Type == typeof( byte )
-                                                    ? new BasicWriter( this, (w,v) => w.Append( "w.WriteBase64StringValue( " ).Append( v ).Append( " );" ) )
-                                                    : CreateEnumerableWriter( type );
-                }
+            {
+                var type = Unsafe.As<ICollectionPocoType>( t );
+                return type.ItemTypes[0].Type == typeof( byte )
+                                                ? new BasicWriter( this, ( w, v ) => w.Append( "w.WriteBase64StringValue( " ).Append( v ).Append( " );" ) )
+                                                : CreateEnumerableWriter( type );
+            }
             case PocoTypeKind.List:
             case PocoTypeKind.HashSet:
                 return CreateEnumerableWriter( Unsafe.As<ICollectionPocoType>( t ) );
@@ -55,11 +55,11 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
                         ? new AnonymousRecordWriter( this, r )
                         : GetWriter( r.RegularType );
             case PocoTypeKind.Enum:
-                {
-                    var tE = (IEnumPocoType)t;
-                    var underlyingWriter = GetWriter( tE.UnderlyingType );
-                    return new BasicWriter( this, ( writer, v ) => underlyingWriter.GenerateWrite( writer, tE.UnderlyingType, $"(({tE.UnderlyingType.CSharpName}){v})" ) );
-                }
+            {
+                var tE = (IEnumPocoType)t;
+                var underlyingWriter = GetWriter( tE.UnderlyingType );
+                return new BasicWriter( this, ( writer, v ) => underlyingWriter.GenerateWrite( writer, tE.UnderlyingType, $"(({tE.UnderlyingType.CSharpName}){v})" ) );
+            }
             default: throw new NotSupportedException( t.Kind.ToString() );
         }
     }
@@ -92,7 +92,7 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
                  || type.Type == typeof( long )
                  || type.Type == typeof( ulong ) )
         {
-            return new BasicWriter(map, NumberAsStringWriter );
+            return new BasicWriter( map, NumberAsStringWriter );
         }
         else if( type.Type == typeof( BigInteger ) )
         {
