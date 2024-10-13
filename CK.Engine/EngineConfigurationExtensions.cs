@@ -31,8 +31,9 @@ public static class CKEngine
         var groups = typeGroups.Groups.Select( tG => new BinPathGroup( tG ) ).ToImmutableArray();
         if( typeGroups.Success )
         {
+            var typeCache = new TypeCache( typeGroups.AssemblyCache );
             // Temporary use of the good old StObjEngine.
-            var engine = new StObjEngine( monitor, configuration, typeGroups.Groups );
+            var engine = new StObjEngine( monitor, configuration, typeCache, typeGroups.Groups );
             var r = engine.NewRun();
             for( int i = 0; i < r.Groups.Count; i++ )
             {

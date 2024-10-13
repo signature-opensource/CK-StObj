@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 
-
 class CachedType : ICachedType
 {
     readonly TypeCache _cache;
@@ -24,6 +23,7 @@ class CachedType : ICachedType
     readonly ICachedType _nullable;
     readonly ImmutableArray<CachedGenericParameter> _genericParameters;
     ImmutableArray<CustomAttributeData> _customAttributes;
+    ImmutableArray<CachedMethodInfo> _declaredMethodInfos;
     readonly bool _isTypeDefinition;
 
     sealed class NullReferenceType : ICachedType
@@ -61,6 +61,10 @@ class CachedType : ICachedType
         public ImmutableArray<CachedGenericParameter> GenericParameters => _nonNullable.GenericParameters;
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
+
+        public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ((ICachedType)_nonNullable).DeclaredMethodInfos;
+
+        public TypeCache TypeCache => ((ICachedType)_nonNullable).TypeCache;
 
         public override string ToString() => CSharpName;
     }
@@ -103,6 +107,10 @@ class CachedType : ICachedType
         public ImmutableArray<CachedGenericParameter> GenericParameters => _nonNullable.GenericParameters;
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
+
+        public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => _nonNullable.DeclaredMethodInfos;
+
+        public TypeCache TypeCache => _nonNullable.TypeCache;
 
         public override string ToString() => CSharpName;
     }
@@ -165,11 +173,30 @@ class CachedType : ICachedType
         {
             if( _customAttributes.IsDefault )
             {
+                // Canot use ImmutableCollectionsMarshal.AsImmutableArray here: CustomAttributeData
+                // can be retrieved by IList<CustomAttributeData> or IEnumerable<CustomAttributeData> only.
                 _customAttributes = _type.CustomAttributes.ToImmutableArray();
             }
             return _customAttributes;
         }
     }
+
+    public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos
+    {
+        get
+        {
+            if( _declaredMethodInfos.IsDefault )
+            {
+                var methods = _type.GetMethods( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly );
+                var b = ImmutableArray.CreateBuilder<CachedMethodInfo>( methods.Length );
+                foreach( var method in methods ) b.Add( new CachedMethodInfo( this, method ) );
+                _declaredMethodInfos = b.MoveToImmutable();
+            }
+            return _declaredMethodInfos;
+        }
+    }
+
+    public TypeCache TypeCache => _cache;
 
     public override string ToString() => _csharpName;
 }

@@ -26,7 +26,7 @@ public sealed partial class BinPathTypeGroup
     // Regular groups have a BinPathGroup.
     readonly AssemblyCache.BinPathGroup? _assemblyGroup;
     // Unified has the AssemblyCache.
-    readonly IAssemblyCache? _assemblyCache;
+    readonly AssemblyCache? _assemblyCache;
     SHA1Value _signature;
 
     // Regular group.
@@ -44,7 +44,7 @@ public sealed partial class BinPathTypeGroup
     }
 
     // Unified group (Signature is Zero).
-    BinPathTypeGroup( IAssemblyCache assemblyCache,
+    BinPathTypeGroup( AssemblyCache assemblyCache,
                       HashSet<Type> allTypes )
     {
         _configurations = ImmutableArray<BinPathConfiguration>.Empty;
@@ -96,7 +96,7 @@ public sealed partial class BinPathTypeGroup
     /// <summary>
     /// Gets the assembly cache.
     /// </summary>
-    public IAssemblyCache AssemblyCache => _assemblyGroup?.AssemblyCache ?? _assemblyCache!;
+    public AssemblyCache AssemblyCache => _assemblyGroup?.AssemblyCache ?? _assemblyCache!;
 
     /// <summary>
     /// Gets this BinPathTypeGroup digital signature. Based on <see cref="AssemblyCache.BinPathGroup.Signature"/>
@@ -127,7 +127,7 @@ public sealed partial class BinPathTypeGroup
         var groups = new List<BinPathTypeGroup>();
         // Ok...
         // 1 - Groups the BinPathConfigurations in all Assembly groups by the key based on ExcludedTypes and Types configurations.
-        // 2 - Projects the groups by Assembly group and the BinPathConfigurations that sahre the same key.
+        // 2 - Projects the groups by Assembly group and the BinPathConfigurations that share the same key.
         // 3 - Union them (SelectMany).
         // 4 - Computes the BinPathType.GroupName.
         // 5 - Orders these raw groups by their GroupName to compute the global Result signature.

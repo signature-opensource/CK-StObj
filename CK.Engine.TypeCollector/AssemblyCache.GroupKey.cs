@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace CK.Engine.TypeCollector;
 
-public sealed partial class AssemblyCache
+public sealed partial class AssemblyCache // GroupKey
 {
     internal readonly struct GroupKey : IEquatable<GroupKey>
     {

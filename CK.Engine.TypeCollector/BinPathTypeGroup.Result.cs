@@ -27,6 +27,11 @@ public sealed partial class BinPathTypeGroup
         public bool Success => _assemblyResult.Success;
 
         /// <summary>
+        /// Gets the assembly cache.
+        /// </summary>
+        public AssemblyCache AssemblyCache => _assemblyResult.AssemblyCache;
+
+        /// <summary>
         /// Gets the digital signature on this result based on the <see cref="BinPathTypeGroup.Signature"/>.
         /// <para>
         /// <see cref="SHA1Value.Zero"/> if <see cref="Success"/> is false.

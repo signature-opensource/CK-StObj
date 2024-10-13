@@ -13,7 +13,7 @@ using System.Security.Cryptography;
 namespace CK.Engine.TypeCollector;
 
 
-public sealed partial class AssemblyCache
+public sealed partial class AssemblyCache // BinPathGroup
 {
     /// <summary>
     /// Collects types from one or more similar <see cref="BinPathConfiguration"/>.
@@ -94,7 +94,7 @@ public sealed partial class AssemblyCache
         /// <summary>
         /// Gets the assembly cache.
         /// </summary>
-        public IAssemblyCache AssemblyCache => _assemblyCache;
+        public AssemblyCache AssemblyCache => _assemblyCache;
 
         /// <summary>
         /// Gets the final types to register from this BinPath.

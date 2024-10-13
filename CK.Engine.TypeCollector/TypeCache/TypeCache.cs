@@ -9,19 +9,32 @@ using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 
-
+/// <summary>
+/// Global type cache.
+/// </summary>
 public sealed partial class TypeCache
 {
     readonly Dictionary<Type, CachedType> _types;
-    readonly IAssemblyCache _assemblies;
+    readonly AssemblyCache _assemblies;
+    readonly ICachedType _iRealObject;
 
-    public TypeCache( IAssemblyCache assemblies )
+    /// <summary>
+    /// Initializes a new cahe for types based on an assembly cache.
+    /// </summary>
+    /// <param name="assemblies">The assembly cache.</param>
+    public TypeCache( AssemblyCache assemblies )
     {
         _types = new Dictionary<Type, CachedType>();
         _assemblies = assemblies;
+        _iRealObject = Get( typeof( IRealObject ) );
     }
 
-    public ICachedType Get( Type type ) => Get( type, _assemblies.FindOrCreate( type.Assembly ) );
+    /// <summary>
+    /// Gets a cached type.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The cached type.</returns>
+    public ICachedType Get( Type type ) => Get( type, null );
 
     internal ICachedType Get( Type type, CachedAssembly? knwonAssembly )
     {
@@ -70,7 +83,9 @@ public sealed partial class TypeCache
             }
 
             knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
-            c = new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );
+            c = interfaces.Contains( _iRealObject )
+                    ? new RealObjectCachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition )
+                    : new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );
         }
         return c;
     }

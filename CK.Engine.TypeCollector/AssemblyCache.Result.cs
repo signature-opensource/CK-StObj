@@ -7,12 +7,12 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-public sealed partial class AssemblyCache
+public sealed partial class AssemblyCache // Result
 {
     /// <summary>
-    /// Result of a <see cref="Run"/>.
+    /// Result of a <see cref="Run"/>: exposes the <see cref="AssemblyCache"/> and the <see cref="BinPathGroups"/>.
     /// </summary>
-    public sealed class Result : IAssemblyCache
+    public sealed class Result
     {
         readonly AssemblyCache _cache;
         readonly IReadOnlyCollection<BinPathGroup> _binPaths;
@@ -30,11 +30,10 @@ public sealed partial class AssemblyCache
         /// </summary>
         public bool Success => _success;
 
-        /// <inheritdoc />
-        public IReadOnlyDictionary<object, CachedAssembly> Assemblies => _cache.Assemblies;
-
-        /// <inheritdoc />
-        public CachedAssembly FindOrCreate( Assembly assembly ) => _cache.FindOrCreate( assembly );
+        /// <summary>
+        /// Gets the assembly cache.
+        /// </summary>
+        public AssemblyCache AssemblyCache => _cache;
 
         /// <summary>
         /// Gets the <see cref="BinPathGroup"/> with their similar assembly related <see cref="BinPathGroup.Configurations"/>.

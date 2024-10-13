@@ -21,6 +21,7 @@ namespace CK.Setup;
 public sealed class StObjEngine
 {
     readonly IActivityMonitor _monitor;
+    readonly TypeCache _typeCache;
     readonly RunningEngineConfiguration _config;
     readonly XElement? _ckSetupConfig;
     Status? _status;
@@ -58,9 +59,13 @@ public sealed class StObjEngine
 
     readonly IReadOnlyList<BinPathTypeGroup> _groups;
 
-    public StObjEngine( IActivityMonitor monitor, EngineConfiguration config, IReadOnlyList<BinPathTypeGroup> groups )
+    public StObjEngine( IActivityMonitor monitor,
+                        EngineConfiguration config,
+                        TypeCache typeCache,
+                        IReadOnlyList<BinPathTypeGroup> groups )
     {
         _monitor = monitor;
+        _typeCache = typeCache;
         _groups = groups;
         _config = new RunningEngineConfiguration( config, groups );
     }
@@ -219,6 +224,7 @@ public sealed class StObjEngine
     /// </summary>
     /// <param name="monitor">Logger that must be used.</param>
     /// <param name="config">Configuration that describes the key aspects of the build.</param>
+    [Obsolete( "Now everything is done on the EngineConfiguration", true )]
     public StObjEngine( IActivityMonitor monitor, EngineConfiguration config )
     {
         _groups = null!;
@@ -234,6 +240,7 @@ public sealed class StObjEngine
     /// </summary>
     /// <param name="monitor">Logger that must be used.</param>
     /// <param name="config">Configuration that describes the key aspects of the build.</param>
+    [Obsolete( "Now everything is done on the EngineConfiguration", true )]
     public StObjEngine( IActivityMonitor monitor, XElement config )
         : this( monitor, new EngineConfiguration( config ) )
     {
@@ -269,7 +276,7 @@ public sealed class StObjEngine
     /// <param name="result">The collector result.</param>
     /// <param name="config">The configuration.</param>
     /// <returns>True on success, false otherwise.</returns>
-    [Obsolete( "Use the ISet<Type> or RunSingleBinPath( stObjCollectorResult ) instead." )]
+    [Obsolete( "Use the ISet<Type> or RunSingleBinPath( stObjCollectorResult ) instead.", true )]
     public static StObjEngineResult Run( IActivityMonitor monitor, StObjCollectorResult result, EngineConfiguration config )
     {
         Throw.CheckNotNullArgument( monitor );
@@ -286,6 +293,7 @@ public sealed class StObjEngine
     /// This is the entry point when run by CKSetup.
     /// </summary>
     /// <returns>True on success, false if an error occurred.</returns>
+    [Obsolete( "Now everything is done on the EngineConfiguration", true )]
     public bool Run() => DoRun( null, null, null ).Success;
 
     /// <summary>
@@ -293,7 +301,7 @@ public sealed class StObjEngine
     /// </summary>
     /// <param name="resolver">The resolver to use.</param>
     /// <returns>The run result.</returns>
-    [Obsolete( "Use Run( types ) or RunSingleBinPath( stObjCollectorResult ) instead." )]
+    [Obsolete( "Use Run( types ) or RunSingleBinPath( stObjCollectorResult ) instead.", true )]
     public StObjEngineResult Run( IStObjCollectorResultResolver resolver )
     {
         Throw.CheckNotNullArgument( resolver );
@@ -305,6 +313,7 @@ public sealed class StObjEngine
     /// </summary>
     /// <param name="types">Explicit types to register.</param>
     /// <returns>The run result.</returns>
+    [Obsolete("Now everything is done on the EngineConfiguration", true)]
     public StObjEngineResult Run( ISet<Type> types )
     {
         Throw.CheckNotNullArgument( types );
@@ -316,6 +325,7 @@ public sealed class StObjEngine
     /// </summary>
     /// <param name="stObjCollectorResult">Already available result.</param>
     /// <returns>The run result.</returns>
+    [Obsolete( "Now everything is done on the EngineConfiguration", true )]
     public StObjEngineResult RunSingleBinPath( StObjCollectorResult stObjCollectorResult )
     {
         Throw.CheckState( _config.Configuration.BinPaths.Count == 1 );
@@ -324,6 +334,7 @@ public sealed class StObjEngine
     }
 
 
+    [Obsolete( "Now everything is done on the EngineConfiguration", true )]
     StObjEngineResult DoRun( ISet<Type>? types, StObjCollectorResult? stObjCollectorResult, IStObjCollectorResultResolver? obsoleteResolver )
     {
         Throw.CheckState( "Run can be called only once.", !_hasRun );

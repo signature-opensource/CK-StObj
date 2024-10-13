@@ -12,7 +12,7 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-public sealed partial class AssemblyCache : IAssemblyCache
+public sealed partial class AssemblyCache
 {
     // Don't be tempted to move this excluder down to each BinPath as
     // this woult break the PFeature sharing accross BinPath (the CachedAssembly
@@ -26,12 +26,19 @@ public sealed partial class AssemblyCache : IAssemblyCache
     readonly Dictionary<GroupKey, BinPathGroup> _binPaths;
     bool _registrationClosed;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Gets the cached assemblies. CachedAssembly are indexed by their Assembly and their simple name.
+    /// </summary>
     public IReadOnlyDictionary<object, CachedAssembly> Assemblies => _assemblies;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Registers an assembly that has not been discovered by the <see cref="Run(IActivityMonitor, EngineConfiguration)"/>.
+    /// </summary>
+    /// <param name="assembly">The assembly to find or register. Must not be <see cref="Assembly.IsDynamic"/>.</param>
+    /// <returns>The cached assembly.</returns>
     public CachedAssembly FindOrCreate( Assembly assembly )
     {
+        // This can be called only once registrations are closed, after the Run(IActivityMonitor, EngineConfiguration).
         Throw.CheckArgument( assembly is not null && assembly.IsDynamic is false );
         Throw.CheckState( _registrationClosed is true );
         // Note that whatever the kind is (even a Exclude[Engine thats should be a warning), we

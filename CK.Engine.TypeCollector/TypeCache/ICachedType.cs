@@ -95,6 +95,20 @@ public interface ICachedType
     public ImmutableArray<CustomAttributeData> CustomAttributes { get; }
 
     /// <summary>
+    /// Get the methods declared by this type. Binding flags are <c>Public|NonPublic|Instance|Static|DeclaredOnly</c>.
+    /// <para>
+    /// Non public methods are collected mainly to be able to emit warnings since only public methods are actually
+    /// considered by the engine.
+    /// </para>
+    /// </summary>
+    ImmutableArray<CachedMethodInfo> DeclaredMethodInfos { get; }
+
+    /// <summary>
+    /// Gets the <see cref="TypeCache"/>.
+    /// </summary>
+    TypeCache TypeCache { get; }
+
+    /// <summary>
     /// Returns the <see cref="CSharpName"/>.
     /// </summary>
     /// <returns>This type C# name.</returns>
