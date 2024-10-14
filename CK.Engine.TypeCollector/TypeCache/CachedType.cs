@@ -132,9 +132,11 @@ class CachedType : ICachedType
         _genericParameters = type.IsGenericTypeDefinition
                                 ? type.GetGenericArguments().Select( t => new CachedGenericParameter( t ) ).ToImmutableArray()
                                 : ImmutableArray<CachedGenericParameter>.Empty;
-        _nullable = nullableValueType == null
-                        ? new NullReferenceType( this )
-                        : new NullValueType( this, nullableValueType );
+        _nullable = nullableValueType != null
+                    ? new NullValueType( this, nullableValueType )
+                    : type.IsByRefLike
+                        ? this
+                        : new NullReferenceType( this );
     }
 
     public Type Type => _type;
