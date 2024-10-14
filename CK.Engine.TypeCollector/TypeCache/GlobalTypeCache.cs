@@ -3,9 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 
@@ -54,7 +51,6 @@ public sealed partial class GlobalTypeCache
                              && type.IsByRef is false );
         if( !_types.TryGetValue( type, out CachedType? c ) )
         {
-            Console.WriteLine( $"Type = {type}" );
             // First we must handle Nullable value types.
             Type? nullableValueType = null;
             var isValueType = type.IsValueType;
@@ -68,7 +64,10 @@ public sealed partial class GlobalTypeCache
                 }
                 else
                 {
-                    nullableValueType = typeof( Nullable<> ).MakeGenericType( type );
+                    if( !type.IsByRefLike )
+                    {
+                        nullableValueType = typeof( Nullable<> ).MakeGenericType( type );
+                    }
                 }
             }
             // Only then can we work on the type.
@@ -86,13 +85,16 @@ public sealed partial class GlobalTypeCache
                                  } )
                                  .ToImmutableArray();
 
-            var tBase = type.BaseType;
             ICachedType? baseType = null;
-            if( tBase != null && tBase != typeof( object ) )
+            if( !isValueType )
             {
-                var b = Get( tBase );
-                if( maxDepth < b.TypeDepth ) maxDepth = b.TypeDepth;
-                baseType = b;
+                Type? tBase = type.BaseType;
+                if( tBase != null && tBase != typeof( object ) )
+                {
+                    var b = Get( tBase );
+                    if( maxDepth < b.TypeDepth ) maxDepth = b.TypeDepth;
+                    baseType = b;
+                }
             }
             // No check of a IRealObject that would also be a IPoco here:
             // if this weird case happens, this is handled by upper layers.
