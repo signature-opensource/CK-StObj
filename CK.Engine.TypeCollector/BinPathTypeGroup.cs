@@ -45,7 +45,7 @@ public sealed partial class BinPathTypeGroup
 
     // Unified group (Signature is Zero).
     BinPathTypeGroup( AssemblyCache assemblyCache,
-                      HashSet<Type> allTypes )
+                      HashSet<ICachedType> allTypes )
     {
         _configurations = ImmutableArray<BinPathConfiguration>.Empty;
         _groupName = "(Unified)";
@@ -60,7 +60,7 @@ public sealed partial class BinPathTypeGroup
 
     /// <summary>
     /// Gets the name of this group: the comma separated <see cref="BinPathConfiguration.Name"/> for regular groups
-    /// and "_Unified_" when <see cref="IsUnifiedPure"/> is true.
+    /// and "(Unified)" when <see cref="IsUnifiedPure"/> is true.
     /// </summary>
     public string GroupName => _groupName;
 
@@ -120,8 +120,7 @@ public sealed partial class BinPathTypeGroup
     public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
     {
         using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
-        var assemblyResult = TypeCollector.AssemblyCache.Run( monitor, configuration );
-
+        var assemblyResult = AssemblyCache.Run( monitor, configuration );
 
         // Always produce the groups even if assemblyResult.Success is false.
         var groups = new List<BinPathTypeGroup>();
@@ -152,7 +151,7 @@ public sealed partial class BinPathTypeGroup
             var c = configurations.First();
 
             // Clones the assembly configured types as there may be other BinPathTypeGroup that use it
-            // (don't currently try to opimize here as it would mutate the assemblyGroup.ConfiguredTypes that should not be immutable
+            // (don't currently try to opimize here as it would mutate the assemblyGroup.ConfiguredTypes that should not be mutable
             // since it is publicy exposed... or make it internal).
             var types = new ConfiguredTypeSet( assemblyGroup.ConfiguredTypes );
 
@@ -163,13 +162,19 @@ public sealed partial class BinPathTypeGroup
             // Must unfortunately order the sets.
             foreach( var t in c.ExcludedTypes.Select( t => (Type: t, t.FullName) ).OrderBy( t => t.FullName ) )
             {
-                types.Remove( t.Type );
+                var cT = assemblyResult.TypeCache.Find( t.Type );
+                if( cT != null )
+                {
+                    types.Remove( cT );
+                }
+                // For the hash, always consider the configured type even it is not used.
                 hasher.Append( t.FullName! );
             }
             Throw.DebugAssert( "Normalized did the job.", c.Types.All( tc => TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind ) == null ) );
             foreach( var tc in c.Types.Select( tc => (tc.Type, tc.Kind, tc.Type.FullName) ).OrderBy( tc => tc.FullName ) )
             {
-                types.Add( monitor, sourceName, tc.Type, tc.Kind );
+                var cT = assemblyResult.TypeCache.Get( tc.Type );
+                types.Add( monitor, sourceName, cT, tc.Kind );
                 hasher.Append( tc.FullName! ).Append( tc.Kind );
             }
             var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
@@ -199,12 +204,12 @@ public sealed partial class BinPathTypeGroup
         }
         else
         {
-            var uTypes = new HashSet<Type>();
+            var uTypes = new HashSet<ICachedType>();
             // We have no choice here. We must compute the set of IRealObject and IPoco types only for each group
             // to be able to find the covering one (if it exists) and we cannot know if the covering one is needed
             // until we check that a unified group is required.
-            var uSets = result.Select( g => new HashSet<Type>( g.ConfiguredTypes.AllTypes
-                                                                .Where( t => typeof( IRealObject ).IsAssignableFrom( t ) || typeof( IPoco ).IsAssignableFrom( t ) ) ) )
+            var uSets = result.Select( g => new HashSet<ICachedType>( g.ConfiguredTypes.AllTypes
+                                                                        .Where( t => t is IPocoCachedType or IRealObjectCachedType ) ) )
                               .ToArray();
             // The covering one is necessarily the biggest one if a unification is not required.
             int maxCount = 0;

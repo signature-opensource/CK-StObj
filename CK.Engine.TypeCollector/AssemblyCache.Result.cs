@@ -11,17 +11,22 @@ public sealed partial class AssemblyCache // Result
 {
     /// <summary>
     /// Result of a <see cref="Run"/>: exposes the <see cref="AssemblyCache"/> and the <see cref="BinPathGroups"/>.
+    /// <para>
+    /// New assembly can be registered by calling <see cref="FindOrCreate(Assembly)"/>.
+    /// </para>
     /// </summary>
     public sealed class Result
     {
         readonly AssemblyCache _cache;
+        readonly GlobalTypeCache _typeCache;
         readonly IReadOnlyCollection<BinPathGroup> _binPaths;
         readonly bool _success;
 
-        internal Result( bool success, AssemblyCache cache, IReadOnlyCollection<BinPathGroup> binPaths )
+        internal Result( bool success, AssemblyCache cache, GlobalTypeCache typeCache, IReadOnlyCollection<BinPathGroup> binPaths )
         {
             _success = success;
             _cache = cache;
+            _typeCache = typeCache;
             _binPaths = binPaths;
         }
 
@@ -34,6 +39,11 @@ public sealed partial class AssemblyCache // Result
         /// Gets the assembly cache.
         /// </summary>
         public AssemblyCache AssemblyCache => _cache;
+
+        /// <summary>
+        /// Gets the global type cache.
+        /// </summary>
+        public GlobalTypeCache TypeCache => _typeCache;
 
         /// <summary>
         /// Gets the <see cref="BinPathGroup"/> with their similar assembly related <see cref="BinPathGroup.Configurations"/>.

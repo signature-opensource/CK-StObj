@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -9,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
@@ -55,17 +57,30 @@ public sealed partial class AssemblyCache
     public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
     {
         bool success = true;
-        var c = new AssemblyCache( configuration.ExcludedAssemblies.Contains );
+        var assemblyCache = new AssemblyCache( configuration.ExcludedAssemblies.Contains );
+
+        var collector = new List<BinPathGroup>();
         foreach( var b in configuration.BinPaths )
         {
-            success &= c.Register( monitor, b ).Success;
+            success &= assemblyCache.Register( monitor, b, collector ).Success;
         }
-        // Any new CachedAssemblyInfo will not be IsInitialAssembly.
-        c._registrationClosed = true;
+        // Any new CachedAssemblyInfo will not be IsInitialAssembly: when collecting types
+        // any referenced types (base types, interfaces, etc.) may register a new assembly
+        // but it will not be an "initial" one.
+        assemblyCache._registrationClosed = true;
+        // We can now compute the CachedAssembly.Types and safely uses ICachedType from it.
+        var typeCache = new GlobalTypeCache( assemblyCache );
+        using( monitor.OpenInfo( $"Collecting types for {collector.Count} BinPathGroup." ) )
+        {
+            foreach( var g in collector )
+            {
+                success &= g.FinalizeAndCollectTypes( monitor, typeCache );
+            }
+        }
         // Dumps a summary.
         var sb = new StringBuilder( success ? "Successfully analyzed " : "Error while analyzing " );
-        sb.Append( c._binPaths.Count ).AppendLine( " assembly configurations:" );
-        foreach( var b in c._binPaths.Values )
+        sb.Append( assemblyCache._binPaths.Count ).AppendLine( " assembly configurations:" );
+        foreach( var b in assemblyCache._binPaths.Values )
         {
             if( b.Success )
             {
@@ -78,7 +93,7 @@ public sealed partial class AssemblyCache
             }
         }
         monitor.Log( success ? LogLevel.Info : LogLevel.Error, sb.ToString() );
-        return new Result( success, c, c._binPaths.Values );
+        return new Result( success, assemblyCache, typeCache, assemblyCache._binPaths.Values );
     }
 
     /// <summary>
@@ -104,8 +119,13 @@ public sealed partial class AssemblyCache
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configuration">The configuration to register.</param>
-    /// <returns></returns>
-    BinPathGroup Register( IActivityMonitor monitor, BinPathConfiguration configuration )
+    /// <param name="collector">
+    /// The ordered list of BinPathGroup that are created: this enables to keep the configuration order
+    /// for the type collection otherwise we'll handle the types in a random order given by the hash of the
+    /// GroupKey in the _binPaths dictionary.
+    /// </param>
+    /// <returns>The BinPathGroup (contains the configuration).</returns>
+    BinPathGroup Register( IActivityMonitor monitor, BinPathConfiguration configuration, List<BinPathGroup> collector )
     {
         var k = new GroupKey( configuration );
         if( !_binPaths.TryGetValue( k, out var binPath ) )
@@ -117,12 +137,13 @@ public sealed partial class AssemblyCache
                                 ? binPath.DiscoverFolder( monitor )
                                 : configuration.Assemblies.Aggregate( true, ( success, b ) => success &= binPath.AddExplicit( monitor, b ) );
                 Throw.DebugAssert( success == binPath.Success );
-                success &= binPath.FinalizeAndCollectTypes( monitor );
-                if( !success )
-                {
-                    monitor.CloseGroup( "Failed." );
-                }
+                //success &= binPath.FinalizeAndCollectTypes( monitor );
+                //if( !success )
+                //{
+                //    monitor.CloseGroup( "Failed." );
+                //}
                 _binPaths.Add( k, binPath );
+                collector.Add( binPath );
             }
         }
         else

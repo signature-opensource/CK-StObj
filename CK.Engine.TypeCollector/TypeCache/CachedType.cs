@@ -1,18 +1,14 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 
 class CachedType : ICachedType
 {
-    readonly TypeCache _cache;
+    readonly GlobalTypeCache _cache;
     readonly Type _type;
     readonly int _typeDepth;
     readonly CachedAssembly _assembly;
@@ -64,7 +60,7 @@ class CachedType : ICachedType
 
         public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ((ICachedType)_nonNullable).DeclaredMethodInfos;
 
-        public TypeCache TypeCache => ((ICachedType)_nonNullable).TypeCache;
+        public GlobalTypeCache TypeCache => ((ICachedType)_nonNullable).TypeCache;
 
         public override string ToString() => CSharpName;
     }
@@ -110,12 +106,12 @@ class CachedType : ICachedType
 
         public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => _nonNullable.DeclaredMethodInfos;
 
-        public TypeCache TypeCache => _nonNullable.TypeCache;
+        public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
         public override string ToString() => CSharpName;
     }
 
-    internal CachedType( TypeCache cache,
+    internal CachedType( GlobalTypeCache cache,
                          Type type,
                          int typeDepth,
                          Type? nullableValueType,
@@ -140,8 +136,6 @@ class CachedType : ICachedType
                         ? new NullReferenceType( this )
                         : new NullValueType( this, nullableValueType );
     }
-
-    public TypeCache Cache => _cache;
 
     public Type Type => _type;
 
@@ -196,7 +190,7 @@ class CachedType : ICachedType
         }
     }
 
-    public TypeCache TypeCache => _cache;
+    public GlobalTypeCache TypeCache => _cache;
 
     public override string ToString() => _csharpName;
 }

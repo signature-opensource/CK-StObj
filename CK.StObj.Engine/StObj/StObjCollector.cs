@@ -140,48 +140,6 @@ public partial class StObjCollector
     }
 
     /// <summary>
-    /// Registers types from multiple assemblies.
-    /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="assemblyNames">The assembly names to register.</param>
-    /// <returns>The number of new discovered classes.</returns>
-    public int RegisterAssemblyTypes( IActivityMonitor monitor, IReadOnlyCollection<string> assemblyNames )
-    {
-        using var errorTracker = monitor.OnError( _errorEntries.Add );
-        if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
-        Throw.CheckNotNullArgument( assemblyNames );
-        int totalRegistered = 0;
-        using( monitor.OpenTrace( $"Registering {assemblyNames.Count} assemblies." ) )
-        {
-            foreach( var one in assemblyNames )
-            {
-                using( monitor.OpenTrace( $"Registering assembly '{one}'." ) )
-                {
-                    Assembly? a = null;
-                    try
-                    {
-                        a = Assembly.Load( one );
-                    }
-                    catch( Exception ex )
-                    {
-                        monitor.Error( $"Error while loading assembly '{one}'.", ex );
-                    }
-                    if( a != null )
-                    {
-                        int nbAlready = _cc.RegisteredTypeCount;
-                        _cc.RegisterTypes( monitor, a.GetTypes() );
-                        int delta = _cc.RegisteredTypeCount - nbAlready;
-                        monitor.CloseGroup( $"{delta} types(s) registered." );
-                        totalRegistered += delta;
-                    }
-                }
-            }
-        }
-        return totalRegistered;
-    }
-
-    /// <summary>
     /// Registers a type that may be a CK type (<see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>).
     /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
     /// </summary>
@@ -212,26 +170,6 @@ public partial class StObjCollector
         Throw.CheckNotNullArgument( types );
         using var errorTracker = monitor.OnError( _errorEntries.Add );
         if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
-        DoRegisterTypes( monitor, types );
-    }
-
-    /// <summary>
-    /// Explicitly registers a set of CK types (<see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>) by their
-    /// assembly qualified names.
-    /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="typeNames">Assembly qualified names of the types to register.</param>
-    public void RegisterTypes( IActivityMonitor monitor, IEnumerable<string> typeNames )
-    {
-        using var errorTracker = monitor.OnError( _errorEntries.Add );
-        if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
-        Throw.CheckNotNullArgument( typeNames );
-        DoRegisterTypes( monitor, typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ) );
-    }
-
-    void DoRegisterTypes( IActivityMonitor monitor, IEnumerable<Type> types )
-    {
         SafeTypesHandler( monitor,
                           types,
                           ( m, cc, t ) => cc.RegisterType( m, t ), false );

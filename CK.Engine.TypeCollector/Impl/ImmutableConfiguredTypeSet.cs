@@ -11,10 +11,10 @@ sealed class ImmutableConfiguredTypeSet : IConfiguredTypeSet
 
     readonly IReadOnlyCollection<TypeConfiguration> _configuredTypes;
 
-    readonly IReadOnlySet<Type> _allTypes;
+    readonly IReadOnlySet<ICachedType> _allTypes;
 
     // internal: don't use a ImmutableHashSet.
-    internal ImmutableConfiguredTypeSet( HashSet<Type> types )
+    internal ImmutableConfiguredTypeSet( HashSet<ICachedType> types )
     {
         _allTypes = types;
         _configuredTypes = ImmutableArray<TypeConfiguration>.Empty;
@@ -22,11 +22,11 @@ sealed class ImmutableConfiguredTypeSet : IConfiguredTypeSet
 
     ImmutableConfiguredTypeSet()
     {
-        _allTypes = ImmutableHashSet<Type>.Empty;
+        _allTypes = ImmutableHashSet<ICachedType>.Empty;
         _configuredTypes = ImmutableArray<TypeConfiguration>.Empty;
     }
 
-    public IReadOnlySet<Type> AllTypes => _allTypes;
+    public IReadOnlySet<ICachedType> AllTypes => _allTypes;
 
     public IReadOnlyCollection<TypeConfiguration> ConfiguredTypes => _configuredTypes;
 }

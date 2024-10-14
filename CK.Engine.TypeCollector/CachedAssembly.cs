@@ -21,7 +21,6 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
 
     // Initialized on demand.
     ImmutableArray<CustomAttributeData> _customAttributes;
-    ImmutableArray<Type> _allVisibleTypes;
     // Initialized by AssemblyCache.DoAdd.
     internal AssemblyKind _kind;
     internal ImmutableArray<CachedAssembly> _rawReferencedAssembly;
@@ -52,7 +51,6 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
             // Skipped or post registration assembly: we can settle the types and references.
             if( !isInitialAssembly || _kind is AssemblyKind.AutoSkipped )
             {
-                _allVisibleTypes = ImmutableArray<Type>.Empty;
                 _rawReferencedAssembly = ImmutableArray<CachedAssembly>.Empty;
             }
             // An Excluded Engine is an error: this will be handled right after.
@@ -60,7 +58,6 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
         else
         {
             _customAttributes = ImmutableArray<CustomAttributeData>.Empty;
-            _allVisibleTypes = ImmutableArray<Type>.Empty;
             _rawReferencedAssembly = ImmutableArray<CachedAssembly>.Empty;
         }
     }
@@ -136,28 +133,6 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     public DateTime LastWriteTimeUtc => _lastWriteTime;
 
     /// <summary>
-    /// Gets the visible classes, interfaces, value types and enums excluding any generic type definitions.
-    /// These are the only kind of types that we need to start a CKomposable setup.
-    /// <para>
-    /// This is always empty when <see cref="AssemblyKind.Excluded"/> or <see cref="AssemblyKind.Skipped"/>
-    /// or when <see cref="IsInitialAssembly"/> is false.
-    /// </para>
-    /// </summary>
-    public ImmutableArray<Type> AllVisibleTypes
-    {
-        get
-        {
-            if( _allVisibleTypes.IsDefault )
-            {
-                _allVisibleTypes = _assembly.GetExportedTypes()
-                                            .Where( t => (t.IsClass || t.IsInterface || t.IsValueType || t.IsEnum) && !t.IsGenericTypeDefinition )
-                                            .ToImmutableArray();
-            }
-            return _allVisibleTypes;
-        }
-    }
-
-    /// <summary>
     /// Gets this kind of assembly.
     /// </summary>
     public AssemblyKind Kind => _kind;
@@ -200,7 +175,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     /// <summary>
     /// Gets the curated closure of <see cref="AssemblyKind.PFeature"/>, considering any <see cref="ExcludePFeatureAttribute"/>
     /// defined by this assembly and by referenced ones: a referenced assembly doesn't appear here if it has been excluded by
-    /// this assembly or if it is an indirect reference that has been excluded by all the inermediate referencers.
+    /// this assembly or if it is an indirect reference that has been excluded by all the intermediate referencers.
     /// <para>
     /// Stated differently:
     /// <list type="bullet">

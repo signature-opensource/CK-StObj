@@ -34,7 +34,11 @@ public sealed record TypeConfiguration( Type Type, ConfigurableAutoServiceKind K
 
     /// <summary>
     /// Centralized helper: checks null type FullName, dynamic assembly, non visible type, attempt to set a non None kind on a
-    /// IAutoService, IRealObject or IPoco and allows only enums, classes, interfaces or value types. 
+    /// IAutoService, IRealObject or IPoco and allows only enums, classes, interfaces or value types.
+    /// <para>
+    /// For the special types <see cref="IAutoService"/>, <see cref="IPoco"/> and <see cref="IRealObject"/>, this uses <c>typeof(T).IsAssignableFrom( <paramref name="type"/> )</c>
+    /// to check the validity: this assembly is on the "running side", it cannot rely on the engine type cache.
+    /// </para>
     /// </summary>
     /// <param name="type">The type to check.</param>
     /// <param name="kind">The kind to check.</param>

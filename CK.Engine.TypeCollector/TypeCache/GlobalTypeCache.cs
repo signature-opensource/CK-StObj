@@ -12,29 +12,41 @@ namespace CK.Engine.TypeCollector;
 /// <summary>
 /// Global type cache.
 /// </summary>
-public sealed partial class TypeCache
+public sealed partial class GlobalTypeCache
 {
     readonly Dictionary<Type, CachedType> _types;
     readonly AssemblyCache _assemblies;
     readonly ICachedType _iRealObject;
+    readonly ICachedType _iPoco;
 
     /// <summary>
     /// Initializes a new cahe for types based on an assembly cache.
     /// </summary>
     /// <param name="assemblies">The assembly cache.</param>
-    public TypeCache( AssemblyCache assemblies )
+    public GlobalTypeCache( AssemblyCache assemblies )
     {
         _types = new Dictionary<Type, CachedType>();
         _assemblies = assemblies;
         _iRealObject = Get( typeof( IRealObject ) );
+        _iPoco = Get( typeof( IPoco ) );
     }
 
     /// <summary>
     /// Gets a cached type.
+    /// <para>
+    /// If the type is not yet known, it will be registered.
+    /// </para>
     /// </summary>
     /// <param name="type">The type.</param>
     /// <returns>The cached type.</returns>
     public ICachedType Get( Type type ) => Get( type, null );
+
+    /// <summary>
+    /// Finds an existing cached type.
+    /// </summary>
+    /// <param name="type">The type.</param>
+    /// <returns>The cached type or null.</returns>
+    public ICachedType? Find( Type type ) => _types.GetValueOrDefault( type );
 
     internal ICachedType Get( Type type, CachedAssembly? knwonAssembly )
     {
@@ -42,6 +54,7 @@ public sealed partial class TypeCache
                              && type.IsByRef is false );
         if( !_types.TryGetValue( type, out CachedType? c ) )
         {
+            Console.WriteLine( $"Type = {type}" );
             // First we must handle Nullable value types.
             Type? nullableValueType = null;
             var isValueType = type.IsValueType;
@@ -59,7 +72,7 @@ public sealed partial class TypeCache
                 }
             }
             // Only then can we work on the type.
-            ICachedType? genericTypeDefinition = type.IsGenericType
+            ICachedType? genericTypeDefinition = type.IsGenericType && !type.IsGenericTypeDefinition
                                                     ? Get( type.GetGenericTypeDefinition() )
                                                     : null;
             int maxDepth = 0;
@@ -81,11 +94,15 @@ public sealed partial class TypeCache
                 if( maxDepth < b.TypeDepth ) maxDepth = b.TypeDepth;
                 baseType = b;
             }
-
+            // No check of a IRealObject that would also be a IPoco here:
+            // if this weird case happens, this is handled by upper layers.
             knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
             c = interfaces.Contains( _iRealObject )
                     ? new RealObjectCachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition )
-                    : new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );
+                    : interfaces.Contains( _iPoco )
+                        ? new PocoCachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition )
+                        : new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );
+            _types.Add( type, c );
         }
         return c;
     }

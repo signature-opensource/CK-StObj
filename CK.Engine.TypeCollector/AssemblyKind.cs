@@ -47,7 +47,13 @@ public enum AssemblyKind
 
 public static class AssemblyKindExtensions
 {
-    public static bool IsSkipped( this AssemblyKind kind ) => (kind | AssemblyKind.SystemSkipped | AssemblyKind.AutoSkipped) != 0;
+    /// <summary>
+    /// Gets whether this assembly is <see cref="AssemblyKind.AutoSkipped"/> or <see cref="AssemblyKind.SystemSkipped"/>.
+    /// </summary>
+    /// <param name="kind">This kind.</param>
+    /// <returns>Whether this assembly is skipped.</returns>
+    public static bool IsSkipped( this AssemblyKind kind ) => (kind & (AssemblyKind.SystemSkipped | AssemblyKind.AutoSkipped)) != 0;
+
     public static bool IsExcluded( this AssemblyKind kind ) => (kind & AssemblyKind.Excluded) != 0;
     public static bool IsNone( this AssemblyKind kind ) => (kind & ~AssemblyKind.Excluded) == 0;
     public static bool IsPFeature( this AssemblyKind kind ) => (kind & AssemblyKind.PFeature) != 0;

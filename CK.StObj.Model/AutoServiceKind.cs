@@ -2,8 +2,6 @@ using System;
 
 namespace CK.Core;
 
-
-
 /// <summary>
 /// Detailed flags that categorizes service types used by the Automatic DI.
 /// </summary>

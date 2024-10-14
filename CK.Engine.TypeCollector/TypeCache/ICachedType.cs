@@ -4,7 +4,6 @@ using System.Reflection;
 
 namespace CK.Engine.TypeCollector;
 
-
 /// <summary>
 /// Centralized type information.
 /// <para>
@@ -106,7 +105,7 @@ public interface ICachedType
     /// <summary>
     /// Gets the <see cref="TypeCache"/>.
     /// </summary>
-    TypeCache TypeCache { get; }
+    GlobalTypeCache TypeCache { get; }
 
     /// <summary>
     /// Returns the <see cref="CSharpName"/>.

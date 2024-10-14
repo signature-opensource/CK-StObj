@@ -2,18 +2,16 @@ using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
-class RealObjectCachedType : CachedType, IRealObjectCachedType
+sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
 {
     ImmutableArray<CachedMethodInfo> _configureMethods;
     CachedMethodInfo? _requiresMethod;
     bool _methodsSuccess;
 
-    internal RealObjectCachedType( TypeCache cache,
+    internal RealObjectCachedType( GlobalTypeCache cache,
                                    Type type,
                                    int typeDepth,
                                    Type? nullableValueType,

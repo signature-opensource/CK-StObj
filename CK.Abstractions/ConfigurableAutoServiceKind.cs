@@ -5,7 +5,7 @@ namespace CK.Setup;
 /// <summary>
 /// Subset of the Automatic DI types categorization that can be applied to external classes or interfaces.
 /// <para>
-/// This applies only to Automatic Services, Real Objects and Poco can only be defined by code.
+/// This applies only to Automatic Services. Real Objects and Poco can only be defined by code.
 /// </para>
 /// </summary>
 [Flags]
@@ -53,9 +53,6 @@ public enum ConfigurableAutoServiceKind
     /// <summary>
     /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
     /// </summary>
-    /// <remarks>
-    /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
-    /// </remarks>
     IsMultipleService = 1 << 15,
 
 }
