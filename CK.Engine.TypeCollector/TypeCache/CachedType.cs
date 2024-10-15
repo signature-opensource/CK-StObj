@@ -12,12 +12,11 @@ class CachedType : ICachedType
     readonly Type _type;
     readonly int _typeDepth;
     readonly CachedAssembly _assembly;
-    readonly string _csharpName;
     readonly ImmutableArray<ICachedType> _interfaces;
     readonly ICachedType? _baseType;
     readonly ICachedType? _genericTypeDefinition;
     readonly ICachedType _nullable;
-    readonly ImmutableArray<CachedGenericParameter> _genericParameters;
+    string? _csharpName;
     ImmutableArray<CustomAttributeData> _customAttributes;
     ImmutableArray<CachedMethodInfo> _declaredMethodInfos;
     readonly bool _isTypeDefinition;
@@ -111,10 +110,10 @@ class CachedType : ICachedType
         public override string ToString() => CSharpName;
     }
 
+    // Reference type.
     internal CachedType( GlobalTypeCache cache,
                          Type type,
                          int typeDepth,
-                         Type? nullableValueType,
                          CachedAssembly assembly,
                          ImmutableArray<ICachedType> interfaces,
                          ICachedType? baseType,
@@ -126,17 +125,30 @@ class CachedType : ICachedType
         _assembly = assembly;
         _interfaces = interfaces;
         _baseType = baseType;
-        _csharpName = type.ToCSharpName();
         _isTypeDefinition = type.IsGenericTypeDefinition;
         _genericTypeDefinition = genericTypeDefinition;
-        _genericParameters = type.IsGenericTypeDefinition
-                                ? type.GetGenericArguments().Select( t => new CachedGenericParameter( t ) ).ToImmutableArray()
-                                : ImmutableArray<CachedGenericParameter>.Empty;
+        _nullable = new NullReferenceType( this );
+    }
+
+    // Value type.
+    internal CachedType( GlobalTypeCache cache,
+                         Type type,
+                         int typeDepth,
+                         Type? nullableValueType,
+                         CachedAssembly assembly,
+                         ImmutableArray<ICachedType> interfaces,
+                         ICachedType? genericTypeDefinition )
+    {
+        _cache = cache;
+        _type = type;
+        _typeDepth = typeDepth;
+        _assembly = assembly;
+        _interfaces = interfaces;
+        _isTypeDefinition = type.IsGenericTypeDefinition;
+        _genericTypeDefinition = genericTypeDefinition;
         _nullable = nullableValueType != null
                     ? new NullValueType( this, nullableValueType )
-                    : type.IsByRefLike
-                        ? this
-                        : new NullReferenceType( this );
+                    : this;
     }
 
     public Type Type => _type;
@@ -153,7 +165,7 @@ class CachedType : ICachedType
 
     public ICachedType? GenericTypeDefinition => _genericTypeDefinition;
 
-    public string CSharpName => _csharpName;
+    public string CSharpName => _csharpName ??= _type.ToCSharpName();
 
     public bool IsNullable => false;
 
@@ -161,7 +173,7 @@ class CachedType : ICachedType
 
     public ICachedType NonNullable => this;
 
-    public ImmutableArray<CachedGenericParameter> GenericParameters => _genericParameters;
+    public ImmutableArray<CachedGenericParameter> GenericParameters => ImmutableArray<CachedGenericParameter>.Empty;
 
     public ImmutableArray<CustomAttributeData> CustomAttributes
     {
@@ -194,5 +206,5 @@ class CachedType : ICachedType
 
     public GlobalTypeCache TypeCache => _cache;
 
-    public override string ToString() => _csharpName;
+    public override string ToString() => CSharpName;
 }

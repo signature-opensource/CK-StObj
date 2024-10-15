@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Text;
+using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
@@ -8,14 +10,13 @@ public sealed class CachedMethodInfo
 {
     readonly ICachedType _declaringType;
     readonly MethodInfo _method;
-    readonly Type _returnType;
     ImmutableArray<CachedParameterInfo> _parameterInfos;
+    CachedParameterInfo? _returnParameterInfo;
 
     internal CachedMethodInfo( ICachedType declaringType, MethodInfo method )
     {
         _declaringType = declaringType;
         _method = method;
-        _returnType = method.ReturnType;
     }
 
     /// <summary>
@@ -60,4 +61,25 @@ public sealed class CachedMethodInfo
             return _parameterInfos;
         }
     }
+
+    public CachedParameterInfo ReturnParameterInfo => _returnParameterInfo ??= new CachedParameterInfo( this, _method.ReturnParameter );
+
+    public StringBuilder Write( StringBuilder b )
+    {
+        if( _method.IsStatic ) b.Append( "static " );
+        ReturnParameterInfo.Write( b );
+        b.Append(' ').Append( Name ).Append('(');
+        int i = 0;
+        foreach( var p in ParameterInfos )
+        {
+            if( i++ > 0 ) b.Append( ',' );
+            b.Append( ' ' );
+            p.Write( b );
+        }
+        if( i > 0 ) b.Append( ' ' );
+        b.Append( ')' );
+        return b;
+    }
+
+    public override string ToString() => Write( new StringBuilder() ).ToString();
 }

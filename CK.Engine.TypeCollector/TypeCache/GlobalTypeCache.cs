@@ -2,16 +2,20 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
 /// Global type cache.
+/// <para>
+/// This currently doesn't handle Nullable Reference Type.
+/// </para>
 /// </summary>
 public sealed partial class GlobalTypeCache
 {
-    readonly Dictionary<Type, CachedType> _types;
+    readonly Dictionary<Type, ICachedType> _types;
     readonly AssemblyCache _assemblies;
     readonly ICachedType _iRealObject;
     readonly ICachedType _iPoco;
@@ -22,7 +26,7 @@ public sealed partial class GlobalTypeCache
     /// <param name="assemblies">The assembly cache.</param>
     public GlobalTypeCache( AssemblyCache assemblies )
     {
-        _types = new Dictionary<Type, CachedType>();
+        _types = new Dictionary<Type, ICachedType>();
         _assemblies = assemblies;
         _iRealObject = Get( typeof( IRealObject ) );
         _iPoco = Get( typeof( IPoco ) );
@@ -47,10 +51,26 @@ public sealed partial class GlobalTypeCache
 
     internal ICachedType Get( Type type, CachedAssembly? knwonAssembly )
     {
-        Throw.CheckArgument( type is not null
-                             && type.IsByRef is false );
-        if( !_types.TryGetValue( type, out CachedType? c ) )
+        Throw.CheckArgument( type is not null );
+        if( !_types.TryGetValue( type, out ICachedType? c ) )
         {
+            knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
+            if( type.IsTypeDefinition )
+            {
+                c = new GenericCachedTypeDefinition( this, type, knwonAssembly );
+                _types.Add( type, c );
+                return c;
+            }
+            if( type.IsGenericTypeParameter )
+            {
+                Debugger.Break();
+            }
+
+            if( type == typeof(Nullable<>) )
+            {
+                Debugger.Break();
+            }
+
             // First we must handle Nullable value types.
             Type? nullableValueType = null;
             var isValueType = type.IsValueType;
@@ -64,7 +84,12 @@ public sealed partial class GlobalTypeCache
                 }
                 else
                 {
-                    if( !type.IsByRefLike )
+                    // "void" is a kind of ValueType.
+                    // ref struct are no nullable.
+                    // Nullable<T> is not nullable.
+                    if( !type.IsByRefLike
+                        && type != typeof(void)
+                        && type != typeof(Nullable<>) )
                     {
                         nullableValueType = typeof( Nullable<> ).MakeGenericType( type );
                     }
@@ -96,15 +121,32 @@ public sealed partial class GlobalTypeCache
                     baseType = b;
                 }
             }
-            // No check of a IRealObject that would also be a IPoco here:
-            // if this weird case happens, this is handled by upper layers.
-            knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
-            c = interfaces.Contains( _iRealObject )
-                    ? new RealObjectCachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition )
-                    : interfaces.Contains( _iPoco )
-                        ? new PocoCachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition )
-                        : new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, baseType, genericTypeDefinition );
+            // Weird case checks.
+            var isRealObject = interfaces.Contains( _iRealObject );
+            var isPoco = interfaces.Contains( _iPoco );
+            if( isRealObject || isPoco )
+            {
+                if( isRealObject && isPoco )
+                {
+                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco and a IRealObject at the same time." );
+                }
+                if( !type.IsClass && !type.IsInterface )
+                {
+                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco or a IRealObject. It must be a class or an interface." );
+                }
+            }
+            c = isRealObject
+                    ? new RealObjectCachedType( this, type, maxDepth + 1, knwonAssembly, interfaces, baseType, genericTypeDefinition )
+                    : isPoco
+                        ? new PocoCachedType( this, type, maxDepth + 1, knwonAssembly, interfaces, baseType, genericTypeDefinition )
+                        : isValueType
+                            ? new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, genericTypeDefinition )
+                            : new CachedType( this, type, maxDepth + 1, knwonAssembly, interfaces, baseType, genericTypeDefinition );
             _types.Add( type, c );
+            if( nullableValueType != null )
+            {
+                _types.Add( nullableValueType, c.Nullable );
+            }
         }
         return c;
     }

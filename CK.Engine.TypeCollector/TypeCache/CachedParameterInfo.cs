@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
@@ -17,9 +19,17 @@ public sealed class CachedParameterInfo
     }
 
     /// <summary>
-    /// Gets the method info.
+    /// Gets the method that contains this parameter.
     /// </summary>
     public CachedMethodInfo MethodInfo => _method;
+
+    /// <summary>
+    /// Gets the parameter name.
+    /// <para>
+    /// This is null if this parameter is the <see cref="CachedMethodInfo.ReturnParameter"/>.
+    /// </para>
+    /// </summary>
+    public string? Name => _parameterInfo.Name;
 
     /// <summary>
     /// Gets the cached info. Should rarely be used directly.
@@ -48,4 +58,16 @@ public sealed class CachedParameterInfo
         }
     }
 
+    public StringBuilder Write( StringBuilder b )
+    {
+        b.Append( ParameterType.CSharpName );
+        var n = Name;
+        if( n != null )
+        {
+            b.Append( ' ' ).Append( n );
+        }
+        return b;
+    }
+
+    public override string ToString() => Write( new StringBuilder() ).ToString();
 }
