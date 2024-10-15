@@ -3,6 +3,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 
 namespace CK.Engine.TypeCollector;
 
@@ -19,7 +20,7 @@ class CachedType : ICachedType
     string? _csharpName;
     ImmutableArray<CustomAttributeData> _customAttributes;
     ImmutableArray<CachedMethodInfo> _declaredMethodInfos;
-    readonly bool _isTypeDefinition;
+    ImmutableArray<CachedGenericArgument> _genericArguments;
 
     sealed class NullReferenceType : ICachedType
     {
@@ -34,6 +35,8 @@ class CachedType : ICachedType
         public Type Type => _nonNullable.Type;
 
         public bool IsTypeDefinition => _nonNullable.IsTypeDefinition;
+
+        public bool IsGenericType => _nonNullable.IsGenericType;
 
         public int TypeDepth => _nonNullable.TypeDepth;
 
@@ -54,6 +57,8 @@ class CachedType : ICachedType
         public ICachedType? GenericTypeDefinition => _nonNullable.GenericTypeDefinition;
 
         public ImmutableArray<CachedGenericParameter> GenericParameters => _nonNullable.GenericParameters;
+
+        public ImmutableArray<CachedGenericArgument> GenericArguments => _nonNullable.GenericArguments;
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
 
@@ -81,6 +86,8 @@ class CachedType : ICachedType
 
         public bool IsTypeDefinition => _nonNullable.IsTypeDefinition;
 
+        public bool IsGenericType => _nonNullable.IsGenericType;
+
         public int TypeDepth => _nonNullable.TypeDepth;
 
         public CachedAssembly Assembly => _nonNullable.Assembly;
@@ -100,6 +107,8 @@ class CachedType : ICachedType
         public ICachedType? GenericTypeDefinition => _nonNullable.GenericTypeDefinition;
 
         public ImmutableArray<CachedGenericParameter> GenericParameters => _nonNullable.GenericParameters;
+
+        public ImmutableArray<CachedGenericArgument> GenericArguments => _nonNullable.GenericArguments;
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
 
@@ -125,7 +134,6 @@ class CachedType : ICachedType
         _assembly = assembly;
         _interfaces = interfaces;
         _baseType = baseType;
-        _isTypeDefinition = type.IsGenericTypeDefinition;
         _genericTypeDefinition = genericTypeDefinition;
         _nullable = new NullReferenceType( this );
     }
@@ -144,8 +152,8 @@ class CachedType : ICachedType
         _typeDepth = typeDepth;
         _assembly = assembly;
         _interfaces = interfaces;
-        _isTypeDefinition = type.IsGenericTypeDefinition;
         _genericTypeDefinition = genericTypeDefinition;
+        if( genericTypeDefinition == null ) _genericArguments = ImmutableArray<CachedGenericArgument>.Empty;
         _nullable = nullableValueType != null
                     ? new NullValueType( this, nullableValueType )
                     : this;
@@ -153,7 +161,9 @@ class CachedType : ICachedType
 
     public Type Type => _type;
 
-    public bool IsTypeDefinition => _isTypeDefinition;
+    public bool IsTypeDefinition => false;
+
+    public bool IsGenericType => _genericTypeDefinition != null;
 
     public int TypeDepth => _typeDepth;
 
@@ -174,6 +184,34 @@ class CachedType : ICachedType
     public ICachedType NonNullable => this;
 
     public ImmutableArray<CachedGenericParameter> GenericParameters => ImmutableArray<CachedGenericParameter>.Empty;
+
+    public ImmutableArray<CachedGenericArgument> GenericArguments
+    {
+        get
+        {
+            if( _genericArguments.IsDefault )
+            {
+                Throw.DebugAssert( _genericTypeDefinition != null );
+                var arguments = _type.GetGenericArguments();
+                var b = ImmutableArray.CreateBuilder<CachedGenericArgument>( arguments.Length );
+                for( int i = 0; i < arguments.Length; i++ )
+                {
+                    Type? a = arguments[i];
+                    if( a.IsGenericParameter )
+                    {
+                        Throw.DebugAssert( a.DeclaringType != null );
+                        b.Add( new CachedGenericArgument( _cache.Get( a.DeclaringType ).GenericParameters[i], null ) );
+                    }
+                    else
+                    {
+                        b.Add( new CachedGenericArgument( _genericTypeDefinition.GenericParameters[i], _cache.Get( a ) ) );
+                    }
+                }
+                _genericArguments = b.MoveToImmutable();
+            }
+            return _genericArguments;
+        }
+    }
 
     public ImmutableArray<CustomAttributeData> CustomAttributes
     {

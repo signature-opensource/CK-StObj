@@ -9,9 +9,10 @@ namespace CK.Engine.TypeCollector;
 /// Centralized type information.
 /// <para>
 /// Nullability is modeled via peer types for both value and reference types.
+/// <c>ref struct</c>, <c>Nullable&lt;T&gt;</c> and <c>void</c> have no nullables: they are their own nullable.
 /// </para>
-/// This cached type doesn't handle references between types: array item type or generic type arguments don't appear at this level because
-/// we don't always need them. The IPoco type system has its own extended type cache to capture nullabilities in depth.
+/// When <see cref="IsTypeDefinition"/> is true, the cached type doesn't have any <see cref="Interfaces"/>, <see cref="BaseType"/>,
+/// <see cref="DeclaredMethodInfos"/> etc. because we don't need to work with type definitions. If it happens to be useful.
 /// </summary>
 public interface ICachedType
 {
@@ -23,7 +24,12 @@ public interface ICachedType
     Type Type { get; }
 
     /// <summary>
-    /// Gets whether this is a generic type definition.
+    /// Gets whether this is a generic type: it has <see cref="GenericArguments"/> but no <see cref="GenericParameters"/>.
+    /// </summary>
+    bool IsGenericType { get; }
+
+    /// <summary>
+    /// Gets whether this is a generic type definition: it has <see cref="GenericParameters"/> but no <see cref="GenericArguments"/>.
     /// </summary>
     bool IsTypeDefinition { get; }
 
@@ -61,6 +67,9 @@ public interface ICachedType
     /// but we ignore them totally because no public interfaces can extend them (Error CS0061: Inconsistent accessibility).
     /// Implementations are free to define and use them.
     /// </para>
+    /// <para>
+    /// When <see cref="IsTypeDefinition"/> is true, this is empty.
+    /// </para>
     /// </summary>
     ImmutableArray<ICachedType> Interfaces { get; }
 
@@ -68,6 +77,9 @@ public interface ICachedType
     /// Gets the base type if this type is a class that inherits from a class that is not <see cref="object"/>.
     /// <para>
     /// This base type is nullable if this <see cref="IsNullable"/> is true.
+    /// </para>
+    /// <para>
+    /// When <see cref="IsTypeDefinition"/> is true, this is always null.
     /// </para>
     /// </summary>
     ICachedType? BaseType { get; }
@@ -83,9 +95,14 @@ public interface ICachedType
     ICachedType? GenericTypeDefinition { get; }
 
     /// <summary>
-    /// Gets the generic parameters. Empty if <see cref="IsTypeDefinition"/> is false.
+    /// Gets the generic parameters: always empty when <see cref="IsTypeDefinition"/> is false.
     /// </summary>
     ImmutableArray<CachedGenericParameter> GenericParameters { get; }
+
+    /// <summary>
+    /// Gets the generic parameters: always empty when <see cref="IsGenericType"/> is false.
+    /// </summary>
+    ImmutableArray<CachedGenericArgument> GenericArguments { get; }
 
     /// <summary>
     /// Gets the custom attributes data.

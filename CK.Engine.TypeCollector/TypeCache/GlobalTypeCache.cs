@@ -55,22 +55,6 @@ public sealed partial class GlobalTypeCache
         if( !_types.TryGetValue( type, out ICachedType? c ) )
         {
             knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
-            if( type.IsTypeDefinition )
-            {
-                c = new GenericCachedTypeDefinition( this, type, knwonAssembly );
-                _types.Add( type, c );
-                return c;
-            }
-            if( type.IsGenericTypeParameter )
-            {
-                Debugger.Break();
-            }
-
-            if( type == typeof(Nullable<>) )
-            {
-                Debugger.Break();
-            }
-
             // First we must handle Nullable value types.
             Type? nullableValueType = null;
             var isValueType = type.IsValueType;
@@ -96,6 +80,15 @@ public sealed partial class GlobalTypeCache
                 }
             }
             // Only then can we work on the type.
+
+            if( type.IsTypeDefinition )
+            {
+                c = new GenericCachedTypeDefinition( this, type, knwonAssembly );
+                _types.Add( type, c );
+                return c;
+            }
+
+
             ICachedType? genericTypeDefinition = type.IsGenericType && !type.IsGenericTypeDefinition
                                                     ? Get( type.GetGenericTypeDefinition() )
                                                     : null;

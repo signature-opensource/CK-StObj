@@ -25,6 +25,8 @@ sealed class GenericCachedTypeDefinition : ICachedType
 
     public bool IsTypeDefinition => true;
 
+    public bool IsGenericType => false;
+
     public string CSharpName => _csharpName ??= _type.ToCSharpName();
 
     public CachedAssembly Assembly => _assembly;
@@ -51,7 +53,7 @@ sealed class GenericCachedTypeDefinition : ICachedType
             {
                 var parameters = _type.GetGenericArguments();
                 var b = ImmutableArray.CreateBuilder<CachedGenericParameter>( parameters.Length );
-                foreach( var p in parameters ) b.Add( new CachedGenericParameter( p ) );
+                foreach( var p in parameters ) b.Add( new CachedGenericParameter( this, p ) );
                 _genericParameters = b.MoveToImmutable();
             }
             return _genericParameters;
@@ -63,6 +65,8 @@ sealed class GenericCachedTypeDefinition : ICachedType
     public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
 
     public GlobalTypeCache TypeCache => _typeCache;
+
+    public ImmutableArray<CachedGenericArgument> GenericArguments => ImmutableArray<CachedGenericArgument>.Empty;
 
     public override string ToString() => CSharpName;
 }
