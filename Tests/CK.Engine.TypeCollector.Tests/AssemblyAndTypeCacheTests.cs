@@ -30,6 +30,7 @@ public class AssemblyAndTypeCacheTests
 
         var oneV8 = (1, "string", 3, (object?)null, 5, typeof( void ), 7, "8");
         var iV8 = typeCache.Get( oneV8.GetType() );
+        iV8.CSharpName.Should().Be( "(int,string,int,object,int,System.Type,int,string)" );
         gArgs = iV8.GenericArguments;
         gArgs.Select( p => p.ToString() ).Concatenate().Should().Be( "int, string, int, object, int, System.Type, int, (string)" );
     }
