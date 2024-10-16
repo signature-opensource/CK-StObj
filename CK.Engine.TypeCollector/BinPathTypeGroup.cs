@@ -212,8 +212,10 @@ public sealed partial class BinPathTypeGroup
                                                                         .Where( t => t is IPocoCachedType or IRealObjectCachedType ) ) )
                               .ToArray();
             // The covering one is necessarily the biggest one if a unification is not required.
+            // And an unification is required when the biggest set is still smaller than the union
+            // of all the types.
             int maxCount = 0;
-            int maxCountIndex = -1;
+            int maxCountIndex = 0;
             for( int i = 0; i < uSets.Length; i++ )
             {
                 var uS = uSets[i];
