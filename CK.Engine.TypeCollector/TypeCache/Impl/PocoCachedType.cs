@@ -10,9 +10,8 @@ sealed class PocoCachedType : CachedType, IPocoCachedType
                              int typeDepth,
                              CachedAssembly assembly,
                              ImmutableArray<ICachedType> interfaces,
-                             ICachedType? baseType,
-                             ICachedType? genericTypeDefinition )
-        : base( cache, type, typeDepth, assembly, interfaces, baseType, genericTypeDefinition )
+                             ICachedType? baseType )
+        : base( cache, type, typeDepth, assembly, interfaces, baseType )
     {
     }
 }

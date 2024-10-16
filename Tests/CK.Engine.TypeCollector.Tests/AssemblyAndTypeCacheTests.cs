@@ -25,15 +25,13 @@ public class AssemblyAndTypeCacheTests
 
         var v8 = typeCache.Get( typeof( ValueTuple<,,,,,,,> ) );
         v8.CSharpName.Should().Be( "System.ValueTuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
-        var gParameters = v8.GenericParameters;
-        gParameters.Select( p => p.Name ).Concatenate().Should().Be( "T1, T2, T3, T4, T5, T6, T7, TRest" );
-        v8.GenericArguments.Should().BeEmpty();
+        var gArgs = v8.GenericArguments;
+        gArgs.Select( p => p.ToString() ).Concatenate().Should().Be( "T1, T2, T3, T4, T5, T6, T7, TRest" );
 
         var oneV8 = (1, "string", 3, (object?)null, 5, typeof( void ), 7, "8");
         var iV8 = typeCache.Get( oneV8.GetType() );
-        iV8.GenericParameters.Should().BeEmpty();
-        var gArguments = iV8.GenericArguments;
-        gArguments.Select( p => p.ToString() ).Concatenate().Should().Be( "int, string, int, object, int, System.Type, int, (string)" );
+        gArgs = iV8.GenericArguments;
+        gArgs.Select( p => p.ToString() ).Concatenate().Should().Be( "int, string, int, object, int, System.Type, int, (string)" );
     }
 
     /// <summary>
@@ -65,12 +63,11 @@ public class AssemblyAndTypeCacheTests
                     using( monitor.OpenInfo( cT.ToString() ) )
                     {
                         cT.Type.Should().Be( t );
-                        foreach( var m in cT.DeclaredMethodInfos )
+                        foreach( var m in cT.DeclaredMembers )
                         {
                             m.ToString().Should().NotBeNull();
                         }
                         cT.GenericArguments.IsDefault.Should().BeFalse();
-                        cT.GenericParameters.IsDefault.Should().BeFalse();
                     }
                 }
             }
@@ -86,7 +83,7 @@ public class AssemblyAndTypeCacheTests
     class SemiOpen<T> : Outer<T>.XClass<T,int> { }
 
     [Test]
-    public void TypeCache_on_semi_open()
+    public void TypeCache_on_open_constructed_generic()
     {
         var config = new EngineConfiguration();
         config.FirstBinPath.Path = TestHelper.BinFolder;
@@ -98,13 +95,22 @@ public class AssemblyAndTypeCacheTests
             Type? tBase = t.BaseType;
             Throw.DebugAssert( tBase != null );
 
-            var cT = typeCache.Get( tBase );
-            cT.IsTypeDefinition.Should().BeTrue();
-            cT.IsGenericType.Should().BeFalse();
-            cT.GenericTypeDefinition.Should().BeNull();
-            cT.ToString().Should().Be( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.SomeGen<T>.Sub<TOther>" );
-            cT.GenericParameters.Should().HaveCount( 2 );
-            cT.GenericArguments.Should().BeEmpty();
+            var cT = typeCache.Get( t );
+            var cBase = typeCache.Get( tBase );
+            Throw.DebugAssert( cT.BaseType != null );
+            cT.BaseType.Should().BeSameAs( cBase );
+
+            cBase.IsTypeDefinition.Should().BeFalse().And.Be( tBase.IsTypeDefinition );
+            cBase.IsGenericType.Should().BeTrue().And.Be( tBase.IsGenericType );
+            cBase.ToString().Should().Be( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<T>.XClass<T,int>" );
+            cBase.GenericArguments.Should().HaveCount( 3 );
+            cBase.GenericArguments[0].CSharpName.Should().Be( "T" );
+            cBase.GenericArguments[0].DeclaringType.Should().Be( cT );
+            cBase.GenericArguments[1].Should().BeSameAs( cBase.GenericArguments[0] );
+            cBase.GenericArguments[2].Should().BeSameAs( typeCache.Get( typeof(int) ) );
+
+            Throw.DebugAssert( cBase.GenericTypeDefinition != null );
+            cBase.GenericTypeDefinition.ToString().Should().Be( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<TOuter>.XClass<T,U>" );
         }
     }
 

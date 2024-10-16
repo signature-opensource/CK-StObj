@@ -49,12 +49,18 @@ public sealed partial class GlobalTypeCache
     /// <returns>The cached type or null.</returns>
     public ICachedType? Find( Type type ) => _types.GetValueOrDefault( type );
 
-    internal ICachedType Get( Type type, CachedAssembly? knwonAssembly )
+    internal ICachedType Get( Type type, CachedAssembly? knownAssembly )
     {
         Throw.CheckArgument( type is not null );
         if( !_types.TryGetValue( type, out ICachedType? c ) )
         {
-            knwonAssembly ??= _assemblies.FindOrCreate( type.Assembly );
+            knownAssembly ??= _assemblies.FindOrCreate( type.Assembly );
+            if( type.IsGenericParameter )
+            {
+                c = new CachedGenericParameter( this, type, knownAssembly );
+                _types.Add( type, c );
+                return c;
+            }
             // First we must handle Nullable value types.
             Type? nullableValueType = null;
             var isValueType = type.IsValueType;
@@ -80,18 +86,6 @@ public sealed partial class GlobalTypeCache
                 }
             }
             // Only then can we work on the type.
-
-            if( type.IsTypeDefinition )
-            {
-                c = new GenericCachedTypeDefinition( this, type, knwonAssembly );
-                _types.Add( type, c );
-                return c;
-            }
-
-
-            ICachedType? genericTypeDefinition = type.IsGenericType && !type.IsGenericTypeDefinition
-                                                    ? Get( type.GetGenericTypeDefinition() )
-                                                    : null;
             int maxDepth = 0;
             var interfaces = type.GetInterfaces()
                                  .Where( i => i.IsVisible )
@@ -129,12 +123,12 @@ public sealed partial class GlobalTypeCache
                 }
             }
             c = isRealObject
-                    ? new RealObjectCachedType( this, type, maxDepth + 1, knwonAssembly, interfaces, baseType, genericTypeDefinition )
+                    ? new RealObjectCachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType )
                     : isPoco
-                        ? new PocoCachedType( this, type, maxDepth + 1, knwonAssembly, interfaces, baseType, genericTypeDefinition )
+                        ? new PocoCachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType )
                         : isValueType
-                            ? new CachedType( this, type, maxDepth + 1, nullableValueType, knwonAssembly, interfaces, genericTypeDefinition )
-                            : new CachedType( this, type, maxDepth + 1, knwonAssembly, interfaces, baseType, genericTypeDefinition );
+                            ? new CachedType( this, type, maxDepth + 1, nullableValueType, knownAssembly, interfaces )
+                            : new CachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType );
             _types.Add( type, c );
             if( nullableValueType != null )
             {

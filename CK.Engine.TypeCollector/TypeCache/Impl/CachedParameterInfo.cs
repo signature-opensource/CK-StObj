@@ -7,12 +7,12 @@ namespace CK.Engine.TypeCollector;
 
 public sealed class CachedParameterInfo
 {
-    readonly CachedMethodInfo _method;
+    readonly CachedMethodBase _method;
     readonly ParameterInfo _parameterInfo;
     ImmutableArray<CustomAttributeData> _customAttributes;
     ICachedType? _parameterType;
 
-    internal CachedParameterInfo( CachedMethodInfo method, ParameterInfo parameterInfo )
+    internal CachedParameterInfo( CachedMethodBase method, ParameterInfo parameterInfo )
     {
         _method = method;
         _parameterInfo = parameterInfo;
@@ -21,7 +21,7 @@ public sealed class CachedParameterInfo
     /// <summary>
     /// Gets the method that contains this parameter.
     /// </summary>
-    public CachedMethodInfo MethodInfo => _method;
+    public ICachedMethodBase Method => _method;
 
     /// <summary>
     /// Gets the parameter name.

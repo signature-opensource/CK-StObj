@@ -14,7 +14,7 @@ public interface IRealObjectCachedType : ICachedType
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configureMethods">The Requires method or null if it doesn't exist.</param>
     /// <returns>True on success, false on error.</returns>
-    bool TryGetRequiresMethod( IActivityMonitor monitor, out CachedMethodInfo? requiresMethod );
+    bool TryGetRequiresMethod( IActivityMonitor monitor, out ICachedMethodInfo? requiresMethod );
 
     /// <summary>
     /// Tries to get all the <c>public static void Configure( IActivityMonitor monitor, ConfiguredType configuredType, RealObjectType instance, ... )</c>
@@ -23,5 +23,5 @@ public interface IRealObjectCachedType : ICachedType
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configureMethods">The Configure methods.</param>
     /// <returns>True on success, false on error.</returns>
-    bool TryGetConfigureMethods( IActivityMonitor monitor, out ImmutableArray<CachedMethodInfo> configureMethods );
+    bool TryGetConfigureMethods( IActivityMonitor monitor, out ImmutableArray<ICachedMethodInfo> configureMethods );
 }

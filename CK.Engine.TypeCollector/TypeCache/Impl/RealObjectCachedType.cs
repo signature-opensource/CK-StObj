@@ -7,8 +7,8 @@ namespace CK.Engine.TypeCollector;
 
 sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
 {
-    ImmutableArray<CachedMethodInfo> _configureMethods;
-    CachedMethodInfo? _requiresMethod;
+    ImmutableArray<ICachedMethodInfo> _configureMethods;
+    ICachedMethodInfo? _requiresMethod;
     bool _methodsSuccess;
 
     internal RealObjectCachedType( GlobalTypeCache cache,
@@ -16,20 +16,19 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
                                    int typeDepth,
                                    CachedAssembly assembly,
                                    ImmutableArray<ICachedType> interfaces,
-                                   ICachedType? baseType,
-                                   ICachedType? genericTypeDefinition )
-        : base( cache, type, typeDepth, assembly, interfaces, baseType, genericTypeDefinition )
+                                   ICachedType? baseType )
+        : base( cache, type, typeDepth, assembly, interfaces, baseType )
     {
     }
 
-    public bool TryGetRequiresMethod( IActivityMonitor monitor, out CachedMethodInfo? requiresMethod )
+    public bool TryGetRequiresMethod( IActivityMonitor monitor, out ICachedMethodInfo? requiresMethod )
     {
         if( _requiresMethod == null ) GetRealObjectMethods( monitor );
         requiresMethod = _requiresMethod;
         return _methodsSuccess;
     }
 
-    public bool TryGetConfigureMethods( IActivityMonitor monitor, out ImmutableArray<CachedMethodInfo> configureMethods )
+    public bool TryGetConfigureMethods( IActivityMonitor monitor, out ImmutableArray<ICachedMethodInfo> configureMethods )
     {
         if( _configureMethods.IsDefault ) GetRealObjectMethods( monitor );
         configureMethods = _configureMethods;
@@ -39,11 +38,12 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
     void GetRealObjectMethods( IActivityMonitor monitor )
     {
         bool success = true;
-        ImmutableArray<CachedMethodInfo>.Builder? bConfigure = null;
-        CachedMethodInfo? requires = null;
-        foreach( var method in DeclaredMethodInfos )
+        ImmutableArray<ICachedMethodInfo>.Builder? bConfigure = null;
+        ICachedMethodInfo? requires = null;
+        foreach( var m in DeclaredMembers )
         {
-            switch( method.Name )
+            if( m is not CachedMethodInfo method ) continue;
+            switch( m.Name )
             {
                 case "Configure":
                     success &= GetConfigure( monitor, method, ref bConfigure );
@@ -54,11 +54,11 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
             }
         }
         _methodsSuccess = success;
-        _configureMethods = bConfigure != null ? bConfigure.DrainToImmutable() : ImmutableArray<CachedMethodInfo>.Empty;
+        _configureMethods = bConfigure != null ? bConfigure.DrainToImmutable() : ImmutableArray<ICachedMethodInfo>.Empty;
         _requiresMethod = requires;
     }
 
-    bool GetRequires( IActivityMonitor monitor, CachedMethodInfo method, ref CachedMethodInfo? requires )
+    bool GetRequires( IActivityMonitor monitor, ICachedMethodInfo method, ref ICachedMethodInfo? requires )
     {
         if( !WarnOnStatic( monitor, method, "Requires" ) ) return true;
         if( !ErrorOnPrivateOrNonVoid( monitor, method, "Requires" ) ) return false;
@@ -93,7 +93,7 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
         return true;
     }
 
-    bool GetConfigure( IActivityMonitor monitor, CachedMethodInfo method, ref ImmutableArray<CachedMethodInfo>.Builder? bConfigure )
+    bool GetConfigure( IActivityMonitor monitor, CachedMethodInfo method, ref ImmutableArray<ICachedMethodInfo>.Builder? bConfigure )
     {
         if( !WarnOnStatic( monitor, method, "Configure" ) ) return true;
         if( !ErrorOnPrivateOrNonVoid( monitor, method, "Configure" ) ) return false;
@@ -110,12 +110,12 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
                             """ );
             return false;
         }
-        bConfigure ??= ImmutableArray.CreateBuilder<CachedMethodInfo>();
+        bConfigure ??= ImmutableArray.CreateBuilder<ICachedMethodInfo>();
         bConfigure.Add( method );
         return true;
     }
 
-    private bool ErrorOnPrivateOrNonVoid( IActivityMonitor monitor, CachedMethodInfo method, string name )
+    private bool ErrorOnPrivateOrNonVoid( IActivityMonitor monitor, ICachedMethodInfo method, string name )
     {
         if( !method.IsPublic || method.MethodInfo.ReturnType != typeof( void ) )
         {
@@ -125,7 +125,7 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
         return true;
     }
 
-    private static bool WarnOnStatic( IActivityMonitor monitor, CachedMethodInfo method, string name )
+    private static bool WarnOnStatic( IActivityMonitor monitor, ICachedMethodInfo method, string name )
     {
         if( !method.IsStatic )
         {
