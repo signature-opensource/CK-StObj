@@ -137,11 +137,6 @@ public sealed partial class AssemblyCache
                                 ? binPath.DiscoverFolder( monitor )
                                 : configuration.Assemblies.Aggregate( true, ( success, b ) => success &= binPath.AddExplicit( monitor, b ) );
                 Throw.DebugAssert( success == binPath.Success );
-                //success &= binPath.FinalizeAndCollectTypes( monitor );
-                //if( !success )
-                //{
-                //    monitor.CloseGroup( "Failed." );
-                //}
                 _binPaths.Add( k, binPath );
                 collector.Add( binPath );
             }

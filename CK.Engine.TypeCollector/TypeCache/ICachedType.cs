@@ -121,6 +121,11 @@ public interface ICachedType : ICachedItem
     ICachedType? ElementType { get; }
 
     /// <summary>
+    /// Gets whether this type is a regular visible type or should almost always be ignored.
+    /// </summary>
+    EngineUnhandledType EngineUnhandledType { get; }
+
+    /// <summary>
     /// Returns the <see cref="CSharpName"/>.
     /// </summary>
     /// <returns>This type C# name.</returns>

@@ -24,6 +24,9 @@ partial class CachedType : CachedItem, ICachedType
     ImmutableArray<ICachedMember> _declaredMembers;
     ImmutableArray<ICachedType> _genericArguments;
 
+    const EngineUnhandledType _uninitialized = (EngineUnhandledType)0xFF;
+    EngineUnhandledType _unhandledType;
+
     readonly bool _isGenericType;
     readonly bool _isGenericTypeDefinition;
 
@@ -74,6 +77,8 @@ partial class CachedType : CachedItem, ICachedType
         public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
         public ICachedType? ElementType => _nonNullable.ElementType;
+
+        public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
 
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
@@ -131,11 +136,12 @@ partial class CachedType : CachedItem, ICachedType
 
         public ICachedType? ElementType => _nonNullable.ElementType;
 
+        public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
+
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
         public override string ToString() => CSharpName;
     }
-
 
     CachedType( GlobalTypeCache cache,
                 Type type,
@@ -204,6 +210,23 @@ partial class CachedType : CachedItem, ICachedType
                 _declaringType = t != null ? _cache.Get( t ) : _nullMarker;
             }
             return NullMarker.Filter( _declaringType );
+        }
+    }
+
+    public EngineUnhandledType EngineUnhandledType
+    {
+        get
+        {
+            if( _unhandledType == _uninitialized )
+            {
+                if( Type.FullName == null ) _unhandledType = EngineUnhandledType.NullFullName;
+                else if( _assembly.Assembly.IsDynamic ) _unhandledType = EngineUnhandledType.FromDynamicAssembly;
+                else if( !Type.IsVisible ) _unhandledType = EngineUnhandledType.NotVisible;
+                else if( !Type.IsValueType || !Type.IsClass || !Type.IsInterface || !Type.IsEnum ) _unhandledType = EngineUnhandledType.NotClassEnumValueTypeOrEnum;
+                else _unhandledType = EngineUnhandledType.None;
+                   
+            }
+            return _unhandledType;
         }
     }
 

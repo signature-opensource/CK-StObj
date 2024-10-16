@@ -63,6 +63,8 @@ class CachedGenericParameter : ICachedType
 
     public ICachedType? ElementType => null;
 
+    public EngineUnhandledType EngineUnhandledType => EngineUnhandledType.NullFullName;
+
     public override string ToString() => _parameter.Name;
 
     public StringBuilder Write( StringBuilder b ) => b.Append( _parameter.Name );

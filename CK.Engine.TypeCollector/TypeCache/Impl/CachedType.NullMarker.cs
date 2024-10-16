@@ -49,6 +49,8 @@ partial class CachedType
 
         public ICachedType? ElementType => throw new NotImplementedException();
 
+        public EngineUnhandledType EngineUnhandledType => throw new NotImplementedException();
+
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 
         public override string ToString() => throw new NotImplementedException();

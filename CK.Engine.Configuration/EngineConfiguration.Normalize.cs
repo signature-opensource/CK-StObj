@@ -618,14 +618,7 @@ public sealed partial class EngineConfiguration
             string? source = null;
             foreach( var tc in types )
             {
-                var error = TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind );
-                if( error != null )
-                {
-                    source ??= b != null ? $"BinPath '{b.Name}' Types" : "GlobalTypes";
-                    monitor.Error( $"Invalid type in {source}: '{tc.Type:N}' {error}." );
-                    success = false;
-                }
-                else if( excludedTypes.Contains( tc.Type ) )
+                if( excludedTypes.Contains( tc.Type ) )
                 {
                     source ??= b != null ? $"BinPath '{b.Name}' Types" : "GlobalTypes";
                     monitor.Warn( $"{source} contains '{tc.Type}' of kind '{tc.Kind}' that is excluded. It is removed and will be ignored." );

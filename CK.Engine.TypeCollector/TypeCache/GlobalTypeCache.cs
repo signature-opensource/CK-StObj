@@ -19,6 +19,7 @@ public sealed partial class GlobalTypeCache
     readonly AssemblyCache _assemblies;
     readonly ICachedType _iRealObject;
     readonly ICachedType _iPoco;
+    readonly ICachedType _iAutoService;
 
     /// <summary>
     /// Initializes a new cahe for types based on an assembly cache.
@@ -30,7 +31,14 @@ public sealed partial class GlobalTypeCache
         _assemblies = assemblies;
         _iRealObject = Get( typeof( IRealObject ) );
         _iPoco = Get( typeof( IPoco ) );
+        _iAutoService = Get( typeof( IAutoService ) );
     }
+
+    public ICachedType IRealObject => _iRealObject;
+
+    public ICachedType IPoco => _iPoco;
+
+    public ICachedType IAutoService => _iAutoService;
 
     /// <summary>
     /// Gets a cached type.

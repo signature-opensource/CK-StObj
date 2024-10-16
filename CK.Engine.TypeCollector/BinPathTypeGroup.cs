@@ -123,6 +123,9 @@ public sealed partial class BinPathTypeGroup
         var assemblyResult = AssemblyCache.Run( monitor, configuration );
 
         // Always produce the groups even if assemblyResult.Success is false.
+        bool success = assemblyResult.Success;
+        var typeCache = assemblyResult.TypeCache;
+
         var groups = new List<BinPathTypeGroup>();
         // Ok...
         // 1 - Groups the BinPathConfigurations in all Assembly groups by the key based on ExcludedTypes and Types configurations.
@@ -142,6 +145,7 @@ public sealed partial class BinPathTypeGroup
                                                                           ) )
                                                     .OrderBy( rawGroup => rawGroup.GroupName );
 
+
         // Reusable hasher.
         using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
 
@@ -159,23 +163,45 @@ public sealed partial class BinPathTypeGroup
             // we based the start of our signature on the Excluded and Types configurations and rely on the Assembly.BinPathGroup
             // signature for the rest.
             hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
+
+            // Applying Types and ExcludedTypes configurations to the types provided by the assemblies.
+            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( tc => c.ExcludedTypes.Contains( tc.Type ) is false ) ); 
+
             // Must unfortunately order the sets.
-            foreach( var t in c.ExcludedTypes.Select( t => (Type: t, t.FullName) ).OrderBy( t => t.FullName ) )
+            var excludedByConfiguration = c.ExcludedTypes.Select( assemblyResult.TypeCache.Find )
+                                                         .Where( cT => cT != null )
+                                                         .OrderBy( cT => cT!.CSharpName );
+            foreach( var cT in excludedByConfiguration )
             {
-                var cT = assemblyResult.TypeCache.Find( t.Type );
-                if( cT != null )
+                Throw.DebugAssert( cT != null );
+                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, cT, ConfigurableAutoServiceKind.None );
+                if( msg != null )
+                {
+                    monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {msg}." );
+                }
+                else
                 {
                     types.Remove( cT );
+                    // For the hash, always consider the configured type even it is not used.
+                    hasher.Append( cT.CSharpName );
                 }
-                // For the hash, always consider the configured type even it is not used.
-                hasher.Append( t.FullName! );
             }
-            Throw.DebugAssert( "Normalized did the job.", c.Types.All( tc => TypeConfiguration.GetConfiguredTypeErrorMessage( tc.Type, tc.Kind ) == null ) );
-            foreach( var tc in c.Types.Select( tc => (tc.Type, tc.Kind, tc.Type.FullName) ).OrderBy( tc => tc.FullName ) )
+            var includedByConfiguration = c.Types.Select( tc => (Type: assemblyResult.TypeCache.Get( tc.Type ), tc.Kind) )
+                                                 .OrderBy( cT => cT.Type.CSharpName );
+
+            foreach( var tc in includedByConfiguration )
             {
-                var cT = assemblyResult.TypeCache.Get( tc.Type );
-                types.Add( monitor, sourceName, cT, tc.Kind );
-                hasher.Append( tc.FullName! ).Append( tc.Kind );
+                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, tc.Type, tc.Kind );
+                if( msg != null )
+                {
+                    monitor.Error( $"Invalid Type in configuration for: '{tc.Type.CSharpName}' {msg}." );
+                    success = false;
+                }
+                else
+                {
+                    types.Add( monitor, sourceName, tc.Type, tc.Kind );
+                }
+                hasher.Append( tc.Type.CSharpName ).Append( tc.Kind );
             }
             var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
                                           groupName,
@@ -192,7 +218,7 @@ public sealed partial class BinPathTypeGroup
             // or the reordering of the groups (with the most covering one at the start)?
             foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
         }
-        return new Result( assemblyResult, groups, new SHA1Value( hasher, resetHasher: false ) );
+        return new Result( assemblyResult, groups, new SHA1Value( hasher, resetHasher: false ), success );
     }
 
     static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result )
