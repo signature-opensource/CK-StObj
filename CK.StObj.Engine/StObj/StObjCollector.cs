@@ -38,26 +38,23 @@ public partial class StObjCollector
     /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
     /// <param name="traceDependencySorterInput">True to trace the input of dependency graph.</param>
     /// <param name="traceDependencySorterOutput">True to trace the sorted dependency graph.</param>
-    /// <param name="typeFilter">Optional type filter.</param>
     /// <param name="configurator">Used to configure items. See <see cref="IStObjStructuralConfigurator"/>.</param>
     /// <param name="valueResolver">
     /// Used to explicitly resolve or alter StObjConstruct parameters and object ambient properties.
     /// See <see cref="IStObjValueResolver"/>.
     /// </param>
     /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
+    /// 
     public StObjCollector( IServiceProvider serviceProvider,
                            bool traceDependencySorterInput = false,
                            bool traceDependencySorterOutput = false,
-                           IStObjTypeFilter? typeFilter = null,
                            IStObjStructuralConfigurator? configurator = null,
                            IStObjValueResolver? valueResolver = null,
                            IEnumerable<string>? names = null )
     {
         _errorEntries = new List<string>();
         _tempAssembly = new DynamicAssembly();
-        Func<IActivityMonitor, Type, bool>? tFilter = null;
-        if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
-        _cc = new CKTypeCollector( serviceProvider, _tempAssembly, tFilter, names );
+        _cc = new CKTypeCollector( serviceProvider, _tempAssembly, null, names );
         _configurator = configurator;
         _valueResolver = valueResolver;
         _traceDepencySorterInput = traceDependencySorterInput;

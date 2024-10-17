@@ -10,7 +10,7 @@ namespace CK.Setup;
 /// It does nothing at its level except calling the <see cref="Next"/> configurator if it is not null.
 /// Methods are defined here in the order where they are called.
 /// </summary>
-public class StObjConfigurationLayer : IStObjTypeFilter, IStObjStructuralConfigurator, IStObjValueResolver
+public class StObjConfigurationLayer : IStObjStructuralConfigurator, IStObjValueResolver
 {
     StObjConfigurationLayer? _next;
     StObjEngineConfigurator? _host;
@@ -33,19 +33,6 @@ public class StObjConfigurationLayer : IStObjTypeFilter, IStObjStructuralConfigu
     {
         get => _host;
         internal set => _host = value;
-    }
-
-    /// <summary>
-    /// Step n°1 - Types that participates to setup can be filtered.
-    /// This empty implementation of <see cref="IStObjTypeFilter.TypeFilter"/> calls <see cref="Next"/> if it
-    /// is not null otherwise it returns true to keep all types.
-    /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <param name="t">Type to accept ot not.</param>
-    /// <returns>True to keep the type, false to exclude it.</returns>
-    public virtual bool TypeFilter( IActivityMonitor monitor, Type t )
-    {
-        return _next != null ? _next.TypeFilter( monitor, t ) : true;
     }
 
     /// <summary>

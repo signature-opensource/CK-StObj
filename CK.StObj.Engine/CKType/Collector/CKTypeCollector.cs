@@ -25,7 +25,6 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
     readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
     readonly List<RealObjectClassInfo> _roots;
-    readonly Func<IActivityMonitor, Type, bool> _typeFilter;
     readonly IReadOnlyList<string> _names;
 
     // This currently implements [CKAlsoRegisterType( Type )].
@@ -48,7 +47,6 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     {
         Throw.CheckNotNullArgument( serviceProvider );
         Throw.CheckNotNullArgument( tempAssembly );
-        _typeFilter = typeFilter ?? (( m, type ) => type.FullName != null);
         _tempAssembly = tempAssembly;
         _serviceProvider = serviceProvider;
         _assemblies = new Dictionary<Assembly, bool>();

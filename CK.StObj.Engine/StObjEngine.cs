@@ -185,7 +185,6 @@ public sealed class StObjEngine
                                                         _config.Configuration.TraceDependencySorterOutput,
                                                         configurator,
                                                         configurator,
-                                                        configurator,
                                                         group.SimilarConfigurations.Select( b => b.Name! ) );
             stObjC.RevertOrderingNames = _config.Configuration.RevertOrderingNames;
             using( _monitor.OpenInfo( group.IsUnifiedPure ? "Registering only IPoco and IRealObjects (Purely Unified BinPath)." : "Registering types." ) )
