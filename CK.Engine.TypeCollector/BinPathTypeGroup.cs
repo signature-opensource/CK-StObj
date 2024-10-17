@@ -1,22 +1,14 @@
 using CK.Core;
 using CK.Setup;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Threading;
-using System.Transactions;
 
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
-/// 
+/// Group of similar <see cref="BinPathConfiguration"/> in terms of types to consider.
 /// </summary>
 public sealed partial class BinPathTypeGroup
 {
@@ -67,6 +59,9 @@ public sealed partial class BinPathTypeGroup
     /// <summary>
     /// Gets the configurations for this group.
     /// This is empty when <see cref="IsUnifiedPure"/> is true.
+    /// <para>
+    /// All these configurations result in the same set of assemblies and types.
+    /// </para>
     /// </summary>
     public ImmutableArray<BinPathConfiguration> Configurations => _configurations;
 
@@ -90,6 +85,10 @@ public sealed partial class BinPathTypeGroup
     /// <summary>
     /// Gets the assembly level information for this group or null if this
     /// is the unified one.
+    /// <para>
+    /// Other <see cref="BinPathTypeGroup"/> than this one may share the same AssemblyGroup if their
+    /// ExcludedTypes and Types configurations differ.
+    /// </para>
     /// </summary>
     public AssemblyCache.BinPathGroup? AssemblyGroup => _assemblyGroup;
 
@@ -165,7 +164,7 @@ public sealed partial class BinPathTypeGroup
             hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
 
             // Applying Types and ExcludedTypes configurations to the types provided by the assemblies.
-            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( tc => c.ExcludedTypes.Contains( tc.Type ) is false ) ); 
+            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( tc => c.ExcludedTypes.Contains( tc.Type ) ) is false ); 
 
             // Must unfortunately order the sets.
             var excludedByConfiguration = c.ExcludedTypes.Select( assemblyResult.TypeCache.Find )
@@ -203,7 +202,7 @@ public sealed partial class BinPathTypeGroup
                 }
                 hasher.Append( tc.Type.CSharpName ).Append( tc.Kind );
             }
-            var g = new BinPathTypeGroup( configurations.ToImmutableArray(),
+            var g = new BinPathTypeGroup( configurations,
                                           groupName,
                                           assemblyGroup,
                                           types,

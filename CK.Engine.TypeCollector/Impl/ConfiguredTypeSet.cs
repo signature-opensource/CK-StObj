@@ -72,7 +72,7 @@ sealed class ConfiguredTypeSet : IConfiguredTypeSet
     [Conditional( "DEBUG" )]
     static void CheckInvariants( ConfiguredTypeSet set )
     {
-        // Cannot use the IsSupersetOf of set.AllTypes (of ICacheType) becaus we don't have the GlobalTypeCache here.
+        // Cannot use the IsSupersetOf of set.AllTypes (of ICacheType) because we don't have the GlobalTypeCache here.
         // Hopefully, this is in Debug only.
         var types = new HashSet<Type>( set._allTypes.Select( cT => cT.Type ) );
         Throw.DebugAssert( types.IsSupersetOf( set._configuredTypes.AsDictionary.Keys ) );

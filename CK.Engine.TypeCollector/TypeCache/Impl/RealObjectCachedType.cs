@@ -104,7 +104,7 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
         {
             monitor.Error( $$"""
                             Invalid method 'public static {{ToString()}}.Configure' signature. Expected:
-                            public static void Configure( IActivityMonitor monitor, ConfiguredType configureTarget, {declaringType.CSharpName} instance, ... )
+                            public static void Configure( IActivityMonitor monitor, ConfiguredType configureTarget, {{method.DeclaringType.CSharpName}} instance, ... )
 
                             Where ... can be services registered by RegisterStartupServices methods.
                             """ );

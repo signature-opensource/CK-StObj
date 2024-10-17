@@ -20,6 +20,7 @@ sealed class ImmutableConfiguredTypeSet : IConfiguredTypeSet
         _configuredTypes = ImmutableArray<TypeConfiguration>.Empty;
     }
 
+    // Empty.
     ImmutableConfiguredTypeSet()
     {
         _allTypes = ImmutableHashSet<ICachedType>.Empty;
