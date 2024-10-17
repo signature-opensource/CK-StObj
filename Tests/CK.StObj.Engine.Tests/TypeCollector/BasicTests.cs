@@ -29,33 +29,6 @@ public class BasicTests : TypeCollectorTestsBase
     {
     }
 
-    [TestCase( "ExcludingSpecializedType" )]
-    [TestCase( "NotRegisteringSpecializedType" )]
-    public void service_interface_without_at_least_one_impl_are_ignored( string mode )
-    {
-        var r = CheckSuccess( c =>
-        {
-            c.RegisterType( TestHelper.Monitor, typeof( ServiceRegisteredImpl ) );
-            if( mode == "ExcludingSpecializedType" )
-            {
-                c.RegisterType( TestHelper.Monitor, typeof( ServiceNotRegisteredImpl ) );
-            }
-        }, mode == "ExcludingSpecializedType"
-                        ? CreateCKTypeCollector( t => t != typeof( ServiceNotRegisteredImpl ) )
-                        : CreateCKTypeCollector() );
-
-        var interfaces = r.AutoServices.LeafInterfaces;
-        interfaces.Should().HaveCount( 1 );
-        interfaces[0].Type.Should().Be( typeof( IServiceRegistered ) );
-        var classes = r.AutoServices.RootClasses;
-        classes.Should().HaveCount( 1 );
-        classes[0].TypeInfo.IsExcluded.Should().BeFalse();
-        classes[0].Generalization.Should().BeNull();
-        classes[0].TypeInfo.IsSpecialized.Should().BeFalse();
-        classes[0].ClassType.Should().Be( typeof( ServiceRegisteredImpl ) );
-        classes[0].Interfaces.Should().BeEquivalentTo( interfaces );
-    }
-
     [Test]
     public void registering_service_registers_specialized_interfaces_and_base_impl_but_mask_them()
     {

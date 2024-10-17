@@ -54,7 +54,7 @@ public partial class StObjCollector
     {
         _errorEntries = new List<string>();
         _tempAssembly = new DynamicAssembly();
-        _cc = new CKTypeCollector( serviceProvider, _tempAssembly, null, names );
+        _cc = new CKTypeCollector( serviceProvider, _tempAssembly, names );
         _configurator = configurator;
         _valueResolver = valueResolver;
         _traceDepencySorterInput = traceDependencySorterInput;

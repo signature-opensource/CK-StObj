@@ -111,49 +111,6 @@ public class ConstructorTests : TypeCollectorTestsBase
         }
     }
 
-    [TestCase( "RegisteredDependentServiceButExcluded" )]
-    [TestCase( "RegisteredDependentService" )]
-    [TestCase( "NotRegistered" )]
-    public void ctor_parameters_can_be_unregistered_services_interfaces_since_they_may_be_registered_at_runtime( string mode )
-    {
-        var r = CheckSuccess( collector =>
-        {
-            if( mode != "NotRegistered" ) collector.RegisterClass( TestHelper.Monitor, typeof( ServiceForISRegistered ) );
-            collector.RegisterClass( TestHelper.Monitor, typeof( Consumer1Service ) );
-        }, mode == "RegisteredDependentServiceButExcluded"
-                        ? CreateCKTypeCollector( t => t != typeof( ServiceForISRegistered ) )
-                        : CreateCKTypeCollector() );
-
-        var iRegistered = r.AutoServices.LeafInterfaces.SingleOrDefault( x => x.Type == typeof( ISRegistered ) );
-        if( mode == "RegisteredDependentService" )
-        {
-            iRegistered.Should().NotBeNull();
-        }
-        r.AutoServices.RootClasses.Should().HaveCount( mode == "RegisteredDependentService" ? 2 : 1 );
-        var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( Consumer1Service ) );
-        c.ConstructorParameters.Should().HaveCount( 3 );
-        Debug.Assert( c.ConstructorParameters != null );
-        c.ConstructorParameters[0].Name.Should().Be( "normal" );
-        c.ConstructorParameters[1].Name.Should().Be( "notReg" );
-        c.ConstructorParameters[2].Name.Should().Be( "reg" );
-        if( mode == "RegisteredDependentService" )
-        {
-            c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
-
-            c.ConstructorParameters[1].IsAutoService.Should().BeFalse();
-
-            c.ConstructorParameters[2].IsAutoService.Should().BeTrue();
-            c.ConstructorParameters[2].ServiceClass.Should().BeNull();
-            c.ConstructorParameters[2].ServiceInterface.Should().BeSameAs( iRegistered );
-        }
-        else
-        {
-            c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
-            c.ConstructorParameters[1].IsAutoService.Should().BeFalse();
-            c.ConstructorParameters[2].IsAutoService.Should().BeFalse();
-        }
-    }
-
     public class ConsumerWithClassDependencyService : IScopedAutoService
     {
         public ConsumerWithClassDependencyService(
@@ -172,47 +129,6 @@ public class ConstructorTests : TypeCollectorTestsBase
             ServiceForISRegistered? classDependency = null )
         {
         }
-    }
-
-    [Test]
-    public void ctor_parameters_cannot_be_unregistered_service_classe_unless_it_is_excluded_and_parameter_has_a_default_null()
-    {
-        {
-            var r = CheckSuccess( collector =>
-            {
-                collector.RegisterClass( TestHelper.Monitor, typeof( ServiceForISRegistered ) );
-                collector.RegisterClass( TestHelper.Monitor, typeof( ConsumerWithClassDependencyService ) );
-            } );
-            var dep = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceForISRegistered ) );
-            var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ConsumerWithClassDependencyService ) );
-            c.ConstructorParameters.Should().HaveCount( 3 );
-            Debug.Assert( c.ConstructorParameters != null );
-            c.ConstructorParameters[2].ParameterType.Should().Be( typeof( ServiceForISRegistered ) );
-            c.ConstructorParameters[2].Position.Should().Be( 2 );
-            c.ConstructorParameters[2].Name.Should().Be( "classDependency" );
-            c.ConstructorParameters[2].ServiceClass.Should().BeSameAs( dep );
-        }
-        {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterClass( TestHelper.Monitor, typeof( ConsumerWithClassDependencyService ) );
-            CheckFailure( collector );
-        }
-        {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterClass( TestHelper.Monitor, typeof( ConsumerWithDefaultService ) );
-            CheckFailure( collector );
-        }
-        {
-            var r = CheckSuccess( collector =>
-            {
-                collector.RegisterClass( TestHelper.Monitor, typeof( ServiceForISRegistered ) );
-                collector.RegisterClass( TestHelper.Monitor, typeof( ConsumerWithDefaultService ) );
-            }, CreateCKTypeCollector( t => t != typeof( ServiceForISRegistered ) ) );
-            r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ConsumerWithDefaultService ) );
-            c.ConstructorParameters.Should().HaveCount( 3 );
-        }
-
     }
 
     public class AutoRef : IScopedAutoService

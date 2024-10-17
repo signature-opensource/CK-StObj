@@ -38,11 +38,9 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     /// </summary>
     /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
     /// <param name="tempAssembly">The temporary <see cref="IDynamicAssembly"/>.</param>
-    /// <param name="typeFilter">Optional type filter.</param>
     /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
     public CKTypeCollector( IServiceProvider serviceProvider,
                             IDynamicAssembly tempAssembly,
-                            Func<IActivityMonitor, Type, bool>? typeFilter = null,
                             IEnumerable<string>? names = null )
     {
         Throw.CheckNotNullArgument( serviceProvider );
@@ -59,7 +57,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
         _multipleMappings = new Dictionary<Type, MultipleImpl>();
         _exposedMultipleMappings = _multipleMappings.AsIReadOnlyDictionary<Type, MultipleImpl, IStObjMultipleInterface>();
 
-        KindDetector = new CKTypeKindDetector( typeFilter );
+        KindDetector = new CKTypeKindDetector();
         _memberInfoFactory = new ExtMemberInfoFactory();
         _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, KindDetector );
         _alsoRegisteredTypes = new List<Type>();

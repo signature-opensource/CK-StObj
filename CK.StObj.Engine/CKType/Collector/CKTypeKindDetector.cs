@@ -40,19 +40,16 @@ public class CKTypeKindDetector
     const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 8);
 
     readonly Dictionary<Type, CKTypeKind> _cache;
-    readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
     readonly Dictionary<Type, AutoServiceKind> _containerConfiguredServices;
     readonly List<Type> _ambientServices;
 
     /// <summary>
     /// Initializes a new detector.
     /// </summary>
-    /// <param name="typeFilter">Optional type filter.</param>
-    public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
+    public CKTypeKindDetector()
     {
         _cache = new Dictionary<Type, CKTypeKind>( 1024 );
         _containerConfiguredServices = new Dictionary<Type, AutoServiceKind>();
-        _typeFilter = typeFilter;
         _ambientServices = new List<Type>();
     }
 
@@ -327,8 +324,6 @@ public class CKTypeKindDetector
                     Debug.Assert( k == CKTypeKind.None || k == CKTypeKind.IsExcludedType );
                     if( k == CKTypeKind.None )
                     {
-                        isExcludedType |= _typeFilter != null && !_typeFilter( m, t );
-
                         // Normalizes SuperDefiner => Definer (and emits a warning).
                         if( hasSuperDefiner )
                         {
