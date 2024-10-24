@@ -108,19 +108,19 @@ public static partial class EngineTestHelperExtensions
     }
 
     /// <summary>
-    /// <see cref="TypeConfigurationSet.Add(Type)"/> any number of types.
+    /// <see cref="ExternalTypeConfigurationSet.Add(Type)"/> any number of types.
     /// </summary>
     /// <param name="set">This type configuration set.</param>
     /// <param name="types">Types to add.</param>
     /// <returns>This set.</returns>
-    public static TypeConfigurationSet Add( this TypeConfigurationSet set, IEnumerable<Type> types )
+    public static ExternalTypeConfigurationSet Add( this ExternalTypeConfigurationSet set, IEnumerable<Type> types )
     {
         foreach( var t in types ) set.Add( t );
         return set;
     }
 
-    /// <inheritdoc cref="Add(TypeConfigurationSet,IEnumerable{Type})"/> 
-    public static TypeConfigurationSet Add( this TypeConfigurationSet set, params Type[] types )
+    /// <inheritdoc cref="Add(ExternalTypeConfigurationSet,IEnumerable{Type})"/> 
+    public static ExternalTypeConfigurationSet Add( this ExternalTypeConfigurationSet set, params Type[] types )
     {
         foreach( var t in types ) set.Add( t );
         return set;

@@ -11,24 +11,24 @@ namespace CK.Engine.TypeCollector;
 sealed class ConfiguredTypeSet : IConfiguredTypeSet
 {
     readonly HashSet<ICachedType> _allTypes;
-    readonly TypeConfigurationSet _configuredTypes;
+    readonly ExternalTypeConfigurationSet _configuredTypes;
 
     public ConfiguredTypeSet()
     {
         _allTypes = new HashSet<ICachedType>();
-        _configuredTypes = new TypeConfigurationSet();
+        _configuredTypes = new ExternalTypeConfigurationSet();
     }
 
     // Copy constructor.
     public ConfiguredTypeSet( IConfiguredTypeSet configuredTypes )
     {
         _allTypes = new HashSet<ICachedType>( configuredTypes.AllTypes );
-        _configuredTypes = new TypeConfigurationSet( configuredTypes.ConfiguredTypes );
+        _configuredTypes = new ExternalTypeConfigurationSet( configuredTypes.ConfiguredTypes );
     }
 
     public IReadOnlySet<ICachedType> AllTypes => _allTypes;
 
-    public IReadOnlyCollection<TypeConfiguration> ConfiguredTypes => _configuredTypes;
+    public IReadOnlyCollection<ExternalTypeConfiguration> ConfiguredTypes => _configuredTypes;
 
     public void Add( ISet<ICachedType> types ) => _allTypes.UnionWith( types );
 

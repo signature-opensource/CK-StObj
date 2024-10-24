@@ -149,7 +149,7 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
         if( _binPathGroups.Count > 1 )
         {
             // Create the unified BinPath. If this fails, it's useless to continue.
-            var unifiedBinPath = CreateUnifiedBinPathConfiguration( monitor, _binPathGroups, Configuration.GlobalExcludedTypes );
+            var unifiedBinPath = CreateUnifiedBinPathConfiguration( monitor, _binPathGroups, Configuration.ExcludedTypes );
             if( unifiedBinPath == null ) return false;
 
             // Is the UnifiedBinPath required?
@@ -206,7 +206,7 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
     /// </summary>
     /// <param name="monitor">Monitor for error.</param>
     /// <param name="configurations">Multiple configurations.</param>
-    /// <param name="globalExcludedTypes">Types to exclude: see <see cref="EngineConfiguration.GlobalExcludedTypes"/>.</param>
+    /// <param name="globalExcludedTypes">Types to exclude: see <see cref="EngineConfiguration.ExcludedTypes"/>.</param>
     /// <returns>The unified configuration or null on error.</returns>
     static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
                                                                     IEnumerable<RunningBinPathGroup> configurations,
@@ -229,12 +229,10 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
         // Unified is only interested in IPoco and IRealObject (kind is useless).
         // The BinPath Types that also appear in their BinPath ExcludedTypes have already been filtered out,
         // we don't need to remove them.
-        Throw.DebugAssert( configurations.All( c => c.Configuration.Types.Select( tc => tc.Type )
-                                                                         .Any( t => c.Configuration.ExcludedTypes.Contains( t ) ) is false ) );
+        Throw.DebugAssert( configurations.All( c => c.Configuration.Types.Any( t => c.Configuration.ExcludedTypes.Contains( t ) ) is false ) );
 
-        var all = configurations.SelectMany( b => b.Configuration.Types.Select( tc => tc.Type ) )
-                                .Where( t => typeof( IPoco ).IsAssignableFrom( t ) || typeof( IRealObject ).IsAssignableFrom( t ) )
-                                .Select( t => new TypeConfiguration( t ) );
+        var all = configurations.SelectMany( b => b.Configuration.Types )
+                                .Where( t => typeof( IPoco ).IsAssignableFrom( t ) || typeof( IRealObject ).IsAssignableFrom( t ) );
         foreach( var tc in all )
         {
             unified.Types.Add( tc );

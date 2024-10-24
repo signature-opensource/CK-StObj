@@ -36,8 +36,7 @@ public sealed partial class BinPathConfiguration
         _assemblies = new HashSet<string>( EngineConfiguration.StringsFromXml( e, EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly ) );
         _discoverAssembliesFromPath = (bool?)e.Attribute( EngineConfiguration.xDiscoverAssembliesFromPath ) ?? false;
         _excludedTypes = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
-
-        _types = new TypeConfigurationSet( e.Elements( EngineConfiguration.xTypes ) );
+        _types = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xTypes, EngineConfiguration.xType ) );
 
         var allowedNames = new List<string>()
         {
@@ -101,7 +100,7 @@ public sealed partial class BinPathConfiguration
                                     : new XElement( EngineConfiguration.xGenerateSourceFiles, false ),
                                 EngineConfiguration.ToXml( EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly, Assemblies ),
                                 EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, ExcludedTypes ),
-                                _types.ToXml( EngineConfiguration.xTypes ),
+                                EngineConfiguration.ToXml( EngineConfiguration.xTypes, EngineConfiguration.xType, Types ),
                                 _aspects.Values.Select( a => a.ToXml() ) );
     }
 }

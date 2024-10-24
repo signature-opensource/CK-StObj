@@ -9,7 +9,7 @@ sealed class ImmutableConfiguredTypeSet : IConfiguredTypeSet
 {
     public static readonly ImmutableConfiguredTypeSet Empty = new ImmutableConfiguredTypeSet();
 
-    readonly IReadOnlyCollection<TypeConfiguration> _configuredTypes;
+    readonly IReadOnlyCollection<ExternalTypeConfiguration> _configuredTypes;
 
     readonly IReadOnlySet<ICachedType> _allTypes;
 
@@ -17,17 +17,17 @@ sealed class ImmutableConfiguredTypeSet : IConfiguredTypeSet
     internal ImmutableConfiguredTypeSet( HashSet<ICachedType> types )
     {
         _allTypes = types;
-        _configuredTypes = ImmutableArray<TypeConfiguration>.Empty;
+        _configuredTypes = ImmutableArray<ExternalTypeConfiguration>.Empty;
     }
 
     // Empty.
     ImmutableConfiguredTypeSet()
     {
         _allTypes = ImmutableHashSet<ICachedType>.Empty;
-        _configuredTypes = ImmutableArray<TypeConfiguration>.Empty;
+        _configuredTypes = ImmutableArray<ExternalTypeConfiguration>.Empty;
     }
 
     public IReadOnlySet<ICachedType> AllTypes => _allTypes;
 
-    public IReadOnlyCollection<TypeConfiguration> ConfiguredTypes => _configuredTypes;
+    public IReadOnlyCollection<ExternalTypeConfiguration> ConfiguredTypes => _configuredTypes;
 }

@@ -29,9 +29,10 @@ public sealed partial class EngineConfiguration
     internal const string DefaultBinPathName = "AutoName";
 
     readonly List<BinPathConfiguration> _binPaths;
-    readonly HashSet<Type> _globalExcludedTypes;
-    readonly TypeConfigurationSet _globalTypes;
+    readonly HashSet<Type> _excludedTypes;
+    readonly HashSet<Type> _types;
     readonly HashSet<string> _excludedAssemblies;
+    readonly ExternalTypeConfigurationSet _externalTypes;
     Dictionary<string, EngineAspectConfiguration> _namedAspects;
     List<EngineAspectConfiguration> _aspects;
     string? _generatedAssemblyName;
@@ -49,8 +50,9 @@ public sealed partial class EngineConfiguration
         _namedAspects = new Dictionary<string, EngineAspectConfiguration>();
         _aspects = new List<EngineAspectConfiguration>();
         _binPaths = new List<BinPathConfiguration>();
-        _globalExcludedTypes = new HashSet<Type>();
-        _globalTypes = new TypeConfigurationSet();
+        _excludedTypes = new HashSet<Type>();
+        _types = new HashSet<Type>();
+        _externalTypes = new ExternalTypeConfigurationSet();
         _excludedAssemblies = new HashSet<string>();
         AddFirstBinPath();
     }
@@ -371,15 +373,20 @@ public sealed partial class EngineConfiguration
     /// This applies to all <see cref="BinPaths"/>: excluding a type here guaranties its exclusion
     /// from any BinPath.
     /// </summary>
-    public HashSet<Type> GlobalExcludedTypes => _globalExcludedTypes;
+    public HashSet<Type> ExcludedTypes => _excludedTypes;
 
     /// <summary>
     /// Gets the set of types that must be added to all <see cref="BinPaths"/> in their <see cref="BinPathConfiguration.Types"/>.
     /// <para>
-    /// The <see cref="GlobalExcludedTypes"/> has the priority over this set: an excluded type will be removed from this one.
+    /// The <see cref="ExcludedTypes"/> has the priority over this set: an excluded type will be removed from this one.
     /// </para>
     /// </summary>
-    public TypeConfigurationSet GlobalTypes => _globalTypes;
+    public HashSet<Type> Types => _types;
+
+    /// <summary>
+    /// Gets the set of <see cref="ExternalTypeConfiguration"/>.
+    /// </summary>
+    public ExternalTypeConfigurationSet ExternalTypes => _externalTypes;
 
     /// <summary>
     /// Gets or sets a base SHA1 for the StObjMaps (CKSetup sets this to the files signature).

@@ -164,7 +164,7 @@ public sealed partial class BinPathTypeGroup
             hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
 
             // Applying Types and ExcludedTypes configurations to the types provided by the assemblies.
-            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( tc => c.ExcludedTypes.Contains( tc.Type ) ) is false ); 
+            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( t => c.ExcludedTypes.Contains( t ) ) is false ); 
 
             // Must unfortunately order the sets.
             var excludedByConfiguration = c.ExcludedTypes.Select( assemblyResult.TypeCache.Find )

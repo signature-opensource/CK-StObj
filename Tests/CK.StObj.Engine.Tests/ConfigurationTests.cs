@@ -752,7 +752,7 @@ public class ConfigurationTests
         c.TraceDependencySorterInput.Should().BeTrue();
         c.TraceDependencySorterOutput.Should().BeTrue();
         c.RevertOrderingNames.Should().BeTrue();
-        c.GlobalExcludedTypes.Should().BeEquivalentTo( [typeof( ActivityMonitor ), typeof( CK.Testing.MonitorTestHelper )] );
+        c.ExcludedTypes.Should().BeEquivalentTo( [typeof( ActivityMonitor ), typeof( CK.Testing.MonitorTestHelper )] );
         c.Aspects.Should().HaveCount( 2 );
         c.Aspects[0].Should().BeAssignableTo<SampleAspectConfiguration>();
         c.Aspects[1].Should().BeAssignableTo<AnotherAspectConfiguration>();

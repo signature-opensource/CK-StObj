@@ -10,14 +10,14 @@ namespace CK.Setup;
 /// <summary>
 /// Models the &lt;Types&gt; element.
 /// </summary>
-public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration>
+public sealed class ExternalTypeConfigurationSet : IReadOnlyCollection<ExternalTypeConfiguration>
 {
     readonly Dictionary<Type, ConfigurableAutoServiceKind> _types;
 
     /// <summary>
-    /// Initializes a new empty <see cref="TypeConfigurationSet"/>.
+    /// Initializes a new empty <see cref="ExternalTypeConfigurationSet"/>.
     /// </summary>
-    public TypeConfigurationSet()
+    public ExternalTypeConfigurationSet()
     {
         _types = new Dictionary<Type, ConfigurableAutoServiceKind>();
     }
@@ -26,10 +26,10 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
     /// Copy constructor. There must be no duplicate type in <paramref name="other"/>.
     /// </summary>
     /// <param name="other">The other set.</param>
-    public TypeConfigurationSet( IReadOnlyCollection<TypeConfiguration> other )
+    public ExternalTypeConfigurationSet( IReadOnlyCollection<ExternalTypeConfiguration> other )
     {
         Throw.CheckNotNullArgument( other );
-        if( other is TypeConfigurationSet o )
+        if( other is ExternalTypeConfigurationSet o )
         {
             _types = new Dictionary<Type, ConfigurableAutoServiceKind>( o._types );
         }
@@ -40,10 +40,10 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
         }
     }
 
-    internal TypeConfigurationSet( IEnumerable<XElement> e )
+    internal ExternalTypeConfigurationSet( IEnumerable<XElement> e )
         : this()
     {
-        foreach( var tc in e.Elements( EngineConfiguration.xType ).Select( t => new TypeConfiguration( t ) ) )
+        foreach( var tc in e.Elements( EngineConfiguration.xType ).Select( t => new ExternalTypeConfiguration( t ) ) )
         {
             _types.Add( tc.Type, tc.Kind );
         }
@@ -53,21 +53,19 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
     {
         return new XElement( name,
                              _types.Select( kv => new XElement( EngineConfiguration.xType,
-                                                                kv.Value != ConfigurableAutoServiceKind.None
-                                                                    ? new XAttribute( EngineConfiguration.xKind, kv.Value )
-                                                                    : null,
-                                                                    EngineConfiguration.CleanName( kv.Key ) ) ) );
+                                                                new XAttribute( EngineConfiguration.xKind, kv.Value ),
+                                                                EngineConfiguration.CleanName( kv.Key ) ) ) );
     }
 
     /// <inheritdoc />
     public int Count => _types.Count;
 
     /// <summary>
-    /// Adds the <see cref="TypeConfiguration"/>, replacing any existing configuration with the same <see cref="TypeConfiguration.Type"/>.
+    /// Adds the <see cref="ExternalTypeConfiguration"/>, replacing any existing configuration with the same <see cref="ExternalTypeConfiguration.Type"/>.
     /// </summary>
     /// <param name="configuration">The configuration to add.</param>
     /// <returns>This set.</returns>
-    public TypeConfigurationSet Add( TypeConfiguration configuration )
+    public ExternalTypeConfigurationSet Add( ExternalTypeConfiguration configuration )
     {
         _types[configuration.Type] = configuration.Kind;
         return this;
@@ -79,7 +77,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
     /// <param name="type">The type to configure.</param>
     /// <param name="kind">The kind of the type.</param>
     /// <returns>This set.</returns>
-    public TypeConfigurationSet Add( Type type, ConfigurableAutoServiceKind kind )
+    public ExternalTypeConfigurationSet Add( Type type, ConfigurableAutoServiceKind kind )
     {
         _types[type] = kind;
         return this;
@@ -87,11 +85,11 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
 
     /// <summary>
     /// Adds that the type whith <see cref="ConfigurableAutoServiceKind.None"/> if it doesn't already
-    /// exist but don't change its <see cref="TypeConfiguration.Kind"/> if it exists.
+    /// exist but don't change its <see cref="ExternalTypeConfiguration.Kind"/> if it exists.
     /// </summary>
     /// <param name="type">The type to add.</param>
     /// <returns>This set.</returns>
-    public TypeConfigurationSet Add( Type type )
+    public ExternalTypeConfigurationSet Add( Type type )
     {
         _types.TryAdd( type, ConfigurableAutoServiceKind.None );
         return this;
@@ -106,7 +104,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
     /// Merges this set with the other one.
     /// </summary>
     /// <param name="other">The set to merge.</param>
-    public void UnionWith( TypeConfigurationSet other )
+    public void UnionWith( ExternalTypeConfigurationSet other )
     {
         foreach( var kv in other._types )
         {
@@ -126,7 +124,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
     /// </summary>
     /// <param name="other">The other set.</param>
     /// <returns>True if this set contains the same configurations as the other one.</returns>
-    public bool SetEquals( TypeConfigurationSet other )
+    public bool SetEquals( ExternalTypeConfigurationSet other )
     {
         if( _types.Count == other._types.Count )
         {
@@ -142,14 +140,14 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
         return false;
     }
 
-    public struct Enumerator : IEnumerator<TypeConfiguration>
+    public struct Enumerator : IEnumerator<ExternalTypeConfiguration>
     {
         // Don't make this readonly or nothing will work!
         Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator _e;
 
         public Enumerator( Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator e ) => _e = e;
 
-        public TypeConfiguration Current => new TypeConfiguration( _e.Current.Key, _e.Current.Value );
+        public ExternalTypeConfiguration Current => new ExternalTypeConfiguration( _e.Current.Key, _e.Current.Value );
 
         object IEnumerator.Current => Current;
 
@@ -162,7 +160,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
 
     public Enumerator GetEnumerator() => new Enumerator( _types.GetEnumerator() );
 
-    IEnumerator<TypeConfiguration> IEnumerable<TypeConfiguration>.GetEnumerator() => GetEnumerator();
+    IEnumerator<ExternalTypeConfiguration> IEnumerable<ExternalTypeConfiguration>.GetEnumerator() => GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

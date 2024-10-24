@@ -25,10 +25,10 @@ public interface IConfiguredTypeSet
     IReadOnlySet<ICachedType> AllTypes { get; }
 
     /// <summary>
-    /// Gets the type configurations with a <see cref="TypeConfiguration.Kind"/> that is not <see cref="ConfigurableAutoServiceKind.None"/>.
+    /// Gets the type configurations with a <see cref="ExternalTypeConfiguration.Kind"/> that is not <see cref="ConfigurableAutoServiceKind.None"/>.
     /// <para>
     /// TypeConfiguration uses <see cref="Type"/>, not <see cref="ICachedType"/> because it comes from the "running side" (the configuration).
     /// </para>
     /// </summary>
-    IReadOnlyCollection<TypeConfiguration> ConfiguredTypes { get; }
+    IReadOnlyCollection<ExternalTypeConfiguration> ConfiguredTypes { get; }
 }

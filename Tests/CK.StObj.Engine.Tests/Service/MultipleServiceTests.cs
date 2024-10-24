@@ -243,7 +243,7 @@ public class MultipleServiceTests
         {
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( new TypeConfiguration( typeof( IOfficialHostedService ), ConfigurableAutoServiceKind.IsMultipleService ) );
+            configuration.FirstBinPath.Types.Add( new ExternalTypeConfiguration( typeof( IOfficialHostedService ), ConfigurableAutoServiceKind.IsMultipleService ) );
             configuration.FirstBinPath.Types.Add( typeof( H1 ), typeof( H2 ) );
 
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
@@ -360,8 +360,8 @@ public class MultipleServiceTests
     public async Task IEnumerable_cannot_be_SetAutoServiceKind_Singleton_if_the_enumerated_interface_is_Scoped_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( new TypeConfiguration( typeof( IEnumerable<IMany> ), ConfigurableAutoServiceKind.IsSingleton ) );
-        configuration.FirstBinPath.Types.Add( new TypeConfiguration( typeof( IMany ), ConfigurableAutoServiceKind.IsScoped ) );
+        configuration.FirstBinPath.Types.Add( new ExternalTypeConfiguration( typeof( IEnumerable<IMany> ), ConfigurableAutoServiceKind.IsSingleton ) );
+        configuration.FirstBinPath.Types.Add( new ExternalTypeConfiguration( typeof( IMany ), ConfigurableAutoServiceKind.IsScoped ) );
         configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
 
         await configuration.GetFailedAutomaticServicesAsync( "An interface or an implementation cannot be both Scoped and Singleton" );

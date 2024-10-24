@@ -16,7 +16,7 @@ public sealed partial class BinPathConfiguration
 {
     readonly Dictionary<string, BinPathAspectConfiguration> _aspects;
     readonly HashSet<string> _assemblies;
-    readonly TypeConfigurationSet _types;
+    readonly HashSet<Type> _types;
     readonly HashSet<Type> _excludedTypes;
     EngineConfiguration? _owner;
     string _name;
@@ -38,7 +38,7 @@ public sealed partial class BinPathConfiguration
         _excludedTypes = new HashSet<Type>();
         _aspects = new Dictionary<string, BinPathAspectConfiguration>();
         _name = EngineConfiguration.DefaultBinPathName;
-        _types = new TypeConfigurationSet();
+        _types = new HashSet<Type>();
     }
 
     /// <summary>
@@ -119,14 +119,14 @@ public sealed partial class BinPathConfiguration
     public bool DiscoverAssembliesFromPath { get => _discoverAssembliesFromPath; set => _discoverAssembliesFromPath = value; }
 
     /// <summary>
-    /// Gets a set of <see cref="TypeConfiguration"/> that must be registered explicitly regardless of the <see cref="Assemblies"/>.
+    /// Gets a set of types that must be registered explicitly regardless of the <see cref="Assemblies"/>.
     /// </summary>
-    public TypeConfigurationSet Types => _types;
+    public HashSet<Type> Types => _types;
 
     /// <summary>
     /// Gets a set of types that must be excluded from registration.
     /// <para>
-    /// Note that any type appearing in <see cref="EngineConfiguration.GlobalExcludedTypes"/> will also
+    /// Note that any type appearing in <see cref="EngineConfiguration.ExcludedTypes"/> will also
     /// be excluded.
     /// </para>
     /// </summary>

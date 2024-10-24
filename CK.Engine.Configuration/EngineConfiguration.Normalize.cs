@@ -38,10 +38,10 @@ public sealed partial class EngineConfiguration
     ///     </list>
     ///     </item>
     ///     <item>
-    ///     Removes types from <see cref="GlobalTypes"/> that appears in <see cref="GlobalExcludedTypes"/>.
+    ///     Removes types from <see cref="Types"/> that appears in <see cref="ExcludedTypes"/>.
     ///     </item>
     ///     <item>
-    ///     Checks that in <see cref="GlobalTypes"/>, a <see cref="ConfigurableAutoServiceKind"/> other than None is not used
+    ///     Checks that in <see cref="Types"/>, a <see cref="ConfigurableAutoServiceKind"/> other than None is not used
     ///     on a type that is a IAutoService, IRealObject and IPoco: these code defined types cannot be externally configured.
     ///     </item>
     ///     <item>
@@ -74,8 +74,8 @@ public sealed partial class EngineConfiguration
     ///             Removes assemblies from <see cref="BinPathConfiguration.Assemblies"/> that appears in <see cref="ExcludedAssemblies"/>.
     ///             </item>
     ///             <item>
-    ///             Propagate the <see cref="GlobalExcludedTypes"/> to <see cref="BinPathConfiguration.ExcludedTypes"/> and
-    ///             the <see cref="GlobalTypes"/> to <see cref="BinPathConfiguration.Types"/>.
+    ///             Propagate the <see cref="ExcludedTypes"/> to <see cref="BinPathConfiguration.ExcludedTypes"/> and
+    ///             the <see cref="Types"/> to <see cref="BinPathConfiguration.Types"/>.
     ///             </item>
     ///             <item>
     ///             Removes types from <see cref="BinPathConfiguration.Types"/> that appears in ExcludedTypes.
@@ -330,7 +330,7 @@ public sealed partial class EngineConfiguration
         AlternativePath[] altPaths = AnalyzeBinPaths( c, out var maxAlternativeCount );
 
         bool success = ResolveAlternateBinPaths( monitor, c, maxAlternativeCount, altPaths );
-        CheckTypeConfigurationSet( monitor, c.GlobalTypes, c.GlobalExcludedTypes, null, ref success );
+        CheckTypeConfigurationSet( monitor, c.Types, c.ExcludedTypes, null, ref success );
         FinalizeBinPaths( monitor, c, ref success );
         return success;
 
@@ -514,12 +514,12 @@ public sealed partial class EngineConfiguration
                     }
                 }
                 // Handles Types
-                b.ExcludedTypes.AddRange( c.GlobalExcludedTypes );
+                b.ExcludedTypes.AddRange( c.ExcludedTypes );
                 // Check the Types and removes the excluded ones before adding the GlobalTypes (that have already been checked)
                 // if they are on errors, we don't care: the error has been already emitted.
                 CheckTypeConfigurationSet( monitor, b.Types, b.ExcludedTypes, b, ref success );
-                // Adds the GlobalTypes.
-                b.Types.UnionWith( c.GlobalTypes );
+                // Adds the Global Types.
+                b.Types.UnionWith( c.Types );
             }
 
             static void EvalKnownPaths( IActivityMonitor monitor,
@@ -612,18 +612,18 @@ public sealed partial class EngineConfiguration
 
         }
 
-        static void CheckTypeConfigurationSet( IActivityMonitor monitor, TypeConfigurationSet types, HashSet<Type> excludedTypes, BinPathConfiguration? b, ref bool success )
+        static void CheckTypeConfigurationSet( IActivityMonitor monitor, HashSet<Type> types, HashSet<Type> excludedTypes, BinPathConfiguration? b, ref bool success )
         {
             List<Type>? excluded = null;
             string? source = null;
             foreach( var tc in types )
             {
-                if( excludedTypes.Contains( tc.Type ) )
+                if( excludedTypes.Contains( tc ) )
                 {
-                    source ??= b != null ? $"BinPath '{b.Name}' Types" : "GlobalTypes";
-                    monitor.Warn( $"{source} contains '{tc.Type}' of kind '{tc.Kind}' that is excluded. It is removed and will be ignored." );
+                    source ??= b != null ? $"BinPath '{b.Name}' Types" : "Global Types";
+                    monitor.Warn( $"{source} contains '{tc:N}' that is excluded. It is removed and will be ignored." );
                     excluded ??= new List<Type>();
-                    excluded.Add( tc.Type );
+                    excluded.Add( tc );
                 }
             }
             if( excluded != null )

@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.Loader;
 using System.Xml.Linq;
 
 namespace CK.Setup;
@@ -29,8 +27,9 @@ public sealed partial class EngineConfiguration
         var sha1 = (string?)e.Element( xBaseSHA1 );
         BaseSHA1 = sha1 != null ? SHA1Value.Parse( sha1 ) : SHA1Value.Zero;
         ForceRun = (bool?)e.Element( xForceRun ) ?? false;
-        _globalExcludedTypes = new HashSet<Type>( TypesFromXml( e, xGlobalExcludedTypes, xType ) );
-        _globalTypes = new TypeConfigurationSet( e.Elements( xGlobalTypes ) );
+        _excludedTypes = new HashSet<Type>( TypesFromXml( e, xExcludedTypes, xType ) );
+        _types = new HashSet<Type>( TypesFromXml( e, xTypes, xType ) );
+        _externalTypes = new ExternalTypeConfigurationSet( e.Elements( xExternalTypes ) );
         _excludedAssemblies = new HashSet<string>( StringsFromXml( e, xExcludedAssemblies, xAssembly ) );
 
         // Aspects.
@@ -80,10 +79,11 @@ public sealed partial class EngineConfiguration
                     InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
                     !BaseSHA1.IsZero ? new XElement( xBaseSHA1, BaseSHA1.ToString() ) : null,
                     ForceRun ? new XElement( xForceRun, true ) : null,
-                    ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( t => CleanName( t ) ) ),
-                    _globalTypes.Count > 0
-                        ? _globalTypes.ToXml( xGlobalTypes )
+                    ToXml( xExcludedTypes, xType, _excludedTypes.Select( t => CleanName( t ) ) ),
+                    _types.Count > 0
+                        ? ToXml( xTypes, xType, _types.Select( t => CleanName( t ) ) )
                         : null,
+                    _externalTypes.ToXml( xExternalTypes ),
                     _excludedAssemblies.Count > 0
                         ? ToXml( xExcludedAssemblies, xAssembly, _excludedAssemblies )
                         : null,
@@ -193,9 +193,9 @@ public sealed partial class EngineConfiguration
     static public readonly XName xGlobalExcludedTypes = XNamespace.None + "GlobalExcludedTypes";
 
     /// <summary>
-    /// The GlobalTypes element name.
+    /// The ExternalTypes element name.
     /// </summary>
-    static public readonly XName xGlobalTypes = XNamespace.None + "GlobalTypes";
+    static public readonly XName xExternalTypes = XNamespace.None + "ExternalTypes";
 
     /// <summary>
     /// The ExcludedAssemblies element name.
