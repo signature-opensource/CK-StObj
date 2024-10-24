@@ -85,9 +85,9 @@ public partial class StObjCollector
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="type">The type to register.</param>
-    /// <param name="kind">The kind of service. Must not be <see cref="ConfigurableAutoServiceKind .None"/>.</param>
+    /// <param name="kind">The kind of service. Must not be <see cref="ExternalServiceKind .None"/>.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, ConfigurableAutoServiceKind kind )
+    public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, ExternalServiceKind kind )
     {
         using var errorTracker = monitor.OnError( _errorEntries.Add );
         if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
@@ -117,7 +117,7 @@ public partial class StObjCollector
     /// <param name="kind">The kind of service. Can be <see cref="AutoServiceKind.None"/> (nothing is done except the type resolution).</param>
     /// <param name="isOptional">True to warn if the type is not found instead of logging an error and returning false.</param>
     /// <returns>True on success, false on error.</returns>
-    public bool SetAutoServiceKind( IActivityMonitor monitor, string typeName, ConfigurableAutoServiceKind kind, bool isOptional )
+    public bool SetAutoServiceKind( IActivityMonitor monitor, string typeName, ExternalServiceKind kind, bool isOptional )
     {
         using var errorTracker = monitor.OnError( _errorEntries.Add );
         if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
@@ -125,7 +125,7 @@ public partial class StObjCollector
         var t = SimpleTypeFinder.WeakResolver( typeName, false );
         if( t != null )
         {
-            return kind == ConfigurableAutoServiceKind.None || SetAutoServiceKind( monitor, t, kind );
+            return kind == ExternalServiceKind.None || SetAutoServiceKind( monitor, t, kind );
         }
         if( isOptional )
         {

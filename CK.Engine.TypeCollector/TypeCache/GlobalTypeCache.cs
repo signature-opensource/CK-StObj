@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -144,5 +145,19 @@ public sealed partial class GlobalTypeCache
             }
         }
         return c;
+    }
+
+    internal bool Register( IActivityMonitor monitor, ExternalTypeConfiguration eT )
+    {
+        if( !_types.ContainsKey( eT.Type ) )
+        {
+            var unhandledType = CachedType.ComputeUnhandledType( eT.Type, null );
+            var msg = unhandledType.GetUnhandledMessage();
+            if( msg != null )
+            {
+                monitor.Warn( $"Ignoring external type configuration '{eT.Type:N}' as {eT.Kind} {msg}." );
+            }
+
+        }
     }
 }

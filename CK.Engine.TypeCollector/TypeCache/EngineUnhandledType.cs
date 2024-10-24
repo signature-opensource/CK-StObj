@@ -1,3 +1,5 @@
+using CK.Core;
+
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
@@ -32,4 +34,18 @@ public enum EngineUnhandledType : byte
     /// The type is not a class, an enum, a value type or an interface.
     /// </summary>
     NotClassEnumValueTypeOrEnum
+}
+
+static class Unhandled
+{
+    public static string? GetUnhandledMessage( this EngineUnhandledType type ) =>
+            type switch
+            {
+                EngineUnhandledType.None => null,
+                EngineUnhandledType.NullFullName => "has a null FullName",
+                EngineUnhandledType.FromDynamicAssembly => "is defined by a dynamic assembly",
+                EngineUnhandledType.NotVisible => "must be public (visible outside of its asssembly)",
+                EngineUnhandledType.NotClassEnumValueTypeOrEnum => "must be an enum, a value type, a class or an interface",
+                _ => Throw.NotSupportedException<string>( type.ToString() )
+            };
 }

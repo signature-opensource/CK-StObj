@@ -77,7 +77,7 @@ public class BasicServiceLifetimeTests
     public void a_singleton_that_depends_on_external_that_is_defined_as_a_singleton_is_fine()
     {
         var collector = new Setup.StObjCollector();
-        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
+        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ExternalServiceKind.IsSingleton );
         collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
         var r = collector.GetResult( TestHelper.Monitor );
         r.HasFatalError.Should().BeFalse();
@@ -87,7 +87,7 @@ public class BasicServiceLifetimeTests
     public void a_singleton_that_depends_on_external_that_is_defined_as_a_Scoped_is_an_error()
     {
         var collector = new Setup.StObjCollector();
-        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsScoped );
+        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ExternalServiceKind.IsScoped );
         collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
         var r = collector.GetResult( TestHelper.Monitor );
         collector.FatalOrErrors.Any( m => m.Contains( "s marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." ) )
@@ -181,7 +181,7 @@ public class BasicServiceLifetimeTests
     public void an_auto_service_that_depends_on_all_kind_of_singletons_is_singleton()
     {
         var collector = new Setup.StObjCollector();
-        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
+        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ExternalServiceKind.IsSingleton );
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAllKindOfSingleton ) );
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnExternal ) );
         collector.RegisterType( TestHelper.Monitor, typeof( SampleRealObject ) );
@@ -220,10 +220,10 @@ public class BasicServiceLifetimeTests
     public void a_singleton_service_that_depends_on_all_kind_of_singletons_is_singleton( string mode )
     {
         var collector = new Setup.StObjCollector();
-        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
+        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ExternalServiceKind.IsSingleton );
         if( mode == "WithSingletonLifetimeOnExternalService" )
         {
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOtherExternalService ), ConfigurableAutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOtherExternalService ), ExternalServiceKind.IsSingleton );
         }
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService ) );
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnExternal ) );
@@ -246,7 +246,7 @@ public class BasicServiceLifetimeTests
     public void SetAutoServiceKind_a_class_does_not_mean_registering_it()
     {
         var collector = new Setup.StObjCollector();
-        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), ConfigurableAutoServiceKind.IsScoped );
+        collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), ExternalServiceKind.IsScoped );
         collector.RegisterType( TestHelper.Monitor, typeof( CBase1 ) );
         var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
         Throw.DebugAssert( map != null );

@@ -81,16 +81,16 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                             // Filters out null thanks to "is".
                             if( ctorArgs[0].Value is Type t )
                             {
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, t, ConfigurableAutoServiceKind.None );
+                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, t, ExternalServiceKind.None );
                             }
                             // Maximal precautions: filters out any potential null.
                             foreach( var o in others )
                             {
                                 if( o == null ) continue;
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, o, ConfigurableAutoServiceKind.None );
+                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, o, ExternalServiceKind.None );
                             }
                         }
-                        else if( ctorArgs[1].Value is ConfigurableAutoServiceKind kind )
+                        else if( ctorArgs[1].Value is ExternalServiceKind kind )
                         {
                             // Filters out null thanks to "is".
                             if( ctorArgs[0].Value is Type t )
@@ -113,14 +113,14 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                         var ctorArgs = a.ConstructorArguments;
                         if( ctorArgs[0].Value is Type t )
                         {
-                            success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, t, ConfigurableAutoServiceKind.None );
+                            success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, t, ExternalServiceKind.None );
                         }
                         if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
                         {
                             foreach( var o in others )
                             {
                                 if( o == null ) continue;
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, o, ConfigurableAutoServiceKind.None );
+                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, o, ExternalServiceKind.None );
                             }
                         }
                     }
@@ -140,7 +140,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                                                      bool add,
                                                      string sourceAssemblyName,
                                                      Type t,
-                                                     ConfigurableAutoServiceKind kind )
+                                                     ExternalServiceKind kind )
                 {
                     var cT = typeCache.Get( t );
                     var error = GetConfiguredTypeErrorMessage( typeCache, cT, kind );
@@ -159,20 +159,10 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
             }
         }
 
-        internal static string? GetConfiguredTypeErrorMessage( GlobalTypeCache typeCache, ICachedType type, ConfigurableAutoServiceKind kind )
+        internal static string? GetConfiguredTypeErrorMessage( GlobalTypeCache typeCache, ICachedType type, ExternalServiceKind kind )
         {
-            if( type.EngineUnhandledType != EngineUnhandledType.None )
-            {
-                return type.EngineUnhandledType switch
-                {
-                    EngineUnhandledType.NullFullName => "has a null FullName",
-                    EngineUnhandledType.FromDynamicAssembly => "is defined by a dynamic assembly",
-                    EngineUnhandledType.NotVisible => "must be public (visible outside of its asssembly)",
-                    EngineUnhandledType.NotClassEnumValueTypeOrEnum => "must be an enum, a value type, a class or an interface",
-                    _ => Throw.NotSupportedException<string>( type.EngineUnhandledType.ToString() )
-                };
-            }
-            if( kind != ConfigurableAutoServiceKind.None )
+            var msg = type.EngineUnhandledType.GetUnhandledMessage();
+            if( msg == null && kind != ExternalServiceKind.None )
             {
                 string? k = null;
                 if( type.Interfaces.Contains( typeCache.IAutoService ) )
@@ -192,7 +182,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                     return $"is a {k}. IAutoService, IRealObject and IPoco cannot be externally configured";
                 }
             }
-            return null;
+            return msg;
         }
 
     }

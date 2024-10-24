@@ -70,6 +70,16 @@ public sealed partial class AssemblyCache
         assemblyCache._registrationClosed = true;
         // We can now compute the CachedAssembly.Types and safely uses ICachedType from it.
         var typeCache = new GlobalTypeCache( assemblyCache );
+        // The first thing is to handle the ExternalTypes configuration.
+        foreach( var eT in configuration.ExternalTypes )
+        {
+            success &= typeCache.Register( monitor, eT );
+            var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, eT.Type, ExternalServiceKind.None );
+            if( msg != null )
+            {
+                monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {msg}." );
+            }
+        }
         using( monitor.OpenInfo( $"Collecting types for {collector.Count} BinPathGroup." ) )
         {
             foreach( var g in collector )

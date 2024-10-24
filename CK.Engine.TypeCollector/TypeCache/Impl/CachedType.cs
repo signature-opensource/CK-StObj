@@ -219,15 +219,19 @@ partial class CachedType : CachedItem, ICachedType
         {
             if( _unhandledType == _uninitialized )
             {
-                if( Type.FullName == null ) _unhandledType = EngineUnhandledType.NullFullName;
-                else if( _assembly.Assembly.IsDynamic ) _unhandledType = EngineUnhandledType.FromDynamicAssembly;
-                else if( !Type.IsVisible ) _unhandledType = EngineUnhandledType.NotVisible;
-                else if( !Type.IsValueType || !Type.IsClass || !Type.IsInterface || !Type.IsEnum ) _unhandledType = EngineUnhandledType.NotClassEnumValueTypeOrEnum;
-                else _unhandledType = EngineUnhandledType.None;
-                   
+                _unhandledType = ComputeUnhandledType( Type, _assembly.Assembly );
             }
             return _unhandledType;
         }
+    }
+
+    internal static EngineUnhandledType ComputeUnhandledType( Type Type, Assembly? assembly )
+    {
+        if( Type.FullName == null ) return EngineUnhandledType.NullFullName;
+        if( (assembly ?? Type.Assembly).IsDynamic ) return EngineUnhandledType.FromDynamicAssembly;
+        if( !Type.IsVisible ) return EngineUnhandledType.NotVisible;
+        if( !Type.IsValueType || !Type.IsClass || !Type.IsInterface || !Type.IsEnum ) return EngineUnhandledType.NotClassEnumValueTypeOrEnum;
+        return EngineUnhandledType.None;
     }
 
     public ICachedType? GenericTypeDefinition => _genericTypeDefinition ??= _isGenericType ? _cache.Get( Type.GetGenericTypeDefinition() ) : null;

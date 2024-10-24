@@ -6,7 +6,7 @@ namespace CK.Core;
 /// Detailed flags that categorizes service types used by the Automatic DI.
 /// </summary>
 [Flags]
-public enum AutoServiceKind
+public enum AutoServiceKind2
 {
     /// <summary>
     /// Not a service we handle or external service for which

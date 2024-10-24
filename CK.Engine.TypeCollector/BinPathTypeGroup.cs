@@ -164,7 +164,7 @@ public sealed partial class BinPathTypeGroup
             hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
 
             // Applying Types and ExcludedTypes configurations to the types provided by the assemblies.
-            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( t => c.ExcludedTypes.Contains( t ) ) is false ); 
+            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( c.ExcludedTypes.Contains ) is false ); 
 
             // Must unfortunately order the sets.
             var excludedByConfiguration = c.ExcludedTypes.Select( assemblyResult.TypeCache.Find )
@@ -173,7 +173,7 @@ public sealed partial class BinPathTypeGroup
             foreach( var cT in excludedByConfiguration )
             {
                 Throw.DebugAssert( cT != null );
-                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, cT, ConfigurableAutoServiceKind.None );
+                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, cT, ExternalServiceKind.None );
                 if( msg != null )
                 {
                     monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {msg}." );
@@ -181,7 +181,7 @@ public sealed partial class BinPathTypeGroup
                 else
                 {
                     types.Remove( cT );
-                    // For the hash, always consider the configured type even it is not used.
+                    // For the hash, always consider the configured type even if it is not used.
                     hasher.Append( cT.CSharpName );
                 }
             }

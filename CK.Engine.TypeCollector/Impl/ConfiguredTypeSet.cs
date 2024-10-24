@@ -37,9 +37,9 @@ sealed class ConfiguredTypeSet : IConfiguredTypeSet
     // Beware! Only one | here, we want to remove from both of them.
     public bool Remove( ICachedType type ) => _allTypes.Remove( type ) | _configuredTypes.Remove( type.Type );
 
-    public bool Add( IActivityMonitor monitor, string sourceName, ICachedType type, ConfigurableAutoServiceKind kind )
+    public bool Add( IActivityMonitor monitor, string sourceName, ICachedType type, ExternalServiceKind kind )
     {
-        if( kind == ConfigurableAutoServiceKind.None )
+        if( kind == ExternalServiceKind.None )
         {
             return _allTypes.Add( type );
         }
@@ -76,6 +76,6 @@ sealed class ConfiguredTypeSet : IConfiguredTypeSet
         // Hopefully, this is in Debug only.
         var types = new HashSet<Type>( set._allTypes.Select( cT => cT.Type ) );
         Throw.DebugAssert( types.IsSupersetOf( set._configuredTypes.AsDictionary.Keys ) );
-        Throw.DebugAssert( !set._configuredTypes.AsDictionary.Values.Any( k => k == ConfigurableAutoServiceKind.None ) );
+        Throw.DebugAssert( !set._configuredTypes.AsDictionary.Values.Any( k => k == ExternalServiceKind.None ) );
     }
 }

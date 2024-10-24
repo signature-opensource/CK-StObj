@@ -6,7 +6,7 @@ namespace CK.Engine.TypeCollector;
 
 /// <summary>
 /// Final sets of types once types inclusion/exclusion have been processed.
-/// <see cref="ConfigurableAutoServiceKind"/> in <see cref="ConfiguredTypes"/> is settled and final kind
+/// <see cref="ExternalServiceKind"/> in <see cref="ConfiguredTypes"/> is settled and final kind
 /// detection can now be executed based on configuration.
 /// <para>
 /// The initial set is the <see cref="AssemblyCache.BinPathGroup.ConfiguredTypes"/> (computed from
@@ -25,7 +25,7 @@ public interface IConfiguredTypeSet
     IReadOnlySet<ICachedType> AllTypes { get; }
 
     /// <summary>
-    /// Gets the type configurations with a <see cref="ExternalTypeConfiguration.Kind"/> that is not <see cref="ConfigurableAutoServiceKind.None"/>.
+    /// Gets the type configurations with a <see cref="ExternalTypeConfiguration.Kind"/> that is not <see cref="ExternalServiceKind.None"/>.
     /// <para>
     /// TypeConfiguration uses <see cref="Type"/>, not <see cref="ICachedType"/> because it comes from the "running side" (the configuration).
     /// </para>

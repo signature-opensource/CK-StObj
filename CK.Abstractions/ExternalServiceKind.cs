@@ -9,7 +9,7 @@ namespace CK.Setup;
 /// </para>
 /// </summary>
 [Flags]
-public enum ConfigurableAutoServiceKind
+public enum ExternalServiceKind
 {
     /// <summary>
     /// No specific information is known about the type.

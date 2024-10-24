@@ -41,7 +41,7 @@ public sealed partial class EngineConfiguration
     ///     Removes types from <see cref="Types"/> that appears in <see cref="ExcludedTypes"/>.
     ///     </item>
     ///     <item>
-    ///     Checks that in <see cref="Types"/>, a <see cref="ConfigurableAutoServiceKind"/> other than None is not used
+    ///     Checks that in <see cref="Types"/>, a <see cref="ExternalServiceKind"/> other than None is not used
     ///     on a type that is a IAutoService, IRealObject and IPoco: these code defined types cannot be externally configured.
     ///     </item>
     ///     <item>
@@ -81,7 +81,7 @@ public sealed partial class EngineConfiguration
     ///             Removes types from <see cref="BinPathConfiguration.Types"/> that appears in ExcludedTypes.
     ///             </item>
     ///             <item>
-    ///             Checks that in <see cref="BinPathConfiguration.Types"/>, a <see cref="ConfigurableAutoServiceKind"/> other than None is not used
+    ///             Checks that in <see cref="BinPathConfiguration.Types"/>, a <see cref="ExternalServiceKind"/> other than None is not used
     ///             on a type that is a IAutoService, IRealObject and IPoco: these code defined types cannot be externally configured.
     ///             </item>
     ///         </list>

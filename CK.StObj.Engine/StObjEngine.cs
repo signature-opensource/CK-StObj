@@ -192,7 +192,7 @@ public sealed class StObjEngine
                 // First handles the explicit kind of Types.
                 foreach( var c in configuredTypes.ConfiguredTypes )
                 {
-                    Throw.DebugAssert( c.Kind != ConfigurableAutoServiceKind.None );
+                    Throw.DebugAssert( c.Kind != ExternalServiceKind.None );
                     stObjC.SetAutoServiceKind( _monitor, c.Type, c.Kind );
                 }
                 stObjC.RegisterTypes( _monitor, configuredTypes.AllTypes.Select( cT => cT.Type ) );

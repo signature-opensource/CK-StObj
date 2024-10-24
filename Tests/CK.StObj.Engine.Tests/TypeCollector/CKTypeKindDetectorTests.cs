@@ -238,8 +238,8 @@ public class CKTypeKindDetectorTests
             bool success = true;
             using( TestHelper.Monitor.OnError( () => success = false ) )
             {
-                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ConfigurableAutoServiceKind.IsSingleton );
-                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ConfigurableAutoServiceKind.IsScoped );
+                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ExternalServiceKind.IsSingleton );
+                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ExternalServiceKind.IsScoped );
             }
             success.Should().BeFalse( "From general to specific: this fails!" );
         }
@@ -248,8 +248,8 @@ public class CKTypeKindDetectorTests
             bool success = true;
             using( TestHelper.Monitor.OnError( () => success = false ) )
             {
-                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ConfigurableAutoServiceKind.IsScoped );
-                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ConfigurableAutoServiceKind.IsSingleton );
+                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ExternalServiceKind.IsScoped );
+                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ExternalServiceKind.IsSingleton );
             }
             success.Should().BeTrue( "From specific to general: success!" );
 
@@ -282,8 +282,8 @@ public class CKTypeKindDetectorTests
         bool success = true;
         using( TestHelper.Monitor.OnError( () => success = false ) )
         {
-            a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ConfigurableAutoServiceKind.IsScoped );
-            a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ConfigurableAutoServiceKind.IsSingleton );
+            a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ExternalServiceKind.IsScoped );
+            a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ExternalServiceKind.IsSingleton );
         }
         success.Should().BeTrue();
 

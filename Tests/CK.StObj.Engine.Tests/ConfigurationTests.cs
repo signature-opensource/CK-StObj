@@ -727,11 +727,11 @@ public class ConfigurationTests
 
         b1.Types.Should().HaveCount( 3 );
         var t1 = b1.Types.Single( tc => tc.Type == typeof( IActivityMonitor ) );
-        t1.Kind.Should().Be( ConfigurableAutoServiceKind.IsScoped );
+        t1.Kind.Should().Be( ExternalServiceKind.IsScoped );
         var t2 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
-        t2.Kind.Should().Be( ConfigurableAutoServiceKind.IsMultipleService | ConfigurableAutoServiceKind.IsSingleton );
+        t2.Kind.Should().Be( ExternalServiceKind.IsMultipleService | ExternalServiceKind.IsSingleton );
         var t3 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Options.IOptions<> ) ); ;
-        t3.Kind.Should().Be( ConfigurableAutoServiceKind.IsSingleton );
+        t3.Kind.Should().Be( ExternalServiceKind.IsSingleton );
 
         var bSample = b1.FindAspect<SampleBinPathAspectConfiguration>();
         Debug.Assert( bSample != null );

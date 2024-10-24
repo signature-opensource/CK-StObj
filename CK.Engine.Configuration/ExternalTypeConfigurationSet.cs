@@ -12,14 +12,14 @@ namespace CK.Setup;
 /// </summary>
 public sealed class ExternalTypeConfigurationSet : IReadOnlyCollection<ExternalTypeConfiguration>
 {
-    readonly Dictionary<Type, ConfigurableAutoServiceKind> _types;
+    readonly Dictionary<Type, ExternalServiceKind> _types;
 
     /// <summary>
     /// Initializes a new empty <see cref="ExternalTypeConfigurationSet"/>.
     /// </summary>
     public ExternalTypeConfigurationSet()
     {
-        _types = new Dictionary<Type, ConfigurableAutoServiceKind>();
+        _types = new Dictionary<Type, ExternalServiceKind>();
     }
 
     /// <summary>
@@ -31,11 +31,11 @@ public sealed class ExternalTypeConfigurationSet : IReadOnlyCollection<ExternalT
         Throw.CheckNotNullArgument( other );
         if( other is ExternalTypeConfigurationSet o )
         {
-            _types = new Dictionary<Type, ConfigurableAutoServiceKind>( o._types );
+            _types = new Dictionary<Type, ExternalServiceKind>( o._types );
         }
         else
         {
-            _types = new Dictionary<Type, ConfigurableAutoServiceKind>( other.Count );
+            _types = new Dictionary<Type, ExternalServiceKind>( other.Count );
             foreach( var tc in other ) _types.Add( tc.Type, tc.Kind );
         }
     }
@@ -77,28 +77,28 @@ public sealed class ExternalTypeConfigurationSet : IReadOnlyCollection<ExternalT
     /// <param name="type">The type to configure.</param>
     /// <param name="kind">The kind of the type.</param>
     /// <returns>This set.</returns>
-    public ExternalTypeConfigurationSet Add( Type type, ConfigurableAutoServiceKind kind )
+    public ExternalTypeConfigurationSet Add( Type type, ExternalServiceKind kind )
     {
         _types[type] = kind;
         return this;
     }
 
     /// <summary>
-    /// Adds that the type whith <see cref="ConfigurableAutoServiceKind.None"/> if it doesn't already
+    /// Adds that the type whith <see cref="ExternalServiceKind.None"/> if it doesn't already
     /// exist but don't change its <see cref="ExternalTypeConfiguration.Kind"/> if it exists.
     /// </summary>
     /// <param name="type">The type to add.</param>
     /// <returns>This set.</returns>
     public ExternalTypeConfigurationSet Add( Type type )
     {
-        _types.TryAdd( type, ConfigurableAutoServiceKind.None );
+        _types.TryAdd( type, ExternalServiceKind.None );
         return this;
     }
 
     /// <summary>
     /// Gets this set as a dictionary.
     /// </summary>
-    public IDictionary<Type, ConfigurableAutoServiceKind> AsDictionary => _types;
+    public IDictionary<Type, ExternalServiceKind> AsDictionary => _types;
 
     /// <summary>
     /// Merges this set with the other one.
@@ -143,9 +143,9 @@ public sealed class ExternalTypeConfigurationSet : IReadOnlyCollection<ExternalT
     public struct Enumerator : IEnumerator<ExternalTypeConfiguration>
     {
         // Don't make this readonly or nothing will work!
-        Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator _e;
+        Dictionary<Type, ExternalServiceKind>.Enumerator _e;
 
-        public Enumerator( Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator e ) => _e = e;
+        public Enumerator( Dictionary<Type, ExternalServiceKind>.Enumerator e ) => _e = e;
 
         public ExternalTypeConfiguration Current => new ExternalTypeConfiguration( _e.Current.Key, _e.Current.Value );
 
