@@ -39,7 +39,7 @@ public sealed partial class BinPathTypeGroup
         public GlobalTypeCache TypeCache => _assemblyResult.TypeCache;
 
         /// <summary>
-        /// Gets the digital signature on this result based on the <see cref="BinPathTypeGroup.Signature"/>.
+        /// Gets the digital signature of this result based on each <see cref="Groups"/> signature.
         /// <para>
         /// <see cref="SHA1Value.Zero"/> if <see cref="Success"/> is false.
         /// </para>

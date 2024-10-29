@@ -11,18 +11,17 @@ namespace CK.Setup;
 public interface IEngineAspectInitializationContext
 {
     /// <summary>
-    /// Gets the service container into which services provided by aspects can be registered
-    /// Concrete type mapping to aspects instances are automatically registered.
+    /// Gets the service container into which services provided by aspects can be registered.
     /// </summary>
     ISimpleServiceContainer ServiceContainer { get; }
 
     /// <summary>
-    /// Registers a configuration only service. This is used to communicate the fact that the registered service
-    /// should only be used by the other following aspects only from their <see cref="IStObjEngineAspect.Configure"/> method.
+    /// Registers a configuration only service.
+    /// The registered service can only be injected in the other following aspects constructor.
     /// </summary>
-    /// <typeparam name="T">Actual type of the service.</typeparam>
-    /// <param name="service">Strongly typed wrapper around a necessary not null service instance.</param>
-    void AddConfigureOnlyService<T>( ConfigureOnly<T> service );
+    /// <typeparam name="T">Type of the service.</typeparam>
+    /// <param name="service">Service instance.</param>
+    void AddConfigureOnlyService<T>( T service ) where T : class;
 
     /// <summary>
     /// Gets the root of the <see cref="StObjConfigurationLayer"/> chain of responsibility.
@@ -38,10 +37,10 @@ public interface IEngineAspectInitializationContext
     IReadOnlyList<EngineAspect> Aspects { get; }
 
     /// <summary>
-    /// Pushes a deferred configure action.
-    /// It will be executed after the configuration of all aspects.
+    /// Pushes a deferred initialization action.
+    /// It will be executed after the initialization of all aspects.
     /// An action can be pushed at any moment and a pushed action can push another action.
     /// </summary>
     /// <param name="postAction">Action to execute.</param>
-    void PushPostConfigureAction( Func<IActivityMonitor, IStObjEngineConfigureContext, bool> postAction );
+    void PushDeferredAction( Func<IActivityMonitor, bool> postAction );
 }

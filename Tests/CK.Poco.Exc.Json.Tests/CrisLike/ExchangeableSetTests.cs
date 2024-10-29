@@ -88,7 +88,7 @@ public class ExchangeableSetTests
     public async Task not_serializable_and_not_exchangeable_attributes_are_handled_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -132,7 +132,7 @@ public class ExchangeableSetTests
     public async Task PocoTypeSet_restrictions_cannot_be_spoofed_for_Poco_and_Record_fields_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -177,7 +177,7 @@ public class ExchangeableSetTests
     public async Task PocoTypeSet_restrictions_cannot_be_spoofed_for_anonymous_records_fields_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

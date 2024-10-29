@@ -24,7 +24,7 @@ public class RecordAnonymousTests
     public async Task simple_tuple_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -46,7 +46,7 @@ public class RecordAnonymousTests
     public async Task simple_nullable_tuple_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -79,7 +79,7 @@ public class RecordAnonymousTests
     public async Task IPoco_collections_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -127,7 +127,7 @@ public class RecordAnonymousTests
     public async Task collections_of_records_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -158,7 +158,7 @@ public class RecordAnonymousTests
     public async Task collections_of_nullable_records_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -188,7 +188,7 @@ public class RecordAnonymousTests
     public async Task collections_of_records_with_Poco_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithPoco ), typeof( IWithRecord ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithPoco ), typeof( IWithRecord ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -211,7 +211,7 @@ public class RecordAnonymousTests
     public async Task collections_of_records_with_nullable_Poco_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithNullablePoco ), typeof( IWithRecord ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithNullablePoco ), typeof( IWithRecord ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

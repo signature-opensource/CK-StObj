@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -109,9 +110,6 @@ public sealed partial class BinPathTypeGroup
 
     /// <summary>
     /// Creates one or more <see cref="BinPathTypeGroup"/> from a configuration.
-    /// <para>
-    /// This step cannot fail: A false <see cref="Result.Success"/> comes from the assembly level.
-    /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configuration">The normalized configuration to handle.</param>
@@ -119,19 +117,20 @@ public sealed partial class BinPathTypeGroup
     public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
     {
         using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
+        // EngineConfiguration.ExternalTypes are handled at the AssemblyCache level (when building the GlobalCacheType).
         var assemblyResult = AssemblyCache.Run( monitor, configuration );
 
         // Always produce the groups even if assemblyResult.Success is false.
         bool success = assemblyResult.Success;
         var typeCache = assemblyResult.TypeCache;
 
-        var groups = new List<BinPathTypeGroup>();
         // Ok...
         // 1 - Groups the BinPathConfigurations in all Assembly groups by the key based on ExcludedTypes and Types configurations.
         // 2 - Projects the groups by Assembly group and the BinPathConfigurations that share the same key.
         // 3 - Union them (SelectMany).
         // 4 - Computes the BinPathType.GroupName.
-        // 5 - Orders these raw groups by their GroupName to compute the global Result signature.
+        // 5 - Orders these raw groups by their GroupName to be determinitic: the global Result signature will be computed
+        //     based on the group signatures (with the most covering one - or the unified - at the first place in the list).
         var rawGroups = assemblyResult.BinPathGroups.Select( g => g.Configurations.GroupBy( b => new GroupKey( g, b ) ) )
                                                     .SelectMany( gType => gType.Select( tG => (Configurations: tG.OrderBy( b => b.Name ).ToImmutableArray(),
                                                                                               tG.Key.AssemblyGroup) ) )
@@ -142,70 +141,90 @@ public sealed partial class BinPathTypeGroup
                                                                                         ? rawGroup.AssemblyGroup.GroupName
                                                                                         : rawGroup.Configurations.Select( b => b.Name ).Concatenate( "-" )
                                                                           ) )
-                                                    .OrderBy( rawGroup => rawGroup.GroupName );
+                                                    .OrderBy( rawGroup => rawGroup.GroupName )
+                                                    .ToArray();
+        // Awful optimization here but this avoids a clone of the set of types in 99.9% of cases
+        // (mono bin path or multi bin paths with different assemblies).
+        foreach( var (_, assemblyGroup, _) in rawGroups ) assemblyGroup._internalTypesRefCount++;
 
+        // Use a List because the groups may contain a new unified one if no covering group exists.
+        var groups = new List<BinPathTypeGroup>();
 
         // Reusable hasher.
         using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
 
         foreach( var (configurations, assemblyGroup, groupName) in rawGroups )
         {
-            var sourceName = $"BinTypePathGoup '{groupName}'";
-            var c = configurations.First();
-
-            // Clones the assembly configured types as there may be other BinPathTypeGroup that use it
-            // (don't currently try to opimize here as it would mutate the assemblyGroup.Types that should not be mutable
-            // since it is publicy exposed... or make it internal).
-            var types = new HashSet<ICachedType>( assemblyGroup.Types );
-
             // Instead of computing the signature on the final set of types that would require to sort it by type name,
             // we based the start of our signature on the Excluded and Types configurations and rely on the Assembly.BinPathGroup
             // signature for the rest.
             hasher.AppendData( assemblyGroup.Signature.GetBytes().Span );
 
-            // Applying Types and ExcludedTypes configurations to the types provided by the assemblies.
-            Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( c.ExcludedTypes.Contains ) is false ); 
-
-            // Must unfortunately order the sets.
-            var excludedByConfiguration = c.ExcludedTypes.Select( assemblyResult.TypeCache.Find )
-                                                         .Where( cT => cT != null )
-                                                         .OrderBy( cT => cT!.CSharpName );
-            foreach( var cT in excludedByConfiguration )
+            // On error (InternalTypes is null), provide an empty set to the Result.
+            HashSet<ICachedType> types;
+            if( assemblyGroup.InternalTypes == null )
             {
-                Throw.DebugAssert( cT != null );
-                var error = cT.Kind.GetUnhandledMessage();
-                if( error != null )
+                Throw.DebugAssert( success is false );
+                types = new HashSet<ICachedType>();
+            }
+            else
+            {
+                types = assemblyGroup._internalTypesRefCount == 1
+                            ? assemblyGroup.InternalTypes
+                            : new HashSet<ICachedType>( assemblyGroup.InternalTypes );
+
+                var c = configurations.First();
+                // Applying Types and ExcludedTypes configurations to the types provided by the assemblies.
+                Throw.DebugAssert( "Configuration normalization did the job.", c.Types.Any( c.ExcludedTypes.Contains ) is false );
+                // We must unfortunately order the sets for the signature updates.
+                var excludedByConfiguration = c.ExcludedTypes.Select( assemblyResult.TypeCache.Find )
+                                                             .Where( cT => cT != null )
+                                                             .OrderBy( cT => cT!.CSharpName );
+                foreach( var cT in excludedByConfiguration )
                 {
-                    monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {error}." );
-                }
-                else
-                {
-                    if( types.Remove( cT ) )
+                    Throw.DebugAssert( cT != null );
+                    var error = cT.Kind.GetUnhandledMessage();
+                    if( error != null )
                     {
-                        // For the hash, consider the type if it has changed the set.
+                        monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {error}." );
+                    }
+                    else
+                    {
+                        if( types.Remove( cT ) )
+                        {
+                            // For the hash, consider the type if it has changed the set.
+                            hasher.Append( cT.CSharpName );
+                        }
+                    }
+                }
+
+                var includedByConfiguration = c.Types.Select( assemblyResult.TypeCache.Get )
+                                                     .OrderBy( cT => cT.CSharpName );
+                foreach( var cT in includedByConfiguration )
+                {
+                    var error = cT.Kind.GetUnhandledMessage();
+                    if( error != null )
+                    {
+                        monitor.Error( $"Invalid Type in configuration for: '{cT.CSharpName}' {error}." );
+                        success = false;
+                    }
+                    else if( (cT.Kind & TypeKind.IsIntrinsicExcluded) != 0 )
+                    {
+                        monitor.Warn( $"Configured Type '{cT.CSharpName}' is [ExcludeCKType]. Ignoring it." );
+                    }
+                    else if( types.Add( cT ) )
+                    {
                         hasher.Append( cT.CSharpName );
                     }
                 }
-            }
-            var includedByConfiguration = c.Types.Select( assemblyResult.TypeCache.Get )
-                                                 .OrderBy( cT => cT.CSharpName );
 
-            foreach( var cT in includedByConfiguration )
-            {
-                var error = cT.Kind.GetUnhandledMessage();
-                if( error != null )
-                {
-                    monitor.Error( $"Invalid Type in configuration for: '{cT.CSharpName}' {error}." );
-                    success = false;
-                }
-                else
-                {
-                    if( types.Add( cT ) )
-                    {
-                        hasher.Append( cT.CSharpName );
-                    }
-                }
+                // We don't expand the intrinsic [RegisterCKType(...)] types now:
+                // this is up to the actual type registration to handle this: this enables new types
+                // to be registered if needed by AspectEngine.RunPreCode and allows the final type
+                // objects to be registered in one pass.
+                Throw.DebugAssert( "Types from assemblies and from configuration have been already filtered.", !types.Any( t => (t.Kind & TypeKind.IsIntrinsicExcluded) != 0 ) );
             }
+
             var g = new BinPathTypeGroup( configurations,
                                           groupName,
                                           assemblyGroup,
@@ -217,7 +236,7 @@ public sealed partial class BinPathTypeGroup
         if( assemblyResult.Success )
         {
             HandleUnifiedBinPath( monitor, groups );
-            // ...but why not waiting the unification and accounting the existenc of the UnifiedPure
+            // ...but why not waiting the unification and accounting the existence of the UnifiedPure
             // or the reordering of the groups (with the most covering one at the start)?
             foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
         }

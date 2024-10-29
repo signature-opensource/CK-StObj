@@ -258,9 +258,9 @@ public class TypeSystemTests
     public async Task AbstractPocoField_test_Async( Type impl, string[] names )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IAbstractPoco ),
-                                        typeof( IWithList ),
-                                        impl );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IAbstractPoco ),
+                                                        typeof( IWithList ),
+                                                        impl );
         var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 

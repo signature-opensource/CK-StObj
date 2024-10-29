@@ -105,7 +105,7 @@ public class OnHostStartStopTests
     public async Task HostedServiceLifetimeTrigger_at_work_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( OnHostStartStopTests ).GetNestedTypes() );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( OnHostStartStopTests ).GetNestedTypes() );
         using var auto = (await configuration.RunAsync().ConfigureAwait(false)).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped( sp => TestHelper.Monitor );

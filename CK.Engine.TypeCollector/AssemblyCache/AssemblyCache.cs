@@ -71,6 +71,7 @@ public sealed partial class AssemblyCache
         // We can now compute the CachedAssembly.Types and safely uses ICachedType from it.
         var typeCache = new GlobalTypeCache( assemblyCache );
         // The first thing is to handle the ExternalTypes configuration.
+        // Its hash is distributed to each group.
         success &= typeCache.ApplyExternalTypesKind( monitor, configuration, out var hashExternalTypes );
 
         using( monitor.OpenInfo( $"Collecting types for {collector.Count} BinPathGroup." ) )
@@ -85,9 +86,9 @@ public sealed partial class AssemblyCache
         sb.Append( assemblyCache._binPaths.Count ).AppendLine( " assembly configurations:" );
         foreach( var b in assemblyCache._binPaths.Values )
         {
-            if( b.Success )
+            if( b.InternalTypes != null )
             {
-                sb.AppendLine( $"- {b.Types.Count} types for group '{b.GroupName}'." );
+                sb.AppendLine( $"- {b.InternalTypes.Count} types for group '{b.GroupName}'." );
                 sb.AppendLine( $"  From head PFeatures: '{b.HeadAssemblies.Select( p => p.Name ).Concatenate( "', '" )}'." );
             }
             else

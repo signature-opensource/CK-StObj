@@ -9,7 +9,7 @@ namespace CK.Engine.TypeCollector;
 /// <see cref="ExternalServiceKind"/> in <see cref="ConfiguredTypes"/> is settled and final kind
 /// detection can now be executed based on configuration.
 /// <para>
-/// The initial set is the <see cref="AssemblyCache.BinPathGroup.Types"/> (computed from
+/// The initial set is the <see cref="AssemblyCache.BinPathGroup.InternalTypes"/> (computed from
 /// the <see cref="AssemblyCache.BinPathGroup.HeadAssemblies"/>).
 /// </para>
 /// <para>

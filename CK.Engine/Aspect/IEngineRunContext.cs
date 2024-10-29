@@ -1,4 +1,4 @@
-﻿
+
 using CK.Core;
 using System.Collections.Generic;
 using System;
@@ -6,7 +6,8 @@ using System;
 namespace CK.Setup;
 
 /// <summary>
-/// Context that is given to <see cref="EngineAspect.RunPreCode"/> method.
+/// Context that is given to <see cref="EngineAspect.RunPreCode"/>, <see cref="EngineAspect.RunPostCode"/>
+/// and <see cref="EngineAspect.Terminate"/> methods.
 /// </summary>
 public interface IEngineRunContext
 {
@@ -38,9 +39,9 @@ public interface IEngineRunContext
 
     /// <summary>
     /// Pushes a deferred action.
-    /// It will be executed after the Run call on all aspects.
+    /// It will be executed after this RunPreCode, RunPostCode or Terminate call on all aspects.
     /// An action can be pushed at any moment and a pushed action can push another action.
     /// </summary>
     /// <param name="postAction">Action to execute.</param>
-    void PushDeferredAction( Func<IActivityMonitor, IStObjEngineRunContext, bool> postAction );
+    void PushDeferredAction( Func<IActivityMonitor, bool> postAction );
 }

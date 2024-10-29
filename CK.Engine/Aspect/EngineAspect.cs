@@ -1,5 +1,5 @@
-
 using CK.Core;
+using System.Threading;
 
 namespace CK.Setup;
 
@@ -19,11 +19,19 @@ public abstract class EngineAspect
 
     /// <summary>
     /// Gets the engine configuration.
+    /// <para>
+    /// This is mutable but should only be altered (if needed) by <see cref="Initialize"/>. Modifying this configuration
+    /// after the initialization is not supported and can have really bad effects.
+    /// </para>
     /// </summary>
     public EngineConfiguration EngineConfiguration => _aspectConfiguration.Owner!;
 
     /// <summary>
     /// Gets this aspect configuration.
+    /// <para>
+    /// This is mutable but should only be altered (if needed) by <see cref="Initialize"/>. Modifying this configuration
+    /// after the initialization is not supported and can have really bad effects.
+    /// </para>
     /// </summary>
     public EngineAspectConfiguration AspectConfiguration => _aspectConfiguration;
 
@@ -61,7 +69,7 @@ public abstract class EngineAspect
     /// </para>
     /// </summary>
     /// <param name="monitor">Monitor to use.</param>
-    /// <param name="context">Run context.</param>
+    /// <param name="context">The engine run context.</param>
     /// <returns>
     /// Must return true on success, false if any error occurred (errors must be logged).
     /// </returns>
@@ -71,33 +79,36 @@ public abstract class EngineAspect
     }
 
     /// <summary>
-    /// Runs the aspect once the Code generation has been successfully done.
-    /// When this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
-    /// up to the implementation to decide to skip its own process in this case.
+    /// Runs the aspect once the code generation has been successfully done.
+    /// <para>
+    /// This default implementation does nothing and always returns true.
+    /// </para>
     /// </summary>
     /// <param name="monitor">Monitor to use.</param>
-    /// <param name="context">Run context.</param>
+    /// <param name="context">The engine run context.</param>
     /// <returns>
     /// Must return true on success, false if any error occurred (errors must be logged).
-    /// Returning false does not stop the engine: <see cref="IStObjEngineStatus.Success"/> is set to false
-    /// and following aspects are run, the final assembly is not generated and <see cref="Terminate"/> is
-    /// called on all the aspects in reverse order.
     /// </returns>
-    public virtual bool RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context )
+    public virtual bool RunPostCode( IActivityMonitor monitor, IEngineRunContext context )
     {
         return true;
     }
 
     /// <summary>
-    /// Called by the engine in reverse order after all aspects have <see cref="RunPreCode"/>.
+    /// Called by the engine in reverse order of the initialization.
+    /// <para>
+    /// This default implementation does nothing and always returns true.
+    /// </para>
     /// </summary>
     /// <param name="monitor">Monitor to use.</param>
     /// <param name="context">Terminate context.</param>
     /// <returns>
     /// Must return true on success, false if any error occurred (errors must be logged).
-    /// Returning false sets <see cref="IStObjEngineStatus.Success"/> to false but preceding
-    /// aspects are terminated.
+    /// Returning false doesn't prevent other aspect to be terminated.
     /// </returns>
-    bool Terminate( IActivityMonitor monitor, IStObjEngineTerminateContext context );
+    public virtual bool Terminate( IActivityMonitor monitor, IEngineRunContext context )
+    {
+        return true;
+    }
 
 }

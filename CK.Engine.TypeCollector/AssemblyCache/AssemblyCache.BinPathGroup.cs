@@ -32,8 +32,7 @@ public sealed partial class AssemblyCache // BinPathGroup
         SHA1Value _signature;
         DateTime _maxFileTime;
         string _groupName;
-        // Initially set to ImmutableHashSet<ICachedType>.Empty, replaced on success.
-        IReadOnlySet<ICachedType> _result;
+        HashSet<ICachedType>? _result;
         // Null when unknwon, true when ExplicitAdd is used, false for AddBinPath.
         bool? _explicitMode;
         // Success is set to false at the first error.
@@ -48,7 +47,6 @@ public sealed partial class AssemblyCache // BinPathGroup
             _heads = new SortedDictionary<CachedAssembly, bool>();
             _maxFileTime = Util.UtcMinValue;
             _isAppContextFolder = configuration.Path == _assemblyCache.AppContextBaseDirectory;
-            _result = ImmutableHashSet<ICachedType>.Empty;
             _systemSkipped = new List<CachedAssembly>();
             _success = true;
         }
@@ -97,12 +95,15 @@ public sealed partial class AssemblyCache // BinPathGroup
         public AssemblyCache AssemblyCache => _assemblyCache;
 
         /// <summary>
-        /// Gets the final types to register from this BinPath.
+        /// Gets the final types to register from this BinPath or null if <see cref="Success"/> is false.
         /// <para>
-        /// When <see cref="Success"/> is false, this is empty.
+        /// This is NOT exposed to allow an optimization: when a single <see cref="BinPathTypeGroup"/> is bound to
+        /// this assembly bin path group, it reuses this set to apply its Types and ExcludedTypes instead of
+        /// cloning it.
         /// </para>
         /// </summary>
-        public IReadOnlySet<ICachedType> Types => _result;
+        internal HashSet<ICachedType>? InternalTypes => _result;
+        internal int _internalTypesRefCount;
 
         /// <summary>
         /// Gets the greatest last write time of the files involved in this group.
@@ -392,7 +393,7 @@ public sealed partial class AssemblyCache // BinPathGroup
             if( !cached._kind.IsPFeature() )
             {
                 // ExcludeCKTypeAttribute on Type is in CK.Core namespace, ExcludeCKTypeAttribute on Asssembly is in CK.Setup namespace.
-                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( RegisterCKTypeAttribute ) || a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) ) )
+                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( CK.Setup.RegisterCKTypeAttribute ) || a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) ) )
                 {
                     monitor.Warn( $"""
                               Assembly '{cached.Name}' is '{cached.Kind}' and defines [RegisterCKType] or [ExcludeCKType] attributes, they are ignored.

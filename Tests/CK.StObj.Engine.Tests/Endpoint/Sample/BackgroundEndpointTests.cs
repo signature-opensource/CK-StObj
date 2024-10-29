@@ -25,14 +25,14 @@ public partial class BackgroundEndpointTests
     public async Task Background_execution_Async( string mode )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( DefaultCommandProcessor ),
-                                        typeof( BackgroundDIContainerDefinition ),
-                                        typeof( BackgroundExecutorService ),
-                                        typeof( SampleCommandMemory ),
-                                        typeof( TenantResolutionService ),
-                                        typeof( FakeTenantInfo ),
-                                        typeof( DefaultTenantProvider ),
-                                        typeof( TransactionalCallContextLike ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( DefaultCommandProcessor ),
+                                                        typeof( BackgroundDIContainerDefinition ),
+                                                        typeof( BackgroundExecutorService ),
+                                                        typeof( SampleCommandMemory ),
+                                                        typeof( TenantResolutionService ),
+                                                        typeof( FakeTenantInfo ),
+                                                        typeof( DefaultTenantProvider ),
+                                                        typeof( TransactionalCallContextLike ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
@@ -99,10 +99,10 @@ public partial class BackgroundEndpointTests
     public async Task IOptions_in_the_background_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SampleCommandProcessorWithOptions ),
-                                              typeof( SampleCommandMemory ),
-                                              typeof( BackgroundDIContainerDefinition ),
-                                              typeof( BackgroundExecutorService ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SampleCommandProcessorWithOptions ),
+                                                        typeof( SampleCommandMemory ),
+                                                        typeof( BackgroundDIContainerDefinition ),
+                                                        typeof( BackgroundExecutorService ) );
         await using var app = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateServicedApplication( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Front monitor" ) );
@@ -130,10 +130,10 @@ public partial class BackgroundEndpointTests
     public async Task IOptionsSnapshot_in_the_background_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SampleCommandProcessorWithOptionsSnapshot ),
-                                        typeof( SampleCommandMemory ),
-                                        typeof( BackgroundDIContainerDefinition ),
-                                        typeof( BackgroundExecutorService ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SampleCommandProcessorWithOptionsSnapshot ),
+                                                        typeof( SampleCommandMemory ),
+                                                        typeof( BackgroundDIContainerDefinition ),
+                                                        typeof( BackgroundExecutorService ) );
 
         ConfigurationManager config = new ConfigurationManager();
         config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );
@@ -177,10 +177,10 @@ public partial class BackgroundEndpointTests
     public async Task IOptionsMonitor_in_the_background_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SampleCommandProcessorWithOptionsMonitor ),
-                                        typeof( SampleCommandMemory ),
-                                        typeof( BackgroundDIContainerDefinition ),
-                                        typeof( BackgroundExecutorService ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SampleCommandProcessorWithOptionsMonitor ),
+                                                        typeof( SampleCommandMemory ),
+                                                        typeof( BackgroundDIContainerDefinition ),
+                                                        typeof( BackgroundExecutorService ) );
 
         ConfigurationManager config = new ConfigurationManager();
         config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "3712" } } );

@@ -228,6 +228,10 @@ public sealed partial class GlobalTypeCache
                 {
                     return $"is a {k}. IAutoService, IRealObject and IPoco cannot be externally configured";
                 }
+                if( (kind & TypeKind.IsIntrinsicExcluded) != 0 )
+                {
+                    return $"is [ExcludeCKType].";
+                }
             }
             return msg;
         }

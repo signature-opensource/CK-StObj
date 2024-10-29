@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace CK.Setup;
 
-public sealed partial class EngineConfiguration
+public sealed partial class EngineConfiguration // Xml
 {
     /// <summary>
     /// Initializes a new <see cref="EngineConfiguration"/> from a <see cref="XElement"/>.

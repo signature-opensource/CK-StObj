@@ -257,7 +257,7 @@ public class PocoGenericTests
         // With IS6ExcludeIS5Command and IS5Command bu no command that return a int, IS5Command is fine.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
             var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
@@ -269,7 +269,7 @@ public class PocoGenericTests
         // With IS6ExcludeIS5Command, IS5Command and a command that return a int, the return cannot be resolved.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
             var engineResult = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 

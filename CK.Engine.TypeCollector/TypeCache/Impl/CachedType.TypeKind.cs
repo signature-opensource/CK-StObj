@@ -63,7 +63,7 @@ partial class CachedType
                     {
                         // This attributes stops all subsequent analysis (it's the only one).
                         // A [StObjGen] is necessarily None.
-                        k = TypeKind.IsExcludedType;
+                        k = TypeKind.IsIntrinsicExcluded;
                         ActivityMonitor.StaticLogger.Trace( $"Type '{_csharpName}' is [StObjGen]. It is ignored." );
                         break;
                     }
@@ -98,7 +98,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                             break;
                     }
                 }
-                Throw.DebugAssert( k == TypeKind.None || k == TypeKind.IsExcludedType );
+                Throw.DebugAssert( k == TypeKind.None || k == TypeKind.IsIntrinsicExcluded );
                 if( k == TypeKind.None )
                 {
                     // First, handle intrinsic incoherencies.
@@ -123,7 +123,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                     // It's time to apply the bases.
                     foreach( var i in DeclaredBaseTypes )
                     {
-                        var kI = i.Kind & ~(TypeKind.IsDefiner | TypeKind.IsMultipleService | TypeKind.IsExcludedType);
+                        var kI = i.Kind & ~(TypeKind.IsDefiner | TypeKind.IsMultipleService | TypeKind.IsIntrinsicExcluded);
                         if( (kI & TypeKind.IsSuperDefiner) != 0 ) // This base is a SuperDefiner.
                         {
                             kI |= TypeKind.IsDefiner;
@@ -190,7 +190,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                         k |= TypeKind.IsMultipleService;
                     }
 
-                    if( isExcludedType ) k |= TypeKind.IsExcludedType;
+                    if( isExcludedType ) k |= TypeKind.IsIntrinsicExcluded;
                     if( hasSuperDefiner ) k |= TypeKind.IsSuperDefiner;
                     if( hasDefiner ) k |= TypeKind.IsDefiner;
                     if( hasContainerConfiguredSingleton ) k |= TypeKind.IsContainerConfiguredService | TypeKind.IsSingleton;
@@ -221,11 +221,13 @@ case "ContainerConfiguredSingletonServiceAttribute":
                             ThrowTypeError( $"IRealObject interface cannot be a IAutoService." );
                         }
                         bool isAmbientService = (k & TypeKind.IsAmbientService) != 0;
-                        if( isAmbientService
-                            && k != TypeKindExtension.AmbientServiceFlags
-                            && k != (TypeKindExtension.AmbientServiceFlags | TypeKind.IsAutoService) )
+                        if( isAmbientService )
                         {
-                            ThrowTypeError( "an ambient service can only be Scoped and configured by container." );
+                            var kAllowed = k.WithoutIntrinsicRegister() & ~TypeKind.IsAutoService;
+                            if( k != kAllowed )
+                            {
+                                ThrowTypeError( "an ambient service can only be Scoped and configured by container." );
+                            }
                         }
                     }
                 }

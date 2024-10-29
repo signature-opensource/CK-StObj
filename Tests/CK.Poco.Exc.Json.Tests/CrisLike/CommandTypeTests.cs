@@ -61,14 +61,14 @@ public class CommandTypeTests
     public async Task commands_serialization_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
-                                        typeof( ISimpleCommand ),
-                                        typeof( IPersonCommand ),
-                                        typeof( IAccountCommand ),
-                                        typeof( IHaveListOfCommandObject ),
-                                        typeof( IBatchCommand ),
-                                        typeof( ICrisResult ),
-                                        typeof( ICrisResultError ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ),
+                                                        typeof( ISimpleCommand ),
+                                                        typeof( IPersonCommand ),
+                                                        typeof( IAccountCommand ),
+                                                        typeof( IHaveListOfCommandObject ),
+                                                        typeof( IBatchCommand ),
+                                                        typeof( ICrisResult ),
+                                                        typeof( ICrisResultError ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -158,13 +158,13 @@ public class CommandTypeTests
     public async Task serialization_with_abstract_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
-                                        typeof( ISimpleCommand ),
-                                        typeof( ICommandHolder ),
-                                        typeof( IHaveListOfCommandObject ),
-                                        typeof( IBatchCommand ),
-                                        typeof( ICrisResult ),
-                                        typeof( ICrisResultError ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ),
+                                                        typeof( ISimpleCommand ),
+                                                        typeof( ICommandHolder ),
+                                                        typeof( IHaveListOfCommandObject ),
+                                                        typeof( IBatchCommand ),
+                                                        typeof( ICrisResult ),
+                                                        typeof( ICrisResultError ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

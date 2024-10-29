@@ -61,9 +61,9 @@ public class MultiListImplementationTests : CommonTypes
     public async Task IList_implementation_supports_all_the_required_types_Async( Type type )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
-                                        typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
-                                        type );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+                                                        typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
+                                                        type );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -120,10 +120,10 @@ public class MultiListImplementationTests : CommonTypes
     public async Task IList_implementation_of_Abstract_is_natively_covariant_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
-                                        typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
-                                        typeof( IPocoWithListOfAbstractBase ), typeof( IPocoWithListOfAbstract1 ),
-                                        typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithListOfClosed ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+                                                        typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
+                                                        typeof( IPocoWithListOfAbstractBase ), typeof( IPocoWithListOfAbstract1 ),
+                                                        typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithListOfClosed ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();

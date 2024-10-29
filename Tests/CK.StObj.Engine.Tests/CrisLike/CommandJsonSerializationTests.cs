@@ -55,14 +55,14 @@ public class CommandJsonSerializationTests
     public async Task command_json_roundtrip_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
-                                        typeof( CrisCommandDirectoryLike ),
-                                        typeof( ISimpleCommand ),
-                                        typeof( IAuthCommand ),
-                                        typeof( ICriticalCommand ),
-                                        typeof( IDeviceCommand ),
-                                        typeof( IFullAuthCommand ),
-                                        typeof( IFullAuthCommandWithResult ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ),
+                                                        typeof( CrisCommandDirectoryLike ),
+                                                        typeof( ISimpleCommand ),
+                                                        typeof( IAuthCommand ),
+                                                        typeof( ICriticalCommand ),
+                                                        typeof( IDeviceCommand ),
+                                                        typeof( IFullAuthCommand ),
+                                                        typeof( IFullAuthCommandWithResult ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var services = auto.Services;

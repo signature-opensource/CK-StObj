@@ -11,7 +11,7 @@ using System.Text;
 
 namespace CK.Setup;
 
-public sealed partial class EngineConfiguration
+public sealed partial class EngineConfiguration // Normalize
 {
     /// <summary>
     /// Idempotent normalization of this configuration:
@@ -86,8 +86,13 @@ public sealed partial class EngineConfiguration
     ///     </item>
     /// </list>
     /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="traceNormalizedConfiguration">
+    /// False to skip emitting the normalized configuration as a trace (the initial
+    /// configuration is always traced in a Info group).
+    /// </param>
     /// <returns>True on success, false is something's wrong in the configuration.</returns>
-    public bool NormalizeConfiguration( IActivityMonitor monitor )
+    public bool NormalizeConfiguration( IActivityMonitor monitor, bool traceNormalizedConfiguration = true )
     {
         using( monitor.OpenInfo( $"Normalizing engine configuration:{Environment.NewLine}{ToXml()}" ) )
         {
@@ -96,7 +101,10 @@ public sealed partial class EngineConfiguration
                 monitor.CloseGroup( "Failed." );
                 return false;
             }
-            monitor.Trace( $"Normalized to:{Environment.NewLine}{ToXml()}" );
+            if( traceNormalizedConfiguration )
+            {
+                monitor.Trace( $"Normalized to:{Environment.NewLine}{ToXml()}" );
+            }
         }
 #if DEBUG
         // Check idempotence and Xml serialization.

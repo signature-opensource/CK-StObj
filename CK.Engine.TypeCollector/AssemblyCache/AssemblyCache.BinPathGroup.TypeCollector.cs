@@ -66,14 +66,15 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 // These are the only kind of types that we need to start a CKomposable setup.
                 c.AddRange( assembly.Assembly.GetExportedTypes()
                                              .Where( t => (t.IsClass || t.IsInterface || t.IsValueType || t.IsEnum) && !t.IsGenericTypeDefinition )
-                                             .Select( typeCache.Get ) );
+                                             .Select( typeCache.Get )
+                                             .Where( cT => (cT.Kind & TypeKind.IsIntrinsicExcluded) == 0 ) );
                 // Don't merge the 2 loops here!
                 // We must first handle the Add and then the Remove.
                 // 1 - Add types.
                 List<ICachedType>? changed = null;
                 foreach( var a in assembly.CustomAttributes )
                 {
-                    if( a.AttributeType == typeof( RegisterCKTypeAttribute ) )
+                    if( a.AttributeType == typeof( CK.Setup.RegisterCKTypeAttribute ) )
                     {
                         var ctorArgs = a.ConstructorArguments;
                         // Constructor (Type, Type[] others):
@@ -141,7 +142,9 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                         return false;
                     }
                     var cT = typeCache.Get( t );
-                    if( add ? c.Add( cT ) : c.Remove( cT ) )
+                    if( add
+                         ? (cT.Kind & TypeKind.IsIntrinsicExcluded) == 0 && c.Add( cT )
+                         : c.Remove( cT ) )
                     {
                         changed ??= new List<ICachedType>();
                         changed.Add( cT );

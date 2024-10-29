@@ -66,11 +66,11 @@ public class ClosedPocoTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         if( mode == "AllBaseUserAndDocumentCloPocs" )
         {
-            configuration.FirstBinPath.Types.Add( BaseUserAndDocumentCloPocs );
+            configuration.FirstBinPath.Types.AddRangeArray( BaseUserAndDocumentCloPocs );
         }
         else
         {
-            configuration.FirstBinPath.Types.Add( typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) );
         }
         var engineResult = await configuration.RunAsync();
 
@@ -141,8 +141,8 @@ public class ClosedPocoTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         if( mode == "All commands" )
         {
-            configuration.FirstBinPath.Types.Add( BaseUserAndDocumentCloPocs );
-            configuration.FirstBinPath.Types.Add( typeof( IOther1UserCloPoc ), typeof( IOther2UserCloPoc ), typeof( IUserFinalCloPoc ) );
+            configuration.FirstBinPath.Types.AddRangeArray( BaseUserAndDocumentCloPocs );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IOther1UserCloPoc ), typeof( IOther2UserCloPoc ), typeof( IUserFinalCloPoc ) );
         }
         else
         {
@@ -207,7 +207,7 @@ public class ClosedPocoTests
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var f = auto.Services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();

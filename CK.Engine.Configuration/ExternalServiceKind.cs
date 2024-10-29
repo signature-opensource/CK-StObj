@@ -24,7 +24,7 @@ public enum ExternalServiceKind
     ///     <item><term>Rejects</term><description><see cref="IsSingleton"/></description></item>
     /// </list>
     /// </summary>
-    IsScoped = 1 << 7,
+    IsScoped = 1 << 1,
 
     /// <summary>
     /// The service is known to be a singleton service: all Unit of Works (including concurrent ones) will use the exact same instance.
@@ -32,7 +32,7 @@ public enum ExternalServiceKind
     ///     <item><term>Rejects</term><description><see cref="IsScoped"/></description></item>
     /// </list>
     /// </summary>
-    IsSingleton = 1 << 8,
+    IsSingleton = 1 << 2,
 
     /// <summary>
     /// The type is a DI service available in some containers but not necessarily in all of them.
@@ -41,7 +41,7 @@ public enum ExternalServiceKind
     /// in its ConfigureContainerServices method.
     /// </para>
     /// </summary>
-    IsContainerConfiguredService = 1 << 11,
+    IsContainerConfiguredService = 1 << 3,
 
     /// <summary>
     /// The type is a DI scoped service necessarily available in all contexts that automatically flows from endpoints
@@ -50,11 +50,11 @@ public enum ExternalServiceKind
     ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsContainerConfiguredService"/></description></item>
     /// </list>
     /// </summary>
-    IsAmbientService = 1 << 14,
+    IsAmbientService = 1 << 4,
 
     /// <summary>
-    /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
+    /// Multiple registration flag. Applies only interfaces and abstract classes. See <see cref="IsMultipleAttribute"/>. 
     /// </summary>
-    IsMultipleService = 1 << 15,
+    IsMultipleService = 1 << 5,
 
 }

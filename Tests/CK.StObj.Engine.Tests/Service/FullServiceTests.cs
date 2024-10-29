@@ -295,7 +295,7 @@ public class FullServiceTests
     public async Task code_generation_is_so_easy_on_real_objects_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( A ), typeof( B ) );
 
         var startupServices = new SimpleServiceContainer();
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -349,7 +349,7 @@ public class FullServiceTests
     public async Task Service_implemented_by_a_real_object_can_be_overridden_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
         var startupServices = new SimpleServiceContainer();
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -377,7 +377,7 @@ public class FullServiceTests
     public async Task Initially_registered_StartupServices_may_be_used_as_configurator_or_options_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
         var startupServices = new SimpleServiceContainer();
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
@@ -401,7 +401,7 @@ public class FullServiceTests
     public async Task superseding_a_IRealObject_implemented_service_by_a_wrapper_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
 
         var startupServices = new SimpleServiceContainer();
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -423,7 +423,7 @@ public class FullServiceTests
     public async Task superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( BDependency ), typeof( A ), typeof( B ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( BDependency ), typeof( A ), typeof( B ) );
 
         var startupServices = new SimpleServiceContainer();
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -444,7 +444,7 @@ public class FullServiceTests
     public async Task any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( A ), typeof( B ) );
 
         var startupServices = new SimpleServiceContainer();
         startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
