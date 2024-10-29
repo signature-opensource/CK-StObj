@@ -115,7 +115,7 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
         return true;
     }
 
-    private bool ErrorOnPrivateOrNonVoid( IActivityMonitor monitor, ICachedMethodInfo method, string name )
+    bool ErrorOnPrivateOrNonVoid( IActivityMonitor monitor, ICachedMethodInfo method, string name )
     {
         if( !method.IsPublic || method.MethodInfo.ReturnType != typeof( void ) )
         {
@@ -125,7 +125,7 @@ sealed class RealObjectCachedType : CachedType, IRealObjectCachedType
         return true;
     }
 
-    private static bool WarnOnStatic( IActivityMonitor monitor, ICachedMethodInfo method, string name )
+    static bool WarnOnStatic( IActivityMonitor monitor, ICachedMethodInfo method, string name )
     {
         if( !method.IsStatic )
         {

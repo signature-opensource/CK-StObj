@@ -12,7 +12,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
 {
     public sealed partial class BinPathGroup
     {
-        internal bool FinalizeAndCollectTypes( IActivityMonitor monitor, GlobalTypeCache typeCache )
+        internal bool FinalizeAndCollectTypes( IActivityMonitor monitor, GlobalTypeCache typeCache, byte[] hashExternalTypes )
         {
             // Builds the GroupName.
             if( _configurations.Count > 1 )
@@ -31,20 +31,21 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
             using var _ = monitor.OpenInfo( $"Collecting types for BinPathGroup '{_groupName}' from head PFeatures: '{_heads.Keys.Select( a => a.Name ).Concatenate( "', '" )}'." );
             using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
             hasher.Append( _path.Path );
+            hasher.AppendData( hashExternalTypes );
 
-            var c = new ConfiguredTypeSet();
+            var c = new HashSet<ICachedType>();
             bool success = true;
             foreach( var head in _heads.Keys )
             {
                 head.AddHash( hasher );
                 success &= CollectTypes( monitor, typeCache, head, out var headC );
-                c.Add( monitor, headC, head.ToString() );
+                c.UnionWith( headC );
             }
             _signature = new SHA1Value( hasher, resetHasher: false );
             if( success ) _result = c;
             return success;
 
-            static bool CollectTypes( IActivityMonitor monitor, GlobalTypeCache typeCache, CachedAssembly assembly, out ConfiguredTypeSet c )
+            static bool CollectTypes( IActivityMonitor monitor, GlobalTypeCache typeCache, CachedAssembly assembly, out HashSet<ICachedType> c )
             {
                 Throw.DebugAssert( assembly.IsInitialAssembly && !assembly.Kind.IsSkipped() );
                 if( assembly._types != null )
@@ -52,14 +53,14 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                     c = assembly._types;
                     return true;
                 }
-                c = new ConfiguredTypeSet();
+                c = new HashSet<ICachedType>();
                 var assemblySourceName = assembly.ToString();
                 using var _ = monitor.OpenInfo( assemblySourceName );
                 bool success = true;
                 foreach( var sub in assembly.PFeatures )
                 {
                     success &= CollectTypes( monitor, typeCache, sub, out var subC );
-                    c.Add( monitor, subC, assemblySourceName );
+                    c.UnionWith( subC );
                 }
                 // Consider the visible classes, interfaces, value types and enums excluding any generic type definitions.
                 // These are the only kind of types that we need to start a CKomposable setup.
@@ -81,21 +82,13 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                             // Filters out null thanks to "is".
                             if( ctorArgs[0].Value is Type t )
                             {
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, t, ExternalServiceKind.None );
+                                success &= HandleType( monitor, typeCache, c, ref changed, add: true, assemblySourceName, t );
                             }
                             // Maximal precautions: filters out any potential null.
                             foreach( var o in others )
                             {
                                 if( o == null ) continue;
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, o, ExternalServiceKind.None );
-                            }
-                        }
-                        else if( ctorArgs[1].Value is ExternalServiceKind kind )
-                        {
-                            // Filters out null thanks to "is".
-                            if( ctorArgs[0].Value is Type t )
-                            {
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: true, assemblySourceName, t, kind );
+                                success &= HandleType( monitor, typeCache, c, ref changed, add: true, assemblySourceName, o );
                             }
                         }
                     }
@@ -113,14 +106,14 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                         var ctorArgs = a.ConstructorArguments;
                         if( ctorArgs[0].Value is Type t )
                         {
-                            success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, t, ExternalServiceKind.None );
+                            success &= HandleType( monitor, typeCache, c, ref changed, add: false, assemblySourceName, t );
                         }
                         if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
                         {
                             foreach( var o in others )
                             {
                                 if( o == null ) continue;
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, o, ExternalServiceKind.None );
+                                success &= HandleType( monitor, typeCache, c, ref changed, add: false, assemblySourceName, o );
                             }
                         }
                     }
@@ -129,27 +122,26 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 {
                     monitor.Info( $"Assembly '{assembly.Name}' explicitly removed {changed.Count} types from registration: '{changed.Select( t => t.CSharpName ).Concatenate( "', '" )}'." );
                 }
-                monitor.CloseGroup( $"{c.AllTypes.Count} types." );
+                monitor.CloseGroup( $"{c.Count} types." );
                 assembly._types = c;
                 return success;
 
-                static bool HandleTypeConfiguration( IActivityMonitor monitor,
-                                                     GlobalTypeCache typeCache,
-                                                     ConfiguredTypeSet c,
-                                                     ref List<ICachedType>? changed,
-                                                     bool add,
-                                                     string sourceAssemblyName,
-                                                     Type t,
-                                                     ExternalServiceKind kind )
+                static bool HandleType( IActivityMonitor monitor,
+                                        GlobalTypeCache typeCache,
+                                        HashSet<ICachedType> c,
+                                        ref List<ICachedType>? changed,
+                                        bool add,
+                                        string sourceAssemblyName,
+                                        Type t )
                 {
-                    var cT = typeCache.Get( t );
-                    var error = GetConfiguredTypeErrorMessage( typeCache, cT, kind );
+                    var error = CachedType.ComputeUnhandledTypeKind( t, null ).GetUnhandledMessage();
                     if( error != null )
                     {
                         monitor.Error( $"Invalid [assembly:{(add ? "Register" : "Exclude")}CKTypeAttribute] in {sourceAssemblyName}: type '{t:N}' {error}." );
                         return false;
                     }
-                    if( add ? c.Add( monitor, sourceAssemblyName, cT, kind ) : c.Remove( cT ) )
+                    var cT = typeCache.Get( t );
+                    if( add ? c.Add( cT ) : c.Remove( cT ) )
                     {
                         changed ??= new List<ICachedType>();
                         changed.Add( cT );
@@ -161,8 +153,9 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
 
         internal static string? GetConfiguredTypeErrorMessage( GlobalTypeCache typeCache, ICachedType type, ExternalServiceKind kind )
         {
-            var msg = type.EngineUnhandledType.GetUnhandledMessage();
-            if( msg == null && kind != ExternalServiceKind.None )
+            Throw.DebugAssert( kind != ExternalServiceKind.None );
+            var msg = type.Kind.GetUnhandledMessage();
+            if( msg == null )
             {
                 string? k = null;
                 if( type.Interfaces.Contains( typeCache.IAutoService ) )

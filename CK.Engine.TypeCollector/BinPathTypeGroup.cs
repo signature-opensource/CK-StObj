@@ -14,7 +14,7 @@ public sealed partial class BinPathTypeGroup
 {
     readonly ImmutableArray<BinPathConfiguration> _configurations;
     readonly string _groupName;
-    readonly IConfiguredTypeSet _configuredTypes;
+    readonly IReadOnlySet<ICachedType> _types;
     // Regular groups have a BinPathGroup.
     readonly AssemblyCache.BinPathGroup? _assemblyGroup;
     // Unified has the AssemblyCache.
@@ -25,13 +25,13 @@ public sealed partial class BinPathTypeGroup
     BinPathTypeGroup( ImmutableArray<BinPathConfiguration> configurations,
                       string groupName,
                       AssemblyCache.BinPathGroup assemblyGroup,
-                      IConfiguredTypeSet configuredTypes,
+                      HashSet<ICachedType> types,
                       SHA1Value signature )
     {
         _configurations = configurations;
         _groupName = groupName;
         _assemblyGroup = assemblyGroup;
-        _configuredTypes = configuredTypes;
+        _types = types;
         _signature = signature;
     }
 
@@ -42,7 +42,7 @@ public sealed partial class BinPathTypeGroup
         _configurations = ImmutableArray<BinPathConfiguration>.Empty;
         _groupName = "(Unified)";
         _assemblyCache = assemblyCache;
-        _configuredTypes = new ImmutableConfiguredTypeSet( allTypes );
+        _types = allTypes;
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public sealed partial class BinPathTypeGroup
     /// <summary>
     /// Gets the types to consider in the group.
     /// </summary>
-    public IConfiguredTypeSet ConfiguredTypes => _configuredTypes;
+    public IReadOnlySet<ICachedType> Types => _types;
 
     /// <summary>
     /// Gets whether this group is the purely unified one.
@@ -154,9 +154,9 @@ public sealed partial class BinPathTypeGroup
             var c = configurations.First();
 
             // Clones the assembly configured types as there may be other BinPathTypeGroup that use it
-            // (don't currently try to opimize here as it would mutate the assemblyGroup.ConfiguredTypes that should not be mutable
+            // (don't currently try to opimize here as it would mutate the assemblyGroup.Types that should not be mutable
             // since it is publicy exposed... or make it internal).
-            var types = new ConfiguredTypeSet( assemblyGroup.ConfiguredTypes );
+            var types = new HashSet<ICachedType>( assemblyGroup.Types );
 
             // Instead of computing the signature on the final set of types that would require to sort it by type name,
             // we based the start of our signature on the Excluded and Types configurations and rely on the Assembly.BinPathGroup
@@ -173,34 +173,38 @@ public sealed partial class BinPathTypeGroup
             foreach( var cT in excludedByConfiguration )
             {
                 Throw.DebugAssert( cT != null );
-                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, cT, ExternalServiceKind.None );
-                if( msg != null )
+                var error = cT.Kind.GetUnhandledMessage();
+                if( error != null )
                 {
-                    monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {msg}." );
+                    monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {error}." );
                 }
                 else
                 {
-                    types.Remove( cT );
-                    // For the hash, always consider the configured type even if it is not used.
-                    hasher.Append( cT.CSharpName );
+                    if( types.Remove( cT ) )
+                    {
+                        // For the hash, consider the type if it has changed the set.
+                        hasher.Append( cT.CSharpName );
+                    }
                 }
             }
-            var includedByConfiguration = c.Types.Select( tc => (Type: assemblyResult.TypeCache.Get( tc.Type ), tc.Kind) )
-                                                 .OrderBy( cT => cT.Type.CSharpName );
+            var includedByConfiguration = c.Types.Select( assemblyResult.TypeCache.Get )
+                                                 .OrderBy( cT => cT.CSharpName );
 
-            foreach( var tc in includedByConfiguration )
+            foreach( var cT in includedByConfiguration )
             {
-                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, tc.Type, tc.Kind );
-                if( msg != null )
+                var error = cT.Kind.GetUnhandledMessage();
+                if( error != null )
                 {
-                    monitor.Error( $"Invalid Type in configuration for: '{tc.Type.CSharpName}' {msg}." );
+                    monitor.Error( $"Invalid Type in configuration for: '{cT.CSharpName}' {error}." );
                     success = false;
                 }
                 else
                 {
-                    types.Add( monitor, sourceName, tc.Type, tc.Kind );
+                    if( types.Add( cT ) )
+                    {
+                        hasher.Append( cT.CSharpName );
+                    }
                 }
-                hasher.Append( tc.Type.CSharpName ).Append( tc.Kind );
             }
             var g = new BinPathTypeGroup( configurations,
                                           groupName,
@@ -233,7 +237,7 @@ public sealed partial class BinPathTypeGroup
             // We have no choice here. We must compute the set of IRealObject and IPoco types only for each group
             // to be able to find the covering one (if it exists) and we cannot know if the covering one is needed
             // until we check that a unified group is required.
-            var uSets = result.Select( g => new HashSet<ICachedType>( g.ConfiguredTypes.AllTypes
+            var uSets = result.Select( g => new HashSet<ICachedType>( g.Types
                                                                         .Where( t => t is IPocoCachedType or IRealObjectCachedType ) ) )
                               .ToArray();
             // The covering one is necessarily the biggest one if a unification is not required.

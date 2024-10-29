@@ -11,7 +11,6 @@ namespace CK.Setup;
 ///     <item>The types to register must be public (<see cref="Type.IsVisible"/>) otherwise it is a setup error.</item>
 ///     <item>They can belong to any assembly (excluded or not).</item>
 /// </list>
-/// This attribute also enables an external service to be configured. See <see cref="ExternalServiceKind"/>.
 /// </summary>
 [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = true )]
 public sealed class RegisterCKTypeAttribute : Attribute
@@ -22,16 +21,6 @@ public sealed class RegisterCKTypeAttribute : Attribute
     /// <param name="type">The first type to expose.</param>
     /// <param name="otherTypes">Other types to expose.</param>
     public RegisterCKTypeAttribute( Type type, params Type[] otherTypes )
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new <see cref="RegisterCKTypeAttribute"/> that declares a <see cref="ExternalServiceKind"/>
-    /// for the type.
-    /// </summary>
-    /// <param name="type">The first type to expose.</param>
-    /// <param name="kind">The <see cref="ExternalServiceKind"/> of the type.</param>
-    public RegisterCKTypeAttribute( Type type, ExternalServiceKind kind )
     {
     }
 

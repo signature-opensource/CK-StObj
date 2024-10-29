@@ -1,11 +1,13 @@
 using System;
+using CK.Core;
 
 namespace CK.Setup;
 
 /// <summary>
-/// Subset of the Automatic DI types categorization that can be applied to external classes or interfaces.
+/// Subset of the Automatic DI types categorization that can be applied to external classes or interfaces
+/// that cannot be <see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>.
 /// <para>
-/// This applies only to Automatic Services. Real Objects and Poco can only be defined by code.
+/// This applies only to services. Real Objects and Poco can only be defined by code.
 /// </para>
 /// </summary>
 [Flags]

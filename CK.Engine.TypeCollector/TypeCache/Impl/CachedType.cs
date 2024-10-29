@@ -1,9 +1,12 @@
 using CK.Core;
+using CK.Setup;
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.AccessControl;
 using System.Text;
 
 namespace CK.Engine.TypeCollector;
@@ -15,7 +18,9 @@ partial class CachedType : CachedItem, ICachedType
     readonly CachedAssembly _assembly;
     readonly ImmutableArray<ICachedType> _interfaces;
     readonly ICachedType? _baseType;
-    [AllowNull]readonly ICachedType _nullable;
+    readonly bool _isGenericType;
+    readonly bool _isGenericTypeDefinition;
+    [AllowNull] readonly ICachedType _nullable;
 
     ICachedType? _genericTypeDefinition;
     string? _csharpName;
@@ -23,12 +28,11 @@ partial class CachedType : CachedItem, ICachedType
     ICachedType? _elementType;
     ImmutableArray<ICachedMember> _declaredMembers;
     ImmutableArray<ICachedType> _genericArguments;
+    ImmutableArray<ICachedType> _declaredBaseTypes;
 
-    const EngineUnhandledType _uninitialized = (EngineUnhandledType)0xFF;
-    EngineUnhandledType _unhandledType;
+    const TypeKind _uKind = (TypeKind)(-1);
+    TypeKind _kind;
 
-    readonly bool _isGenericType;
-    readonly bool _isGenericTypeDefinition;
 
     sealed class NullReferenceType : ICachedType
     {
@@ -74,11 +78,13 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 
+        public ImmutableArray<ICachedType> DeclaredBaseTypes => _nonNullable.DeclaredBaseTypes;
+
         public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
         public ICachedType? ElementType => _nonNullable.ElementType;
 
-        public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
+        public TypeKind Kind => _nonNullable.Kind;
 
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
@@ -132,11 +138,13 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 
+        public ImmutableArray<ICachedType> DeclaredBaseTypes => _nonNullable.DeclaredBaseTypes;
+
         public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
         public ICachedType? ElementType => _nonNullable.ElementType;
 
-        public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
+        public TypeKind Kind => _nonNullable.Kind;
 
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
@@ -213,25 +221,18 @@ partial class CachedType : CachedItem, ICachedType
         }
     }
 
-    public EngineUnhandledType EngineUnhandledType
+    internal void SetKind( TypeKind kind ) => _kind = kind;
+
+    public TypeKind Kind
     {
         get
         {
-            if( _unhandledType == _uninitialized )
+            if( _kind == _uKind )
             {
-                _unhandledType = ComputeUnhandledType( Type, _assembly.Assembly );
+                _kind = ComputeTypeKind( Type );
             }
-            return _unhandledType;
+            return _kind;
         }
-    }
-
-    internal static EngineUnhandledType ComputeUnhandledType( Type Type, Assembly? assembly )
-    {
-        if( Type.FullName == null ) return EngineUnhandledType.NullFullName;
-        if( (assembly ?? Type.Assembly).IsDynamic ) return EngineUnhandledType.FromDynamicAssembly;
-        if( !Type.IsVisible ) return EngineUnhandledType.NotVisible;
-        if( !Type.IsValueType || !Type.IsClass || !Type.IsInterface || !Type.IsEnum ) return EngineUnhandledType.NotClassEnumValueTypeOrEnum;
-        return EngineUnhandledType.None;
     }
 
     public ICachedType? GenericTypeDefinition => _genericTypeDefinition ??= _isGenericType ? _cache.Get( Type.GetGenericTypeDefinition() ) : null;
@@ -290,6 +291,24 @@ partial class CachedType : CachedItem, ICachedType
                 _declaredMembers = b.DrainToImmutable();
             }
             return _declaredMembers;
+        }
+    }
+
+    public ImmutableArray<ICachedType> DeclaredBaseTypes
+    {
+        get
+        {
+            if( _declaredBaseTypes.IsDefault )
+            {
+                var allBases = _interfaces.Where( i => !_interfaces.Any( baseInterface => i != baseInterface && !baseInterface.Interfaces.Contains( i ) ) );
+                if( _baseType != null )
+                {
+                    Throw.DebugAssert( !allBases.Any() || _baseType.TypeDepth == 1 + allBases.Select( b => b.TypeDepth ).Max() );
+                    allBases = allBases.Where( _baseType.Interfaces.Contains ).OrderByDescending( b => b.TypeDepth ).Prepend( _baseType );
+                }
+                _declaredBaseTypes = allBases.ToImmutableArray();
+            }
+            return _declaredBaseTypes;
         }
     }
 

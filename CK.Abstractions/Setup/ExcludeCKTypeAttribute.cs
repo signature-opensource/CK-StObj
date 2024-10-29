@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace CK.Setup;
 
@@ -9,9 +7,12 @@ namespace CK.Setup;
 /// <para>
 /// Excluding a type, just like excluding an assembly with <see cref="ExcludePFeatureAttribute"/>, is
 /// "weak", it impacts the initial type set that will be considered. An excluded type referenced by a
-/// registered one will eventually be registered.
-/// Exclusion applies "from the leaves": most specialized types must be excluded for a "base" type
-/// to also be excluded.
+/// registered one will eventually be considered or can be included back at a higher level by
+/// <see cref="RegisterCKTypeAttribute"/>.
+/// </para>
+/// <para>
+/// Exclusion applies "from the leaves": the most specialized types of a base type must be excluded for
+/// the "base" type to also be excluded.
 /// </para>
 /// </summary>
 [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = false )]

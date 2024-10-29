@@ -30,11 +30,10 @@ public sealed partial class AssemblyCache // BinPathGroup
         readonly List<CachedAssembly> _systemSkipped;
         readonly bool _isAppContextFolder;
         SHA1Value _signature;
-
         DateTime _maxFileTime;
         string _groupName;
-        // Initially set to ImmutableConfiguredTypeSet.Empty, replaced on success.
-        IConfiguredTypeSet _result;
+        // Initially set to ImmutableHashSet<ICachedType>.Empty, replaced on success.
+        IReadOnlySet<ICachedType> _result;
         // Null when unknwon, true when ExplicitAdd is used, false for AddBinPath.
         bool? _explicitMode;
         // Success is set to false at the first error.
@@ -49,7 +48,7 @@ public sealed partial class AssemblyCache // BinPathGroup
             _heads = new SortedDictionary<CachedAssembly, bool>();
             _maxFileTime = Util.UtcMinValue;
             _isAppContextFolder = configuration.Path == _assemblyCache.AppContextBaseDirectory;
-            _result = ImmutableConfiguredTypeSet.Empty;
+            _result = ImmutableHashSet<ICachedType>.Empty;
             _systemSkipped = new List<CachedAssembly>();
             _success = true;
         }
@@ -103,7 +102,7 @@ public sealed partial class AssemblyCache // BinPathGroup
         /// When <see cref="Success"/> is false, this is empty.
         /// </para>
         /// </summary>
-        public IConfiguredTypeSet ConfiguredTypes => _result;
+        public IReadOnlySet<ICachedType> Types => _result;
 
         /// <summary>
         /// Gets the greatest last write time of the files involved in this group.
@@ -471,6 +470,7 @@ public sealed partial class AssemblyCache // BinPathGroup
         }
 
         public override string ToString() => $"AssemblyBinPathGoup '{_groupName}'";
+
     }
 
 }

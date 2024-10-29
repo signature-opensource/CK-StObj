@@ -41,6 +41,8 @@ partial class CachedType
 
         public ImmutableArray<ICachedMember> DeclaredMembers => throw new NotImplementedException();
 
+        public ImmutableArray<ICachedType> DeclaredBaseTypes => throw new NotImplementedException();
+
         public GlobalTypeCache TypeCache => throw new NotImplementedException();
 
         public string Name => throw new NotImplementedException();
@@ -49,7 +51,7 @@ partial class CachedType
 
         public ICachedType? ElementType => throw new NotImplementedException();
 
-        public EngineUnhandledType EngineUnhandledType => throw new NotImplementedException();
+        public TypeKind Kind => throw new NotImplementedException();
 
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 

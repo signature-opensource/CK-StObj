@@ -653,12 +653,31 @@ public class ConfigurationTests
     }
 
     static readonly XElement _config = XElement.Parse( """
-
         <Setup>
           <BasePath>/The/Base/Path</BasePath>
+
           <Aspect Type="CK.StObj.Engine.Tests.SampleAspectConfiguration, CK.StObj.Engine.Tests" Version="1" />
+
           <Aspect Type="CK.StObj.Engine.Tests.AnotherAspectConfiguration, CK.StObj.Engine.Tests">
           </Aspect>
+
+          <ExternalTypes>
+            <Type Kind="IsScoped">CK.Core.IActivityMonitor, CK.ActivityMonitor</Type>
+            <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" Kind="IsMultipleService|IsSingleton" />
+            <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" Kind="IsSingleton" />
+          </ExternalTypes>
+
+          <Types>
+            <Type>CK.Core.IActivityMonitor, CK.ActivityMonitor</Type>
+            <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" />
+            <Type Name="Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options" />
+          </Types>
+
+          <ExcludedTypes>
+            <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
+            <Type Name="CK.Testing.MonitorTestHelper, CK.Testing.Monitoring" />
+          </ExcludedTypes>
+
           <BinPaths>
             <BinPath Path="../../Relative/To/Base/Debug/net8.0">
                 <Assemblies>
@@ -666,9 +685,9 @@ public class ConfigurationTests
                     <Assembly Name="Another.Assembly" />
                 </Assemblies>
                 <Types>
-                    <Type Kind="IsScoped">CK.Core.IActivityMonitor, CK.ActivityMonitor</Type>
-                    <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" Kind="IsMultipleService|IsSingleton" />
-                    <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" Kind="IsSingleton" />
+                    <Type>CK.Core.IActivityMonitor, CK.ActivityMonitor</Type>
+                    <Type Name="Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions" />
+                    <Type Name="Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" />
                 </Types>
                 <ExcludedTypes>
                     <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
@@ -705,11 +724,6 @@ public class ConfigurationTests
           <TraceDependencySorterInput>True</TraceDependencySorterInput>
           <TraceDependencySorterOutput>True</TraceDependencySorterOutput>
           <RevertOrderingNames>True</RevertOrderingNames>
-          <GlobalExcludedTypes>
-            <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
-            <Type Name="CK.Testing.MonitorTestHelper, CK.Testing.Monitoring" />
-          </GlobalExcludedTypes>
-
         </Setup>
 
         """ );
@@ -720,18 +734,33 @@ public class ConfigurationTests
         EngineConfiguration c = new EngineConfiguration( _config );
         c.BasePath.Should().Be( new NormalizedPath( "/The/Base/Path" ) );
 
+        c.ExternalTypes.Should().HaveCount( 3 );
+        {
+            var t1 = c.ExternalTypes.Single( tc => tc.Type == typeof( IActivityMonitor ) );
+            t1.Kind.Should().Be( ExternalServiceKind.IsScoped );
+            var t2 = c.ExternalTypes.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
+            t2.Kind.Should().Be( ExternalServiceKind.IsMultipleService | ExternalServiceKind.IsSingleton );
+            var t3 = c.ExternalTypes.Single( tc => tc.Type == typeof( Microsoft.Extensions.Options.IOptions<> ) ); ;
+            t3.Kind.Should().Be( ExternalServiceKind.IsSingleton );
+        }
+        c.Types.Should().BeEquivalentTo( [ typeof( IActivityMonitor ),
+                                           typeof( Microsoft.Extensions.Hosting.IHostedService ),
+                                           typeof( Microsoft.Extensions.Options.IOptionsMonitor<> )
+                                         ] );
+
+        c.ExcludedTypes.Should().BeEquivalentTo( [ typeof( ActivityMonitor ),
+                                                   typeof( CK.Testing.MonitorTestHelper )
+                                                 ] );
+
         c.BinPaths.Should().HaveCount( 2 );
         var b1 = c.BinPaths[0];
         b1.Path.Should().Be( new NormalizedPath( "../../Relative/To/Base/Debug/net8.0" ) );
         b1.Assemblies.Should().BeEquivalentTo( "An.Assembly.Name", "Another.Assembly" );
 
-        b1.Types.Should().HaveCount( 3 );
-        var t1 = b1.Types.Single( tc => tc.Type == typeof( IActivityMonitor ) );
-        t1.Kind.Should().Be( ExternalServiceKind.IsScoped );
-        var t2 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Hosting.IHostedService ) );
-        t2.Kind.Should().Be( ExternalServiceKind.IsMultipleService | ExternalServiceKind.IsSingleton );
-        var t3 = b1.Types.Single( tc => tc.Type == typeof( Microsoft.Extensions.Options.IOptions<> ) ); ;
-        t3.Kind.Should().Be( ExternalServiceKind.IsSingleton );
+        b1.Types.Should().BeEquivalentTo( [ typeof( IActivityMonitor ),
+                                            typeof( Microsoft.Extensions.Hosting.IHostedService ),
+                                            typeof( Microsoft.Extensions.Options.IOptions<> )
+                                          ] );
 
         var bSample = b1.FindAspect<SampleBinPathAspectConfiguration>();
         Debug.Assert( bSample != null );
@@ -752,7 +781,6 @@ public class ConfigurationTests
         c.TraceDependencySorterInput.Should().BeTrue();
         c.TraceDependencySorterOutput.Should().BeTrue();
         c.RevertOrderingNames.Should().BeTrue();
-        c.ExcludedTypes.Should().BeEquivalentTo( [typeof( ActivityMonitor ), typeof( CK.Testing.MonitorTestHelper )] );
         c.Aspects.Should().HaveCount( 2 );
         c.Aspects[0].Should().BeAssignableTo<SampleAspectConfiguration>();
         c.Aspects[1].Should().BeAssignableTo<AnotherAspectConfiguration>();

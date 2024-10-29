@@ -27,7 +27,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     internal IReadOnlySet<CachedAssembly> _pFeatures;
     internal IReadOnlySet<CachedAssembly> _allPFeatures;
     // Initialized by CollectTypes.
-    internal ConfiguredTypeSet? _types;
+    internal HashSet<ICachedType>? _types;
 
     internal CachedAssembly( Assembly assembly,
                              string name,
@@ -200,7 +200,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     /// This is null if this assembly is not a PFeature or if it is not used.
     /// </para>
     /// </summary>
-    public IConfiguredTypeSet? Types => _types;
+    public IReadOnlySet<ICachedType>? Types => _types;
 
     internal void AddHash( IncrementalHash hasher )
     {

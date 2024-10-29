@@ -59,11 +59,13 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedMember> DeclaredMembers => ImmutableArray<ICachedMember>.Empty;
 
+    public ImmutableArray<ICachedType> DeclaredBaseTypes => ImmutableArray<ICachedType>.Empty;
+
     public string Name => _parameter.Name;
 
     public ICachedType? ElementType => null;
 
-    public EngineUnhandledType EngineUnhandledType => EngineUnhandledType.NullFullName;
+    public TypeKind Kind => TypeKind.IsNullFullName;
 
     public override string ToString() => _parameter.Name;
 

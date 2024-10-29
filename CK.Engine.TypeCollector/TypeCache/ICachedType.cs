@@ -68,6 +68,12 @@ public interface ICachedType : ICachedItem
     ImmutableArray<ICachedType> Interfaces { get; }
 
     /// <summary>
+    /// Gets the the <see cref="BaseType"/> if any followed by interfaces that are explictly declared by
+    /// this type (without any inherited ones).
+    /// </summary>
+    ImmutableArray<ICachedType> DeclaredBaseTypes { get; }
+
+    /// <summary>
     /// Gets the base type if this type is a class that inherits from a class that is not <see cref="object"/>.
     /// This is always null for value types: <c>object</c> and <c>ValueType</c> are skipped.
     /// <para>
@@ -121,9 +127,9 @@ public interface ICachedType : ICachedItem
     ICachedType? ElementType { get; }
 
     /// <summary>
-    /// Gets whether this type is a regular visible type or should almost always be ignored.
+    /// Gets this type kind.
     /// </summary>
-    EngineUnhandledType EngineUnhandledType { get; }
+    TypeKind Kind { get; }
 
     /// <summary>
     /// Returns the <see cref="CSharpName"/>.

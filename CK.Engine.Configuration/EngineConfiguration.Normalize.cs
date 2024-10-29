@@ -41,10 +41,6 @@ public sealed partial class EngineConfiguration
     ///     Removes types from <see cref="Types"/> that appears in <see cref="ExcludedTypes"/>.
     ///     </item>
     ///     <item>
-    ///     Checks that in <see cref="Types"/>, a <see cref="ExternalServiceKind"/> other than None is not used
-    ///     on a type that is a IAutoService, IRealObject and IPoco: these code defined types cannot be externally configured.
-    ///     </item>
-    ///     <item>
     ///         For each BinPathConfiguration:
     ///         <list type="number">
     ///             <item>
@@ -55,15 +51,21 @@ public sealed partial class EngineConfiguration
     ///             </item>
     ///             <item>
     ///             Applies the '{BasePath}', '{OutputPath}' and '{ProjectPath}' prefix placeholders in every <see cref="BinPathAspectConfiguration"/>
-    ///             by processing their Xml projection. Elements and attribute value that start with '{BasePath}', '{OutputPath}'
-    ///             and '{ProjectPath}' are evaluated in every <see cref="BinPathAspectConfiguration.ToXml()"/> and if the xml has changed,
-    ///             <see cref="BinPathAspectConfiguration.InitializeFrom(XElement)"/> is called to update the BinPath aspect configuration.
+    ///             by processing their Xml projection.
+    ///             <para>
+    ///             Elements and attribute value that start with '{BasePath}', '{OutputPath}' and '{ProjectPath}' are evaluated in
+    ///             every <see cref="BinPathAspectConfiguration.ToXml()"/>
+    ///             </para>
+    ///             <para>
+    ///             If the xml has changed, <see cref="BinPathAspectConfiguration.InitializeFrom(XElement)"/>
+    ///             is called to update the BinPath aspect configuration.
+    ///             </para>
     ///             </item>
     ///             <item>
     ///             Normalize <see cref="BinPathConfiguration.DiscoverAssembliesFromPath"/>:
     ///             <list type="bullet">
     ///                 <item>
-    ///                 When true and non empty Assemblies, it is set to false.
+    ///                 When true and Assemblies is non empty, it is set to false.
     ///                 </item>
     ///                 <item>
     ///                 When false and no Assemblies and no Types, it is set to true.
@@ -79,10 +81,6 @@ public sealed partial class EngineConfiguration
     ///             </item>
     ///             <item>
     ///             Removes types from <see cref="BinPathConfiguration.Types"/> that appears in ExcludedTypes.
-    ///             </item>
-    ///             <item>
-    ///             Checks that in <see cref="BinPathConfiguration.Types"/>, a <see cref="ExternalServiceKind"/> other than None is not used
-    ///             on a type that is a IAutoService, IRealObject and IPoco: these code defined types cannot be externally configured.
     ///             </item>
     ///         </list>
     ///     </item>
@@ -515,10 +513,10 @@ public sealed partial class EngineConfiguration
                 }
                 // Handles Types
                 b.ExcludedTypes.AddRange( c.ExcludedTypes );
-                // Check the Types and removes the excluded ones before adding the GlobalTypes (that have already been checked)
+                // Check the Types and removes the excluded ones before adding the Engine level Types (that have already been checked)
                 // if they are on errors, we don't care: the error has been already emitted.
                 CheckTypeConfigurationSet( monitor, b.Types, b.ExcludedTypes, b, ref success );
-                // Adds the Global Types.
+                // Adds the Engine level types.
                 b.Types.UnionWith( c.Types );
             }
 

@@ -40,7 +40,7 @@ public sealed class RunningBinPathGroup : IRunningBinPathGroup
     // New way
     readonly BinPathTypeGroup? _typeGroup;
 
-    internal IConfiguredTypeSet ConfiguredTypes => _typeGroup!.ConfiguredTypes;
+    internal IConfiguredTypeSet ConfiguredTypes => _typeGroup!.Types;
 
     internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
     {

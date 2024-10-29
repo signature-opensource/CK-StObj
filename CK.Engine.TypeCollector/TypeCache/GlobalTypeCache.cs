@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector;
 
@@ -21,6 +22,9 @@ public sealed partial class GlobalTypeCache
     readonly ICachedType _iRealObject;
     readonly ICachedType _iPoco;
     readonly ICachedType _iAutoService;
+    readonly ICachedType _iAutoServiceScoped;
+    readonly ICachedType _iAutoServiceSingleton;
+    readonly ICachedType _iAmbientService;
 
     /// <summary>
     /// Initializes a new cahe for types based on an assembly cache.
@@ -30,9 +34,26 @@ public sealed partial class GlobalTypeCache
     {
         _types = new Dictionary<Type, ICachedType>();
         _assemblies = assemblies;
-        _iRealObject = Get( typeof( IRealObject ) );
-        _iPoco = Get( typeof( IPoco ) );
-        _iAutoService = Get( typeof( IAutoService ) );
+
+        Type tReal = typeof( IRealObject );
+        var abs = assemblies.FindOrCreate( tReal.Assembly );
+        var iReal = new CachedType( this, tReal, 0, abs, [], null );
+        iReal.SetKind( TypeKindExtension.RealObjectFlags | TypeKind.IsDefiner );
+        _types.Add( tReal, _iRealObject = iReal );
+
+        _iPoco = RegisterBase( this, abs, typeof( IPoco ), 0, TypeKind.IsPoco | TypeKind.IsDefiner );
+        _iAutoService = RegisterBase( this, abs, typeof( IAutoService ), 0, TypeKind.IsAutoService | TypeKind.IsDefiner );
+        _iAutoServiceScoped = RegisterBase( this, abs, typeof( IScopedAutoService ), 1, TypeKind.IsAutoService | TypeKind.IsScoped | TypeKind.IsDefiner );
+        _iAutoServiceSingleton = RegisterBase( this, abs, typeof( ISingletonAutoService ), 1, TypeKind.IsSingleton | TypeKind.IsAutoService | TypeKind.IsDefiner );
+        _iAmbientService = RegisterBase( this, abs, typeof( IAmbientAutoService ), 2, TypeKind.IsAmbientService | TypeKind.IsContainerConfiguredService | TypeKind.IsScoped | TypeKind.IsAutoService | TypeKind.IsDefiner );
+
+        static CachedType RegisterBase( GlobalTypeCache c, CachedAssembly abs, Type tPoco, int depth, TypeKind kind )
+        {
+            var iPoco = new CachedType( c, tPoco, depth, abs, [], null );
+            iPoco.SetKind( kind );
+            c._types.Add( tPoco, iPoco );
+            return iPoco;
+        }
     }
 
     public ICachedType IRealObject => _iRealObject;
@@ -40,6 +61,10 @@ public sealed partial class GlobalTypeCache
     public ICachedType IPoco => _iPoco;
 
     public ICachedType IAutoService => _iAutoService;
+
+    public ICachedType IAutoServiceSingleton => _iAutoServiceSingleton;
+
+    public ICachedType IAutoServiceScoped => _iAutoServiceScoped;
 
     /// <summary>
     /// Gets a cached type.
@@ -87,8 +112,8 @@ public sealed partial class GlobalTypeCache
                     // ref struct are no nullable.
                     // Nullable<T> is not nullable.
                     if( !type.IsByRefLike
-                        && type != typeof(void)
-                        && type != typeof(Nullable<>) )
+                        && type != typeof( void )
+                        && type != typeof( Nullable<> ) )
                     {
                         nullableValueType = typeof( Nullable<> ).MakeGenericType( type );
                     }
@@ -118,17 +143,20 @@ public sealed partial class GlobalTypeCache
                 }
             }
             // Weird case checks.
+            var isAutoService = interfaces.Contains( _iAutoService );
             var isRealObject = interfaces.Contains( _iRealObject );
             var isPoco = interfaces.Contains( _iPoco );
-            if( isRealObject || isPoco )
+            if( isAutoService || isRealObject || isPoco )
             {
-                if( isRealObject && isPoco )
-                {
-                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco and a IRealObject at the same time." );
-                }
+                // Note: we cannot check that a a IPoco must be an interface here without looking
+                // for the [StObjGen]. This is done by CachedType.ComputeTypeKind.
                 if( !type.IsClass && !type.IsInterface )
                 {
-                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco or a IRealObject. It must be a class or an interface." );
+                    Throw.CKException( $"Invalid type '{type.ToCSharpName()}': cannot be a IPoco, IRealObject or IAutoService. It must be a class or an interface." );
+                }
+                if( (isRealObject || isAutoService) && isPoco )
+                {
+                    Throw.CKException( $"Invalid type '{type.ToCSharpName()}': cannot be a IPoco and a IRealObject or IAutoService at the same time." );
                 }
             }
             c = isRealObject
@@ -147,17 +175,64 @@ public sealed partial class GlobalTypeCache
         return c;
     }
 
-    internal bool Register( IActivityMonitor monitor, ExternalTypeConfiguration eT )
+    public bool ApplyExternalTypesKind( IActivityMonitor monitor, EngineConfiguration configuration, out byte[] hashExternalTypes )
     {
-        if( !_types.ContainsKey( eT.Type ) )
+        using var hasher = IncrementalHash.CreateHash( HashAlgorithmName.SHA1 );
+        bool success = true;
+        foreach( var eT in configuration.ExternalTypes )
         {
-            var unhandledType = CachedType.ComputeUnhandledType( eT.Type, null );
-            var msg = unhandledType.GetUnhandledMessage();
-            if( msg != null )
+            try
             {
-                monitor.Warn( $"Ignoring external type configuration '{eT.Type:N}' as {eT.Kind} {msg}." );
+                var cT = Get( eT.Type );
+                var msg = GetConfiguredTypeErrorMessage( cT );
+                if( msg != null )
+                {
+                    monitor.Warn( $"Ignoring External type configuration: '{cT.CSharpName}' {msg}." );
+                }
+                else
+                {
+                    Throw.DebugAssert( cT is CachedType );
+                    ((CachedType)cT).SetKind( (TypeKind)eT.Kind );
+                    hasher.Append( cT.CSharpName ).Append( eT.Kind );
+                }
             }
+            catch( Exception ex )
+            {
+                monitor.Error( "Unable to apply External type configuration.", ex );
+                success = false;
+            }
+        }
+        hashExternalTypes = hasher.GetHashAndReset();
+        return success;
 
+        static string? GetConfiguredTypeErrorMessage( ICachedType type )
+        {
+            var kind = type.Kind;
+            var msg = kind.GetUnhandledMessage();
+            if( msg == null )
+            {
+                string? k = null;
+                if( (kind & TypeKind.IsAutoService) != 0 )
+                {
+                    k = nameof( IAutoService );
+                }
+                else if( (kind & TypeKind.IsRealObject) != 0 )
+                {
+                    k = nameof( IRealObject );
+                }
+                else if( (kind & TypeKind.IsPoco) != 0 )
+                {
+                    k = nameof( IPoco );
+                }
+                if( k != null )
+                {
+                    return $"is a {k}. IAutoService, IRealObject and IPoco cannot be externally configured";
+                }
+            }
+            return msg;
         }
     }
+
+
 }
+

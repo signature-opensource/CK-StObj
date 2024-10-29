@@ -71,20 +71,13 @@ public sealed partial class AssemblyCache
         // We can now compute the CachedAssembly.Types and safely uses ICachedType from it.
         var typeCache = new GlobalTypeCache( assemblyCache );
         // The first thing is to handle the ExternalTypes configuration.
-        foreach( var eT in configuration.ExternalTypes )
-        {
-            success &= typeCache.Register( monitor, eT );
-            var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, eT.Type, ExternalServiceKind.None );
-            if( msg != null )
-            {
-                monitor.Warn( $"Ignoring ExcludedType configuration: '{cT.CSharpName}' {msg}." );
-            }
-        }
+        success &= typeCache.ApplyExternalTypesKind( monitor, configuration, out var hashExternalTypes );
+
         using( monitor.OpenInfo( $"Collecting types for {collector.Count} BinPathGroup." ) )
         {
             foreach( var g in collector )
             {
-                success &= g.FinalizeAndCollectTypes( monitor, typeCache );
+                success &= g.FinalizeAndCollectTypes( monitor, typeCache, hashExternalTypes );
             }
         }
         // Dumps a summary.
@@ -94,7 +87,7 @@ public sealed partial class AssemblyCache
         {
             if( b.Success )
             {
-                sb.AppendLine( $"- {b.ConfiguredTypes.AllTypes.Count} types for group '{b.GroupName}'." );
+                sb.AppendLine( $"- {b.Types.Count} types for group '{b.GroupName}'." );
                 sb.AppendLine( $"  From head PFeatures: '{b.HeadAssemblies.Select( p => p.Name ).Concatenate( "', '" )}'." );
             }
             else
@@ -137,6 +130,7 @@ public sealed partial class AssemblyCache
     /// <returns>The BinPathGroup (contains the configuration).</returns>
     BinPathGroup Register( IActivityMonitor monitor, BinPathConfiguration configuration, List<BinPathGroup> collector )
     {
+        Throw.DebugAssert( configuration.Owner != null );
         var k = new GroupKey( configuration );
         if( !_binPaths.TryGetValue( k, out var binPath ) )
         {
