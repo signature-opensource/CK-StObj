@@ -11,6 +11,10 @@ using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector;
 
+/// <summary>
+/// Cached assembly focuses on engine needs. This consider only visible types and caches only
+/// the types if the assembly has been classified as a <see cref="AssemblyKind.PFeature"/>.
+/// </summary>
 public sealed class CachedAssembly : IComparable<CachedAssembly>
 {
     readonly Assembly _assembly;

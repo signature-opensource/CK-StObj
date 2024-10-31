@@ -12,7 +12,7 @@ namespace CK.Engine.TypeCollector;
 /// <summary>
 /// Global type cache.
 /// <para>
-/// This currently doesn't handle Nullable Reference Type.
+/// This currently doesn't handle Nullable Reference Type in depth.
 /// </para>
 /// </summary>
 public sealed partial class GlobalTypeCache

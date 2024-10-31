@@ -3,6 +3,9 @@ using System;
 
 namespace CK.Engine.TypeCollector;
 
+/// <summary>
+/// Defines the category of assemblies.
+/// </summary>
 [Flags]
 public enum AssemblyKind
 {
@@ -14,11 +17,12 @@ public enum AssemblyKind
 
     /// <summary>
     /// This assembly has been skipped. It is a system assembly that we totally ignore.
+    /// See <see cref="CachedAssembly.IsSystemSkipped(string)"/>.
     /// </summary>
     SystemSkipped = 1,
 
     /// <summary>
-    /// This assembly has been skipped. It is a system assembly that we totally ignore.
+    /// This assembly has been skipped because it has a [SkippedAssembly] attribute.
     /// </summary>
     AutoSkipped = 2,
 

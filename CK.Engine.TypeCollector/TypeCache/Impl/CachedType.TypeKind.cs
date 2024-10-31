@@ -44,6 +44,7 @@ partial class CachedType
                 Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                 Throw.DebugAssert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                 Throw.DebugAssert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                bool hasIntrinsicRegisterType = false;
                 bool hasSuperDefiner = false;
                 bool hasDefiner = false;
                 bool isMultiple = false;
@@ -69,6 +70,10 @@ partial class CachedType
                     }
                     switch( n )
                     {
+                        case "RegisterCKTypeAttribute":
+                            hasIntrinsicRegisterType = true;
+                            intrinsicAttrCount++;
+                            break;
                         case "CKTypeDefinerAttribute":
                             hasDefiner = true;
                             intrinsicAttrCount++;
@@ -104,7 +109,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                     // First, handle intrinsic incoherencies.
                     if( isExcludedType && intrinsicAttrCount > 1 )
                     {
-                        ThrowTypeError( $"has [ExcludeCKType] attrirute. It cannot also have [{GetIntrinsicAttributeNames( false ).Concatenate("], [")}] attributes." );       
+                        ThrowTypeError( $"has [ExcludeCKType] attribute. It cannot also have [{GetIntrinsicAttributeNames( false ).Concatenate("], [")}] attributes." );       
                     }
                     if( hasContainerConfiguredScoped && hasContainerConfiguredSingleton )
                     {
@@ -123,7 +128,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                     // It's time to apply the bases.
                     foreach( var i in DeclaredBaseTypes )
                     {
-                        var kI = i.Kind & ~(TypeKind.IsDefiner | TypeKind.IsMultipleService | TypeKind.IsIntrinsicExcluded);
+                        var kI = i.Kind & ~(TypeKind.IsDefiner | TypeKind.IsMultipleService | TypeKind.IsIntrinsicExcluded | TypeKind.HasIntrinsicRegister);
                         if( (kI & TypeKind.IsSuperDefiner) != 0 ) // This base is a SuperDefiner.
                         {
                             kI |= TypeKind.IsDefiner;
@@ -165,7 +170,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                         Throw.DebugAssert( t.IsClass || t.IsInterface );
                         if( t.IsClass )
                         {
-                            // A static class IsAbstract and IsSealed in .Net.
+                            // A static class is both IsAbstract and IsSealed in .Net.
                             if( !t.IsAbstract )
                             {
                                 ThrowTypeError( $"is a non abstract class. Only interfaces and abstract classes can have [IsMultiple] attribute." );
@@ -191,6 +196,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                     }
 
                     if( isExcludedType ) k |= TypeKind.IsIntrinsicExcluded;
+                    if( hasIntrinsicRegisterType ) k |= TypeKind.HasIntrinsicRegister;
                     if( hasSuperDefiner ) k |= TypeKind.IsSuperDefiner;
                     if( hasDefiner ) k |= TypeKind.IsDefiner;
                     if( hasContainerConfiguredSingleton ) k |= TypeKind.IsContainerConfiguredService | TypeKind.IsSingleton;
@@ -203,9 +209,9 @@ case "ContainerConfiguredSingletonServiceAttribute":
                         {
                             ThrowTypeError( $"a IPoco can only be an interface." );
                         }
-                        if( k.WithoutDefiners() != TypeKind.IsPoco )
+                        if( k.WithoutDefiners().WithoutIntrinsicRegister() != TypeKind.IsPoco )
                         {
-                            ThrowTypeError( $"IPoco cannot be combined with any aspect other than [CKTypeDefiner] or [CKTypeSuperDefiner]." );
+                            ThrowTypeError( $"IPoco cannot be combined with any aspect other than [CKTypeDefiner], [CKTypeSuperDefiner] or [RegisterCKType]." );
                         }
                     }
                     else 

@@ -11,7 +11,7 @@ sealed class AspectInitializer : IEngineAspectInitializationContext
     readonly SimpleServiceContainer _container;
     readonly StObjEngineConfigurator _configurator;
     readonly List<EngineAspect> _aspects;
-    readonly AspectTrampolineImpl _reusableTrampoline;
+    readonly AspectTrampolineImpl _trampoline;
     SimpleServiceContainer? _configOnlyContainer;
 
     AspectInitializer( StObjEngineConfigurator realObjectConfigurator )
@@ -39,7 +39,7 @@ sealed class AspectInitializer : IEngineAspectInitializationContext
 
     void IEngineAspectInitializationContext.PushDeferredAction( Func<IActivityMonitor, bool> postAction )
     {
-        _reusableTrampoline.Push( postAction );
+        _trampoline.Push( postAction );
     }
 
     bool Run( IActivityMonitor monitor, EngineConfiguration configuration )
@@ -76,7 +76,7 @@ sealed class AspectInitializer : IEngineAspectInitializationContext
                     // Registers the aspect configuration instance itself: this allows ActivatorUtilities
                     // to be able to create the instance without explicit parameters
                     // (and other aspects to inject other configurations even if it is a bit useless
-                    // since the Aspect exposes its configuration).
+                    // since an Aspect exposes its configuration).
                     _container.Add( cType, c, null );
                     Type? t = SimpleTypeFinder.WeakResolver( aspectTypeName, true );
                     Throw.DebugAssert( t != null );
@@ -107,7 +107,7 @@ sealed class AspectInitializer : IEngineAspectInitializationContext
                             }
                             catch( Exception ex )
                             {
-                                monitor.Error( ex );
+                                monitor.Error( $"Error while initializing aspect '{c.AspectName}'.", ex );
                                 monitor.CloseGroup( "Failed." );
                                 success = false;
                             }
@@ -118,7 +118,7 @@ sealed class AspectInitializer : IEngineAspectInitializationContext
         }
         if( success )
         {
-            success = _reusableTrampoline.Execute( monitor );
+            success = _trampoline.Execute( monitor );
         }
         _container.Remove( typeof( IActivityMonitor ) );
         _container.BaseProvider = null;

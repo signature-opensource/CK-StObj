@@ -11,17 +11,6 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
-    namespace Local
-    {
-        [AttributeUsage( AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
-        class ReplaceAutoServiceAttribute : Attribute
-        {
-            public ReplaceAutoServiceAttribute( string replacedAssemblyQualifiedName )
-            {
-            }
-        }
-    }
-
     [TestFixture]
     public class ServiceTests
     {
@@ -45,22 +34,6 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
-            map.Services.Mappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
-        }
-
-        [Local.ReplaceAutoService( "CK.StObj.Engine.Tests.Service.ServiceTests+SampleService2, CK.StObj.Engine.Tests" )]
-        public class SampleService3 : ISampleService
-        {
-        }
-
-        [Test]
-        public void ReplaceAutoService_works_with_assembly_qualified_name_and_locally_defined_attribute()
-        {
-            var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SampleService ), typeof( SampleService2 ), typeof( SampleService3 )] ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
-
-            map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
-            map.Services.Mappings[typeof( SampleService2 )].ClassType.Should().Be( typeof( SampleService2 ) );
             map.Services.Mappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
         }
 

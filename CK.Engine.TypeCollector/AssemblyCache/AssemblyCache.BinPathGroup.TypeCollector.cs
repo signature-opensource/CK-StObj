@@ -64,7 +64,8 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 }
                 // Consider the visible classes, interfaces, value types and enums excluding any generic type definitions.
                 // These are the only kind of types that we need to start a CKomposable setup.
-                c.AddRange( assembly.Assembly.GetExportedTypes()
+                // Don't use GetExportedTypes(): it allocates an array (and as of net8.0 currently do new List().ToArray()!).
+                c.AddRange( assembly.Assembly.ExportedTypes
                                              .Where( t => (t.IsClass || t.IsInterface || t.IsValueType || t.IsEnum) && !t.IsGenericTypeDefinition )
                                              .Select( typeCache.Get )
                                              .Where( cT => (cT.Kind & TypeKind.IsIntrinsicExcluded) == 0 ) );
