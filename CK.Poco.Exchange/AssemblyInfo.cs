@@ -1,2 +1,1 @@
-[assembly: CK.Setup.IsModel()]
-[assembly: CK.Setup.RequiredSetupDependency( "CK.Poco.Exchange.Engine" )]
+[assembly: CK.Setup.RequiredEngine( "CK.Poco.Exchange.Engine" )]

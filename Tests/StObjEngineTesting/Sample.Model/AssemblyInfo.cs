@@ -1,3 +1,3 @@
 using CK.Setup;
 
-[assembly: RequiredSetupDependency( "Sample.Engine" )]
+[assembly: RequiredEngine( "Sample.Engine" )]
