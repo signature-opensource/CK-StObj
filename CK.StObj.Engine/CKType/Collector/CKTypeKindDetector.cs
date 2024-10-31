@@ -260,8 +260,8 @@ public class CKTypeKindDetector
                 {
                     Throw.DebugAssert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
                     Throw.DebugAssert( typeof( Core.ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                    Throw.DebugAssert( typeof( ContainerConfiguredScopedServiceAttribute ).Name == "ContainerConfiguredScopedServiceAttribute" );
-                    Throw.DebugAssert( typeof( ContainerConfiguredSingletonServiceAttribute ).Name == "ContainerConfiguredSingletonServiceAttribute" );
+                    Throw.DebugAssert( typeof( ScopedContainerConfiguredServiceAttribute ).Name == "ScopedContainerConfiguredServiceAttribute" );
+                    Throw.DebugAssert( typeof( SingletonContainerConfiguredServiceAttribute ).Name == "SingletonContainerConfiguredServiceAttribute" );
                     Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                     Throw.DebugAssert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                     Throw.DebugAssert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
