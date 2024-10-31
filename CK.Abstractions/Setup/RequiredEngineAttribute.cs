@@ -4,8 +4,8 @@ namespace CK.Setup;
 
 /// <summary>
 /// Assembly attribute that states that this assembly requires a CKomposable Engine to be setup.
-/// This is typically used by PFeatures definers (see <see cref="IsPFeatureDefinerAttribute"/>) or  to declare one
-/// or more associated engines.
+/// This is typically used by PFeatures definers (see <see cref="IsPFeatureDefinerAttribute"/>) or PFeatures
+/// (see <see cref="IsPFeatureAttribute"/>) assemblies to declare one or more associated engines.
 /// </summary>
 [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = true )]
 public sealed class RequiredEngineAttribute : Attribute
