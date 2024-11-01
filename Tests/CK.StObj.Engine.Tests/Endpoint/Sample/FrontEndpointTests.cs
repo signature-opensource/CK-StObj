@@ -59,13 +59,14 @@ public class FrontEndpointTests
     public async Task Front_endpoint_default_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService|Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService|Setup.ConfigurableAutoServiceKind.IsScoped );
+        configuration.FirstBinPath.Types.Add( typeof( ExternalCultureInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
         configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
-                                        typeof( FakeTenantInfo ),
-                                        typeof( DefaultTenantProvider ),
-                                        typeof( FakeCultureInfo ),
-                                        typeof( DefaultCultureProvider ),
-                                        typeof( FakeAuthenticationInfo ),
-                                        typeof( DefaultAuthenticationInfoProvider ) );
+                                              typeof( FakeTenantInfo ),
+                                              typeof( DefaultTenantProvider ),
+                                              typeof( DefaultCultureProvider ),
+                                              typeof( ExternalAuthenticationInfo ),
+                                              typeof( DefaultAuthenticationInfoProvider ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
@@ -78,9 +79,9 @@ public class FrontEndpointTests
             {
                 var tenantI = scoped.ServiceProvider.GetRequiredService<IFakeTenantInfo>();
                 var tenantC = scoped.ServiceProvider.GetRequiredService<FakeTenantInfo>();
-                var authI = scoped.ServiceProvider.GetRequiredService<IFakeAuthenticationInfo>();
-                var authC = scoped.ServiceProvider.GetRequiredService<FakeAuthenticationInfo>();
-                var culture = scoped.ServiceProvider.GetRequiredService<FakeCultureInfo>();
+                var authI = scoped.ServiceProvider.GetRequiredService<IExternalAuthenticationInfo>();
+                var authC = scoped.ServiceProvider.GetRequiredService<ExternalAuthenticationInfo>();
+                var culture = scoped.ServiceProvider.GetRequiredService<ExternalCultureInfo>();
 
                 var monitor = scoped.ServiceProvider.GetRequiredService<IActivityMonitor>();
                 monitor.Trace( $"TenantI: {tenantI.Name}, TenantC: {tenantC.Name}, AuthI: {authI.ActorId}, AuthC: {authC.ActorId}, Cult: {culture.Culture}" );
@@ -89,18 +90,18 @@ public class FrontEndpointTests
         }
     }
 
-    public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>
+    public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IAmbientServiceDefaultProvider<IExternalAuthenticationInfo>
     {
-        readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
+        readonly ExternalAuthenticationInfo _anonymous = new ExternalAuthenticationInfo( "", 0 );
 
-        public IFakeAuthenticationInfo Default => _anonymous;
+        public IExternalAuthenticationInfo Default => _anonymous;
     }
 
-    public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IAmbientServiceDefaultProvider<FakeAuthenticationInfo>
+    public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IAmbientServiceDefaultProvider<ExternalAuthenticationInfo>
     {
-        readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
+        readonly ExternalAuthenticationInfo _anonymous = new ExternalAuthenticationInfo( "", 0 );
 
-        public FakeAuthenticationInfo Default => _anonymous;
+        public ExternalAuthenticationInfo Default => _anonymous;
     }
 
 
@@ -108,21 +109,23 @@ public class FrontEndpointTests
     public async Task Ambient_services_are_painful_when_they_are_not_AutoService_Async()
     {
         {
-            const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<FakeAuthenticationInfo>'. " +
-                               "Type 'FakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
-
-
-            var c = new[]{ typeof( FakeAuthenticationInfo ),
-                           typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) };
-            TestHelper.GetFailedCollectorResult( c, msg );
-        }
-        {
-            const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>'. " +
-                               "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
+            const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<ExternalAuthenticationInfo>'. " +
+                               "Type 'ExternalAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( FakeAuthenticationInfo ),
-                                            typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
+            configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
+            configuration.FirstBinPath.Types.Add( [typeof( ExternalAuthenticationInfo ), typeof( NotEnoughDefaultAuthenticationInfoProvider1 )] );
+
+            await configuration.GetFailedAutomaticServicesAsync( msg );
+        }
+        {
+            const string msg = "Unable to find an implementation for 'IAmbientServiceDefaultProvider<IExternalAuthenticationInfo>'. " +
+                               "Type 'IExternalAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
+
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
+            configuration.FirstBinPath.Types.Add( [typeof( ExternalAuthenticationInfo ), typeof( NotEnoughDefaultAuthenticationInfoProvider2 )] );
+
             await configuration.GetFailedAutomaticServicesAsync( msg );
         }
     }

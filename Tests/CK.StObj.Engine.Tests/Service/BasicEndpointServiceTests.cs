@@ -3,6 +3,7 @@ using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service;
@@ -11,7 +12,7 @@ namespace CK.StObj.Engine.Tests.Service;
 [TestFixture]
 public class BasicEndpointServiceTests
 {
-    [ContainerConfiguredScopedService]
+    [ScopedContainerConfiguredService]
     public interface IEndpointService1 : IScopedAutoService
     {
     }
@@ -29,7 +30,7 @@ public class BasicEndpointServiceTests
         map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeTrue();
     }
 
-    [ContainerConfiguredScopedService]
+    [ScopedContainerConfiguredService]
     public class Impossible0 : IRealObject
     {
     }
@@ -40,14 +41,19 @@ public class BasicEndpointServiceTests
     }
 
     [Test]
-    public void real_objects_cannot_be_Endpoint_or_Multiple_services()
+    public async Task real_objects_cannot_be_Endpoint_or_Multiple_services_Async()
     {
         {
-            TestHelper.GetFailedCollectorResult( [typeof( Impossible0 )],
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( Impossible0 ) );
+
+            await configuration.GetFailedAutomaticServicesAsync(
                 "RealObject cannot have a Scoped lifetime, RealObject cannot be an optional Endpoint service" );
         }
         {
-            TestHelper.GetFailedCollectorResult( [typeof( Impossible1 )], "IRealObject interface cannot be marked as a Multiple service" );
+            var configuration = TestHelper.CreateDefaultEngineConfiguration();
+            configuration.FirstBinPath.Types.Add( typeof( Impossible1 ) );
+            await configuration.GetFailedAutomaticServicesAsync( "IRealObject interface cannot be marked as a Multiple service" );
         }
     }
 

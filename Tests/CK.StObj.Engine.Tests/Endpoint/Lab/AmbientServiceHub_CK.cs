@@ -12,9 +12,9 @@ sealed class AmbientServiceHub_CK : CK.Core.AmbientServiceHub
     {
         // Don't care of race conditions here.
         _default ??= [
-            new Mapper( ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default ),
-            new Mapper( ((IAmbientServiceDefaultProvider<IFakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default ),
-            new Mapper( ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default ),
+            new Mapper( ((IAmbientServiceDefaultProvider<ExternalAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default ),
+            new Mapper( ((IAmbientServiceDefaultProvider<IExternalAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default ),
+            new Mapper( ((IAmbientServiceDefaultProvider<ExternalCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default ),
             new Mapper( ((IAmbientServiceDefaultProvider<IFakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultTenantProvider ) )!).Default ),
         ];
         return System.Runtime.CompilerServices.Unsafe.As<Mapper[]>( _default.Clone() );
@@ -41,9 +41,9 @@ sealed class AmbientServiceHub_CK : CK.Core.AmbientServiceHub
     {
         return [
             new Mapper( Required( services, typeof( IFakeTenantInfo ) ) ),
-            new Mapper( Required( services, typeof( IFakeAuthenticationInfo ) ) ),
-            new Mapper( Required( services, typeof( FakeAuthenticationInfo ) ) ),
-            new Mapper( Required( services, typeof( FakeCultureInfo ) ) )
+            new Mapper( Required( services, typeof( IExternalAuthenticationInfo ) ) ),
+            new Mapper( Required( services, typeof( ExternalAuthenticationInfo ) ) ),
+            new Mapper( Required( services, typeof( ExternalCultureInfo ) ) )
         ];
 
         static object Required( IServiceProvider services, Type type )

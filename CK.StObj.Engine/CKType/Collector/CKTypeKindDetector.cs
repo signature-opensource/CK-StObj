@@ -274,7 +274,6 @@ public class CKTypeKindDetector
                     bool hasScopedService = false;
                     bool isExcludedType = false;
                     bool isContainerConfiguredScoped = false;
-                    bool isAmbientService = false;
                     bool isEndpointSingleton = false;
 
                     // Now process the attributes of the type. This sets the variables above
@@ -296,11 +295,10 @@ public class CKTypeKindDetector
                             case "ExcludeCKTypeAttribute":
                                 isExcludedType = true;
                                 break;
-                            case "ContainerConfiguredScopedServiceAttribute":
+                            case "ScopedContainerConfiguredServiceAttribute":
                                 isContainerConfiguredScoped = true;
-                                isAmbientService = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
                                 break;
-                            case "ContainerConfiguredSingletonServiceAttribute":
+                            case "SingletonContainerConfiguredServiceAttribute":
                                 isEndpointSingleton = true;
                                 break;
                             case "CKTypeDefinerAttribute":
@@ -359,8 +357,7 @@ public class CKTypeKindDetector
                         if( isEndpointSingleton ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsSingleton;
                         if( hasSuperDefiner ) k |= CKTypeKind.IsSuperDefiner;
                         if( hasDefiner ) k |= CKTypeKind.IsDefiner;
-                        if( isAmbientService ) k |= CKTypeKind.IsAmbientService | CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
-                        else if( isContainerConfiguredScoped ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
+                        if( isContainerConfiguredScoped ) k |= CKTypeKind.IsContainerConfiguredService | CKTypeKind.IsScoped;
 
                         // Final check if the type filter has not excluded the type.
                         // We may be IAutoService or a IPoco or... whatever: any combination error will be detected.

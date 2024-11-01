@@ -37,11 +37,11 @@ sealed class DIContainerHub_CK : DIContainerHub
         {
             { typeof(IActivityMonitor), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
             { typeof(IParallelLogger), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
-            { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
-            { typeof(FakeAuthenticationInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+            { typeof(IExternalAuthenticationInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+            { typeof(ExternalAuthenticationInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
             { typeof(IFakeTenantInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
             { typeof(FakeTenantInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
-            { typeof(FakeCultureInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
+            { typeof(ExternalCultureInfo), AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped },
         };
         _containerDefinitions = [new FakeBackDIContainerDefinition_CK()];
         _ambientMappings = ImmutableArray.Create(
@@ -49,10 +49,10 @@ sealed class DIContainerHub_CK : DIContainerHub
             new AmbientServiceMapping( typeof( IFakeTenantInfo ), 0 ),
             new AmbientServiceMapping( typeof( FakeTenantInfo ), 0 ),
             // Not an auto service: autonmous entries.
-            new AmbientServiceMapping( typeof( IFakeAuthenticationInfo ), 1 ),
-            new AmbientServiceMapping( typeof( FakeAuthenticationInfo ), 2 ),
+            new AmbientServiceMapping( typeof( IExternalAuthenticationInfo ), 1 ),
+            new AmbientServiceMapping( typeof( ExternalAuthenticationInfo ), 2 ),
             // Single entry.
-            new AmbientServiceMapping( typeof( FakeCultureInfo ), 3 )
+            new AmbientServiceMapping( typeof( ExternalCultureInfo ), 3 )
         );
         Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetAmbientService( sp, 0 );
         Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetAmbientService( sp, 1 );
@@ -61,21 +61,21 @@ sealed class DIContainerHub_CK : DIContainerHub
         _ambientServiceBackendDescriptors = [
                 new ServiceDescriptor( typeof( IFakeTenantInfo ), back0, ServiceLifetime.Scoped ),
             new ServiceDescriptor( typeof( FakeTenantInfo ), back0, ServiceLifetime.Scoped ),
-            new ServiceDescriptor( typeof( IFakeAuthenticationInfo ), back1, ServiceLifetime.Scoped ),
-            new ServiceDescriptor( typeof( FakeAuthenticationInfo ), back2, ServiceLifetime.Scoped ),
-            new ServiceDescriptor( typeof( FakeCultureInfo ), back3, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( IExternalAuthenticationInfo ), back1, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( ExternalAuthenticationInfo ), back2, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( ExternalCultureInfo ), back3, ServiceLifetime.Scoped ),
         ];
         // These declarations are only here as the defaults.
         // In practice they are overridden by the endpoint container definition ConfigureServices.
         Func<IServiceProvider, object> front0 = sp => ((IAmbientServiceDefaultProvider<FakeTenantInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultTenantProvider ) )!).Default;
-        Func<IServiceProvider, object> front1 = sp => ((IAmbientServiceDefaultProvider<FakeAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
-        Func<IServiceProvider, object> front3 = sp => ((IAmbientServiceDefaultProvider<FakeCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
+        Func<IServiceProvider, object> front1 = sp => ((IAmbientServiceDefaultProvider<ExternalAuthenticationInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
+        Func<IServiceProvider, object> front3 = sp => ((IAmbientServiceDefaultProvider<ExternalCultureInfo>?)DIContainerHub_CK.GlobalServices.GetService( typeof( DefaultCultureProvider ) )!).Default;
         _ambientServiceEndpointDescriptors = [
                 new ServiceDescriptor( typeof( IFakeTenantInfo ), front0, ServiceLifetime.Scoped ),
             new ServiceDescriptor( typeof( FakeTenantInfo ), front0, ServiceLifetime.Scoped ),
-            new ServiceDescriptor( typeof( IFakeAuthenticationInfo ), front1, ServiceLifetime.Scoped ),
-            new ServiceDescriptor( typeof( FakeAuthenticationInfo ), front1, ServiceLifetime.Scoped ),
-            new ServiceDescriptor( typeof( FakeCultureInfo ), front3, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( IExternalAuthenticationInfo ), front1, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( ExternalAuthenticationInfo ), front1, ServiceLifetime.Scoped ),
+            new ServiceDescriptor( typeof( ExternalCultureInfo ), front3, ServiceLifetime.Scoped ),
         ];
     }
 
