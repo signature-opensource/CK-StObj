@@ -92,7 +92,7 @@ public class MultiSetImplementationTests : CommonTypes
     public async Task ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();

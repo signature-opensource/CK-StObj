@@ -47,7 +47,7 @@ public partial class WriteReadAnyTests
     public async Task ReadAnyJson_tests_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( ISomeTypes ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
@@ -335,7 +335,7 @@ public partial class WriteReadAnyTests
     public async Task roundtrip_and_write_read_any_big_Async( int[] seeds )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ),
                                         typeof( ISomeTypes ),
                                         typeof( ICommand ),
                                         typeof( IBatchCommand ),

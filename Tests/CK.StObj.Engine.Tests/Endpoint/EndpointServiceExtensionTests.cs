@@ -47,7 +47,7 @@ public class EndpointServiceExtensionTests
     public async Task Ambient_service_requires_its_default_value_provider_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( AmbientThing ), ConfigurableAutoServiceKind.IsAmbientService|ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped );
+        configuration.ExternalTypes.Add( typeof( AmbientThing ), ExternalServiceKind.IsAmbientService| ExternalServiceKind.IsContainerConfiguredService| ExternalServiceKind.IsScoped );
         await configuration.GetFailedAutomaticServicesAsync( "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
 
         configuration.FirstBinPath.Types.Add( typeof( DefaultAmbientThingProvider ) );

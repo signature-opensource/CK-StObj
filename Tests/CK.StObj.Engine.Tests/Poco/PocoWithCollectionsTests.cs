@@ -49,7 +49,7 @@ public class PocoWithCollectionsTests
     public async Task non_null_Array_property_are_initialized_to_the_Array_Empty_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IWithArray ), typeof( IWithArraySetter ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IWithArray ), typeof( IWithArraySetter ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();

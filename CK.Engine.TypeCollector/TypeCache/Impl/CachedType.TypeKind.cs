@@ -39,18 +39,22 @@ partial class CachedType
             else
             {
                 Throw.DebugAssert( typeof( Core.ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                Throw.DebugAssert( typeof( ContainerConfiguredScopedServiceAttribute ).Name == "ContainerConfiguredScopedServiceAttribute" );
-                Throw.DebugAssert( typeof( ContainerConfiguredSingletonServiceAttribute ).Name == "ContainerConfiguredSingletonServiceAttribute" );
+                Throw.DebugAssert( typeof( Core.RegisterCKTypeAttribute ).Name == "RegisterCKTypeAttribute" );
+                Throw.DebugAssert( typeof( ScopedContainerConfiguredServiceAttribute ).Name == "ScopedContainerConfiguredServiceAttribute" );
+                Throw.DebugAssert( typeof( SingletonContainerConfiguredServiceAttribute ).Name == "SingletonContainerConfiguredServiceAttribute" );
                 Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                 Throw.DebugAssert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                 Throw.DebugAssert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                Throw.DebugAssert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
+                Throw.DebugAssert( typeof( ScopedServiceAttribute ).Name == "ScopedServiceAttribute" );
                 bool hasIntrinsicRegisterType = false;
                 bool hasSuperDefiner = false;
                 bool hasDefiner = false;
+                bool hasSingletonService = false;
+                bool hasScopedService = false;
                 bool isMultiple = false;
                 bool isExcludedType = false;
                 bool hasContainerConfiguredScoped = false;
-                bool hasAmbientService = false;
                 bool hasContainerConfiguredSingleton = false;
 
                 // Now process the attributes of the type. This sets the variables above
@@ -91,14 +95,19 @@ partial class CachedType
                             intrinsicAttrCount++;
                             break;
                         case "ScopedContainerConfiguredServiceAttribute":
-case "ContainerConfiguredScopedServiceAttribute":
                             hasContainerConfiguredScoped = true;
-                            hasAmbientService = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
                             intrinsicAttrCount++;
                             break;
                         case "SingletonContainerConfiguredServiceAttribute":
-case "ContainerConfiguredSingletonServiceAttribute":
                             hasContainerConfiguredSingleton = true;
+                            intrinsicAttrCount++;
+                            break;
+                        case "ScopedServiceAttribute":
+                            hasScopedService = true;
+                            intrinsicAttrCount++;
+                            break;
+                        case "SingletonServiceAttribute":
+                            hasSingletonService = true;
                             intrinsicAttrCount++;
                             break;
                     }
@@ -111,9 +120,9 @@ case "ContainerConfiguredSingletonServiceAttribute":
                     {
                         ThrowTypeError( $"has [ExcludeCKType] attribute. It cannot also have [{GetIntrinsicAttributeNames( false ).Concatenate("], [")}] attributes." );       
                     }
-                    if( hasContainerConfiguredScoped && hasContainerConfiguredSingleton )
+                    if( (hasContainerConfiguredScoped || hasScopedService) && (hasContainerConfiguredSingleton || hasSingletonService) )
                     {
-                        ThrowTypeError( $"cannot have both [ScopedContainerConfiguredService] and [SingletonContainerConfiguredService] attributes." );
+                        ThrowTypeError( $"cannot have both [ScopedService] (or [ScopedContainerConfiguredService]) and [SingletonService] (or [SingletonContainerConfiguredService]) attributes." );
                     }
                     // Normalizes SuperDefiner => Definer (and emits a warning).
                     if( hasSuperDefiner )
@@ -180,13 +189,7 @@ case "ContainerConfiguredSingletonServiceAttribute":
                                 ThrowTypeError( $"is a static class. It cannot have [IsMultiple] attribute." );
                             }
                         }
-                        else
-                        {
-                            if( isRealObject )
-                            {
-                                ThrowTypeError( $"is a IRealObject interface. [IsMultiple] attribute can only be applied to a IRealObject abstract class." );
-                            }
-                        }
+                        // [IsMultiple] implies [CKTypeDefiner].
                         if( (isRealObject || isAutoService) && !hasDefiner )
                         {
                             ActivityMonitor.StaticLogger.Warn( $"Type '{_csharpName}' is a [IsMultiple] {rpsType}. It should also be decorated with [CKTypeDefiner] or [CKTypeSuperDefiner]." );
@@ -200,8 +203,9 @@ case "ContainerConfiguredSingletonServiceAttribute":
                     if( hasSuperDefiner ) k |= TypeKind.IsSuperDefiner;
                     if( hasDefiner ) k |= TypeKind.IsDefiner;
                     if( hasContainerConfiguredSingleton ) k |= TypeKind.IsContainerConfiguredService | TypeKind.IsSingleton;
-                    if( hasAmbientService ) k |= TypeKind.IsAmbientService | TypeKind.IsContainerConfiguredService | TypeKind.IsScoped;
-                    else if( hasContainerConfiguredScoped ) k |= TypeKind.IsContainerConfiguredService | TypeKind.IsScoped;
+                    if( hasContainerConfiguredScoped ) k |= TypeKind.IsContainerConfiguredService | TypeKind.IsScoped;
+                    if( hasScopedService ) k |= TypeKind.IsScoped;
+                    if( hasSingletonService ) k |= TypeKind.IsSingleton;
 
                     if( isPoco )
                     {

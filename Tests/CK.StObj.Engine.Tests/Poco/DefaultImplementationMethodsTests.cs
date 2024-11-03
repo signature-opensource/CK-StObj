@@ -203,7 +203,7 @@ public class DefaultImplementationMethodsTests
     public async Task poco_can_have_Abstract_and_DefaultImplementationMethods_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var poco = auto.Services.GetRequiredService<PocoDirectory>();

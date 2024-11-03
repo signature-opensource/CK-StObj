@@ -69,7 +69,7 @@ public class AbstractReadOnlyPropertyTests
     {
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -81,7 +81,7 @@ public class AbstractReadOnlyPropertyTests
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -117,7 +117,7 @@ public class AbstractReadOnlyPropertyTests
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -293,7 +293,7 @@ public class AbstractReadOnlyPropertyTests
     public async Task abstract_properties_samples_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();

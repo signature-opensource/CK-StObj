@@ -91,10 +91,10 @@ public partial class SecondaryPocoTests
     public async Task secondary_collections_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ),
-                                        typeof( ISecondary ),
-                                        typeof( IOtherSecondary ),
-                                        typeof( IWithCollections ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ),
+                                                        typeof( ISecondary ),
+                                                        typeof( IOtherSecondary ),
+                                                        typeof( IWithCollections ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();

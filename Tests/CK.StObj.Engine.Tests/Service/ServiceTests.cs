@@ -169,7 +169,7 @@ namespace CK.StObj.Engine.Tests.Service
         public async Task service_can_be_implemented_by_RealObjects_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( ODep ), typeof( OBase ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( ODep ), typeof( OBase ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var oDep = auto.Services.GetRequiredService<ODep>();
@@ -245,7 +245,7 @@ namespace CK.StObj.Engine.Tests.Service
         public async Task scoped_dependency_detection_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
@@ -283,7 +283,7 @@ namespace CK.StObj.Engine.Tests.Service
         public async Task StObjGen_attribute_excludes_the_type_Async()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( SampleServiceGenerated ), typeof( SampleService ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( SampleServiceGenerated ), typeof( SampleService ) );
             using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();

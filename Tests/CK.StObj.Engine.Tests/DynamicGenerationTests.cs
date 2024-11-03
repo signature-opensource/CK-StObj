@@ -110,7 +110,7 @@ public class DynamicGenerationTests
         public static async Task DoTestAsync()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( B ), typeof( ASpec ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( B ), typeof( ASpec ) );
             configuration.AddAspect( new FakeAspectConfiguration() );
             var result = await configuration.RunSuccessfullyAsync();
 
@@ -227,7 +227,7 @@ public class DynamicGenerationTests
         public static async Task DoTestAsync()
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( BSpec ), typeof( ASpec ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( BSpec ), typeof( ASpec ) );
             configuration.AddAspect( new FakeAspectConfiguration() );
             var result = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var engineMap = result.FirstBinPath.EngineMap;
@@ -489,7 +489,7 @@ public class DynamicGenerationTests
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
-                configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
+                configuration.FirstBinPath.Types.AddRangeArray( typeof( S1 ), typeof( S2 ) );
                 (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
                 entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                                 .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );

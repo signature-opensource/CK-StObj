@@ -79,7 +79,7 @@ public class PocoDirectoryTests
     public async Task when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
 
         using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
         {

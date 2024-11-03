@@ -32,7 +32,7 @@ public class DefaultValueTests
     public async Task default_values_on_simple_field_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IThing ), typeof( IThingHolder ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IThing ), typeof( IThingHolder ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();

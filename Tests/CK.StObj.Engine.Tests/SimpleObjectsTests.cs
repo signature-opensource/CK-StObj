@@ -264,7 +264,7 @@ public class SimpleObjectsTests
     public async Task StObjConstruct_StObjInitialize_RegisterStartupServices_and_ConfigureServices_of_the_hierarchy_are_called_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );

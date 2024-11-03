@@ -28,8 +28,8 @@ public class SetAutoServiceKindTests
     public async Task simple_front_only_registration_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IService ), ExternalServiceKind.IsScoped | ExternalServiceKind.IsMultipleService )
-                                 .Add( typeof( TheService ) );
+        configuration.ExternalTypes.Add( typeof( IService ), ExternalServiceKind.IsScoped | ExternalServiceKind.IsMultipleService );
+        configuration.ExternalTypes.Add( typeof( IService ), ExternalServiceKind.IsScoped | ExternalServiceKind.IsMultipleService );
 
         var map = (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
 
@@ -76,8 +76,8 @@ public class SetAutoServiceKindTests
     public async Task base_singleton_interface_definition_can_coexist_with_specializations_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IConfiguration ), ExternalServiceKind.IsSingleton )
-                                 .Add( typeof( ThisShouldCoexist1 ), typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist2 ) );
+        configuration.ExternalTypes.Add( typeof( IConfiguration ), ExternalServiceKind.IsSingleton );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( ThisShouldCoexist1 ), typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist2 ) );
 
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: register =>
         {

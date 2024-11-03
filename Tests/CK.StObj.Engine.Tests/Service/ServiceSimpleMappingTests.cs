@@ -106,7 +106,7 @@ public class ServiceSimpleMappingTests
         // ISBase is no more considered a IScopedAutoService.
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration( generateSourceFiles: false, compileOption: Setup.CompileOption.None );
-            configuration.FirstBinPath.Types.Add( typeof( ServiceS1Impl ), typeof( ServiceS2Impl ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( ServiceS1Impl ), typeof( ServiceS2Impl ) );
             configuration.FirstBinPath.ExcludedTypes.Add( typeof( ISBase ) );
             var r = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var map = r.FirstBinPath.EngineMap;
@@ -296,7 +296,7 @@ public class ServiceSimpleMappingTests
     public async Task Linked_list_of_service_abstract_classes_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
         var map = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
 
         var final = map.Services.Mappings[typeof( ISBase )];

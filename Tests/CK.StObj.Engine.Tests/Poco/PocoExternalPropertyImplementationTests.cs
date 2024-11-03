@@ -51,7 +51,7 @@ public class PocoExternalPropertyImplementationTests
     public async Task some_poco_properties_can_be_handled_by_independent_CodeGenerator_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();

@@ -37,7 +37,7 @@ public class PocoCovariantPropertyTests
     public async Task intrinsic_from_IList_to_IReadOnlyList_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IActualRootA ), typeof( IActualSubA ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IActualRootA ), typeof( IActualSubA ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
@@ -57,7 +57,7 @@ public class PocoCovariantPropertyTests
     public async Task intrinsic_from_concrete_List_to_IReadOnlyList_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
