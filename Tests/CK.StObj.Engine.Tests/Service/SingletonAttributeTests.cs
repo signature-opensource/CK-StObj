@@ -55,7 +55,7 @@ public class SingletonAttributeTests
     public async Task without_SingletonServiceAttribute_scope_requires_manual_registration_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
         var map = (await configuration.RunSuccessfullyAsync().ConfigureAwait( false )).FirstBinPath.LoadMap();
 
         using var auto1 = map.CreateAutomaticServices();

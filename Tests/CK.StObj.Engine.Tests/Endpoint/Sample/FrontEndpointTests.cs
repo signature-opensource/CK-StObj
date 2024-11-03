@@ -59,14 +59,14 @@ public class FrontEndpointTests
     public async Task Front_endpoint_default_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService|Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService|Setup.ConfigurableAutoServiceKind.IsScoped );
-        configuration.FirstBinPath.Types.Add( typeof( ExternalCultureInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
-        configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
-                                              typeof( FakeTenantInfo ),
-                                              typeof( DefaultTenantProvider ),
-                                              typeof( DefaultCultureProvider ),
-                                              typeof( ExternalAuthenticationInfo ),
-                                              typeof( DefaultAuthenticationInfoProvider ) );
+        configuration.ExternalTypes.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService|Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService|Setup.ConfigurableAutoServiceKind.IsScoped );
+        configuration.ExternalTypes.Add( typeof( ExternalCultureInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SomeFrontDIContainerDefinition ),
+                                                        typeof( FakeTenantInfo ),
+                                                        typeof( DefaultTenantProvider ),
+                                                        typeof( DefaultCultureProvider ),
+                                                        typeof( ExternalAuthenticationInfo ),
+                                                        typeof( DefaultAuthenticationInfoProvider ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide

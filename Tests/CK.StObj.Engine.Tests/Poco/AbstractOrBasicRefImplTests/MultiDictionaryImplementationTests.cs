@@ -52,9 +52,9 @@ public class MultiDictionaryImplementationTests : CommonTypes
     public async Task IDictionary_implementation_supports_all_the_required_types_Async( Type type )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
-                                        typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
-                                        type );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
+                                                        typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
+                                                        type );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();

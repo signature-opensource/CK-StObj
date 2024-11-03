@@ -67,8 +67,8 @@ public class EndpointServiceExtensionTests
     public async Task specialized_Ambient_service_not_AutoService_cannot_share_the_SpecDefaultProvider_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( AmbientThing ), ConfigurableAutoServiceKind.IsAmbientService|ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped );
-        configuration.FirstBinPath.Types.Add( [typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider )] );
+        configuration.ExternalTypes.Add( typeof( AmbientThing ), ConfigurableAutoServiceKind.IsAmbientService|ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider ) );
 
         await configuration.GetFailedAutomaticServicesAsync(
             "Unable to find an implementation for 'IAmbientServiceDefaultProvider<EndpointServiceExtensionTests.AmbientThing>'. "
@@ -112,9 +112,9 @@ public class EndpointServiceExtensionTests
     public async Task specialized_Ambient_services_that_are_AutoServices_can_share_the_SpecDefaultProvider_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( [typeof( SpecAutoAmbientThing ),
-                                               typeof( AutoAmbientThing ),
-                                               typeof( SpecAutoAmbientThingProvider )] );
+        configuration.FirstBinPath.Types.AddRangeArray( [typeof( SpecAutoAmbientThing ),
+                                                         typeof( AutoAmbientThing ),
+                                                         typeof( SpecAutoAmbientThingProvider )] );
         await configuration.RunSuccessfullyAsync();
     }
 
