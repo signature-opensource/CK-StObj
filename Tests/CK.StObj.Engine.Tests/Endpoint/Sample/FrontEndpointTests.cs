@@ -19,8 +19,8 @@ public class FrontEndpointTests
     public async Task global_DI_automatically_falls_back_to_default_value_provider_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( FakeTenantInfo ),
-                                        typeof( DefaultTenantProvider ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( FakeTenantInfo ),
+                                                        typeof( DefaultTenantProvider ) );
 
         using var auto = (await configuration.RunAsync()).CreateAutomaticServices( configureServices: services =>
         {
@@ -59,13 +59,13 @@ public class FrontEndpointTests
     public async Task Front_endpoint_default_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
-                                        typeof( FakeTenantInfo ),
-                                        typeof( DefaultTenantProvider ),
-                                        typeof( FakeCultureInfo ),
-                                        typeof( DefaultCultureProvider ),
-                                        typeof( FakeAuthenticationInfo ),
-                                        typeof( DefaultAuthenticationInfoProvider ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SomeFrontDIContainerDefinition ),
+                                                        typeof( FakeTenantInfo ),
+                                                        typeof( DefaultTenantProvider ),
+                                                        typeof( FakeCultureInfo ),
+                                                        typeof( DefaultCultureProvider ),
+                                                        typeof( FakeAuthenticationInfo ),
+                                                        typeof( DefaultAuthenticationInfoProvider ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
@@ -121,8 +121,8 @@ public class FrontEndpointTests
                                "Type 'IFakeAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( FakeAuthenticationInfo ),
-                                            typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
+            configuration.FirstBinPath.Types.AddRangeArray( typeof( FakeAuthenticationInfo ),
+                                                            typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
             await configuration.GetFailedAutomaticServicesAsync( msg );
         }
     }

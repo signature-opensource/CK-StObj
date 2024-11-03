@@ -53,6 +53,8 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<CustomAttributeData> CustomAttributes => ImmutableArray<CustomAttributeData>.Empty;
 
+    public ImmutableArray<object> Attributes => ImmutableArray<object>.Empty;
+
     public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
 
     public GlobalTypeCache TypeCache => _typeCache;

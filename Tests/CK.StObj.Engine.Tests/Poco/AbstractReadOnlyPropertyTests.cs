@@ -203,7 +203,7 @@ public class AbstractReadOnlyPropertyTests
     public async Task auto_initialized_property_can_be_exposed_as_nullable_properties_Async( Type tAutoProperty, Type tPrimary, Type tExtension )
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( tPrimary, tExtension );
+        configuration.FirstBinPath.Types.AddRangeArray( tPrimary, tExtension );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();

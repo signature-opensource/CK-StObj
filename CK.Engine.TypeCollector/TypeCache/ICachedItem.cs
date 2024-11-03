@@ -26,5 +26,10 @@ public interface ICachedItem
     /// </summary>
     ImmutableArray<CustomAttributeData> CustomAttributes { get; }
 
+    /// <summary>
+    /// Gets a cache of attribute instances.
+    /// </summary>
+    ImmutableArray<object> Attributes { get; }
+
     StringBuilder Write( StringBuilder b );
 }

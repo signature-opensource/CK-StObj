@@ -77,7 +77,7 @@ public class SingletonAttributeTests
     public async Task SingletonServiceAttribute_enables_services_to_not_have_public_constructor_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
         {
             services.AddSingleton( sp => NotConstructibleService.Create() );

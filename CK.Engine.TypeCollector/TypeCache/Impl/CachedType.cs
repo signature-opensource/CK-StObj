@@ -76,6 +76,8 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
 
+        public ImmutableArray<object> Attributes => _nonNullable.Attributes;
+
         public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 
         public ImmutableArray<ICachedType> DeclaredBaseTypes => _nonNullable.DeclaredBaseTypes;
@@ -135,6 +137,8 @@ partial class CachedType : CachedItem, ICachedType
         public ImmutableArray<ICachedType> GenericArguments => _nonNullable.GenericArguments;
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
+
+        public ImmutableArray<object> Attributes => _nonNullable.Attributes;
 
         public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 

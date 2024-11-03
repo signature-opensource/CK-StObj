@@ -49,6 +49,8 @@ partial class CachedType
 
         public ImmutableArray<CustomAttributeData> CustomAttributes => throw new NotImplementedException();
 
+        public ImmutableArray<object> Attributes => throw new NotImplementedException();
+
         public ICachedType? ElementType => throw new NotImplementedException();
 
         public TypeKind Kind => throw new NotImplementedException();

@@ -44,7 +44,7 @@ public partial class SecondaryPocoTests
     public async Task secondary_properties_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
+        configuration.FirstBinPath.Types.AddRangeArray( typeof( CommonPocoJsonSupport ), typeof( ISecondary ), typeof( IWithSecondaryProperty ) );
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
