@@ -1,0 +1,1 @@
+[assembly: CK.Setup.IsEngine]

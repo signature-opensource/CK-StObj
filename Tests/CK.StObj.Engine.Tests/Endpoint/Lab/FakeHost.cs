@@ -13,10 +13,10 @@ static class FakeHost
         // None of them have code generation (but they could).
         // These simulate resolution from a request token, query parameter or other mean
         // of deducing these informations for the global context.
-        global.AddScoped<FakeAuthenticationInfo>( sp => new FakeAuthenticationInfo( "Bob", 42 ) );
-        global.AddScoped<IFakeAuthenticationInfo>( sp => sp.GetRequiredService<FakeAuthenticationInfo>() );
+        global.AddScoped<ExternalAuthenticationInfo>( sp => new ExternalAuthenticationInfo( "Bob", 42 ) );
+        global.AddScoped<IExternalAuthenticationInfo>( sp => sp.GetRequiredService<ExternalAuthenticationInfo>() );
 
-        global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+        global.AddScoped<ExternalCultureInfo>( sp => new ExternalCultureInfo( "fr" ) );
 
         global.AddScoped<FakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
         global.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<FakeTenantInfo>() );

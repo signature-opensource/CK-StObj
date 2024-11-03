@@ -3,15 +3,17 @@ using CK.Setup;
 
 namespace CK.StObj.Engine.Tests.Endpoint;
 
-[ContainerConfiguredScopedService( isAmbientService: true )]
-public sealed class FakeCultureInfo
+/// <summary>
+/// External class that is defined by configuration to be an Ambient service.
+/// </summary>
+public sealed class ExternalCultureInfo
 {
-    public FakeCultureInfo( string culture )
+    public ExternalCultureInfo( string culture )
     {
         Culture = culture;
     }
 
-    public FakeCultureInfo( string culture, string fallbackCulture )
+    public ExternalCultureInfo( string culture, string fallbackCulture )
     {
         Culture = culture;
         FallbackCulture = fallbackCulture;

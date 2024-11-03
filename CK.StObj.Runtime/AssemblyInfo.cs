@@ -1,3 +1,3 @@
 
-[assembly: CK.Setup.IsSetupDependency()]
-[assembly: CK.Setup.RequiredSetupDependency( "CK.StObj.Engine" )]
+[assembly: CK.Setup.IsEngine()]
+[assembly: CK.Setup.RequiredEngine( "CK.StObj.Engine" )]

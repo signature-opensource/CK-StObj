@@ -2,7 +2,7 @@ using CK.Core;
 
 namespace CK.StObj.Engine.Tests.Endpoint;
 
-[ContainerConfiguredScopedService]
+[ScopedContainerConfiguredService]
 public sealed class TenantResolutionService : IScopedAutoService
 {
     public IFakeTenantInfo GetTenantFromRequest( /*HttpContext ctx*/ )

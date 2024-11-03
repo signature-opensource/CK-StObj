@@ -1,8 +1,10 @@
 using CK.Core;
+using CK.Setup;
 using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint;
@@ -10,12 +12,12 @@ namespace CK.StObj.Engine.Tests.Endpoint;
 [TestFixture]
 public class EndpointServiceExtensionTests
 {
-    [ContainerConfiguredScopedService]
+    [ScopedContainerConfiguredService]
     public interface IEPService1
     {
     }
 
-    [ContainerConfiguredSingletonService]
+    [SingletonContainerConfiguredService]
     public interface IEPService2 : IAutoService
     {
     }
@@ -30,7 +32,6 @@ public class EndpointServiceExtensionTests
         r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
     }
 
-    [ContainerConfiguredScopedService( isAmbientService: true )]
     public class AmbientThing
     {
         public string? ThingName { get; set; }
@@ -43,11 +44,14 @@ public class EndpointServiceExtensionTests
 
 
     [Test]
-    public void Ambient_service_requires_its_default_value_provider()
+    public async Task Ambient_service_requires_its_default_value_provider_Async()
     {
-        TestHelper.GetFailedCollectorResult( [typeof( AmbientThing )], "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( AmbientThing ), ConfigurableAutoServiceKind.IsAmbientService|ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped );
+        await configuration.GetFailedAutomaticServicesAsync( "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
 
-        TestHelper.GetSuccessfulCollectorResult( [typeof( AmbientThing ), typeof( DefaultAmbientThingProvider )] );
+        configuration.FirstBinPath.Types.Add( typeof( DefaultAmbientThingProvider ) );
+        await configuration.RunSuccessfullyAsync();
     }
 
     public class SpecAmbientThing : AmbientThing
@@ -60,15 +64,18 @@ public class EndpointServiceExtensionTests
     }
 
     [Test]
-    public void specialized_Ambient_service_not_AutoService_cannot_share_the_SpecDefaultProvider()
+    public async Task specialized_Ambient_service_not_AutoService_cannot_share_the_SpecDefaultProvider_Async()
     {
-        TestHelper.GetFailedCollectorResult( [typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider )],
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( AmbientThing ), ConfigurableAutoServiceKind.IsAmbientService|ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped );
+        configuration.FirstBinPath.Types.Add( [typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider )] );
+
+        await configuration.GetFailedAutomaticServicesAsync(
             "Unable to find an implementation for 'IAmbientServiceDefaultProvider<EndpointServiceExtensionTests.AmbientThing>'. "
             + "Type 'AmbientThing' is not a valid Ambient service, all ambient services must have a default value provider." );
     }
 
-    [ContainerConfiguredScopedService( isAmbientService: true )]
-    public class AutoAmbientThing : IAutoService
+    public class AutoAmbientThing : IAmbientAutoService
     {
         readonly string _name;
 
@@ -102,11 +109,13 @@ public class EndpointServiceExtensionTests
     }
 
     [Test]
-    public void specialized_Ambient_services_that_are_AutoServices_can_share_the_SpecDefaultProvider()
+    public async Task specialized_Ambient_services_that_are_AutoServices_can_share_the_SpecDefaultProvider_Async()
     {
-        TestHelper.GetSuccessfulCollectorResult( [typeof( SpecAutoAmbientThing ),
-            typeof( AutoAmbientThing ),
-            typeof( SpecAutoAmbientThingProvider )] );
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( [typeof( SpecAutoAmbientThing ),
+                                               typeof( AutoAmbientThing ),
+                                               typeof( SpecAutoAmbientThingProvider )] );
+        await configuration.RunSuccessfullyAsync();
     }
 
 

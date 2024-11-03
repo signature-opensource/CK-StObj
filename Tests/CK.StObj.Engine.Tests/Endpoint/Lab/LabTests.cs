@@ -353,16 +353,16 @@ public partial class LabTests
 
     public class AmbientServiceConsumer : IScopedAutoService
     {
-        public AmbientServiceConsumer( IFakeAuthenticationInfo authInfo, IFakeTenantInfo tenantInfo, FakeCultureInfo cultureInfo )
+        public AmbientServiceConsumer( IExternalAuthenticationInfo authInfo, IFakeTenantInfo tenantInfo, ExternalCultureInfo cultureInfo )
         {
             AuthInfo = authInfo;
             TenantInfo = tenantInfo;
             CultureInfo = cultureInfo;
         }
 
-        public IFakeAuthenticationInfo AuthInfo { get; }
+        public IExternalAuthenticationInfo AuthInfo { get; }
         public IFakeTenantInfo TenantInfo { get; }
-        public FakeCultureInfo CultureInfo { get; }
+        public ExternalCultureInfo CultureInfo { get; }
 
         public override string ToString() => $"{AuthInfo}, {CultureInfo}, {TenantInfo}";
     }
@@ -394,11 +394,11 @@ public partial class LabTests
         sameAsGlobal.CultureInfo.Culture.Should().Be( "fr" );
         sameAsGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
         // The ubiq is locked since it is used.
-        FluentActions.Invoking( () => ubiq.Override( new FakeCultureInfo( "en" ) ) ).Should().Throw<InvalidOperationException>();
+        FluentActions.Invoking( () => ubiq.Override( new ExternalCultureInfo( "en" ) ) ).Should().Throw<InvalidOperationException>();
 
         var ubiqWithCulture = ubiq.CleanClone();
         ubiqWithCulture.IsLocked.Should().BeFalse();
-        ubiqWithCulture.Override( new FakeCultureInfo( "en" ) );
+        ubiqWithCulture.Override( new ExternalCultureInfo( "en" ) );
         ubiqWithCulture.IsDirty.Should().BeTrue();
         using var scopedDiffCulture = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithCulture, TestHelper.Monitor ) );
         var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
@@ -409,13 +409,13 @@ public partial class LabTests
         // IFakeAuthentication is NOT a IAutoService:
         // We MUST manually handle the registrations... And we can do very bad things!
         var ubiqWithAlice = ubiq.CleanClone( restoreInitialValues: true );
-        ubiqWithAlice.Override( new FakeAuthenticationInfo( "Alice (class)", 3712 ) );
-        ubiqWithAlice.Override( typeof( IFakeAuthenticationInfo ), new FakeAuthenticationInfo( "Alice (interface)", 3712 ) );
+        ubiqWithAlice.Override( new ExternalAuthenticationInfo( "Alice (class)", 3712 ) );
+        ubiqWithAlice.Override( typeof( IExternalAuthenticationInfo ), new ExternalAuthenticationInfo( "Alice (interface)", 3712 ) );
         using var scopedForAlice = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
         var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
         withAlice.AuthInfo.UserName.Should().Be( "Alice (interface)" );
         // If the consumer depended on the class, it would have used the other instance!
-        scopedForAlice.ServiceProvider.GetRequiredService<FakeAuthenticationInfo>().UserName.Should().Be( "Alice (class)" );
+        scopedForAlice.ServiceProvider.GetRequiredService<ExternalAuthenticationInfo>().UserName.Should().Be( "Alice (class)" );
         withAlice.CultureInfo.Culture.Should().Be( "fr" );
         withAlice.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
 
@@ -442,7 +442,7 @@ public partial class LabTests
 
         var ubiqWithTenantByIAndEn = ubiqWithTenantByI.CleanClone( restoreInitialValues: false );
         ubiqWithTenantByIAndEn.IsDirty.Should().BeFalse();
-        ubiqWithTenantByIAndEn.Override( new FakeCultureInfo( "en" ) );
+        ubiqWithTenantByIAndEn.Override( new ExternalCultureInfo( "en" ) );
         ubiqWithTenantByIAndEn.IsDirty.Should().BeTrue();
         using var scopedTenantByIAndEn = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByIAndEn, TestHelper.Monitor ) );
         var withTenantByIAndEn = scopedTenantByIAndEn.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();

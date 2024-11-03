@@ -1,3 +1,2 @@
 
-[assembly: CK.Setup.IsModel()]
-[assembly: CK.Setup.RequiredSetupDependency( "CK.Poco.Exc.Json.Engine" )]
+[assembly: CK.Setup.RequiredEngine( "CK.Poco.Exc.Json.Engine" )]
