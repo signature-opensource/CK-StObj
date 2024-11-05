@@ -393,7 +393,7 @@ public sealed partial class AssemblyCache // BinPathGroup
             if( !cached._kind.IsPFeature() )
             {
                 // ExcludeCKTypeAttribute on Type is in CK.Core namespace, ExcludeCKTypeAttribute on Asssembly is in CK.Setup namespace.
-                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( RegisterCKTypeAttribute ) || a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) ) )
+                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( CK.Setup.RegisterCKTypeAttribute ) || a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) ) )
                 {
                     monitor.Warn( $"""
                               Assembly '{cached.Name}' is '{cached.Kind}' and defines [RegisterCKType] or [ExcludeCKType] attributes, they are ignored.

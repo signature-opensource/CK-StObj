@@ -72,7 +72,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 List<ICachedType>? changed = null;
                 foreach( var a in assembly.CustomAttributes )
                 {
-                    if( a.AttributeType == typeof( RegisterCKTypeAttribute ) )
+                    if( a.AttributeType == typeof( Setup.RegisterCKTypeAttribute ) )
                     {
                         var ctorArgs = a.ConstructorArguments;
                         // Constructor (Type, Type[] others):
