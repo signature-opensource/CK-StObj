@@ -24,6 +24,9 @@ public static class SharedEngine
     static IStObjMap? _map;
     static AutomaticServices _services;
     static EngineConfiguration? _configuration;
+    static Action<EngineConfiguration>? _autoConfigureEngine;
+    static Action<IServiceCollection>? _autoConfigureServices;
+
     static ExceptionDispatchInfo? _getEngineLevel;
     static ExceptionDispatchInfo? _runLevel;
     static ExceptionDispatchInfo? _mapLevel;
@@ -104,7 +107,7 @@ public static class SharedEngine
         {
             if( _services.Services == null )
             {
-                _services = GetMap().CreateAutomaticServices();
+                _services = GetMap().CreateAutomaticServices( _autoConfigureServices );
             }
             return _services.Services;
         }
@@ -119,6 +122,25 @@ public static class SharedEngine
     /// Called when no configuration exists (or <see cref="Reset(EngineConfiguration?)"/> has been called with null).
     /// </summary>
     public static Action<EngineConfiguration>? AutoConfigure { get; set; }
+
+    /// <summary>
+    /// Called when <see cref="AutomaticServices"/> is called.
+    /// <para>
+    /// Setting this disposes the current <see cref="AutomaticServices"/> and next call to AutomaticServices
+    /// will attempt to rebuild a new set of services, but the current <see cref="Map"/> (if any) is preserved.
+    /// </para>
+    /// </summary>
+    public static Action<IServiceCollection>? AutoConfigureServices
+    {
+        get => _autoConfigureServices;
+        set
+        {
+            _serviceLevel = null;
+            if( _services.Services != null ) _services.Dispose();
+            _services = default;
+            _autoConfigureServices = value;
+        }
+    }
 
     /// <summary>
     /// Sets a configuration: this resets existing <see cref="EngineResult"/>, <see cref="Map"/> and <see cref="Services"/>

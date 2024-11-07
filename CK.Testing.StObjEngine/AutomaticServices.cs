@@ -4,9 +4,8 @@ using System;
 
 namespace CK.Testing;
 
-
 /// <summary>
-/// Captures the result of <see cref="EngineTestHelperExtensions.RunSingleBinPathAndLoad(IMonitorTestHelper, System.Collections.Generic.ISet{Type})"/>.
+/// Captures the result of <see cref="EngineTestHelperExtensions.CreateAutomaticServices(Setup.EngineResult, Action{Setup.IPocoTypeSystemBuilder}?, Action{IServiceCollection}?, string)"/>.
 /// </summary>
 public readonly struct AutomaticServices : IDisposable
 {

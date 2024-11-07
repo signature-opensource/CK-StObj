@@ -29,8 +29,8 @@ public static partial class EngineTestHelperExtensions
     public static IStObjMap LoadMap( this EngineResult engineResult, string binPathName = "First" ) => engineResult.FindRequiredBinPath( binPathName )
                                                                                                                    .LoadMap();
     /// <summary>
-    /// Fully builds and configures a IServiceProvider after a successful run of the engine fully configured service provider
-    /// in <see cref="AutomaticServices"/> (that must be disposed).
+    /// Fully builds and configures a <see cref="AutomaticServices.Services"/> after a successful run of the engine.
+    /// The resulting <see cref="AutomaticServices"/> must be disposed.
     /// <para>
     /// The G0.cs file is updated and the assembly is generated. If the StObjMap is already loaded and available, it is chosen: the second run of a
     /// test can debug the generated code by putting breakpoints in the G0.cs file and this file can be freely modified as long as the first line
