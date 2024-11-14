@@ -616,7 +616,6 @@ public sealed class PocoDirectoryImpl : CSCodeGeneratorType
             _lastRegistrationCount = newCount;
             return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
         }
-        monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem can start." );
         // This is the mess (again) of the attribute cache...
         // This MUST disappear with ReaDI: the attribute Impl should simply depends on the IPocoTypeSystemBuilder
         // and the constructor can even do the job inline (errors would then be tracked through the monitor) or
@@ -628,6 +627,7 @@ public sealed class PocoDirectoryImpl : CSCodeGeneratorType
                 return CSCodeGenerationResult.Failed;
             }
         }
+        monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem can start." );
         IPocoTypeSystem ts = _typeSystemBuilder.Lock( monitor );
 
         _finalTypeIndex.GeneratedByComment( "Public access for code generator (will be a Frozen, readonly dictionary in .NET8)." )
