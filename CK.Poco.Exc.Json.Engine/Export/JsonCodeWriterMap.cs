@@ -111,6 +111,12 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
                                                                      .Append( v )
                                                                      .Append( ".Ticks.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" ) );
         }
+        else if( type.Type == typeof( char ) )
+        {
+            return new BasicWriter( map, ( writer, v ) => writer.Append( "w.WriteStringValue( new ReadOnlySpan<char>( " )
+                                                                     .Append( v )
+                                                                     .Append( " ) );" ) );
+        }
         else if( type.Type == typeof( SimpleUserMessage )
                  || type.Type == typeof( UserMessage )
                  || type.Type == typeof( FormattedString )

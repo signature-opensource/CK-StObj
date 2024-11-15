@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../CK.Testing.StObjEngine/CK.Testing.StObjEngine.csproj" />

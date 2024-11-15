@@ -34,6 +34,7 @@ public partial class BasicTypeTests
         DateTimeOffset PDateTimeOffset { get; set; }
         TimeSpan PTimeSpan { get; set; }
         Guid PGuid { get; set; }
+        char PChar { get; set; }
     }
 
     [Test]
@@ -61,6 +62,7 @@ public partial class BasicTypeTests
         nMax.PDateTimeOffset = DateTimeOffset.MaxValue;
         nMax.PTimeSpan = TimeSpan.MaxValue;
         nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
+        nMax.PChar = char.MaxValue;
 
         var nMin = auto.Services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
         nMin.PByte = Byte.MinValue;
@@ -79,6 +81,7 @@ public partial class BasicTypeTests
         nMin.PDateTimeOffset = DateTimeOffset.MinValue;
         nMin.PTimeSpan = TimeSpan.MinValue;
         nMin.PGuid = Guid.Empty;
+        nMin.PChar = char.MinValue;
 
         var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(max) serialization: " + t ) );
         nMax2.Should().BeEquivalentTo( nMax );
@@ -107,6 +110,7 @@ public partial class BasicTypeTests
         DateTimeOffset? PDateTimeOffset { get; set; }
         TimeSpan? PTimeSpan { get; set; }
         Guid? PGuid { get; set; }
+        char? PChar { get; set; }
     }
 
     [Test]
@@ -137,6 +141,7 @@ public partial class BasicTypeTests
         nMax.PDateTimeOffset = DateTimeOffset.MaxValue;
         nMax.PTimeSpan = TimeSpan.MaxValue;
         nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
+        nMax.PChar = char.MaxValue;
 
         var nMin = auto.Services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
         nMin.PByte = Byte.MinValue;
@@ -155,6 +160,7 @@ public partial class BasicTypeTests
         nMin.PDateTimeOffset = DateTimeOffset.MinValue;
         nMin.PTimeSpan = TimeSpan.MinValue;
         nMin.PGuid = Guid.Empty;
+        nMin.PChar = char.MinValue;
 
         var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (null) serialization: " + t ) );
         nNull2.Should().BeEquivalentTo( nNull );

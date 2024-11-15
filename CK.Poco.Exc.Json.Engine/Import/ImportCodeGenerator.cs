@@ -156,6 +156,19 @@ internal static T[] ReadArrayOfAny<T>( ref System.Text.Json.Utf8JsonReader r, CK
     return c.ToArray();
 }
 
+internal static char ReadChar( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
+{
+    // see https://source.dot.net/#System.Text.Json/System/Text/Json/Serialization/Converters/Value/CharConverter.cs,cd3a8b4ef167e1e6
+    Span<char> buffer = stackalloc char[6];
+    int charsWritten = r.CopyString(buffer);
+    if( charsWritten != 1 )
+    {
+         r.ThrowJsonException( ""Expected character."" );
+    }
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
+    return buffer[0];
+}
+
 delegate object ObjectReader( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx );
 static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<string, ObjectReader>();
 

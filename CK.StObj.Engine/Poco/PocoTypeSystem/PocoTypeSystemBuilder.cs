@@ -643,6 +643,10 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
         {
             return RegValueType( this, _typeCache, tNotNull, typeof( sbyte? ), "sbyte" );
         }
+        if( tNotNull == typeof( char ) )
+        {
+            return RegValueType( this, _typeCache, tNotNull, typeof( char? ), "char" );
+        }
         if( tNotNull == typeof( SimpleUserMessage ) )
         {
             return Reg( _typeCache, PocoType.CreateNoDefaultBasicValue( this, tNotNull, typeof( SimpleUserMessage? ), "SimpleUserMessage" ) );

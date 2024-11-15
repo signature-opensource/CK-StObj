@@ -289,13 +289,13 @@ public partial class StObjCollectorResult
                                                         ? configurationGroup.GeneratedAssembly.Path
                                                         : default;
             using( monitor.OpenInfo( codeGenContext.CompileOption == CompileOption.Compile
-                                        ? $"Compiling source code (using C# v10.0 language version) and saving to '{targetPath}'."
-                                        : "Only parsing source code, using C# v10.0 language version (skipping compilation)." ) )
+                                        ? $"Compiling source code (using C# v12.0 language version) and saving to '{targetPath}'."
+                                        : "Only parsing source code, using C# v12.0 language version (skipping compilation)." ) )
             {
                 var result = CodeGenerator.Generate( code,
                                                      targetPath.IsEmptyPath ? null : targetPath,
                                                      ws.AssemblyReferences,
-                                                     new CSharpParseOptions( LanguageVersion.CSharp10 ) );
+                                                     new CSharpParseOptions( LanguageVersion.CSharp12 ) );
 
                 result.LogResult( monitor );
                 if( result.Success )

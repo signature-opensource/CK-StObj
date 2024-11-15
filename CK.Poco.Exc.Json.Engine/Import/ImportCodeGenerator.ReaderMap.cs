@@ -214,6 +214,10 @@ sealed partial class ImportCodeGenerator
             {
                 return ( w, v ) => w.Append( v ).Append( "=r.GetDateTimeOffset();if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
+            if( type.Type == typeof( char ) )
+            {
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadChar( ref r, rCtx );" );
+            }
             if( type.Type == typeof( TimeSpan ) )
             {
                 return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64()); if(!r.Read())rCtx.ReadMoreData(ref r);" );
