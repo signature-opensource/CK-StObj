@@ -29,6 +29,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
     // This is ugly.
     // This sucks...
     IReadOnlyList<MutableItem>? _orderedStObjs;
+    IReadOnlyList<MutableItem>? _orderedAfterContentStObjs;
     Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
     IDIContainerAnalysisResult? _endpointResult;
     IReadOnlyDictionary<Type, IStObjMultipleInterface>? _multiplemappings;
@@ -148,6 +149,8 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
 
     IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedStObjs => _orderedStObjs ?? Array.Empty<MutableItem>();
 
+    IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedAfterContentStObjs => _orderedAfterContentStObjs ?? Array.Empty<MutableItem>();
+
     IReadOnlyDictionary<Type, ITypeAttributesCache> IStObjEngineMap.AllTypesAttributesCache => (IReadOnlyDictionary<Type, ITypeAttributesCache>?)_allTypesAttributesCache ?? ImmutableDictionary<Type, ITypeAttributesCache>.Empty;
 
     IDIContainerAnalysisResult IStObjEngineMap.EndpointResult => _endpointResult!;
@@ -155,11 +158,13 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
     IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
 
     internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
+                                          IReadOnlyList<MutableItem> orderedAfterContent,
                                           Dictionary<Type, ITypeAttributesCache> allTypesAttributesCache,
                                           IDIContainerAnalysisResult? endpointResult,
                                           IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
     {
         _orderedStObjs = ordered;
+        _orderedAfterContentStObjs = orderedAfterContent;
         _allTypesAttributesCache = allTypesAttributesCache;
         _endpointResult = endpointResult;
         _multiplemappings = multipleMappings;

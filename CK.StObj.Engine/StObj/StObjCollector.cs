@@ -232,7 +232,7 @@ public partial class StObjCollector
             _cc.RegisterClass( monitor, typeof( AmbientServiceHub ) );
 
             DIContainerAnalysisResult? endpoints = null;
-            var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
+            var (typeResult, orderedItems, orderedAfterContent, buildValueCollector) = CreateTypeAndObjectResults( monitor );
             if( orderedItems != null )
             {
                 // Now that Real objects and core AutoServices are settled, creates the EndpointResult.
@@ -247,7 +247,8 @@ public partial class StObjCollector
                 // We set the final ordered results on the crappy mutable EngineMap (that should
                 // not exist and be replaced with intermediate - functional-like - value results).
                 // This is awful!
-                typeResult.SetFinalOrderedResults( orderedItems, endpoints, typeResult.KindComputeFacade.MultipleMappings );
+                Throw.DebugAssert( orderedAfterContent != null );
+                typeResult.SetFinalOrderedResults( orderedItems, orderedAfterContent, endpoints, typeResult.KindComputeFacade.MultipleMappings );
                 if( !ServiceFinalHandling( monitor, typeResult ) )
                 {
                     // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
@@ -280,7 +281,10 @@ public partial class StObjCollector
         }
     }
 
-    (CKTypeCollectorResult, IReadOnlyList<MutableItem>?, BuildValueCollector?) CreateTypeAndObjectResults( IActivityMonitor monitor )
+    ( CKTypeCollectorResult TypeCollectorResult,
+      IReadOnlyList<MutableItem>? Ordered,
+      IReadOnlyList<MutableItem>? OrderedAfterContent,
+      BuildValueCollector? BuildValueCollector)  CreateTypeAndObjectResults( IActivityMonitor monitor )
     {
         bool error = false;
         using( monitor.OnError( () => error = true ) )
@@ -303,7 +307,7 @@ public partial class StObjCollector
                     }
                 }
             }
-            if( error ) return (typeResult, null, null);
+            if( error ) return (typeResult, null, null, null);
 
             StObjObjectEngineMap engineMap = typeResult.RealObjects.EngineMap;
             IDependencySorterResult? sortResult = null;
@@ -321,7 +325,7 @@ public partial class StObjCollector
                         noCycleDetected &= item.PrepareDependentItem( monitor, valueCollector );
                     }
                 }
-                if( error ) return (typeResult, null, null);
+                if( error ) return (typeResult, null, null, null);
                 using( monitor.OpenInfo( "Resolving PreConstruct and PostBuild properties." ) )
                 {
                     // This is the last step before ordering the dependency graph: all mutable items have now been created and configured, they are ready to be sorted,
@@ -335,7 +339,7 @@ public partial class StObjCollector
                         item.ResolvePreConstructAndPostBuildProperties( monitor, valueCollector, _valueResolver );
                     }
                 }
-                if( error ) return (typeResult, null, null);
+                if( error ) return (typeResult, null, null, null);
                 sortResult = DependencySorter.OrderItems(
                                                monitor,
                                                engineMap.RawMappings.Select( kv => kv.Value ),
@@ -354,13 +358,14 @@ public partial class StObjCollector
                 {
                     sortResult.LogError( monitor );
                     monitor.CloseGroup( "Ordering failed." );
-                    if( error ) return (typeResult, null, null);
+                    if( error ) return (typeResult, null, null, null);
                 }
             }
 
             Debug.Assert( sortResult != null );
             // We now can setup the final ordered list of MutableItems (i.e. of IStObjResult).
             List<MutableItem> ordered = new List<MutableItem>();
+            List<MutableItem> orderedAfterContent = new List<MutableItem>();
             using( monitor.OpenInfo( "Finalizing graph." ) )
             {
                 using( monitor.OpenInfo( "Calling StObjConstruct." ) )
@@ -370,7 +375,8 @@ public partial class StObjCollector
                     {
                         var m = (MutableItem)sorted.Item;
                         // Calls StObjConstruct on Head for Groups.
-                        if( m.ItemKind == DependentItemKindSpec.Item || sorted.IsGroupHead )
+                        bool isItem = m.ItemKind == DependentItemKindSpec.Item;
+                        if( isItem || sorted.IsGroupHead )
                         {
                             m.SetSorterData( ordered.Count, sorted.Requires, sorted.Children, sorted.Groups );
                             using( monitor.OpenTrace( $"Constructing '{m}'." ) )
@@ -385,16 +391,19 @@ public partial class StObjCollector
                                 }
                             }
                             ordered.Add( m );
+                            if( isItem ) orderedAfterContent.Add( m );
                         }
                         else
                         {
-                            Debug.Assert( m.ItemKind != DependentItemKindSpec.Item && !sorted.IsGroupHead );
+                            Throw.DebugAssert( sorted.IsGroup );
                             // We may call here a ConstructContent( IReadOnlyList<IStObj> packageContent ).
                             // But... is it a good thing for a package object to know its content detail?
+
+                            orderedAfterContent.Add( m );
                         }
                     }
                 }
-                if( error ) return (typeResult, null, null);
+                if( error ) return (typeResult, null, null, null);
                 using( monitor.OpenInfo( "Setting PostBuild properties and injected Objects." ) )
                 {
                     // Finalize construction by injecting Real Objects
@@ -404,10 +413,11 @@ public partial class StObjCollector
                         item.SetPostBuildProperties( monitor );
                     }
                 }
-                if( error ) return (typeResult, null, null);
+                if( error ) return (typeResult, null, null, null);
             }
             Debug.Assert( !error );
-            return (typeResult, ordered, valueCollector);
+            Throw.DebugAssert( ordered.Count == orderedAfterContent.Count );
+            return (typeResult, ordered, orderedAfterContent, valueCollector);
         }
     }
 

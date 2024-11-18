@@ -27,8 +27,21 @@ public interface IStObjObjectEngineMap : IStObjObjectMap
 
     /// <summary>
     /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.
+    /// <para>
+    /// In this list <see cref="DependentItemKindSpec.Container"/> and <see cref="DependentItemKindSpec.Group"/>
+    /// appear before their content. <see cref="OrderedAfterContentStObjs"/>.
+    /// </para>
     /// </summary>
     IReadOnlyList<IStObjResult> OrderedStObjs { get; }
+
+    /// <summary>
+    /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.
+    /// <para>
+    /// In this list <see cref="DependentItemKindSpec.Container"/> and <see cref="DependentItemKindSpec.Group"/>
+    /// appear after their content. See <see cref="OrderedStObjs"/>.
+    /// </para>
+    /// </summary>
+    IReadOnlyList<IStObjResult> OrderedAfterContentStObjs { get; }
 
     /// <summary>
     /// Gets the final, most specialized, <see cref="IStObjFinalImplementationResult"/>.

@@ -96,6 +96,7 @@ public class CKTypeCollectorResult
     /// Crappy hook...
     /// </summary>
     internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
+                                          IReadOnlyList<MutableItem> orderedAfterContent,
                                           IDIContainerAnalysisResult? endpointResult,
                                           IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
     {
@@ -113,7 +114,7 @@ public class CKTypeCollectorResult
 
         Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
 
-        RealObjects.EngineMap.SetFinalOrderedResults( ordered, all.ToDictionary( c => c.Type ), endpointResult, multipleMappings );
+        RealObjects.EngineMap.SetFinalOrderedResults( ordered, orderedAfterContent, all.ToDictionary( c => c.Type ), endpointResult, multipleMappings );
     }
 
     /// <summary>
