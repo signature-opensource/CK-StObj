@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>11</LangVersion>
     <Description>
       Minimalist model with attributes, interfaces and basic objects that define StObj (Real Objects), Automatic DI configuration and enables Source Code Generation across multiple projects.
@@ -8,10 +8,12 @@
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CSemVer" Version="11.0.1" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="21.0.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+    <PackageReference Include="CSemVer" Version="12.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Engine.Configuration\CK.Engine.Configuration.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MSBuild/CK.StObj.Model.props">
@@ -22,8 +24,5 @@
       <Pack>true</Pack>
       <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
     </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CK.Engine.Configuration\CK.Engine.Configuration.csproj" />
   </ItemGroup>
 </Project>

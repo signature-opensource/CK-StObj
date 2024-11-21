@@ -7,12 +7,11 @@
 
 using CK.Core;
 
-namespace CK.StObj.Engine.Tests.SimpleObjects
+namespace CK.StObj.Engine.Tests.SimpleObjects;
+
+public interface IAbstractionA : IRealObject
 {
-    public interface IAbstractionA : IRealObject
-    {
-        int ConstructCount { get; }
-        
-        void MethofOfA();
-    }
+    int ConstructCount { get; }
+
+    void MethofOfA();
 }

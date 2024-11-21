@@ -1,10 +1,8 @@
-﻿using CK.Core;
+using CK.Core;
 
-namespace CK.CrisLike
+namespace CK.CrisLike;
+
+[CKTypeSuperDefiner]
+public interface IAbstractCommand : ICrisPoco
 {
-    [CKTypeSuperDefiner]
-    public interface IAbstractCommand : ICrisPoco
-    {
-    }
-
 }

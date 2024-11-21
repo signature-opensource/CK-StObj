@@ -7,21 +7,20 @@
 
 using System.Reflection;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Describes the property of an object that is tracked.
+/// </summary>
+public interface IStObjTrackedAmbientPropertyInfo
 {
     /// <summary>
-    /// Describes the property of an object that is tracked.
+    /// Gets the <see cref="IStObjResult"/> that holds the property.
     /// </summary>
-    public interface IStObjTrackedAmbientPropertyInfo
-    {
-        /// <summary>
-        /// Gets the <see cref="IStObjResult"/> that holds the property.
-        /// </summary>
-        IStObjResult Owner { get; }
+    IStObjResult Owner { get; }
 
-        /// <summary>
-        /// Gets the property information.
-        /// </summary>
-        PropertyInfo PropertyInfo { get; }
-    }
+    /// <summary>
+    /// Gets the property information.
+    /// </summary>
+    PropertyInfo PropertyInfo { get; }
 }

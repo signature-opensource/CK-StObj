@@ -1,10 +1,8 @@
-﻿using CK.Core;
+using CK.Core;
 
-namespace CK.StObj.Engine.Tests.CrisLike
+namespace CK.StObj.Engine.Tests.CrisLike;
+
+[CKTypeSuperDefiner]
+public interface ICrisPocoPart : ICrisPoco
 {
-    [CKTypeSuperDefiner]
-    public interface ICrisPocoPart : ICrisPoco
-    {
-    }
-
 }

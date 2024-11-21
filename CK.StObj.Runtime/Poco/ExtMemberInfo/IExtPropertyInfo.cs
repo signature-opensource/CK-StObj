@@ -1,15 +1,14 @@
 using System.Reflection;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Extends <see cref="IExtMemberInfo"/>.
+/// </summary>
+public interface IExtPropertyInfo : IExtMemberInfo
 {
     /// <summary>
-    /// Extends <see cref="IExtMemberInfo"/>.
+    /// Gets the property info.
     /// </summary>
-    public interface IExtPropertyInfo : IExtMemberInfo
-    {
-        /// <summary>
-        /// Gets the property info.
-        /// </summary>
-        PropertyInfo PropertyInfo { get; }
-    }
+    PropertyInfo PropertyInfo { get; }
 }

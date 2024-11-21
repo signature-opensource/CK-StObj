@@ -7,12 +7,11 @@
 
 using CK.Core;
 
-namespace CK.StObj.Engine.Tests.SimpleObjects.WithLevel3
+namespace CK.StObj.Engine.Tests.SimpleObjects.WithLevel3;
+
+public interface IAbstractionBOnLevel2 : IRealObject
 {
-    public interface IAbstractionBOnLevel2 : IRealObject
-    {
-        int ConstructCount { get; }
-        
-        void MethofOfBOnLevel2();
-    }
+    int ConstructCount { get; }
+
+    void MethofOfBOnLevel2();
 }

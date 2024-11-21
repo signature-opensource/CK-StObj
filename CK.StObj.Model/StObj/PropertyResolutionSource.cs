@@ -1,26 +1,25 @@
-namespace CK.Core
+namespace CK.Core;
+
+/// <summary>
+/// Defines how a property value will be searched if not set explicitly set.
+/// </summary>
+public enum PropertyResolutionSource
 {
     /// <summary>
-    /// Defines how a property value will be searched if not set explicitly set.
+    /// Property is not resolved from container nor generalization.
+    /// This should be rarely used.
     /// </summary>
-    public enum PropertyResolutionSource
-    {
-        /// <summary>
-        /// Property is not resolved from container nor generalization.
-        /// This should be rarely used.
-        /// </summary>
-        None,
+    None,
 
-        /// <summary>
-        /// Property is resolved first from the Container and, if not found, from the Generalization.
-        /// This is the default for <see cref="StObjPropertyAttribute">StObj Properties</see>.
-        /// </summary>
-        FromContainerAndThenGeneralization,
+    /// <summary>
+    /// Property is resolved first from the Container and, if not found, from the Generalization.
+    /// This is the default for <see cref="StObjPropertyAttribute">StObj Properties</see>.
+    /// </summary>
+    FromContainerAndThenGeneralization,
 
-        /// <summary>
-        /// Property is resolved first from the Generalization and, if not found, from its Containers.
-        /// This is the default for <see cref="AmbientPropertyAttribute">AmbientProperty</see>.
-        /// </summary>
-        FromGeneralizationAndThenContainer
-    }
+    /// <summary>
+    /// Property is resolved first from the Generalization and, if not found, from its Containers.
+    /// This is the default for <see cref="AmbientPropertyAttribute">AmbientProperty</see>.
+    /// </summary>
+    FromGeneralizationAndThenContainer
 }

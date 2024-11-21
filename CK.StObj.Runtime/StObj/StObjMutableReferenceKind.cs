@@ -7,59 +7,58 @@
 
 using System;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Describes the different kind of <see cref="IStObjReference"/>.
+/// </summary>
+[Flags]
+public enum StObjMutableReferenceKind
 {
     /// <summary>
-    /// Describes the different kind of <see cref="IStObjReference"/>.
+    /// Non applicable.
     /// </summary>
-    [Flags]
-    public enum StObjMutableReferenceKind
-    {
-        /// <summary>
-        /// Non applicable.
-        /// </summary>
-        None = 0,
+    None = 0,
 
-        /// <summary>
-        /// Container reference.
-        /// </summary>
-        Container = 1,
-        
-        /// <summary>
-        /// Requires reference.
-        /// </summary>
-        Requires = 2,
+    /// <summary>
+    /// Container reference.
+    /// </summary>
+    Container = 1,
 
-        /// <summary>
-        /// RequiredBy reference.
-        /// </summary>
-        RequiredBy = 4,
+    /// <summary>
+    /// Requires reference.
+    /// </summary>
+    Requires = 2,
 
-        /// <summary>
-        /// Group reference.
-        /// </summary>
-        Group = 8,
+    /// <summary>
+    /// RequiredBy reference.
+    /// </summary>
+    RequiredBy = 4,
 
-        /// <summary>
-        /// Child reference.
-        /// </summary>
-        Child = 16,
+    /// <summary>
+    /// Group reference.
+    /// </summary>
+    Group = 8,
 
-        /// <summary>
-        /// Parameter from StObjConstruct method. It is a considered as a Requires.
-        /// </summary>
-        ConstructParameter = 32,
+    /// <summary>
+    /// Child reference.
+    /// </summary>
+    Child = 16,
 
-        /// <summary>
-        /// Ambient property.
-        /// This kind of reference can depend on the referenced StObj (see <see cref="Core.TrackAmbientPropertiesMode"/>).
-        /// </summary>
-        AmbientProperty = 64,
+    /// <summary>
+    /// Parameter from StObjConstruct method. It is a considered as a Requires.
+    /// </summary>
+    ConstructParameter = 32,
 
-        /// <summary>
-        /// Pure reference to another object without any structural constraint.
-        /// </summary>
-        RealObject = 128,
+    /// <summary>
+    /// Ambient property.
+    /// This kind of reference can depend on the referenced StObj (see <see cref="Core.TrackAmbientPropertiesMode"/>).
+    /// </summary>
+    AmbientProperty = 64,
 
-    }
+    /// <summary>
+    /// Pure reference to another object without any structural constraint.
+    /// </summary>
+    RealObject = 128,
+
 }

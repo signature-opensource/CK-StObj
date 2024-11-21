@@ -1,14 +1,13 @@
 using CK.Core;
 
-namespace CK.StObj.Engine.Tests.Endpoint
+namespace CK.StObj.Engine.Tests.Endpoint;
+
+[ScopedContainerConfiguredService]
+public sealed class TenantResolutionService : IScopedAutoService
 {
-    [ContainerConfiguredScopedService]
-    public sealed class TenantResolutionService : IScopedAutoService
+    public IFakeTenantInfo GetTenantFromRequest( /*HttpContext ctx*/ )
     {
-        public IFakeTenantInfo GetTenantFromRequest( /*HttpContext ctx*/ )
-        {
-            // var tenantId = ctx.Request.QueryString["TenanId"];
-            return new FakeTenantInfo( "AcmeCorp" );
-        }
+        // var tenantId = ctx.Request.QueryString["TenanId"];
+        return new FakeTenantInfo( "AcmeCorp" );
     }
 }

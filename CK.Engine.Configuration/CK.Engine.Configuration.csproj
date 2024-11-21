@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="21.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\CK.Abstractions\CK.Abstractions.csproj" />
+    <PackageReference Include="CK.Abstractions" Version="27.0.0" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="22.0.0" />
   </ItemGroup>
 </Project>

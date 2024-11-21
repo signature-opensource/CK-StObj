@@ -1,13 +1,12 @@
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Extends <see cref="IExtMemberInfo"/>.
+/// </summary>
+public interface IExtTypeInfo : IExtMemberInfo
 {
     /// <summary>
-    /// Extends <see cref="IExtMemberInfo"/>.
+    /// Gets the base type info if there is one.
     /// </summary>
-    public interface IExtTypeInfo : IExtMemberInfo
-    {
-        /// <summary>
-        /// Gets the base type info if there is one.
-        /// </summary>
-        IExtTypeInfo? BaseType { get; }
-    }
+    IExtTypeInfo? BaseType { get; }
 }

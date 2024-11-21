@@ -7,27 +7,26 @@
 
 using System.Reflection;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+class TrackedAmbientPropertyInfo : IStObjTrackedAmbientPropertyInfo
 {
-    class TrackedAmbientPropertyInfo : IStObjTrackedAmbientPropertyInfo
+    public readonly MutableItem Owner;
+    public readonly AmbientPropertyInfo AmbientPropertyInfo;
+
+    internal TrackedAmbientPropertyInfo( MutableItem o, AmbientPropertyInfo p )
     {
-        public readonly MutableItem Owner;
-        public readonly AmbientPropertyInfo AmbientPropertyInfo;
+        Owner = o;
+        AmbientPropertyInfo = p;
+    }
 
-        internal TrackedAmbientPropertyInfo( MutableItem o, AmbientPropertyInfo p )
-        {
-            Owner = o;
-            AmbientPropertyInfo = p;
-        }
+    IStObjResult IStObjTrackedAmbientPropertyInfo.Owner
+    {
+        get { return Owner; }
+    }
 
-        IStObjResult IStObjTrackedAmbientPropertyInfo.Owner
-        {
-            get { return Owner; }
-        }
-
-        PropertyInfo IStObjTrackedAmbientPropertyInfo.PropertyInfo
-        {
-            get { return AmbientPropertyInfo.PropertyInfo; }
-        }
+    PropertyInfo IStObjTrackedAmbientPropertyInfo.PropertyInfo
+    {
+        get { return AmbientPropertyInfo.PropertyInfo; }
     }
 }

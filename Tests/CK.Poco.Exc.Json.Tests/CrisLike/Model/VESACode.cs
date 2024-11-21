@@ -3,32 +3,31 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CK.CrisLike
+namespace CK.CrisLike;
+
+/// <summary>
+/// Defines the possible command handling response types.
+/// </summary>
+[ExternalName( "VESACode" )]
+public enum VESACode
 {
     /// <summary>
-    /// Defines the possible command handling response types.
+    /// Validation error: the command failed to be validated. It has been rejected by the End Point.
     /// </summary>
-    [ExternalName( "VESACode" )]
-    public enum VESACode
-    {
-        /// <summary>
-        /// Validation error: the command failed to be validated. It has been rejected by the End Point.
-        /// </summary>
-        ValidationError = 'V',
+    ValidationError = 'V',
 
-        /// <summary>
-        /// An error has been raised by the handling of the command.
-        /// </summary>
-        Error = 'E',
+    /// <summary>
+    /// An error has been raised by the handling of the command.
+    /// </summary>
+    Error = 'E',
 
-        /// <summary>
-        /// The command has successfully been executed in a synchronous-way, its result is directly accessible by the client.
-        /// </summary>
-        Synchronous = 'S',
+    /// <summary>
+    /// The command has successfully been executed in a synchronous-way, its result is directly accessible by the client.
+    /// </summary>
+    Synchronous = 'S',
 
-        /// <summary>
-        /// The execution of the command has been deferred.
-        /// </summary>
-        Asynchronous = 'A'
-    }
+    /// <summary>
+    /// The execution of the command has been deferred.
+    /// </summary>
+    Asynchronous = 'A'
 }

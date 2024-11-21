@@ -6,10 +6,9 @@
 #endregion
 
 
-namespace CK.StObj.Engine.Tests.SimpleObjects
+namespace CK.StObj.Engine.Tests.SimpleObjects;
+
+public interface IAbstractionALevel3 : IAbstractionA
 {
-    public interface IAbstractionALevel3 : IAbstractionA
-    {
-        void MethofOfALevel3();
-    }
+    void MethofOfALevel3();
 }

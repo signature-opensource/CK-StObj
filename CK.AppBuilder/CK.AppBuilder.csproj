@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Description>CKomposable application builder from a ".App" project to its ".Host".</Description>
   </PropertyGroup>
   <ItemGroup>
@@ -14,7 +14,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Monitoring" Version="21.0.0" />
+    <PackageReference Include="CK.Monitoring" Version="22.0.0" />
     <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
   </ItemGroup>
 </Project>

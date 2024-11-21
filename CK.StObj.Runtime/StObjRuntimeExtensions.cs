@@ -6,22 +6,19 @@
 #endregion
 
 
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Provides useful extensions.
+/// </summary>
+public static class StObjRuntimeExtensions
 {
     /// <summary>
-    /// Provides useful extensions.
+    /// Gets whether <see cref="IStObjResult.GetStObjProperty"/> returns an object that is not the
+    /// special <see cref="System.Type.Missing"/> marker object.
     /// </summary>
-    public static class StObjRuntimeExtensions
-    {
-        /// <summary>
-        /// Gets whether <see cref="IStObjResult.GetStObjProperty"/> returns an object that is not the
-        /// special <see cref="System.Type.Missing"/> marker object.
-        /// </summary>
-        /// <param name="this">This StObj.</param>
-        /// <param name="propertyName">Name of the property. Must not be null nor empty.</param>
-        /// <returns>True if the property is defined, false otherwise.</returns>
-        public static bool HasStObjProperty( this IStObjResult @this, string propertyName ) => @this.GetStObjProperty( propertyName ) != System.Type.Missing;
-    }
-
-
+    /// <param name="this">This StObj.</param>
+    /// <param name="propertyName">Name of the property. Must not be null nor empty.</param>
+    /// <returns>True if the property is defined, false otherwise.</returns>
+    public static bool HasStObjProperty( this IStObjResult @this, string propertyName ) => @this.GetStObjProperty( propertyName ) != System.Type.Missing;
 }

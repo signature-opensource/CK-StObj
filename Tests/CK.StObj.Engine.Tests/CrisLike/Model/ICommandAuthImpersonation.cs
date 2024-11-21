@@ -3,11 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace CK.StObj.Engine.Tests.CrisLike
+namespace CK.StObj.Engine.Tests.CrisLike;
+
+[CKTypeDefiner]
+public interface ICommandAuthImpersonation : ICommandAuthUnsafe
 {
-    [CKTypeDefiner]
-    public interface ICommandAuthImpersonation : ICommandAuthUnsafe
-    {
-        int ActualActorId { get; set; }
-    }
+    int ActualActorId { get; set; }
 }

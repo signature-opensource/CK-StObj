@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
@@ -15,8 +15,8 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
     <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
     <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="10.0.0" />
-    <PackageReference Include="CK.Core" Version="20.0.0" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="11.0.0" />
+    <PackageReference Include="CK.Core" Version="21.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

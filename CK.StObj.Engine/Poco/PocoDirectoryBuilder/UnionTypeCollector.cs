@@ -9,31 +9,29 @@ using System.Text;
 using System.Threading.Tasks;
 using static CK.Setup.PocoType;
 
-namespace CK.Setup
+namespace CK.Setup;
+
+sealed class UnionTypeCollector : IUnionTypeCollector
 {
-    sealed class UnionTypeCollector : IUnionTypeCollector
+    readonly List<IExtMemberInfo> _types;
+
+    public UnionTypeCollector( bool canBeExtended, IExtMemberInfo firstDef )
     {
-        readonly List<IExtMemberInfo> _types;
+        _types = new List<IExtMemberInfo> { firstDef };
+        CanBeExtended = canBeExtended;
+    }
 
-        public UnionTypeCollector( bool canBeExtended, IExtMemberInfo firstDef )
-        {
-            _types = new List<IExtMemberInfo> { firstDef };
-            CanBeExtended = canBeExtended;
-        }
+    public List<IExtMemberInfo> Types => _types;
 
-        public List<IExtMemberInfo> Types => _types;
+    public bool CanBeExtended { get; }
 
-        public bool CanBeExtended { get; }
+    IReadOnlyList<IExtMemberInfo> IUnionTypeCollector.Types => Types;
 
-        IReadOnlyList<IExtMemberInfo> IUnionTypeCollector.Types => Types;
-
-        public override string ToString()
-        {
-            return _types.Select( t => t.HomogeneousNullabilityInfo?.ToString()
-                                       ?? "[ReadState]" + t.ReadNullabilityInfo.ToString() )
-                         .Concatenate();
-        }
-
+    public override string ToString()
+    {
+        return _types.Select( t => t.HomogeneousNullabilityInfo?.ToString()
+                                   ?? "[ReadState]" + t.ReadNullabilityInfo.ToString() )
+                     .Concatenate();
     }
 
 }

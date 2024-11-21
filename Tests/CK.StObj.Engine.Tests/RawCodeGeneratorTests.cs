@@ -1,95 +1,90 @@
 using CK.Core;
 using CK.Setup;
+using CK.Testing;
 using FluentAssertions;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using CK.Testing;
-using static CK.Testing.StObjEngineTestHelper;
+using System.Threading.Tasks;
+using static CK.Testing.MonitorTestHelper;
 
-namespace CK.StObj.Engine.Tests
+namespace CK.StObj.Engine.Tests;
+
+[TestFixture]
+public class RawCodeGeneratorTests
 {
-    [TestFixture]
-    public class RawCodeGeneratorTests
+    public class CGen : ICSCodeGenerator
     {
-        public class CGen : ICSCodeGenerator
-        {
-            public static bool Called;
+        public static bool Called;
 
-            public CGen()
-            {
-            }
-
-            public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
-            {
-                Called = true;
-                return CSCodeGenerationResult.Success;
-            }
-        }
-
-        [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
-        public class Holder
+        public CGen()
         {
         }
 
-        [Test]
-        public void ICSCodeGenerator_on_regular_class()
+        public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
         {
-            CGen.Called = false;
-            var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( Holder ) );
-            configuration.Run().LoadMap();
-            CGen.Called.Should().BeTrue();
+            Called = true;
+            return CSCodeGenerationResult.Success;
         }
-
-        [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
-        public static class StaticHolder
-        {
-        }
-
-        [Test]
-        public void ICodeGenerator_on_static_class()
-        {
-            CGen.Called = false;
-            var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( StaticHolder ) );
-            configuration.Run().LoadMap();
-            CGen.Called.Should().BeTrue();
-        }
-
-        [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
-        public interface RawInterface
-        {
-        }
-
-        [Test]
-        public void ICodeGenerator_on_raw_interface()
-        {
-            CGen.Called = false;
-            var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( RawInterface ) );
-            configuration.Run().LoadMap();
-            CGen.Called.Should().BeTrue();
-        }
-
-        [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
-        public enum EvenOnAnEnumItWorks
-        {
-        }
-
-        [Test]
-        public void ICodeGenerator_on_enum()
-        {
-            CGen.Called = false;
-            var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( EvenOnAnEnumItWorks ) );
-            configuration.Run().LoadMap();
-            CGen.Called.Should().BeTrue();
-        }
-
-
     }
+
+    [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
+    public class Holder
+    {
+    }
+
+    [Test]
+    public async Task ICSCodeGenerator_on_regular_class_Async()
+    {
+        CGen.Called = false;
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( Holder ) );
+        (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
+        CGen.Called.Should().BeTrue();
+    }
+
+    [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
+    public static class StaticHolder
+    {
+    }
+
+    [Test]
+    public async Task ICodeGenerator_on_static_class_Async()
+    {
+        CGen.Called = false;
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( StaticHolder ) );
+        (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
+        CGen.Called.Should().BeTrue();
+    }
+
+    [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
+    public interface RawInterface
+    {
+    }
+
+    [Test]
+    public async Task ICodeGenerator_on_raw_interface_Async()
+    {
+        CGen.Called = false;
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( RawInterface ) );
+        (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
+        CGen.Called.Should().BeTrue();
+    }
+
+    [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
+    public enum EvenOnAnEnumItWorks
+    {
+    }
+
+    [Test]
+    public async Task ICodeGenerator_on_enum_Async()
+    {
+        CGen.Called = false;
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( EvenOnAnEnumItWorks ) );
+        (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
+        CGen.Called.Should().BeTrue();
+    }
+
+
 }

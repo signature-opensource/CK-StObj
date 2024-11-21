@@ -9,23 +9,22 @@ using System.Reflection;
 using CK.Core;
 using NUnit.Framework;
 
-namespace CK.StObj.Engine.Tests.SimpleObjects
+namespace CK.StObj.Engine.Tests.SimpleObjects;
+
+public class ObjectALevel1 : ObjectA
 {
-    public class ObjectALevel1 : ObjectA
+    ObjectBLevel1? _oB;
+
+    void StObjConstruct( [Container] PackageForABLevel1 package, ObjectBLevel1 oB )
     {
-        ObjectBLevel1? _oB;
+        Assert.That( ConstructCount, Is.EqualTo( 1 ), "ObjectA.StObjConstruct has been called." );
+        Assert.That( oB.ConstructCount, Is.GreaterThanOrEqualTo( 2 ), "ObjectB and ObjectBLevel1 StObjConstruct have been called." );
+        Assert.That( package.ConstructCount, Is.GreaterThanOrEqualTo( 2 ), "PackageForAB and PackageForABLevel1 StObjConstruct have been called." );
 
-        void StObjConstruct( [Container]PackageForABLevel1 package, ObjectBLevel1 oB )
-        {
-            Assert.That( ConstructCount, Is.EqualTo( 1 ), "ObjectA.StObjConstruct has been called.");
-            Assert.That( oB.ConstructCount, Is.GreaterThanOrEqualTo( 2 ), "ObjectB and ObjectBLevel1 StObjConstruct have been called.");
-            Assert.That( package.ConstructCount, Is.GreaterThanOrEqualTo( 2 ), "PackageForAB and PackageForABLevel1 StObjConstruct have been called.");
+        SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
+        _oB = oB;
 
-            SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
-            _oB = oB;
-
-            ConstructCount = ConstructCount + 1;
-        }
-
+        ConstructCount = ConstructCount + 1;
     }
+
 }

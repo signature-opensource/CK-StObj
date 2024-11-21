@@ -1,31 +1,30 @@
-namespace CK.Setup
+namespace CK.Setup;
+
+/// <summary>
+/// Field of <see cref="IPrimaryPocoType"/>.
+/// When this <see cref="IPocoType.ITypeRef.Type"/> is a <see cref="PocoTypeKind.AnonymousRecord"/>
+/// or a <see cref="PocoTypeKind.Record"/> this is a ref property.
+/// <para>
+/// The generated backing field is named <c>_v{<see cref="IPocoType.ITypeRef.Index"/>}</c> in IPoco implementation generated code.
+/// </para>
+/// </summary>
+public interface IPrimaryPocoField : IPocoField
 {
+    /// <inheritdoc cref="IPocoField.Owner"/>
+    new IPrimaryPocoType Owner { get; }
+
     /// <summary>
-    /// Field of <see cref="IPrimaryPocoType"/>.
-    /// When this <see cref="IPocoType.ITypeRef.Type"/> is a <see cref="PocoTypeKind.AnonymousRecord"/>
-    /// or a <see cref="PocoTypeKind.Record"/> this is a ref property.
-    /// <para>
-    /// The generated backing field is named <c>_v{<see cref="IPocoType.ITypeRef.Index"/>}</c> in IPoco implementation generated code.
-    /// </para>
+    /// Gets the property info (with all its <see cref="IPocoPropertyInfo.DeclaredProperties"/>).
     /// </summary>
-    public interface IPrimaryPocoField : IPocoField
-    {
-        /// <inheritdoc cref="IPocoField.Owner"/>
-        new IPrimaryPocoType Owner { get; }
+    IPocoPropertyInfo Property { get; }
 
-        /// <summary>
-        /// Gets the property info (with all its <see cref="IPocoPropertyInfo.DeclaredProperties"/>).
-        /// </summary>
-        IPocoPropertyInfo Property { get; }
+    /// <summary>
+    /// Gets the <see cref="PocoFieldAccessKind"/> for this field.
+    /// </summary>
+    PocoFieldAccessKind FieldAccess { get; }
 
-        /// <summary>
-        /// Gets the <see cref="PocoFieldAccessKind"/> for this field.
-        /// </summary>
-        PocoFieldAccessKind FieldAccess { get; }
-
-        /// <summary>
-        /// Gets the private generated field name: "_v{Index}".
-        /// </summary>
-        string PrivateFieldName { get; }
-    }
+    /// <summary>
+    /// Gets the private generated field name: "_v{Index}".
+    /// </summary>
+    string PrivateFieldName { get; }
 }

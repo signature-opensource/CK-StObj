@@ -2,7 +2,7 @@
 
   <Target Name="RunMeAfterBuild" AfterTargets="PostBuildEvent">
     <Delete Files="LastRun.log" />
-    <Exec Command="$(MSBuildProjectDirectory)\$(OutputPath)\$(AssemblyName).exe" />
+    <Exec Command="&quot;$(MSBuildProjectDirectory)\$(OutputPath)$(AssemblyName).exe&quot;" />
   </Target>
 
 </Project>

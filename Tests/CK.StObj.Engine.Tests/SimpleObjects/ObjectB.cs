@@ -9,24 +9,23 @@ using System.Reflection;
 using CK.Core;
 using NUnit.Framework;
 
-namespace CK.StObj.Engine.Tests.SimpleObjects
+namespace CK.StObj.Engine.Tests.SimpleObjects;
+
+public class ObjectB : IRealObject
 {
-    public class ObjectB : IRealObject
+    IAbstractionA? _a;
+
+    public int ConstructCount { get; protected set; }
+
+    void StObjConstruct( [Container] PackageForAB package, IAbstractionA a )
     {
-        IAbstractionA? _a;
+        Assert.That( ConstructCount, Is.EqualTo( 0 ), "First construct." );
+        Assert.That( a.ConstructCount, Is.GreaterThanOrEqualTo( 1 ), "At least ObjectA.StObjConstruct have been called." );
+        Assert.That( package.ConstructCount, Is.GreaterThanOrEqualTo( 1 ), "At least PackageForAB.StObjConstruct has been called." );
 
-        public int ConstructCount { get; protected set; }
+        SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
+        _a = a;
 
-        void StObjConstruct( [Container]PackageForAB package, IAbstractionA a )
-        {
-            Assert.That( ConstructCount, Is.EqualTo( 0 ), "First construct." );
-            Assert.That( a.ConstructCount, Is.GreaterThanOrEqualTo( 1 ), "At least ObjectA.StObjConstruct have been called.");
-            Assert.That( package.ConstructCount, Is.GreaterThanOrEqualTo( 1 ), "At least PackageForAB.StObjConstruct has been called.");
-            
-            SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );
-            _a = a;
-
-            ConstructCount = ConstructCount + 1;
-        }
+        ConstructCount = ConstructCount + 1;
     }
 }
