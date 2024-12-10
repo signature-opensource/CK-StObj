@@ -24,6 +24,7 @@ public sealed class PocoJsonExportOptions
     ///     <item>The <see cref="JsonWriterOptions.Encoder"/> is null (uses the <see cref="JavaScriptEncoder.Default"/>).</item>
     ///     <item><see cref="JsonWriterOptions.SkipValidation"/> is true.</item>
     ///     <item>The default type filter is "AllExchangeable".</item>
+    ///     <item><see cref="AlwaysExportSimpleUserMessage"/> is false.</item>
     /// </list>
     /// </summary>
     public static readonly PocoJsonExportOptions Default = new PocoJsonExportOptions();
@@ -66,6 +67,12 @@ public sealed class PocoJsonExportOptions
     /// Defaults to false: when ambiguous, the type is written via a 2-cells array <c>["type name", &lt;value...&gt;]</c>.
     /// </summary>
     public bool TypeLess { get; init; }
+
+    /// <summary>
+    /// Gets whether <see cref="UserMessage"/> should always be written as <see cref="SimpleUserMessage"/>.
+    /// Defaults to false. 
+    /// </summary>
+    public bool AlwaysExportSimpleUserMessage { get; init; }
 
     /// <summary>
     /// Get the writer options. See <see cref="Default"/>.
