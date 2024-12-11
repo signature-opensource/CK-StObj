@@ -30,15 +30,24 @@ class AnyWriter : JsonCodeWriter
 
     static void GenerateTypeNamesArray( ITypeScope exporterType, ExportCodeWriterMap writers )
     {
-        exporterType.GeneratedByComment().Append( "static string[] _typeNames = new string?[] {" );
+        exporterType.GeneratedByComment()
+                    .Append( "static string[] _typeNames = new string?[] {" );
         // The array of names must contain all non nullable types.
         // Types that are not serializables have a null name.
+        int userMessageTypeIndex = -1;
+        int simpleUserMessageTypeIndex = -1;
+        int index = 0;
         foreach( var type in writers.NameMap.TypeSystem.AllNonNullableTypes )
         {
             if( writers.NameMap.TypeSet.Contains( type ) )
             {
                 if( type.IsFinalType )
                 {
+                    // Captures the index of UserMessage and SimpleUserMessage to be able
+                    // to map UserMessage to SimpleUserMessage name when using polymorphism.
+                    if( type.Type == typeof( UserMessage ) ) userMessageTypeIndex = index;
+                    else if( type.Type == typeof( SimpleUserMessage ) ) simpleUserMessageTypeIndex = index;
+
                     exporterType.AppendSourceString( writers.NameMap.GetName( type ) );
                 }
                 else if( type.Nullable.IsFinalType )
@@ -56,8 +65,16 @@ class AnyWriter : JsonCodeWriter
                 exporterType.Append( "null" );
             }
             exporterType.Append( "," );
+            ++index;
         }
-        exporterType.Append( "};" ).NewLine();
+        exporterType.Append( "};" ).NewLine()
+            .Append( "const int _userMessageTypeIndex = " ).Append( userMessageTypeIndex ).Append( ";" ).NewLine()
+            .Append( "const int _simpleUserMessageTypeIndex = " ).Append( simpleUserMessageTypeIndex ).Append( ";" ).NewLine();
+        // We need UserMessage => SimpleUserMessage.
+        // This doesn't check that this is true for PocoTypeSet, this only check that the PocoTypeSystemBuilder
+        // did the job correctly. A DebugAssert is enough here.
+        Throw.DebugAssert( "PocoTypeSystemBuilder must have registered SimpleUserMessage when registering UserMessage.",
+                            userMessageTypeIndex < 0 || simpleUserMessageTypeIndex != -1 );
     }
 
     static void GenerateWriteNonNullableFinalType( ITypeScope exporterType, ExportCodeWriterMap writers )
@@ -74,7 +91,10 @@ class AnyWriter : JsonCodeWriter
                     if( !wCtx.Options.TypeLess )
                     {
                         w.WriteStartArray();
-                        w.WriteStringValue( _typeNames[index] );
+                        int i = index == _userMessageTypeIndex && wCtx.Options.AlwaysExportSimpleUserMessage
+                                            ? _simpleUserMessageTypeIndex
+                                            : index;
+                        w.WriteStringValue( _typeNames[i] );
                     }
                     switch( index )
                     {

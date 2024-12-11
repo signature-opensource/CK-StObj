@@ -66,16 +66,45 @@ public partial class GlobalizationTypeTests
         using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
+        var someString = "some string";
+
         var n = auto.Services.GetRequiredService<IPocoFactory<IWithUserMessage>>().Create();
-        n.UserMessage = UserMessage.Info( current, $"Hop {nameof(current)}!", "Res.Hop" ).With( 5 );
+        n.UserMessage = UserMessage.Info( current, $"Hop {someString}!", "Res.Hop" ).With( 5 );
         n.SimpleUserMessage = new SimpleUserMessage( UserMessageLevel.Error, "Hop!", 5 );
         n.OUserMessage = n.UserMessage;
         n.OSimpleUserMessage = n.SimpleUserMessage;
 
         var s1 = n.ToString();
-        s1.Should().Be( """{"UserMessage":[4,"Hop current!",5],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["UserMessage",[4,"Hop current!",5]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}""" );
+        s1.Should().Be( """
+            {"UserMessage":[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["UserMessage",[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
+            """ );
+        // Polymorphism considers the AlwaysExportSimpleUserMessage: OUserMessage has SimpleUserMessageType. 
+        var s2 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, AlwaysExportSimpleUserMessage = true } );
+        s2.Should().Be( """
+            {"UserMessage":[4,"Hop some string!",5],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["SimpleUserMessage",[4,"Hop some string!",5]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
+            """ );
+    }
 
-        var s2 = n.ToString( new PocoJsonExportOptions() { AlwaysExportSimpleUserMessage = true } );
-        s2.Should().Be( """pouf""" );
+    public interface IWithOnlyUserMessage : IPoco
+    {
+        UserMessage? UserMessage { get; set; }
+    }
+
+    [Test]
+    public async Task when_UserMessage_is_registered_then_SimpleUserMessage_is_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithOnlyUserMessage ) );
+        // This is done by the PocoTypeSystemBuilder.
+        // Both AnyWriter in CK.Poco.Exc.Json.Engine/Export/Writers/AnyWriter.cs and
+        // the PocoTypeIncludeVisitor check that with a DebugAssert.
+        // The PocoTypeIncludeVisitor includes SimpleUserMessage when visiting UserMessage.
+        //
+        // What may be missing here is that in the PocoTypeSystem.TypeSet.Excluder, we should
+        // exclude UserMessage if SimpleUserMessage is excluded.
+        //
+        // We also miss tests with PocoTypeSet here.
+        //
+        await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
     }
 }

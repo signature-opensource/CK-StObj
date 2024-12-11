@@ -651,13 +651,18 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
         {
             return Reg( _typeCache, PocoType.CreateNoDefaultBasicValue( this, tNotNull, typeof( SimpleUserMessage? ), "SimpleUserMessage" ) );
         }
-        if( tNotNull == typeof( UserMessage ) )
-        {
-            return Reg( _typeCache, PocoType.CreateNoDefaultBasicValue( this, tNotNull, typeof( UserMessage? ), "UserMessage" ) );
-        }
         if( tNotNull == typeof( FormattedString ) )
         {
             return Reg( _typeCache, PocoType.CreateNoDefaultBasicValue( this, typeof( FormattedString ), typeof( FormattedString? ), "FormattedString" ) );
+        }
+        if( tNotNull == typeof( UserMessage ) )
+        {
+            // When UserMessage is registered, SimpleUserMessage must also be available.
+            if( !_typeCache.ContainsKey( typeof( SimpleUserMessage ) ) )
+            {
+                Reg( _typeCache, PocoType.CreateNoDefaultBasicValue( this, typeof( SimpleUserMessage ), typeof( SimpleUserMessage? ), "SimpleUserMessage" ) );
+            }
+            return Reg( _typeCache, PocoType.CreateNoDefaultBasicValue( this, tNotNull, typeof( UserMessage? ), "UserMessage" ) );
         }
         return null;
 
