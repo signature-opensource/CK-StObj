@@ -11,45 +11,6 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests;
 
-[TestFixture]
-public partial class GlobalizationTypeTests
-{
-    [ExternalName( "GlobalizationTypes" )]
-    public interface IAllTypes : IPoco
-    {
-        FormattedString? PFormattedString { get; set; }
-        CodeString PCodeString { get; set; }
-        MCString PMCString { get; set; }
-        UserMessage? PUserMessage { get; set; }
-        SimpleUserMessage? PSimpleUserMessage { get; set; }
-        NormalizedCultureInfo PNormalizedCultureInfo { get; set; }
-        ExtendedCultureInfo PExtendedCultureInfo { get; set; }
-    }
-
-    [Test]
-    public async Task all_globalization_types_roundtrip_Async()
-    {
-        var current = new CurrentCultureInfo( new TranslationService(), NormalizedCultureInfo.CodeDefault );
-
-        var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllTypes ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
-        var directory = auto.Services.GetRequiredService<PocoDirectory>();
-
-        var n = auto.Services.GetRequiredService<IPocoFactory<IAllTypes>>().Create();
-        n.PFormattedString = FormattedString.Create( $"Hello {nameof( current )}!", NormalizedCultureInfo.CodeDefault );
-        n.PCodeString = CodeString.Create( $"Hello {nameof( current )}!", NormalizedCultureInfo.CodeDefault, "Res.Hello", "file", 3712 );
-        n.PMCString = MCString.Create( current, $"Hello {nameof( current )}!", "Res.Hello" );
-        n.PUserMessage = UserMessage.Info( current, "Hop!", "Res.Hop" );
-        n.PSimpleUserMessage = new SimpleUserMessage( UserMessageLevel.Error, "Error", 5 );
-        n.PNormalizedCultureInfo = NormalizedCultureInfo.CodeDefault;
-        n.PExtendedCultureInfo = ExtendedCultureInfo.EnsureExtendedCultureInfo("fr, es" );
-
-        var n2 = JsonTestHelper.Roundtrip( directory, n, text: t => TestHelper.Monitor.Info( $"IAllTypes serialization: " + t ) );
-        n2.Should().BeEquivalentTo( n );
-    }
-}
-
 
 [TestFixture]
 public partial class BasicTypeTests
