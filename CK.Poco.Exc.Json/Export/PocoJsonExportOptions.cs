@@ -39,7 +39,7 @@ public sealed class PocoJsonExportOptions
     {
         UseCamelCase = false,
         TypeFilterName = "AllSerializable",
-        WriterOptions = new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
+        WriterOptions = new JsonWriterOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, SkipValidation = true },
     };
 
     /// <summary>
@@ -54,6 +54,19 @@ public sealed class PocoJsonExportOptions
 #else
         WriterOptions = new JsonWriterOptions() { SkipValidation = true };
 #endif
+    }
+
+    /// <summary>
+    /// Copy constructor. Properties can then be initialized.
+    /// </summary>
+    /// <param name="o">Options to copy.</param>
+    public PocoJsonExportOptions( PocoJsonExportOptions o )
+    {
+        UseCamelCase = o.UseCamelCase;
+        TypeLess = o.TypeLess;
+        AlwaysExportSimpleUserMessage = o.AlwaysExportSimpleUserMessage;
+        WriterOptions = o.WriterOptions;
+        TypeFilterName = o.TypeFilterName;
     }
 
     /// <summary>
