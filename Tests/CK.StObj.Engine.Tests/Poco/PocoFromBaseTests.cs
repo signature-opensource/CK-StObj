@@ -37,7 +37,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IPocoFromBase ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.IPocoFromBase" );

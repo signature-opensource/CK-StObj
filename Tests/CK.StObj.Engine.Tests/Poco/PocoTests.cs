@@ -120,7 +120,7 @@ public class PocoTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IDefTest ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IDefTest>>();
         var o = f.Create();

@@ -54,7 +54,7 @@ public class MultiSetImplementationTests : CommonTypes
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( type );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithSet)d.Find( type )!.Create();
@@ -93,7 +93,7 @@ public class MultiSetImplementationTests : CommonTypes
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var pBase = d.Create<IBasicRefSets>();

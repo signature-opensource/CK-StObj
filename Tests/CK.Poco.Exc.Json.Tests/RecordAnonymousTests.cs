@@ -25,7 +25,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -47,7 +47,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -80,7 +80,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithCollections ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -128,7 +128,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -159,7 +159,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordNullable ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -189,7 +189,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithPoco ), typeof( IWithRecord ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -212,7 +212,7 @@ public class RecordAnonymousTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithRecordWithNullablePoco ), typeof( IWithRecord ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

@@ -80,7 +80,7 @@ public class MultipleMappingsEndpointTests
                                         typeof( ManyConsumer ),
                                         typeof( FirstDIContainerDefinition ),
                                         typeof( SecondDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
@@ -111,7 +111,7 @@ public class MultipleMappingsEndpointTests
                                               typeof( ManyConsumer ),
                                               typeof( FirstDIContainerDefinition ),
                                               typeof( SecondDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
@@ -142,7 +142,7 @@ public class MultipleMappingsEndpointTests
                                               typeof( ManyConsumer ),
                                               typeof( FirstDIContainerDefinition ),
                                               typeof( SecondDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
@@ -176,7 +176,7 @@ public class MultipleMappingsEndpointTests
                                         typeof( ManyConsumer ),
                                         typeof( FirstDIContainerDefinition ),
                                         typeof( SecondDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: s =>
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: s =>
         {
             s.AddScoped<ManyNothing>();
             s.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
@@ -273,7 +273,7 @@ public class MultipleMappingsEndpointTests
         configuration.FirstBinPath.Types.Add( typeof( ManySingleton ),
                                               typeof( ManyConsumer ),
                                               typeof( ManyAsSingletonDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 

@@ -89,7 +89,7 @@ public class ExchangeableSetTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IThingMore ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
         var thing = CreateThing( directory );
@@ -133,7 +133,7 @@ public class ExchangeableSetTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
         var poco = directory.Create<ICannotBeSpoofed>();
@@ -178,7 +178,7 @@ public class ExchangeableSetTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
         var poco = directory.Create<ICannotBeSpoofed2>();

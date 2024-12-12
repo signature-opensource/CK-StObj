@@ -63,7 +63,7 @@ public class CommandJsonSerializationTests
                                         typeof( IDeviceCommand ),
                                         typeof( IFullAuthCommand ),
                                         typeof( IFullAuthCommandWithResult ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var services = auto.Services;
 

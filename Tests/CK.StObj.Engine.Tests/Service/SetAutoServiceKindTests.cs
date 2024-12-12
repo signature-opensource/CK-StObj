@@ -79,7 +79,7 @@ public class SetAutoServiceKindTests
         configuration.FirstBinPath.Types.Add( typeof( IConfiguration ), ConfigurableAutoServiceKind.IsSingleton )
                                  .Add( typeof( ThisShouldCoexist1 ), typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist2 ) );
 
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: register =>
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: register =>
         {
             // This is done by .net configuration extension.
             register.AddSingleton<IConfiguration>( new ThisIsTheConfig() );

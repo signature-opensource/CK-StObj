@@ -31,7 +31,7 @@ public partial class GlobalizationTypeTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllTypes ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var n = auto.Services.GetRequiredService<IPocoFactory<IAllTypes>>().Create();
@@ -63,7 +63,7 @@ public partial class GlobalizationTypeTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithUserMessage ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var someString = "some string";

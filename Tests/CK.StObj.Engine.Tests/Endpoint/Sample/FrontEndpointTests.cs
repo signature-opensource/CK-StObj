@@ -22,7 +22,7 @@ public class FrontEndpointTests
         configuration.FirstBinPath.Types.Add( typeof( FakeTenantInfo ),
                                         typeof( DefaultTenantProvider ) );
 
-        using var auto = (await configuration.RunAsync()).CreateAutomaticServices( configureServices: services =>
+        await using var auto = (await configuration.RunAsync()).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
@@ -67,7 +67,7 @@ public class FrontEndpointTests
                                               typeof( DefaultCultureProvider ),
                                               typeof( ExternalAuthenticationInfo ),
                                               typeof( DefaultAuthenticationInfoProvider ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // No services configuration here: the IAmbientServiceDefaultProvider<T> must provide
         // the defaults.

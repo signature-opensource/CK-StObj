@@ -58,10 +58,10 @@ public class SingletonAttributeTests
         configuration.FirstBinPath.Types.Add( typeof( SomeScoped ), typeof( NotConstructibleServiceNaked ) );
         var map = (await configuration.RunSuccessfullyAsync().ConfigureAwait( false )).FirstBinPath.LoadMap();
 
-        using var auto1 = map.CreateAutomaticServices();
+        await using var auto1 = map.CreateAutomaticServices();
         auto1.Services.Invoking( s => s.GetService<SomeScoped>() ).Should().Throw<InvalidOperationException>();
 
-        using var auto2 = map.CreateAutomaticServices( configureServices: services => services.AddScoped( sp => NotConstructibleServiceNaked.Create() ) );
+        await using var auto2 = map.CreateAutomaticServices( configureServices: services => services.AddScoped( sp => NotConstructibleServiceNaked.Create() ) );
         auto2.Services.GetService<SomeScoped>().Should().NotBeNull();
     }
 
@@ -78,7 +78,7 @@ public class SingletonAttributeTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( SomeSingleton ), typeof( NotConstructibleService ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
         {
             services.AddSingleton( sp => NotConstructibleService.Create() );
         } );

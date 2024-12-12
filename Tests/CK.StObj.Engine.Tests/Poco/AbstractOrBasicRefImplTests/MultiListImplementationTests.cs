@@ -64,7 +64,7 @@ public class MultiListImplementationTests : CommonTypes
         configuration.FirstBinPath.Types.Add( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
                                         typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                         type );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithList)d.Find( type )!.Create();
@@ -124,7 +124,7 @@ public class MultiListImplementationTests : CommonTypes
                                         typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
                                         typeof( IPocoWithListOfAbstractBase ), typeof( IPocoWithListOfAbstract1 ),
                                         typeof( IAbstract1Closed ), typeof( IClosed ), typeof( IPocoWithListOfClosed ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
 

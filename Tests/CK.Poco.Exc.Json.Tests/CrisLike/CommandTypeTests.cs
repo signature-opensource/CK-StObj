@@ -69,7 +69,7 @@ public class CommandTypeTests
                                         typeof( IBatchCommand ),
                                         typeof( ICrisResult ),
                                         typeof( ICrisResultError ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
@@ -165,7 +165,7 @@ public class CommandTypeTests
                                         typeof( IBatchCommand ),
                                         typeof( ICrisResult ),
                                         typeof( ICrisResultError ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

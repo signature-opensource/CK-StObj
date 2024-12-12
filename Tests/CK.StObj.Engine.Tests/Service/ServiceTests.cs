@@ -98,7 +98,7 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( Obj ) );
-                using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+                await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
                 auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
                 auto.Map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
@@ -123,7 +123,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ObjSpec ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
             auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
@@ -153,7 +153,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ObjSpecFinal ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             // On generated data.
             auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
@@ -197,7 +197,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ODep ), typeof( OBase ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var oDep = auto.Services.GetRequiredService<ODep>();
             auto.Services.GetRequiredService<IBase>().Should().BeSameAs( oDep );
@@ -273,7 +273,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
             auto.Map.Services.Mappings[typeof( A )].IsScoped.Should().BeTrue();
@@ -311,7 +311,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( SampleServiceGenerated ), typeof( SampleService ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
         }

@@ -30,7 +30,7 @@ public class RecordWithReadOnlyCompliantTypeTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithRecordStruct ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStruct>>().Create();
         p.Thing1.Should().BeNull();
@@ -139,7 +139,7 @@ public class RecordWithReadOnlyCompliantTypeTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithComplexRecords ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithComplexRecords>>().Create();
 

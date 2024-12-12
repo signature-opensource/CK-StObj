@@ -27,7 +27,7 @@ public class PocoWithCollectionsTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ISimpleCollections ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
         p.Strings.Should().NotBeNull().And.BeEmpty();
@@ -50,7 +50,7 @@ public class PocoWithCollectionsTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithArray ), typeof( IWithArraySetter ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();
         var p = f.Create();
@@ -65,7 +65,7 @@ public class PocoWithCollectionsTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithArray ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
         var p = f.Create();

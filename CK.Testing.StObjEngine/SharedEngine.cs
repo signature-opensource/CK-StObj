@@ -4,6 +4,7 @@ using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Runtime.ExceptionServices;
+using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing;
@@ -24,9 +25,6 @@ public static class SharedEngine
     static IStObjMap? _map;
     static AutomaticServices _services;
     static EngineConfiguration? _configuration;
-    static Action<EngineConfiguration>? _autoConfigureEngine;
-    static Action<IServiceCollection>? _autoConfigureServices;
-
     static ExceptionDispatchInfo? _getEngineLevel;
     static ExceptionDispatchInfo? _runLevel;
     static ExceptionDispatchInfo? _mapLevel;
@@ -35,16 +33,9 @@ public static class SharedEngine
 
     /// <summary>
     /// Gets the engine configuration that has been used (or will be used) by <see cref="EngineResult"/>, <see cref="Map"/> or <see cref="AutomaticServices"/>.
-    /// <para>
-    /// When <paramref name="reset"/> is true, a new configuration is created (by <see cref="EngineTestHelperExtensions.CreateDefaultEngineConfiguration"/>)
-    /// <see cref="AutoConfigure"/> is called on it and any error are cleared.
-    /// </para>
-    /// </summary>
-    /// <param name="reset">True to reset the current configuration if any.</param>
     /// <returns>The engine configuration.</returns>
-    public static EngineConfiguration GetEngineConfiguration( bool reset )
+    public static EngineConfiguration GetEngineConfiguration()
     {
-        if( reset ) Reset( null );
         if( _getEngineLevel != null ) _getEngineLevel.Throw();
         try
         {
@@ -70,7 +61,7 @@ public static class SharedEngine
             if( _runResult == null )
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                _runResult = GetEngineConfiguration( false ).RunAsync().Result;
+                _runResult = GetEngineConfiguration().RunAsync().GetAwaiter().GetResult();
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
             }
             return _runResult;
@@ -107,7 +98,7 @@ public static class SharedEngine
         {
             if( _services.Services == null )
             {
-                _services = GetMap().CreateAutomaticServices( _autoConfigureServices );
+                _services = GetMap().CreateAutomaticServices( AutoConfigureServices );
             }
             return _services.Services;
         }
@@ -119,56 +110,67 @@ public static class SharedEngine
     }
 
     /// <summary>
-    /// Called when no configuration exists (or <see cref="Reset(EngineConfiguration?)"/> has been called with null).
+    /// Called when no configuration exists (or <see cref="ResetAsync(EngineConfiguration?)"/> has been called with null).
     /// </summary>
     public static Action<EngineConfiguration>? AutoConfigure { get; set; }
 
     /// <summary>
-    /// Called when <see cref="AutomaticServices"/> is called.
-    /// <para>
-    /// Setting this disposes the current <see cref="AutomaticServices"/> and next call to AutomaticServices
-    /// will attempt to rebuild a new set of services, but the current <see cref="Map"/> (if any) is preserved.
-    /// </para>
+    /// Called by <see cref="AutomaticServices"/> when services must be built.
     /// </summary>
-    public static Action<IServiceCollection>? AutoConfigureServices
-    {
-        get => _autoConfigureServices;
-        set
-        {
-            _serviceLevel = null;
-            if( _services.Services != null ) _services.Dispose();
-            _services = default;
-            _autoConfigureServices = value;
-        }
-    }
+    public static Action<IServiceCollection>? AutoConfigureServices { get; set; }
 
     /// <summary>
-    /// Sets a configuration: this resets existing <see cref="EngineResult"/>, <see cref="Map"/> and <see cref="Services"/>
+    /// Sets a configuration: this resets existing <see cref="EngineResult"/>, <see cref="Map"/> and <see cref="AutomaticServices"/>
     /// (as well as any error), the next access to them will trigger a run of the engine.
     /// <para>
-    /// When set to null, <see cref="AutoConfigure"/> will be used to obtain a new configuration.
+    /// When <paramref name="engineConfiguration"/> is null, <see cref="AutoConfigure"/> will be used to setup a new configuration.
     /// </para>
     /// <para>
     /// The internal configuration is cloned so the <paramref name="engineConfiguration"/> argument can be freely reused
     /// without interfering with the current one. To retrieve the internal configuration, use <see cref="GetEngineConfiguration(bool)"/>.
     /// </para>
     /// <para>
-    /// A failing run is not retried, instead the initial exception is rethrown immediately until <see cref="Reset"/>
-    /// or <see cref="Reset(EngineConfiguration)"/> is called.
+    /// A failing run is not retried, instead the initial exception is rethrown immediately until <see cref="ResetAsync(EngineConfiguration?)"/>
+    /// is called.
     /// </para>
     /// </summary>
     /// <param name="engineConfiguration">The new configuration to apply.</param>
-    public static void Reset( EngineConfiguration? engineConfiguration = null )
+    /// <returns>The awaitable.</returns>
+    public static async Task ResetAsync( EngineConfiguration? engineConfiguration = null )
     {
         _configuration = engineConfiguration?.Clone();
         _runResult = null;
+        _getEngineLevel = _runLevel = null;
+        await ResetMapAsync();
+    }
+
+    /// <summary>
+    /// Resets the <see cref="Map"/> and the <see cref="AutomaticServices"/>: The next call to <see cref="Map"/> (or <see cref="AutomaticServices"/>)
+    /// will reload the map.
+    /// The current <see cref="EngineResult"/> (if any) is preserved.
+    /// </summary>
+    /// <returns>The awaitable.</returns>
+    public static async Task ResetMapAsync()
+    {
         _map = null;
+        _mapLevel = null;
+        await ResetAutomaticServicesAsync();
+    }
+
+    /// <summary>
+    /// Resets the <see cref="AutomaticServices"/>: The next call to <see cref="AutomaticServices"/> 
+    /// will recreate a configured <see cref="AutomaticServices"/>.
+    /// The current <see cref="EngineResult"/> and <see cref="Map"/> (if any) are preserved.
+    /// </summary>
+    /// <returns>The awaitable.</returns>
+    public static async Task ResetAutomaticServicesAsync()
+    {
+        _serviceLevel = null;
         if( _services.Services != null )
         {
-            _services.Dispose();
+            await _services.DisposeAsync();
             _services = default;
         }
-        _getEngineLevel = _runLevel = _mapLevel = _serviceLevel = null;
     }
 
     /// <summary>

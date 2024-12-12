@@ -33,7 +33,7 @@ public partial class BackgroundEndpointTests
                                         typeof( FakeTenantInfo ),
                                         typeof( DefaultTenantProvider ),
                                         typeof( TransactionalCallContextLike ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
             services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );

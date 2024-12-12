@@ -106,7 +106,7 @@ public class OnHostStartStopTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( OnHostStartStopTests ).GetNestedTypes() );
-        using var auto = (await configuration.RunAsync().ConfigureAwait(false)).CreateAutomaticServices( configureServices: services =>
+        await using var auto = (await configuration.RunAsync().ConfigureAwait(false)).CreateAutomaticServices( configureServices: services =>
         {
             services.AddScoped( sp => TestHelper.Monitor );
             services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );

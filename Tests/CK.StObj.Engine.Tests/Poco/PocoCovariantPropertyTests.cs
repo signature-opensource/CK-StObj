@@ -38,7 +38,7 @@ public class PocoCovariantPropertyTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IActualRootA ), typeof( IActualSubA ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var a = d.Create<IActualRootA>();
@@ -58,7 +58,7 @@ public class PocoCovariantPropertyTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var a = d.Create<IActualRootAConcrete>();

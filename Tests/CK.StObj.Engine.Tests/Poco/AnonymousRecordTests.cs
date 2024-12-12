@@ -38,7 +38,7 @@ public class AnonymousRecordTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithValueTuple ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
 
@@ -64,7 +64,7 @@ public class AnonymousRecordTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IWithValueTuple2 ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
 
@@ -198,7 +198,7 @@ public class AnonymousRecordTests
         tA.Fields.Count.Should().Be( 20 );
 
         // Just to test the code generation.
-        using var auto = engineResult.CreateAutomaticServices();
+        await using var auto = engineResult.CreateAutomaticServices();
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithLongTuple>>().Create();
         var tuple = (ITuple)p.Long;
         for( int i = 0; i < tuple.Length; i++ )
