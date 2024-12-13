@@ -1,13 +1,14 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Threading.Tasks;
 
 namespace CK.Testing;
 
 /// <summary>
 /// Captures the result of <see cref="EngineTestHelperExtensions.CreateAutomaticServices(Setup.EngineResult, Action{Setup.IPocoTypeSystemBuilder}?, Action{IServiceCollection}?, string)"/>.
 /// </summary>
-public readonly struct AutomaticServices : IDisposable
+public readonly struct AutomaticServices : IAsyncDisposable
 {
     readonly IStObjMap _map;
     readonly ServiceProvider _serviceProvider;
@@ -38,8 +39,5 @@ public readonly struct AutomaticServices : IDisposable
     /// <summary>
     /// Disposes the encapsulated <see cref="ServiceProvider"/>.
     /// </summary>
-    public void Dispose()
-    {
-        _serviceProvider.Dispose();
-    }
+    public ValueTask DisposeAsync() => _serviceProvider.DisposeAsync();
 }

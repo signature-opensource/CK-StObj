@@ -35,7 +35,7 @@ public class SimpleTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ThingService ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var thing = auto.Services.GetRequiredService<ThingService>();
         thing.GetValue( "ab" ).Should().Be( 2 );

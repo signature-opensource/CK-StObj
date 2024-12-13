@@ -247,6 +247,9 @@ public class PocoTypeIncludeVisitor<T> : PocoTypeVisitor<T> where T : class, ILi
 
     /// <summary>
     /// If the basic is a <see cref="IBasicRefPocoType"/>, its <see cref="IBasicRefPocoType.BaseType"/> is visited.
+    /// <para>
+    /// This also handles the fact that <see cref="UserMessage"/> implies <see cref="SimpleUserMessage"/>.
+    /// </para>
     /// </summary>
     /// <param name="basic">The basic type.</param>
     protected override void VisitBasic( IPocoType basic )
@@ -255,6 +258,12 @@ public class PocoTypeIncludeVisitor<T> : PocoTypeVisitor<T> where T : class, ILi
             && b.BaseType != null )
         {
             Visit( b.BaseType );
+        }
+        else if( basic.Type == typeof( UserMessage ) )
+        {
+            var simple = _typeSystem.FindByType( typeof( SimpleUserMessage ) );
+            Throw.DebugAssert( "PocoTypeSystemBuilder automatically registers SimpleUserMessage when UserMessage is registered.", simple != null );
+            Visit( simple );
         }
     }
 

@@ -33,7 +33,7 @@ public class DefaultValueTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IThing ), typeof( IThingHolder ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();
         h.Value.Should().NotBeNull();

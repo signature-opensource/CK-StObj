@@ -11,6 +11,7 @@ using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests;
 
+
 [TestFixture]
 public partial class BasicTypeTests
 {
@@ -42,7 +43,7 @@ public partial class BasicTypeTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var nMax = auto.Services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
@@ -118,7 +119,7 @@ public partial class BasicTypeTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 

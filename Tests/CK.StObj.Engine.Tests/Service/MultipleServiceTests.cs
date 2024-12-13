@@ -28,7 +28,7 @@ public class MultipleServiceTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
         IStObjServiceClassDescriptor s1 = auto.Map.Services.Mappings[typeof( S1 )];
@@ -95,7 +95,7 @@ public class MultipleServiceTests
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+                await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
                 var resolved = auto.Services.GetRequiredService<MayWork>();
                 resolved.Ints.Should().BeEmpty();
 
@@ -111,7 +111,7 @@ public class MultipleServiceTests
             {
                 var explicitInstance = new[] { 42, 3712 };
 
-                using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
+                await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
                 {
                     services.AddSingleton( typeof( IEnumerable<int> ), explicitInstance );
 
@@ -161,7 +161,7 @@ public class MultipleServiceTests
 
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( UserGoogle ), typeof( UserOffice ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
         IStObjFinalImplementation g = auto.Map.StObjs.ToLeaf( typeof( IUserGoogle ) )!;
@@ -192,7 +192,7 @@ public class MultipleServiceTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Map.Services.Mappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
         auto.Map.Services.Mappings[typeof( MulipleConsumer )].IsScoped.Should().BeFalse( "RealObjects are singletons." );
@@ -222,7 +222,7 @@ public class MultipleServiceTests
             configuration.FirstBinPath.Types.Add( typeof( IOfficialHostedService ), ConfigurableAutoServiceKind.IsMultipleService );
             configuration.FirstBinPath.Types.Add( typeof( H1 ), typeof( H2 ), typeof( HNot ) );
 
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );
             IStObjServiceClassDescriptor s1 = auto.Map.Services.Mappings[typeof( H1 )];
@@ -246,7 +246,7 @@ public class MultipleServiceTests
             configuration.FirstBinPath.Types.Add( new TypeConfiguration( typeof( IOfficialHostedService ), ConfigurableAutoServiceKind.IsMultipleService ) );
             configuration.FirstBinPath.Types.Add( typeof( H1 ), typeof( H2 ) );
 
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
             {
                 services.AddSingleton<IOfficialHostedService, HNot>();
             } );
@@ -310,7 +310,7 @@ public class MultipleServiceTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
@@ -320,7 +320,7 @@ public class MultipleServiceTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManyConsumer ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
@@ -330,7 +330,7 @@ public class MultipleServiceTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManySingleton ), typeof( ManyConsumer ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
@@ -349,7 +349,7 @@ public class MultipleServiceTests
         configuration.FirstBinPath.Types.Add( typeof( IEnumerable<IMany> ), ConfigurableAutoServiceKind.IsScoped );
         configuration.FirstBinPath.Types.Add( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
 
-        using var auto = (await configuration.RunAsync().ConfigureAwait(false)).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait(false)).CreateAutomaticServices();
         auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Could be resolved as Singleton, but Scoped as stated." );
 
         var m = auto.Services.GetRequiredService<ManyConsumer>();

@@ -265,7 +265,7 @@ public class SimpleObjectsTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         auto.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
         auto.Services.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );

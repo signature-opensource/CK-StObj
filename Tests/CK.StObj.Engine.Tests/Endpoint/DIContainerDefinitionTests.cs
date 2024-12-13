@@ -52,7 +52,7 @@ public class DIContainerDefinitionTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var manager = auto.Services.GetRequiredService<DIContainerHub>();
         manager.ContainerDefinitions.Should().HaveCount( 2 );
@@ -65,7 +65,7 @@ public class DIContainerDefinitionTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( AppIdentityDIContainerDefinition ), typeof( BackdoorDIContainerDefinition ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         // From the root (singleton) container.
         var o1 = GetEndpointsAndOtherTrueSingletons( auto.Services );

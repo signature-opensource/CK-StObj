@@ -70,7 +70,7 @@ public class AbstractReadOnlyPropertyTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IResolveSome ), typeof( ICommand ), typeof( IRealCommand ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IResolveSome>();
@@ -82,7 +82,7 @@ public class AbstractReadOnlyPropertyTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IResolveSome2 ), typeof( ICommand ), typeof( IRealCommand ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IResolveSome2>();
@@ -109,7 +109,7 @@ public class AbstractReadOnlyPropertyTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract>();
@@ -118,7 +118,7 @@ public class AbstractReadOnlyPropertyTests
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
             configuration.FirstBinPath.Types.Add( typeof( IWithNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-            using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+            await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract2>();
@@ -204,7 +204,7 @@ public class AbstractReadOnlyPropertyTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( tPrimary, tExtension );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
@@ -245,7 +245,7 @@ public class AbstractReadOnlyPropertyTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( tPrimary );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
@@ -294,7 +294,7 @@ public class AbstractReadOnlyPropertyTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var impl = d.Create<IImplementThem>();

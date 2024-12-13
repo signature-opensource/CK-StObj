@@ -75,7 +75,7 @@ public class DefaultImplementationMethodsTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IActualRoot ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var fA = d.Find( "CK.StObj.Engine.Tests.Poco.DefaultImplementationMethodsTests.IActualRoot" );
@@ -204,7 +204,7 @@ public class DefaultImplementationMethodsTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( PocoDirectory ), typeof( IPocoWithAbstractAndDefaultImplementationMethods ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var poco = auto.Services.GetRequiredService<PocoDirectory>();
 

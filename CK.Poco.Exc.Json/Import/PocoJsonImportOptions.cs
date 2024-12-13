@@ -53,6 +53,18 @@ public sealed class PocoJsonImportOptions : IMCDeserializationOptions
     }
 
     /// <summary>
+    /// Copy constructor. Properties can then be initialized.
+    /// </summary>
+    /// <param name="o">Options to copy.</param>
+    public PocoJsonImportOptions( PocoJsonImportOptions o )
+    {
+        ReaderOptions = o.ReaderOptions;
+        TypeFilterName = o.TypeFilterName;
+        CreateUnexistingCultures = o.CreateUnexistingCultures;
+        DefaultCulture = o.DefaultCulture;
+    }
+
+    /// <summary>
     /// Get the <see cref="Utf8JsonReader"/> options.
     /// </summary>
     public JsonReaderOptions ReaderOptions { get; init; }

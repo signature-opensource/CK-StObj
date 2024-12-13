@@ -24,7 +24,7 @@ public class PocoDirectoryTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f0 = d.Find( "Test" );
@@ -43,7 +43,7 @@ public class PocoDirectoryTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( ICmdTest ) );
-        using var auto = (await configuration.RunAsync()).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync()).CreateAutomaticServices();
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = d.Create<ICmdTest>();

@@ -23,7 +23,7 @@ public class PocoClassAndItsFactoryTests
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( IPocoKnowsItsFactory ) );
-        using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
         var o = f.Create();

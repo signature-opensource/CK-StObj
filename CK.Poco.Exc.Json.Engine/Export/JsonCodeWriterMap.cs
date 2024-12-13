@@ -117,8 +117,11 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
                                                                      .Append( v )
                                                                      .Append( " ) );" ) );
         }
+        else if( type.Type == typeof( UserMessage ) )
+        {
+            return new BasicWriter( map, UserMessageWriter );
+        }
         else if( type.Type == typeof( SimpleUserMessage )
-                 || type.Type == typeof( UserMessage )
                  || type.Type == typeof( FormattedString )
                  || type.Type == typeof( MCString )
                  || type.Type == typeof( CodeString ) )
@@ -152,6 +155,13 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
             write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " )
                                                             .Append( variableName )
                                                             .Append( " );" );
+        }
+
+        static void UserMessageWriter( ICodeWriter write, string variableName )
+        {
+            write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " )
+                                                            .Append( variableName )
+                                                            .Append( ", wCtx.Options.AlwaysExportSimpleUserMessage );" ).NewLine();
         }
 
         static void NumberAsStringWriter( ICodeWriter write, string variableName )
