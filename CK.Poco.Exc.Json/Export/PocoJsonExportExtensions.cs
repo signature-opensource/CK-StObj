@@ -52,7 +52,7 @@ public static class PocoJsonExportExtensions
     public static bool WriteAnyJson( this PocoDirectory @this, IBufferWriter<byte> output, object? o, PocoJsonExportOptions? options = null )
     {
         var pW = (IPocoDirectoryJsonExportGenerated)@this;
-        using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+        var wCtx = new PocoJsonWriteContext( @this, options );
         using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
         {
             // Utf8JsonWriter.Dispose calls its Flush().
@@ -64,7 +64,7 @@ public static class PocoJsonExportExtensions
     public static bool WriteAnyJson( this PocoDirectory @this, Stream output, object? o, PocoJsonExportOptions? options = null )
     {
         var pW = (IPocoDirectoryJsonExportGenerated)@this;
-        using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+        var wCtx = new PocoJsonWriteContext( @this, options );
         using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
         {
             // Utf8JsonWriter.Dispose calls its Flush().
@@ -101,7 +101,7 @@ public static class PocoJsonExportExtensions
     public static bool WriteJson( this PocoDirectory @this, IBufferWriter<byte> output, IPoco? o, bool withType = false, PocoJsonExportOptions? options = null )
     {
         var pW = (IPocoDirectoryJsonExportGenerated)@this;
-        using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+        var wCtx = new PocoJsonWriteContext( @this, options );
         using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
         {
             // Utf8JsonWriter.Dispose calls its Flush().
@@ -113,7 +113,7 @@ public static class PocoJsonExportExtensions
     public static bool WriteJson( this PocoDirectory @this, Stream output, IPoco? o, bool withType = false, PocoJsonExportOptions? options = null )
     {
         var pW = (IPocoDirectoryJsonExportGenerated)@this;
-        using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+        var wCtx = new PocoJsonWriteContext( @this, options );
         using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
         {
             // Utf8JsonWriter.Dispose calls its Flush().
@@ -157,7 +157,7 @@ public static class PocoJsonExportExtensions
     public static bool WriteJson( IPoco @this, IBufferWriter<byte> output, bool withType = false, PocoJsonExportOptions? options = null )
     {
         Throw.CheckNotNullArgument( @this );
-        using( var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options ) )
+        var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options );
         using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
         {
             // Utf8JsonWriter.Dispose calls its Flush().
@@ -170,7 +170,7 @@ public static class PocoJsonExportExtensions
     public static bool WriteJson( this IPoco @this, Stream output, bool withType = false, PocoJsonExportOptions? options = null )
     {
         Throw.CheckNotNullArgument( @this );
-        using( var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options ) )
+        var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options );
         using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
         {
             // Utf8JsonWriter.Dispose calls its Flush().

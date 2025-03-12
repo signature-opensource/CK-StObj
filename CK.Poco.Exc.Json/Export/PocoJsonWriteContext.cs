@@ -8,14 +8,11 @@ namespace CK.Poco.Exc.Json;
 
 /// <summary>
 /// Context object that is provided to all the write methods.
-/// <para>
-/// This context must be disposed once done with it.
-/// </para>
 /// </summary>
 /// <remarks>
 /// This holds the <see cref="Options"/> and the <see cref="RuntimeFilter"/>.
 /// </remarks>
-public sealed class PocoJsonWriteContext : IDisposable
+public sealed class PocoJsonWriteContext
 {
     readonly PocoJsonExportOptions _options;
     readonly ExchangeableRuntimeFilter _typeFilter;
@@ -42,12 +39,5 @@ public sealed class PocoJsonWriteContext : IDisposable
     /// Gets the type filter from the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
     /// </summary>
     public ExchangeableRuntimeFilter RuntimeFilter => _typeFilter;
-
-    /// <summary>
-    /// Disposes this context.
-    /// </summary>
-    public void Dispose()
-    {
-    }
 }
 

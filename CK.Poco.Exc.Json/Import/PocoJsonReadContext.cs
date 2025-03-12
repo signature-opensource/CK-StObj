@@ -12,7 +12,7 @@ namespace CK.Poco.Exc.Json;
 /// This context must be disposed once done with it.
 /// </para>
 /// </summary>
-public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IMCDeserializationOptions, IDisposable
+public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IMCDeserializationOptions
 {
     readonly IUtf8JsonReaderContext? _inner;
     readonly ExchangeableRuntimeFilter _typeFilter;
@@ -24,7 +24,9 @@ public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IMCDeserializa
     /// <param name="pocoDirectory">The <see cref="PocoDirectory"/>.</param>
     /// <param name="options">Options to use. Defaults to <see cref="PocoJsonImportOptions.Default"/></param>
     /// <param name="inner">Optional wrapped context.</param>
-    public PocoJsonReadContext( PocoDirectory pocoDirectory, PocoJsonImportOptions? options = null, IUtf8JsonReaderContext? inner = null )
+    public PocoJsonReadContext( PocoDirectory pocoDirectory,
+                                PocoJsonImportOptions? options = null,
+                                IUtf8JsonReaderContext? inner = null )
     {
         Throw.CheckNotNullArgument( pocoDirectory );
         options ??= PocoJsonImportOptions.Default;
@@ -48,15 +50,6 @@ public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IMCDeserializa
 
     /// <inheritdoc />
     public NormalizedCultureInfo? DefaultCulture => _options.DefaultCulture;
-
-    /// <summary>
-    /// Disposes this context (disposing the <see cref="IUtf8JsonReaderContext"/> if
-    /// any and if it is disposable).
-    /// </summary>
-    public void Dispose()
-    {
-        if( _inner is IDisposable d ) d.Dispose();
-    }
 
     /// <inheritdoc />
     public void ReadMoreData( ref Utf8JsonReader reader ) => _inner?.ReadMoreData( ref reader );

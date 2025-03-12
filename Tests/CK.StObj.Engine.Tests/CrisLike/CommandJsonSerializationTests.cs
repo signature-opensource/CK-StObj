@@ -97,8 +97,8 @@ public class CommandJsonSerializationTests
                 imp.ActualActorId = 37123712;
             }
 
-            using var readContext = new PocoJsonReadContext( directory );
-            using var writeContext = new PocoJsonWriteContext( directory );
+            var readContext = new PocoJsonReadContext( directory );
+            var writeContext = new PocoJsonWriteContext( directory );
 
             T ReadFunc( ref Utf8JsonReader r, IUtf8JsonReaderContext ctx )
             {
