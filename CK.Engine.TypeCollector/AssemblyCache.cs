@@ -14,6 +14,9 @@ using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
+/// <summary>
+/// Collects, analyses and caches Assembly information.
+/// </summary>
 public sealed partial class AssemblyCache
 {
     // Don't be tempted to move this excluder down to each BinPath as
