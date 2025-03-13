@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -30,7 +30,7 @@ public static partial class EngineTestHelperExtensions
         //  - Finding an external StObjMap is easy (File.Exists in the AppContext.BaseDirectory). 
         configuration.GeneratedAssemblyName = EngineConfiguration.GeneratedAssemblyNamePrefix + DateTime.UtcNow.ToString( ".yMMdHHmsfffff" );
         var r = await configuration.RunAsync( TestHelper.Monitor ).ConfigureAwait( false );
-        r.Should().NotBeNull( "The configuration is invalid." );
+        r.ShouldNotBeNull( "The configuration is invalid." );
         return r!;
     }
 
@@ -99,11 +99,11 @@ public static partial class EngineTestHelperExtensions
                 }
             }
             CheckExpectedMessages( entries.Select( e => e.Text + CKExceptionData.CreateFrom( e.Exception )?.ToString() ), message, otherMessages );
-            addedStobjMapSucceed.Should().BeFalse( loadMapSucceed
-                                                     ? $"Service configuration ({nameof( StObjContextRoot.ServiceRegister.AddStObjMap )}) failed."
-                                                     : engineResult.Status == RunStatus.Succeed
-                                                        ? "LoadStObjMap failed."
-                                                        : "Code generation failed." );
+            addedStobjMapSucceed.ShouldBeFalse( loadMapSucceed
+                                                    ? $"Service configuration ({nameof( StObjContextRoot.ServiceRegister.AddStObjMap )}) failed."
+                                                    : engineResult.Status == RunStatus.Succeed
+                                                    ? "LoadStObjMap failed."
+                                                    : "Code generation failed." );
         }
     }
 

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -15,13 +15,13 @@ public class SimpleTests
     public void Lib_testing_stupid_code_generation()
     {
         var service = SharedEngine.AutomaticServices.GetRequiredService<ServiceWithStupidCodeGeneration>();
-        service.GetName().Should().Be( "Hello from generated code! (touch)" );
+        service.GetName().ShouldBe( "Hello from generated code! (touch)" );
     }
 
     [Test]
     public void Sample_model_has_a_Poco()
     {
         var d = SharedEngine.AutomaticServices.GetRequiredService<PocoDirectory>();
-        d.Create<Sample.Model.IRegularPoco>().Should().NotBeNull();
+        d.Create<Sample.Model.IRegularPoco>().ShouldNotBeNull();
     }
 }

@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 
 using static CK.Testing.MonitorTestHelper;
@@ -141,9 +141,9 @@ public class WithoutAmbientTests
         collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
         collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-        collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+        collector.FatalOrErrors.Count.ShouldBe( 0, "There must be no registration error (CKTypeCollector must be successful)." );
         StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
-        r.HasFatalError.Should().Be( false, "There must be no error." );
+        r.HasFatalError.ShouldBe( false, "There must be no error." );
 
         var map = r.EngineMap;
         Throw.DebugAssert( "No initialization error.", map != null );
@@ -153,6 +153,6 @@ public class WithoutAmbientTests
         WithAmbientTests.CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
         var db = map.StObjs.Obtain<SqlDefaultDatabase>();
         Debug.Assert( db != null );
-        db.ConnectionString.Should().Be( "The connection String" );
+        db.ConnectionString.ShouldBe( "The connection String" );
     }
 }

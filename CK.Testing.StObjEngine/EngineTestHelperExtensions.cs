@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -54,7 +54,7 @@ public static partial class EngineTestHelperExtensions
         var c = new StObjCollector( new SimpleServiceContainer() );
         c.RegisterTypes( helper.Monitor, types );
         StObjCollectorResult r = c.GetResult( helper.Monitor );
-        r.HasFatalError.Should().Be( false, "There must be no error." );
+        r.HasFatalError.ShouldBe( false, "There must be no error." );
         return r;
     }
 
@@ -83,7 +83,7 @@ public static partial class EngineTestHelperExtensions
             return null;
         }
         var r = c.GetResult( helper.Monitor );
-        r.HasFatalError.Should().Be( true, "GetFailedCollectorResult: StObjCollector.GetResult() must have failed with at least one fatal error." );
+        r.HasFatalError.ShouldBe( true, "GetFailedCollectorResult: StObjCollector.GetResult() must have failed with at least one fatal error." );
         CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
         return r;
     }
@@ -102,8 +102,8 @@ public static partial class EngineTestHelperExtensions
             {
                 m = m.ReplaceLineEndings();
                 var errors = fatalOrErrors.Select( m => m.ReplaceLineEndings() );
-                errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
-                    .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
+                errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) )
+                    .ShouldBeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
             }
         }
     }

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using static CK.Testing.MonitorTestHelper;
@@ -24,11 +24,10 @@ public class CKTypeKindDetectorTests
     public void basic_type_detection()
     {
         var a = new CKTypeKindDetector();
-        //a.GetValidKind( TestHelper.Monitor, typeof( Nop ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( Obj ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( Serv ) ).Should().Be( CKTypeKind.IsAutoService );
-        a.GetValidKind( TestHelper.Monitor, typeof( Scoped ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
-        a.GetValidKind( TestHelper.Monitor, typeof( Singleton ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
+        ((a.GetValidKind( TestHelper.Monitor, typeof( Obj ) ) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( Serv ) ).ShouldBe( CKTypeKind.IsAutoService );
+        a.GetValidKind( TestHelper.Monitor, typeof( Scoped ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+        a.GetValidKind( TestHelper.Monitor, typeof( Singleton ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
     }
 
     public class SpecObj : Obj { }
@@ -40,10 +39,10 @@ public class CKTypeKindDetectorTests
     public void specialized_type_detection()
     {
         var a = new CKTypeKindDetector();
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecObj ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecServ ) ).Should().Be( CKTypeKind.IsAutoService );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecScoped ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecSingleton ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(SpecObj)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecServ ) ).ShouldBe( CKTypeKind.IsAutoService );
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecScoped ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecSingleton ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
     }
 
     [CKTypeDefiner] public class ObjDefiner : IRealObject { }
@@ -55,10 +54,10 @@ public class CKTypeKindDetectorTests
     public void Definers_are_marked_with_CKTypeDefiner_and_are_not_AutoServices_or_RealObjects()
     {
         var a = new CKTypeKindDetector();
-        a.GetValidKind( TestHelper.Monitor, typeof( ObjDefiner ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( ServDefiner ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( ScopedDefiner ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( SingletonDefiner ) ).Should().Be( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( ObjDefiner ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( ServDefiner ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( ScopedDefiner ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( SingletonDefiner ) ).ShouldBe( CKTypeKind.None );
     }
 
     public class SpecObjDefiner : ObjDefiner { }
@@ -70,10 +69,10 @@ public class CKTypeKindDetectorTests
     public void specialization_of_Definers_are_cktype()
     {
         var a = new CKTypeKindDetector();
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecObjDefiner ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecServDefiner ) ).Should().Be( CKTypeKind.IsAutoService );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecScopedDefiner ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecSingletonDefiner ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(SpecObjDefiner)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecServDefiner ) ).ShouldBe( CKTypeKind.IsAutoService );
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecScopedDefiner ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecSingletonDefiner ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
     }
 
 
@@ -86,10 +85,10 @@ public class CKTypeKindDetectorTests
     public void Definers_can_be_specialized_as_another_layer_of_Definers_and_are_still_abstract()
     {
         var a = new CKTypeKindDetector();
-        a.GetValidKind( TestHelper.Monitor, typeof( ObjDefinerLevel2 ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( ServDefinerLevel2 ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( ScopedDefinerLevel2 ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( SingletonDefinerLevel2 ) ).Should().Be( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( ObjDefinerLevel2 ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( ServDefinerLevel2 ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( ScopedDefinerLevel2 ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( SingletonDefinerLevel2 ) ).ShouldBe( CKTypeKind.None );
     }
 
     public class SpecObjDefinerLevel2 : ObjDefinerLevel2 { }
@@ -101,10 +100,10 @@ public class CKTypeKindDetectorTests
     public void specialization_of_DefinersLevel2_are_cktype()
     {
         var a = new CKTypeKindDetector();
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecObjDefinerLevel2 ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecServDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecScopedDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
-        a.GetValidKind( TestHelper.Monitor, typeof( SpecSingletonDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(SpecObjDefinerLevel2)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecServDefinerLevel2 ) ).ShouldBe( CKTypeKind.IsAutoService );
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecScopedDefinerLevel2 ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+        a.GetValidKind( TestHelper.Monitor, typeof( SpecSingletonDefinerLevel2 ) ).ShouldBe( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
     }
 
     /// <summary>
@@ -135,7 +134,7 @@ public class CKTypeKindDetectorTests
                 var k = a.GetNonDefinerKind( TestHelper.Monitor, t );
                 hasCombinationError = k.GetCombinationError( t.IsClass ) != null;
             }
-            (hasCombinationError | hasRegistrationError).Should().BeTrue();
+            (hasCombinationError | hasRegistrationError).ShouldBeTrue();
         }
 
         CheckNotPossible( typeof( INotPossible0 ) );
@@ -148,8 +147,8 @@ public class CKTypeKindDetectorTests
         CheckNotPossible( typeof( NotPossible2 ) );
 
         // This is explicitly allowed thanks to the parameter.
-        a.GetNonDefinerKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: true ).Should().BeNull( "This is possible for a Class." );
-        a.GetNonDefinerKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: false ).Should().NotBeNull();
+        a.GetNonDefinerKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: true ).ShouldBeNull( "This is possible for a Class." );
+        a.GetNonDefinerKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: false ).ShouldNotBeNull();
     }
 
     // IRA is a Super Definer.
@@ -198,19 +197,19 @@ public class CKTypeKindDetectorTests
     public void Definer_and_Super_Definer_on_RealObject()
     {
         var a = new CKTypeKindDetector();
-        a.GetValidKind( TestHelper.Monitor, typeof( IRA ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( IRB ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( IRC ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( RD ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( RC ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( RB ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBC ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBBase ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBBaseC ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBSuperBase ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBStillDefiner ) ).Should().Be( CKTypeKind.None );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBAtLast ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
-        a.GetValidKind( TestHelper.Monitor, typeof( RBOfCourse ) ).Should().HaveFlag( CKTypeKind.IsRealObject );
+        a.GetValidKind( TestHelper.Monitor, typeof( IRA ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( IRB ) ).ShouldBe( CKTypeKind.None );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(IRC)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        ((a.GetValidKind(TestHelper.Monitor, typeof(RD)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        ((a.GetValidKind(TestHelper.Monitor, typeof(RC)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( RB ) ).ShouldBe( CKTypeKind.None );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(RBC)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( RBBase ) ).ShouldBe( CKTypeKind.None );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(RBBaseC)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        a.GetValidKind( TestHelper.Monitor, typeof( RBSuperBase ) ).ShouldBe( CKTypeKind.None );
+        a.GetValidKind( TestHelper.Monitor, typeof( RBStillDefiner ) ).ShouldBe( CKTypeKind.None );
+        ((a.GetValidKind(TestHelper.Monitor, typeof(RBAtLast)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
+        ((a.GetValidKind(TestHelper.Monitor, typeof(RBOfCourse)) & CKTypeKind.IsRealObject) != 0).ShouldBeTrue();
     }
 
 
@@ -241,7 +240,7 @@ public class CKTypeKindDetectorTests
                 a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ConfigurableAutoServiceKind.IsSingleton );
                 a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ConfigurableAutoServiceKind.IsScoped );
             }
-            success.Should().BeFalse( "From general to specific: this fails!" );
+            success.ShouldBeFalse( "From general to specific: this fails!" );
         }
         {
             var a = new CKTypeKindDetector();
@@ -251,12 +250,12 @@ public class CKTypeKindDetectorTests
                 a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ConfigurableAutoServiceKind.IsScoped );
                 a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ConfigurableAutoServiceKind.IsSingleton );
             }
-            success.Should().BeTrue( "From specific to general: success!" );
+            success.ShouldBeTrue( "From specific to general: success!" );
 
             var baseO = a.GetValidKind( TestHelper.Monitor, typeof( IOptions<> ) );
             var specO = a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ) );
-            baseO.ToStringClear( false ).Should().Be( "IsSingleton" );
-            specO.ToStringClear( false ).Should().Be( "IsScoped" );
+            baseO.ToStringClear( false ).ShouldBe( "IsSingleton" );
+            specO.ToStringClear( false ).ShouldBe( "IsScoped" );
         }
     }
 
@@ -285,13 +284,13 @@ public class CKTypeKindDetectorTests
             a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), ConfigurableAutoServiceKind.IsScoped );
             a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), ConfigurableAutoServiceKind.IsSingleton );
         }
-        success.Should().BeTrue();
+        success.ShouldBeTrue();
 
-        a.GetValidKind( TestHelper.Monitor, typeof( IOptions<object> ) ).ToStringClear( false ).Should().Be( "IsSingleton" );
-        a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<object> ) ).ToStringClear( false ).Should().Be( "IsScoped" );
+        a.GetValidKind( TestHelper.Monitor, typeof( IOptions<object> ) ).ToStringClear( false ).ShouldBe( "IsSingleton" );
+        a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<object> ) ).ToStringClear( false ).ShouldBe( "IsScoped" );
 
-        a.GetValidKind( TestHelper.Monitor, typeof( Opt ) ).ToStringClear( false ).Should().Be( "IsSingleton" );
-        a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).Should().Be( "IsScoped" );
+        a.GetValidKind( TestHelper.Monitor, typeof( Opt ) ).ToStringClear( false ).ShouldBe( "IsSingleton" );
+        a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).ShouldBe( "IsScoped" );
     }
 
 }

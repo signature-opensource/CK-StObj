@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -40,9 +40,9 @@ public class OpenGenericSupportTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( ClassService )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-        map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
-        map.Services.Mappings[typeof( ClassService )].IsScoped.Should().BeFalse();
+        map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).ShouldBeFalse( "The SuperDefiner." );
+        map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).ShouldBeFalse( "The Definer." );
+        map.Services.Mappings[typeof( ClassService )].IsScoped.ShouldBeFalse();
     }
 
     public interface InterfaceService : IMyServiceTemplate<int>
@@ -64,14 +64,14 @@ public class OpenGenericSupportTests
         configuration.FirstBinPath.Types.Add( typeof( ClassFromInterfaceService ) );
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-        auto.Map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-        auto.Map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+        auto.Map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).ShouldBeFalse( "The SuperDefiner." );
+        auto.Map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).ShouldBeFalse( "The Definer." );
 
-        auto.Map.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
+        auto.Map.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).ShouldBeTrue();
         auto.Map.Services.Mappings[typeof( ClassFromInterfaceService )].UniqueMappings
-            .Should().BeEquivalentTo( new[] { typeof( InterfaceService ) } );
+            .ShouldBe( new[] { typeof( InterfaceService ) } );
 
-        auto.Services.GetService<InterfaceService>().Should().Be( auto.Services.GetService<ClassFromInterfaceService>() );
+        auto.Services.GetService<InterfaceService>().ShouldBe( auto.Services.GetService<ClassFromInterfaceService>() );
     }
 
     [IsMultiple]
@@ -98,6 +98,6 @@ public class OpenGenericSupportTests
         configuration.FirstBinPath.Types.Add( typeof( ADeviceHost ) );
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-        auto.Services.GetService<ADeviceHost>().Should().NotBeNull();
+        auto.Services.GetService<ADeviceHost>().ShouldNotBeNull();
     }
 }

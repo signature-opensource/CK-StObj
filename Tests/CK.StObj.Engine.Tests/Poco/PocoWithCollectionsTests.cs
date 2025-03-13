@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -30,9 +30,9 @@ public class PocoWithCollectionsTests
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
-        p.Strings.Should().NotBeNull().And.BeEmpty();
-        p.Configurations.Should().NotBeNull().And.BeEmpty();
-        p.DistinctValues.Should().NotBeNull().And.BeEmpty();
+        p.Strings.ShouldNotBeNull().ShouldNotBeEmpty();
+        p.Configurations.ShouldNotBeNull().ShouldNotBeEmpty();
+        p.DistinctValues.ShouldNotBeNull().ShouldNotBeEmpty();
     }
 
     public interface IWithArray : IPoco
@@ -54,10 +54,10 @@ public class PocoWithCollectionsTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArraySetter>>();
         var p = f.Create();
-        p.Array.Should().BeSameAs( Array.Empty<int>() );
+        p.Array.ShouldBeSameAs( Array.Empty<int>() );
         p.Array = [1, 2, 3];
         var readOnly = (IWithArray)p;
-        readOnly.Array.Should().BeEquivalentTo( new int[] { 1, 2, 3 } );
+        readOnly.Array.ShouldBe( new int[] { 1, 2, 3 } );
     }
 
     [Test]
@@ -69,7 +69,7 @@ public class PocoWithCollectionsTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithArray>>();
         var p = f.Create();
-        p.Array.Should().BeSameAs( Array.Empty<int>() );
+        p.Array.ShouldBeSameAs( Array.Empty<int>() );
     }
 
     public interface IInvalid : IPoco

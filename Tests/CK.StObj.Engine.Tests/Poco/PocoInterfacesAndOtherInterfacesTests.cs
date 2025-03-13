@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -61,8 +61,8 @@ public class PocoInterfacesAndOtherInterfacesTests
         var poco = TestHelper.GetSuccessfulCollectorResult( TheseValidNestedTypes ).PocoTypeSystemBuilder.PocoDirectory;
         Debug.Assert( poco != null );
 
-        poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) } );
-        poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
+        poco.AllInterfaces.Keys.ShouldBe( new[] { typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) } );
+        poco.OtherInterfaces.Keys.ShouldBe( new[] { typeof( ICommand ),
                                                                    typeof( ICommandPart ),
                                                                    typeof( ICommandAuthUnsafe ),
                                                                    typeof( ICommandAuthNormal ),
@@ -79,8 +79,8 @@ public class PocoInterfacesAndOtherInterfacesTests
             var poco = TestHelper.GetSuccessfulCollectorResult( types ).PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null );
 
-            poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IIndependent ) } );
-            poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
+            poco.AllInterfaces.Keys.ShouldBe( new[] { typeof( IFinal1 ), typeof( IIndependent ) } );
+            poco.OtherInterfaces.Keys.ShouldBe( new[] { typeof( ICommand ),
                                                                        typeof( ICommandPart ),
                                                                        typeof( ICommandAuthUnsafe ),
                                                                        typeof( ICommandAuthNormal ),
@@ -93,8 +93,8 @@ public class PocoInterfacesAndOtherInterfacesTests
             var poco = TestHelper.GetSuccessfulCollectorResult( types ).PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null );
 
-            poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );
-            poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
+            poco.AllInterfaces.Keys.ShouldBe( new[] { typeof( IIndependent ) } );
+            poco.OtherInterfaces.Keys.ShouldBe( new[] { typeof( ICommand ),
                                                                        typeof( ICommandPart ),
                                                                        typeof( ICommandAuthUnsafe ),
                                                                        typeof( ICommandAuthNormal ),

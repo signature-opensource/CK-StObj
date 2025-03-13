@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -48,7 +48,7 @@ public partial class CollectionTests
             o.ArrayOfMe = new[] { o1 };
             o.Result = new object[] { o.ArrayOfInt, o.ArrayOfObject, o.ArrayOfArrayOfLong };
         } );
-        o2.ToString().Should().Be( """
+        o2.ToString().ShouldBe( """
             {
                 "ArrayOfInt": [1,2,3,4,5],
                 "ArrayOfObject":
@@ -141,7 +141,7 @@ public partial class CollectionTests
 
         static void CheckToString( IWithLists oD )
         {
-            oD.ToString().Should().Be( """
+            oD.ToString().ShouldBe( """
                 {
                     "ListOfList": [["L(int)",[1,2]],["L(int)",[3,4,5]]],
                     "ListOfNC": ["","en"],
@@ -219,7 +219,7 @@ public partial class CollectionTests
 
         static void CheckToString( IWithSets o )
         {
-            o.ToString().Should().Be( @"
+            o.ToString().ShouldBe( @"
                 {
                     ""SetOfNC"":["""",""en""],
                     ""SetOfEC"":[[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,de,fr""]],
@@ -281,7 +281,7 @@ public partial class CollectionTests
 
         static void CheckToString( IWithDictionaries o )
         {
-            o.ToString().Should().Be( @"
+            o.ToString().ShouldBe( @"
                 {
                     ""DicOfDic"":
                         {
@@ -373,17 +373,17 @@ public partial class CollectionTests
         } );
 
         // A Dictionary<string,T> is expressed as an object by default.
-        o.ToString().Should().Be( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}".Replace( " ", "" ) );
+        o.ToString().ShouldBe( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}".Replace( " ", "" ) );
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithDynamicObject>>();
         var oBack = f.ReadJson( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}" );
         Debug.Assert( oBack != null );
-        oBack.OfInt["Three"].Should().Be( 3 );
-        oBack.Should().BeEquivalentTo( o );
+        oBack.OfInt["Three"].ShouldBe( 3 );
+        oBack.ShouldBe( o );
 
         var oBackA = f.ReadJson( @"{""OfInt"":[[""One"",1],[""Two"",2],[""Three"",3]]}" );
         Debug.Assert( oBackA != null );
-        oBackA.Should().BeEquivalentTo( oBack );
+        oBackA.ShouldBe( oBack );
     }
 
     public record struct Rec( object Obj );
@@ -433,7 +433,7 @@ public partial class CollectionTests
         {
             string? sText = null;
             var o2 = JsonTestHelper.Roundtrip( directory, o, allW, allR, text => sText = text );
-            sText.Should().Be( """
+            sText.ShouldBe( """
             ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
             {
                 "list":
@@ -454,13 +454,13 @@ public partial class CollectionTests
                     ]
             }]
             """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
-            o2.List.Should().HaveCount( 5 );
-            o2.Dictionary.Should().HaveCount( 5 );
+            o2.List.Count.ShouldBe( 5 );
+            o2.Dictionary.Count.ShouldBe( 5 );
         }
 
         var excW = new PocoJsonExportOptions() { TypeFilterName = "AllExchangeable" };
         var filtered = o.ToString( excW, withType: true );
-        filtered.Should().Be( """
+        filtered.ShouldBe( """
             ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
             {
                 "list":
@@ -495,10 +495,10 @@ public partial class CollectionTests
         var o3 = directory.ReadJson( filtered, excR ) as IAllCollectionOfObjects;
         Throw.DebugAssert( o3 != null );
         var invalid1 = (Rec)o3.List[2];
-        invalid1.Obj.Should().BeNull();
+        invalid1.Obj.ShouldBeNull();
         var invalid2 = (Rec)o3.Dictionary[4];
-        invalid2.Obj.Should().BeNull();
-        FluentActions.Invoking( () => o3.ToString( excW ) ).Should().Throw<Exception>();
+        invalid2.Obj.ShouldBeNull();
+        Util.Invokable( () => o3.ToString( excW ) ).ShouldThrow<Exception>();
     }
 
     [RegisterPocoType( typeof( object[] ) )]
@@ -547,7 +547,7 @@ public partial class CollectionTests
 
         static void CheckToString( IWithListsA oL )
         {
-            oL.ToString().Should().Be( """
+            oL.ToString().ShouldBe( """
             {
                 "ListOfAbstract":
                     [
@@ -630,7 +630,7 @@ public partial class CollectionTests
 
         static void CheckToString( IWithDicsA oD )
         {
-            oD.ToString().Should().Be( """
+            oD.ToString().ShouldBe( """
                 {
                     "DicOfAbstract":
                         [

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -31,10 +31,10 @@ public class RecordAnonymousTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithTuple>>();
         var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
-        o.ToString().Should().Be( @"{""Hop"":[""CodeGen!"",3712]}" );
+        o.ToString().ShouldBe( @"{""Hop"":[""CodeGen!"",3712]}" );
 
         var o2 = JsonTestHelper.Roundtrip( directory, o );
-        o2.Hop.Should().Be( ("CodeGen!", 3712) );
+        o2.Hop.ShouldBe( ("CodeGen!", 3712) );
     }
 
     public interface IWithNullableTuple : IPoco
@@ -53,16 +53,16 @@ public class RecordAnonymousTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithNullableTuple>>();
         var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
-        o.ToString().Should().Be( @"{""Hop"":[""CodeGen!"",3712]}" );
+        o.ToString().ShouldBe( @"{""Hop"":[""CodeGen!"",3712]}" );
 
         var o2 = JsonTestHelper.Roundtrip( directory, o );
-        o2.Hop.Should().Be( ("CodeGen!", 3712) );
+        o2.Hop.ShouldBe( ("CodeGen!", 3712) );
 
         o.Hop = null;
-        o.ToString().Should().Be( @"{""Hop"":null}" );
+        o.ToString().ShouldBe( @"{""Hop"":null}" );
 
         var o3 = JsonTestHelper.Roundtrip( directory, o );
-        o3.Hop.Should().BeNull();
+        o3.Hop.ShouldBeNull();
     }
 
     public interface IWithCollections : IPoco
@@ -95,7 +95,7 @@ public class RecordAnonymousTests
             o.DicN.Add( "two", ("CodeGen!", 12) );
             o.DicN.Add( "three", null );
         } );
-        o.ToString().Should().Be( """
+        o.ToString().ShouldBe( """
             {
                 "List": [["C1",3712]],
                 "ListN": [["N1", 42], null],
@@ -143,7 +143,7 @@ public class RecordAnonymousTests
                            new HashSet<(int, Guid)> { (2, g2) },
                            new Dictionary<string, (int, Guid)>() { { "1", (3, g3) } } ) );
         } );
-        o.ToString().Should().Be( $$$"""{"Records":[{"List":[[1,"{{{g1}}}"]],"Set":[[2,"{{{g2}}}"]],"Dic":{"1":[3,"{{{g3}}}"]}}]}""" );
+        o.ToString().ShouldBe( $$$"""{"Records":[{"List":[[1,"{{{g1}}}"]],"Set":[[2,"{{{g2}}}"]],"Dic":{"1":[3,"{{{g3}}}"]}}]}""" );
 
         JsonTestHelper.Roundtrip( directory, o );
     }
@@ -174,7 +174,7 @@ public class RecordAnonymousTests
                            new HashSet<(int, Guid)?> { (2, g2), null },
                            new Dictionary<string, (int, Guid)?>() { { "1", (3, g3) }, { "2", null } } ) );
         } );
-        o.ToString().Should().Be( $$$"""{"Records":[{"List":[[1,"{{{g1}}}"],null],"Set":[[2,"{{{g2}}}"],null],"Dic":{"1":[3,"{{{g3}}}"],"2":null}}]}""" );
+        o.ToString().ShouldBe( $$$"""{"Records":[{"List":[[1,"{{{g1}}}"],null],"Set":[[2,"{{{g2}}}"],null],"Dic":{"1":[3,"{{{g3}}}"],"2":null}}]}""" );
 
         JsonTestHelper.Roundtrip( directory, o );
     }
@@ -196,7 +196,7 @@ public class RecordAnonymousTests
         var o = directory.Create<IWithRecordWithPoco>();
         o.Recs.Add( (1, directory.Create<IWithRecord>()) );
 
-        o.ToString().Should().Be( $$$"""{"Recs":[[1,{"Records":[]}]]}""" );
+        o.ToString().ShouldBe( $$$"""{"Recs":[[1,{"Records":[]}]]}""" );
 
         JsonTestHelper.Roundtrip( directory, o );
     }
@@ -220,7 +220,7 @@ public class RecordAnonymousTests
         o.Recs.Add( (1, directory.Create<IWithRecord>()) );
         o.Recs.Add( (2, null) );
 
-        o.ToString().Should().Be( $$$"""{"Recs":[[1,{"Records":[]}],[2,null]]}""" );
+        o.ToString().ShouldBe( $$$"""{"Recs":[[1,{"Records":[]}],[2,null]]}""" );
 
         JsonTestHelper.Roundtrip( directory, o );
     }

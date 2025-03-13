@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Diagnostics.Metrics;
@@ -24,15 +24,15 @@ public class AssemblyAndTypeCacheTests
         var typeCache = AssemblyCache.Run( TestHelper.Monitor, config ).TypeCache;
 
         var v8 = typeCache.Get( typeof( ValueTuple<,,,,,,,> ) );
-        v8.CSharpName.Should().Be( "System.ValueTuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
+        v8.CSharpName.ShouldBe( "System.ValueTuple<T1,T2,T3,T4,T5,T6,T7,TRest>" );
         var gArgs = v8.GenericArguments;
-        gArgs.Select( p => p.ToString() ).Concatenate().Should().Be( "T1, T2, T3, T4, T5, T6, T7, TRest" );
+        gArgs.Select( p => p.ToString() ).Concatenate().ShouldBe( "T1, T2, T3, T4, T5, T6, T7, TRest" );
 
         var oneV8 = (1, "string", 3, (object?)null, 5, typeof( void ), 7, "8");
         var iV8 = typeCache.Get( oneV8.GetType() );
-        iV8.CSharpName.Should().Be( "(int,string,int,object,int,System.Type,int,string)" );
+        iV8.CSharpName.ShouldBe( "(int,string,int,object,int,System.Type,int,string)" );
         gArgs = iV8.GenericArguments;
-        gArgs.Select( p => p.ToString() ).Concatenate().Should().Be( "int, string, int, object, int, System.Type, int, (string)" );
+        gArgs.Select( p => p.ToString() ).Concatenate().ShouldBe( "int, string, int, object, int, System.Type, int, (string)" );
     }
 
     /// <summary>
@@ -63,12 +63,12 @@ public class AssemblyAndTypeCacheTests
                     var cT = typeCache.Get( t );
                     using( monitor.OpenInfo( cT.ToString() ) )
                     {
-                        cT.Type.Should().Be( t );
+                        cT.Type.ShouldBe( t );
                         foreach( var m in cT.DeclaredMembers )
                         {
-                            m.ToString().Should().NotBeNull();
+                            m.ToString().ShouldNotBeNull();
                         }
-                        cT.GenericArguments.IsDefault.Should().BeFalse();
+                        cT.GenericArguments.IsDefault.ShouldBeFalse();
                     }
                 }
             }
@@ -99,19 +99,21 @@ public class AssemblyAndTypeCacheTests
             var cT = typeCache.Get( t );
             var cBase = typeCache.Get( tBase );
             Throw.DebugAssert( cT.BaseType != null );
-            cT.BaseType.Should().BeSameAs( cBase );
+            cT.BaseType.ShouldBeSameAs( cBase );
 
-            cBase.IsTypeDefinition.Should().BeFalse().And.Be( tBase.IsTypeDefinition );
-            cBase.IsGenericType.Should().BeTrue().And.Be( tBase.IsGenericType );
-            cBase.ToString().Should().Be( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<T>.XClass<T,int>" );
-            cBase.GenericArguments.Should().HaveCount( 3 );
-            cBase.GenericArguments[0].CSharpName.Should().Be( "T" );
-            cBase.GenericArguments[0].DeclaringType.Should().Be( cT );
-            cBase.GenericArguments[1].Should().BeSameAs( cBase.GenericArguments[0] );
-            cBase.GenericArguments[2].Should().BeSameAs( typeCache.Get( typeof(int) ) );
+            cBase.IsTypeDefinition.ShouldBeFalse();
+            cBase.IsTypeDefinition.ShouldBe( tBase.IsTypeDefinition );
+            cBase.IsGenericType.ShouldBeTrue();
+            cBase.IsGenericType.ShouldBe( tBase.IsGenericType );
+            cBase.ToString().ShouldBe( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<T>.XClass<T,int>" );
+            cBase.GenericArguments.Count().ShouldBe( 3 );
+            cBase.GenericArguments[0].CSharpName.ShouldBe( "T" );
+            cBase.GenericArguments[0].DeclaringType.ShouldBe( cT );
+            cBase.GenericArguments[1].ShouldBeSameAs( cBase.GenericArguments[0] );
+            cBase.GenericArguments[2].ShouldBeSameAs( typeCache.Get( typeof(int) ) );
 
             Throw.DebugAssert( cBase.GenericTypeDefinition != null );
-            cBase.GenericTypeDefinition.ToString().Should().Be( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<TOuter>.XClass<T,U>" );
+            cBase.GenericTypeDefinition.ToString().ShouldBe( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<TOuter>.XClass<T,U>" );
         }
     }
 

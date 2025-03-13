@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -42,16 +42,16 @@ public class AnonymousRecordTests
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
 
-        p.Thing.Count.Should().Be( 0 );
-        p.Thing.NotNullableStringDefaultsToEmpty.Should().BeEmpty();
-        p.Thing.DateTimeDefaultsToUtcMinValue.Should().Be( Util.UtcMinValue );
+        p.Thing.Count.ShouldBe( 0 );
+        p.Thing.NotNullableStringDefaultsToEmpty.ShouldBeEmpty();
+        p.Thing.DateTimeDefaultsToUtcMinValue.ShouldBe( Util.UtcMinValue );
 
         p.Thing.Count = 34;
         p.Thing.DateTimeDefaultsToUtcMinValue = Util.UtcMaxValue;
 
-        p.Thing.Count.Should().Be( 34 );
-        p.Thing.NotNullableStringDefaultsToEmpty.Should().BeEmpty();
-        p.Thing.DateTimeDefaultsToUtcMinValue.Should().Be( Util.UtcMaxValue );
+        p.Thing.Count.ShouldBe( 34 );
+        p.Thing.NotNullableStringDefaultsToEmpty.ShouldBeEmpty();
+        p.Thing.DateTimeDefaultsToUtcMinValue.ShouldBe( Util.UtcMaxValue );
     }
 
     public interface IWithValueTuple2 : IPoco
@@ -68,10 +68,10 @@ public class AnonymousRecordTests
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
 
-        p.Power.Item1.Should().Be( 0 );
-        p.Power.Item2.Should().BeEmpty();
-        p.Power.Item3.Should().BeNull();
-        p.Power.Item4.Should().BeNull();
+        p.Power.Item1.ShouldBe( 0 );
+        p.Power.Item2.ShouldBeEmpty();
+        p.Power.Item3.ShouldBeNull();
+        p.Power.Item4.ShouldBeNull();
     }
 
     public interface IWithN : IPoco
@@ -195,7 +195,7 @@ public class AnonymousRecordTests
         var tPoco = ts.FindByType<IPrimaryPocoType>( typeof( IWithLongTuple ) );
         Debug.Assert( tPoco != null );
         var tA = (IRecordPocoType)tPoco.Fields[0].Type;
-        tA.Fields.Count.Should().Be( 20 );
+        tA.Fields.Count.ShouldBe( 20 );
 
         // Just to test the code generation.
         await using var auto = engineResult.CreateAutomaticServices();
@@ -203,7 +203,7 @@ public class AnonymousRecordTests
         var tuple = (ITuple)p.Long;
         for( int i = 0; i < tuple.Length; i++ )
         {
-            tuple[i].Should().BeOfType<string>().And.Be( String.Empty, "The default value for non nullable string is empty." );
+            tuple[i].ShouldBeOfType<string>().ShouldBe( String.Empty, "The default value for non nullable string is empty." );
         }
     }
 
@@ -229,7 +229,7 @@ public class AnonymousRecordTests
     {
         Throw.DebugAssert( t != null && t is IRecordPocoType );
         var r = (IRecordPocoType)t;
-        r.Fields.Select( f => f.Name ).Should().BeEquivalentTo( names );
+        r.Fields.Select( f => f.Name ).ShouldBe( names );
         return r;
     }
 }

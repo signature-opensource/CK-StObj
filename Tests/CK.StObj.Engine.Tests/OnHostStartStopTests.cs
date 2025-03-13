@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -41,7 +41,7 @@ public class OnHostStartStopTests
 
         public void Shutdown( IActivityMonitor monitor, ISqlCallContext ctx )
         {
-            ctx.Disposed.Should().BeFalse();
+            ctx.Disposed.ShouldBeFalse();
             monitor.Info( "Mail Service Shutdown." );
         }
     }
@@ -50,13 +50,13 @@ public class OnHostStartStopTests
     {
         void OnHostStart( IActivityMonitor m, ISqlCallContext ctx )
         {
-            ctx.Disposed.Should().BeFalse();
+            ctx.Disposed.ShouldBeFalse();
             m.Info( $"O1 is starting." );
         }
 
         void OnHostStop( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
         {
-            ctx.Disposed.Should().BeFalse();
+            ctx.Disposed.ShouldBeFalse();
             m.Info( $"O1 is stopping." );
         }
     }
@@ -71,7 +71,7 @@ public class OnHostStartStopTests
 
         ValueTask OnHostStopAsync( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
         {
-            ctx.Disposed.Should().BeFalse();
+            ctx.Disposed.ShouldBeFalse();
             m.Info( $"O1Spec is stopping." );
             return default;
         }
@@ -120,7 +120,7 @@ public class OnHostStartStopTests
                 await i.StopAsync( default );
             }
             entries.Select( e => e.Text ).Concatenate( "|" )
-                .Should().Be( "Calling: 1 'OnHostStart' method and 2 'OnHostStartAsync' methods.|O1 is starting.|O1Spec is starting.|O2Spec is starting."
+                .ShouldBe( "Calling: 1 'OnHostStart' method and 2 'OnHostStartAsync' methods.|O1 is starting.|O1Spec is starting.|O2Spec is starting."
                               + "|Calling: 2 'OnHostStopAsync' methods and 1 'OnHostStop' method.|O2Spec is stopping.|Mail Service Shutdown.|O1Spec is stopping.|O1 is stopping." );
         }
     }

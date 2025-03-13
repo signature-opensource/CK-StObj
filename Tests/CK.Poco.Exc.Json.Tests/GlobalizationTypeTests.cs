@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -44,7 +44,7 @@ public partial class GlobalizationTypeTests
         n.PExtendedCultureInfo = ExtendedCultureInfo.EnsureExtendedCultureInfo( "fr, es" );
 
         var n2 = JsonTestHelper.Roundtrip( directory, n, text: t => TestHelper.Monitor.Info( $"IAllTypes serialization: " + t ) );
-        n2.Should().BeEquivalentTo( n );
+        n2.ShouldBe( n );
     }
 
     public interface IWithUserMessage : IPoco
@@ -75,12 +75,12 @@ public partial class GlobalizationTypeTests
         n.OSimpleUserMessage = n.SimpleUserMessage;
 
         var s1 = n.ToString();
-        s1.Should().Be( """
+        s1.ShouldBe( """
             {"UserMessage":[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["UserMessage",[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
             """ );
         // Polymorphism considers the AlwaysExportSimpleUserMessage: OUserMessage has SimpleUserMessageType. 
         var s2 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, AlwaysExportSimpleUserMessage = true } );
-        s2.Should().Be( """
+        s2.ShouldBe( """
             {"UserMessage":[4,"Hop some string!",5],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["SimpleUserMessage",[4,"Hop some string!",5]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
             """ );
     }

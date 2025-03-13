@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Sample.Model;
@@ -38,12 +38,12 @@ public class SimpleTests
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var thing = auto.Services.GetRequiredService<ThingService>();
-        thing.GetValue( "ab" ).Should().Be( 2 );
-        thing.GetAnotherValue( "abc" ).Should().Be( 9 );
+        thing.GetValue( "ab" ).ShouldBe( 2 );
+        thing.GetAnotherValue( "abc" ).ShouldBe( 9 );
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
-            thing.SaySomething( TestHelper.Monitor ).Should().Be( "Yes!" );
-            logs.Should().Contain( "Hello World!" );
+            thing.SaySomething( TestHelper.Monitor ).ShouldBe( "Yes!" );
+            logs.ShouldContain( "Hello World!" );
         }
     }
 

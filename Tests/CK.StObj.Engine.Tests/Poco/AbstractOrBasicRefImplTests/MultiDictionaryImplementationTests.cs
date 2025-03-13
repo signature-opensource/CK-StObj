@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -60,26 +60,27 @@ public class MultiDictionaryImplementationTests : CommonTypes
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithDictionary)d.Find( type )!.Create();
 
-        p.Dictionary.Should().BeAssignableTo<IDictionary<int, IVerySimplePoco>>()
-            .And.BeAssignableTo<IDictionary<int, ISecondaryVerySimplePoco>>()
-            .And.BeAssignableTo<IDictionary<int, IOtherSecondaryVerySimplePoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<int, object>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<int, IPoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<int, IVerySimplePoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<int, ISecondaryVerySimplePoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<int, IOtherSecondaryVerySimplePoco>>();
-        p.ConcreteDictionary.GetType().Name.Should().Be( "Dictionary`2" );
+        p.Dictionary.ShouldBeAssignableTo<IDictionary<int, IVerySimplePoco>>();
+        p.Dictionary.ShouldBeAssignableTo<IDictionary<int, ISecondaryVerySimplePoco>>();
+        p.Dictionary.ShouldBeAssignableTo<IDictionary<int, IOtherSecondaryVerySimplePoco>>();
+        p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, object>>();
+        p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, IPoco>>();
+        p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, IVerySimplePoco>>();
+        p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, ISecondaryVerySimplePoco>>();
+        p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, IOtherSecondaryVerySimplePoco>>();
+
+        p.ConcreteDictionary.GetType().Name.ShouldBe( "Dictionary`2" );
 
         if( type != typeof( IPocoWithDictionaryOfPrimary ) )
         {
-            p.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<int, IAbstractBase>>();
+            p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, IAbstractBase>>();
             if( type == typeof( IPocoWithDictionaryOfSecondary ) )
             {
-                p.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<int, IAbstract1>>();
+                p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, IAbstract1>>();
             }
             else
             {
-                p.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<int, IAbstract2>>();
+                p.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<int, IAbstract2>>();
             }
         }
     }
@@ -112,23 +113,23 @@ public class MultiDictionaryImplementationTests : CommonTypes
         var d = auto.Services.GetRequiredService<PocoDirectory>();
 
         var pBase = d.Create<IPocoWithDictionaryOfAbstractBase>();
-        pBase.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<string, object>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IPoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IAbstractBase>>();
+        pBase.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, object>>();
+        pBase.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IPoco>>();
+        pBase.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IAbstractBase>>();
 
         var pAbstract1 = d.Create<IPocoWithDictionaryOfAbstract1>();
-        pAbstract1.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<string, object>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IPoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IAbstractBase>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IAbstract1>>();
+        pAbstract1.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, object>>();
+        pAbstract1.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IPoco>>();
+        pAbstract1.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IAbstractBase>>();
+        pAbstract1.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IAbstract1>>();
 
         var pClosed = d.Create<IPocoWithDictionaryOfClosed>();
-        pClosed.Dictionary.Should().BeAssignableTo<IReadOnlyDictionary<string, object>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IPoco>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IAbstractBase>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IAbstract1>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IAbstract1Closed>>()
-            .And.BeAssignableTo<IReadOnlyDictionary<string, IClosedPoco>>();
+        pClosed.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, object>>();
+        pClosed.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IPoco>>();
+        pClosed.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IAbstractBase>>();
+        pClosed.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IAbstract1>>();
+        pClosed.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IAbstract1Closed>>();
+        pClosed.Dictionary.ShouldBeAssignableTo<IReadOnlyDictionary<string, IClosedPoco>>();
     }
 
     [CKTypeDefiner]
@@ -159,11 +160,11 @@ public class MultiDictionaryImplementationTests : CommonTypes
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var pBase = d.Create<IBasicRefDics>();
-        pBase.StringDic.Should().NotBeNull();
-        pBase.ExtendedCultureInfoDic.Should().NotBeNull();
-        pBase.NormalizedCultureInfoDic.Should().NotBeNull();
-        pBase.MCStringDic.Should().NotBeNull();
-        pBase.CodeStringDic.Should().NotBeNull();
-        pBase.NormalizedCultureInfoDic.Should().BeAssignableTo<IReadOnlyDictionary<int, ExtendedCultureInfo>>();
+        pBase.StringDic.ShouldNotBeNull();
+        pBase.ExtendedCultureInfoDic.ShouldNotBeNull();
+        pBase.NormalizedCultureInfoDic.ShouldNotBeNull();
+        pBase.MCStringDic.ShouldNotBeNull();
+        pBase.CodeStringDic.ShouldNotBeNull();
+        pBase.NormalizedCultureInfoDic.ShouldBeAssignableTo<IReadOnlyDictionary<int, ExtendedCultureInfo>>();
     }
 }

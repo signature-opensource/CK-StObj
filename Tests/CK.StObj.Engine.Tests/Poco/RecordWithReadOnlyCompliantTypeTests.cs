@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -33,9 +33,9 @@ public class RecordWithReadOnlyCompliantTypeTests
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStruct>>().Create();
-        p.Thing1.Should().BeNull();
-        p.Thing2.Should().NotBeNull();
-        p.Thing2.Name.Should().Be( "Albert" );
+        p.Thing1.ShouldBeNull();
+        p.Thing2.ShouldNotBeNull();
+        p.Thing2.Name.ShouldBe( "Albert" );
     }
 
     public struct DetailWithFields : IEquatable<DetailWithFields>
@@ -114,12 +114,12 @@ public class RecordWithReadOnlyCompliantTypeTests
         {
             IPocoType p = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( WithFields ) )! )!;
             var pRec = (IRecordPocoType)p;
-            pRec.IsReadOnlyCompliant.Should().BeFalse();
+            pRec.IsReadOnlyCompliant.ShouldBeFalse();
         }
         {
             IPocoType p = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( WithProperties ) )! )!;
             var pRec = (IRecordPocoType)p;
-            pRec.IsReadOnlyCompliant.Should().BeFalse();
+            pRec.IsReadOnlyCompliant.ShouldBeFalse();
         }
     }
 
@@ -143,17 +143,17 @@ public class RecordWithReadOnlyCompliantTypeTests
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithComplexRecords>>().Create();
 
-        p.A.F.Power.Should().Be( 42 );
-        p.A.F.Name.Should().Be( "Einstein" );
-        p.A.P.Power.Should().Be( 42 );
-        p.A.P.Name.Should().Be( "Einstein" );
+        p.A.F.Power.ShouldBe( 42 );
+        p.A.F.Name.ShouldBe( "Einstein" );
+        p.A.P.Power.ShouldBe( 42 );
+        p.A.P.Name.ShouldBe( "Einstein" );
 
-        p.B.Funny.FP.Power.Should().Be( 42 );
-        p.B.Funny.FP.Name.Should().Be( "Einstein" );
-        p.B.Funny.A.Inner.P.Power.Should().Be( 0 );
-        p.B.Funny.A.Inner.P.Name.Should().Be( "Albert" );
-        p.B.Funny.A.Inner.F.Power.Should().Be( 42 );
-        p.B.Funny.A.Inner.F.Name.Should().Be( "Einstein" );
+        p.B.Funny.FP.Power.ShouldBe( 42 );
+        p.B.Funny.FP.Name.ShouldBe( "Einstein" );
+        p.B.Funny.A.Inner.P.Power.ShouldBe( 0 );
+        p.B.Funny.A.Inner.P.Name.ShouldBe( "Albert" );
+        p.B.Funny.A.Inner.F.Power.ShouldBe( 42 );
+        p.B.Funny.A.Inner.F.Name.ShouldBe( "Einstein" );
     }
 
     public interface IRecordWithPoco : IPoco
@@ -367,8 +367,8 @@ public class RecordWithReadOnlyCompliantTypeTests
 
         // The same initialization.
         var defCode = t1.DefaultValueInfo.DefaultValue.ValueCSharpSource;
-        defCode.Should().Be( "new(){Thing = new(){Power = 42, Values = new List<int>(), Name = @\"Hip!\"}}" );
-        t2.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( defCode );
+        defCode.ShouldBe( "new(){Thing = new(){Power = 42, Values = new List<int>(), Name = @\"Hip!\"}}" );
+        t2.DefaultValueInfo.DefaultValue.ValueCSharpSource.ShouldBe( defCode );
     }
 
 

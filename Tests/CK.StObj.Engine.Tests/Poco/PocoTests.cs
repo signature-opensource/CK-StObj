@@ -2,7 +2,7 @@ using CK.Core;
 using CK.Setup;
 using CK.StObj.Engine.Tests.Poco.Sample;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -41,7 +41,7 @@ public class PocoTests
 
         IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) )!;
         var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
-        package.Factory.Should().NotBeNull();
+        package.Factory.ShouldNotBeNull();
     }
 
     static StObjCollectorResult BuildPocoSample( params Type[] extra )
@@ -70,18 +70,18 @@ public class PocoTests
         var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IThing )] );
         var poco = r.PocoTypeSystemBuilder.PocoDirectory;
         Debug.Assert( poco != null, "Since there has been no error." );
-        poco.Families.Should().HaveCount( 1 );
+        poco.Families.Count.ShouldBe( 1 );
 
         var TF = poco.Families[0].PocoFactoryClass;
         var F = Activator.CreateInstance( TF );
         Debug.Assert( F != null );
         var FP = (IPocoFactory)F;
         var PT = FP.PocoClassType;
-        PT.Should().NotBeNull();
+        PT.ShouldNotBeNull();
 
-        poco.AllInterfaces.Should().HaveCount( 1 );
-        poco.Find( typeof( IThingBase ) ).Should().BeNull();
-        poco.Find( typeof( IThing ) ).Should().NotBeNull();
+        poco.AllInterfaces.Count.ShouldBe( 1 );
+        poco.Find( typeof( IThingBase ) ).ShouldBeNull();
+        poco.Find( typeof( IThing ) ).ShouldNotBeNull();
     }
 
     [Test]
@@ -99,11 +99,11 @@ public class PocoTests
         Assert.That( typeof( IECombineBasicPoco ).IsAssignableFrom( pocoType ) );
         Assert.That( typeof( IEIndependentBasicPoco ).IsAssignableFrom( pocoType ) );
         // These are dumb emit implementations.
-        p.PrimaryInterface.Should().BeNull();
-        p.Interfaces.Should().BeNull();
-        p.Name.Should().BeNull();
-        p.PreviousNames.Should().BeNull();
-        p.ClosureInterface.Should().BeNull();
+        p.PrimaryInterface.ShouldBeNull();
+        p.Interfaces.ShouldBeNull();
+        p.Name.ShouldBeNull();
+        p.PreviousNames.ShouldBeNull();
+        p.ClosureInterface.ShouldBeNull();
     }
 
     public interface IDefTest : IPoco
@@ -124,8 +124,8 @@ public class PocoTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IDefTest>>();
         var o = f.Create();
-        o.PDef.Should().Be( 3712 );
-        o.Message.Should().Be( @"Hello ""World""!" );
+        o.PDef.ShouldBe( 3712 );
+        o.Message.ShouldBe( @"Hello ""World""!" );
     }
 
     public interface IDefPropInt : IDefBase
@@ -345,8 +345,8 @@ public class PocoTests
     public void Poco_properties_can_carry_context_bound_attributes()
     {
         TestHelper.GetSuccessfulCollectorResult( [typeof( ISome )] );
-        SpecialAttributeImpl.GotType.Should().Be( typeof( ISome ) );
-        SpecialAttributeImpl.GotProperty.Name.Should().Be( "Prop" );
+        SpecialAttributeImpl.GotType.ShouldBe( typeof( ISome ) );
+        SpecialAttributeImpl.GotProperty.Name.ShouldBe( "Prop" );
     }
 
 }

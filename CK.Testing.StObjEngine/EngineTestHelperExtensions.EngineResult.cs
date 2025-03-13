@@ -1,7 +1,7 @@
 using CK.AppIdentity;
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -50,7 +50,7 @@ public static partial class EngineTestHelperExtensions
         var services = new ServiceCollection();
         var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services, startupServices );
         configureServices?.Invoke( services );
-        reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+        reg.AddStObjMap( map ).ShouldBeTrue( "Service configuration succeed." );
 
         var serviceProvider = reg.Services.BuildServiceProvider();
         // Getting the IHostedService is enough to initialize the DI containers.
@@ -129,7 +129,7 @@ public static partial class EngineTestHelperExtensions
         }
         var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, builder.Services, startupServices );
         configureServices?.Invoke( builder.Services );
-        reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+        reg.AddStObjMap( map ).ShouldBeTrue( "Service configuration succeed." );
 
         var host = builder.Build();
         // Getting the IHostedService is enough to initialize the DI containers.

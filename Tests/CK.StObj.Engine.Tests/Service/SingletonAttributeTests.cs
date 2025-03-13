@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -59,10 +59,10 @@ public class SingletonAttributeTests
         var map = (await configuration.RunSuccessfullyAsync().ConfigureAwait( false )).FirstBinPath.LoadMap();
 
         await using var auto1 = map.CreateAutomaticServices();
-        auto1.Services.Invoking( s => s.GetService<SomeScoped>() ).Should().Throw<InvalidOperationException>();
+        Util.Invokable( auto1.Services.GetService<SomeScoped> ).ShouldThrow<InvalidOperationException>();
 
         await using var auto2 = map.CreateAutomaticServices( configureServices: services => services.AddScoped( sp => NotConstructibleServiceNaked.Create() ) );
-        auto2.Services.GetService<SomeScoped>().Should().NotBeNull();
+        auto2.Services.GetService<SomeScoped>().ShouldNotBeNull();
     }
 
     public class SomeSingleton : ISingletonAutoService
@@ -82,7 +82,7 @@ public class SingletonAttributeTests
         {
             services.AddSingleton( sp => NotConstructibleService.Create() );
         } );
-        auto.Services.GetService<SomeSingleton>().Should().NotBeNull();
+        auto.Services.GetService<SomeSingleton>().ShouldNotBeNull();
     }
 
 }

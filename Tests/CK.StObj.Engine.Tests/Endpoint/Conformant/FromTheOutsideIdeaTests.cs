@@ -154,20 +154,20 @@ public class FromTheOutsideIdeaTests
         hW.SetResolver( primary.GetRequiredService<WebEndpointServices>() );
 
         //var common = webScope.ServiceProvider.GetRequiredService<CommonSingleton>();
-        //webScope.ServiceProvider.GetService<HttpContextAccessor>().Should().NotBeNull();
-        //webScope.ServiceProvider.GetService<HttpRequest>().Should().NotBeNull();
-        //webScope.ServiceProvider.GetService<MQTTServer>().Should().BeNull();
-        //webScope.ServiceProvider.GetService<MQTTCaller>().Should().BeNull();
+        //webScope.ServiceProvider.GetService<HttpContextAccessor>().ShouldNotBeNull();
+        //webScope.ServiceProvider.GetService<HttpRequest>().ShouldNotBeNull();
+        //webScope.ServiceProvider.GetService<MQTTServer>().ShouldBeNull();
+        //webScope.ServiceProvider.GetService<MQTTCaller>().ShouldBeNull();
 
 
         //var mqttScope = primary.CreateAsyncScope();
         //var hM = mqttScope.ServiceProvider.GetRequiredService<ServiceHook>();
         //hM.SetResolver( primary.GetRequiredService<MQTTEndpointServices>() );
 
-        //mqttScope.ServiceProvider.GetRequiredService<CommonSingleton>().Should().BeSameAs( common );
-        //mqttScope.ServiceProvider.GetService<HttpContextAccessor>().Should().BeNull();
-        //mqttScope.ServiceProvider.GetService<HttpRequest>().Should().BeNull();
-        //mqttScope.ServiceProvider.GetService<MQTTServer>().Should().NotBeNull();
-        //mqttScope.ServiceProvider.GetService<MQTTCaller>().Should().NotBeNull();
+        //mqttScope.ServiceProvider.GetRequiredService<CommonSingleton>().ShouldBeSameAs( common );
+        //mqttScope.ServiceProvider.GetService<HttpContextAccessor>().ShouldBeNull();
+        //mqttScope.ServiceProvider.GetService<HttpRequest>().ShouldBeNull();
+        //mqttScope.ServiceProvider.GetService<MQTTServer>().ShouldNotBeNull();
+        //mqttScope.ServiceProvider.GetService<MQTTCaller>().ShouldNotBeNull();
     }
 }

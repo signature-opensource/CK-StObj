@@ -1,5 +1,5 @@
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using NUnit.Framework;
@@ -25,24 +25,24 @@ public class ExtNullabilityInfoTests
     {
         var f = new ExtMemberInfoFactory();
         var nullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( GetNullableValueTuple ) )! );
-        nullInfo.IsNullable.Should().BeTrue();
-        nullInfo.ElementType.Should().BeNull();
-        nullInfo.GenericTypeArguments.Should().HaveCount( 2 );
-        nullInfo.Type.Should().Be( typeof( Nullable<(int, string)> ) );
+        nullInfo.IsNullable.ShouldBeTrue();
+        nullInfo.ElementType.ShouldBeNull();
+        nullInfo.GenericTypeArguments.Count.ShouldBe( 2 );
+        nullInfo.Type.ShouldBe( typeof( Nullable<(int, string)> ) );
 
         var nonNullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( GetNonNullableValueTuple ) )! );
-        nonNullInfo.IsNullable.Should().BeFalse();
-        nonNullInfo.ElementType.Should().BeNull();
-        nonNullInfo.GenericTypeArguments.Should().HaveCount( 2 );
-        nonNullInfo.Type.Should().Be( typeof( ValueTuple<int, string> ) );
+        nonNullInfo.IsNullable.ShouldBeFalse();
+        nonNullInfo.ElementType.ShouldBeNull();
+        nonNullInfo.GenericTypeArguments.Count.ShouldBe( 2 );
+        nonNullInfo.Type.ShouldBe( typeof( ValueTuple<int, string> ) );
 
-        nullInfo.ToNullable().Should().BeSameAs( nullInfo );
+        nullInfo.ToNullable().ShouldBeSameAs( nullInfo );
         var nonNullInfo2 = nullInfo.ToNonNullable();
-        nonNullInfo2.Should().BeEquivalentTo( nonNullInfo );
+        nonNullInfo2.ShouldBe( nonNullInfo );
 
-        nonNullInfo.ToNonNullable().Should().BeSameAs( nonNullInfo );
+        nonNullInfo.ToNonNullable().ShouldBeSameAs( nonNullInfo );
         var nullInfo2 = nonNullInfo.ToNullable();
-        nullInfo2.Should().BeEquivalentTo( nullInfo );
+        nullInfo2.ShouldBe( nullInfo );
     }
 
     public (int A, string? B)? NullableField;
@@ -56,26 +56,26 @@ public class ExtNullabilityInfoTests
     {
         var f = new ExtMemberInfoFactory();
         var nullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( RefGetNullableValueTuple ) )! );
-        nullInfo.IsNullable.Should().BeTrue();
-        nullInfo.IsHomogeneous.Should().BeTrue();
-        nullInfo.ElementType.Should().BeNull();
-        nullInfo.GenericTypeArguments.Should().HaveCount( 2 );
-        nullInfo.Type.Should().Be( typeof( Nullable<(int, string)> ) );
+        nullInfo.IsNullable.ShouldBeTrue();
+        nullInfo.IsHomogeneous.ShouldBeTrue();
+        nullInfo.ElementType.ShouldBeNull();
+        nullInfo.GenericTypeArguments.Count.ShouldBe( 2 );
+        nullInfo.Type.ShouldBe( typeof( Nullable<(int, string)> ) );
 
         var nonNullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( RefGetNonNullableValueTuple ) )! );
-        nonNullInfo.IsNullable.Should().BeFalse();
-        nonNullInfo.IsHomogeneous.Should().BeTrue();
-        nonNullInfo.ElementType.Should().BeNull();
-        nonNullInfo.GenericTypeArguments.Should().HaveCount( 2 );
-        nonNullInfo.Type.Should().Be( typeof( ValueTuple<int, string> ) );
+        nonNullInfo.IsNullable.ShouldBeFalse();
+        nonNullInfo.IsHomogeneous.ShouldBeTrue();
+        nonNullInfo.ElementType.ShouldBeNull();
+        nonNullInfo.GenericTypeArguments.Count.ShouldBe( 2 );
+        nonNullInfo.Type.ShouldBe( typeof( ValueTuple<int, string> ) );
 
-        nullInfo.ToNullable().Should().BeSameAs( nullInfo );
+        nullInfo.ToNullable().ShouldBeSameAs( nullInfo );
         var nonNullInfo2 = nullInfo.ToNonNullable();
-        nonNullInfo2.Should().BeEquivalentTo( nonNullInfo );
+        nonNullInfo2.ShouldBe( nonNullInfo );
 
-        nonNullInfo.ToNonNullable().Should().BeSameAs( nonNullInfo );
+        nonNullInfo.ToNonNullable().ShouldBeSameAs( nonNullInfo );
         var nullInfo2 = nonNullInfo.ToNullable();
-        nullInfo2.Should().BeEquivalentTo( nullInfo );
+        nullInfo2.ShouldBe( nullInfo );
     }
 
     [Test]
@@ -83,26 +83,26 @@ public class ExtNullabilityInfoTests
     {
         var f = new ExtMemberInfoFactory();
         var nullInfo = f.CreateNullabilityInfo( GetType().GetField( nameof( NullableField ) )! );
-        nullInfo.IsNullable.Should().BeTrue();
-        nullInfo.IsHomogeneous.Should().BeTrue();
-        nullInfo.ElementType.Should().BeNull();
-        nullInfo.GenericTypeArguments.Should().HaveCount( 2 );
-        nullInfo.Type.Should().Be( typeof( Nullable<(int, string)> ) );
+        nullInfo.IsNullable.ShouldBeTrue();
+        nullInfo.IsHomogeneous.ShouldBeTrue();
+        nullInfo.ElementType.ShouldBeNull();
+        nullInfo.GenericTypeArguments.Count.ShouldBe( 2 );
+        nullInfo.Type.ShouldBe( typeof( Nullable<(int, string)> ) );
 
         var nonNullInfo = f.CreateNullabilityInfo( GetType().GetField( nameof( NonNullableField ) )! );
-        nonNullInfo.IsNullable.Should().BeFalse();
-        nonNullInfo.IsHomogeneous.Should().BeTrue();
-        nonNullInfo.ElementType.Should().BeNull();
-        nonNullInfo.GenericTypeArguments.Should().HaveCount( 2 );
-        nonNullInfo.Type.Should().Be( typeof( ValueTuple<int, string> ) );
+        nonNullInfo.IsNullable.ShouldBeFalse();
+        nonNullInfo.IsHomogeneous.ShouldBeTrue();
+        nonNullInfo.ElementType.ShouldBeNull();
+        nonNullInfo.GenericTypeArguments.Count.ShouldBe( 2 );
+        nonNullInfo.Type.ShouldBe( typeof( ValueTuple<int, string> ) );
 
-        nullInfo.ToNullable().Should().BeSameAs( nullInfo );
+        nullInfo.ToNullable().ShouldBeSameAs( nullInfo );
         var nonNullInfo2 = nullInfo.ToNonNullable();
-        nonNullInfo2.Should().BeEquivalentTo( nonNullInfo );
+        nonNullInfo2.ShouldBe( nonNullInfo );
 
-        nonNullInfo.ToNonNullable().Should().BeSameAs( nonNullInfo );
+        nonNullInfo.ToNonNullable().ShouldBeSameAs( nonNullInfo );
         var nullInfo2 = nonNullInfo.ToNullable();
-        nullInfo2.Should().BeEquivalentTo( nullInfo );
+        nullInfo2.ShouldBe( nullInfo );
     }
 
     [DisallowNull]
@@ -127,51 +127,51 @@ public class ExtNullabilityInfoTests
 
         // ref properties always use the ReadState: homogeneity is by design.
         var rNullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( RefGetNullableValueTupleHeterogeneous ) )! );
-        rNullInfo.IsNullable.Should().Be( true );
-        rNullInfo.IsHomogeneous.Should().Be( true );
-        rNullInfo.ReflectsReadState.Should().Be( true );
-        rNullInfo.ReflectsWriteState.Should().Be( true );
+        rNullInfo.IsNullable.ShouldBe( true );
+        rNullInfo.IsHomogeneous.ShouldBe( true );
+        rNullInfo.ReflectsReadState.ShouldBe( true );
+        rNullInfo.ReflectsWriteState.ShouldBe( true );
 
         var rNonNullInfoW = f.CreateNullabilityInfo( GetType().GetProperty( nameof( RefGetNonNullableValueTupleHeterogeneous ) )!, useReadState: false );
-        rNonNullInfoW.IsNullable.Should().Be( false );
-        rNonNullInfoW.IsHomogeneous.Should().Be( true );
-        rNonNullInfoW.ReflectsReadState.Should().Be( true );
-        rNonNullInfoW.ReflectsWriteState.Should().Be( true );
+        rNonNullInfoW.IsNullable.ShouldBe( false );
+        rNonNullInfoW.IsHomogeneous.ShouldBe( true );
+        rNonNullInfoW.ReflectsReadState.ShouldBe( true );
+        rNonNullInfoW.ReflectsWriteState.ShouldBe( true );
 
         // Fields are like ref properties: homogeneity is by design.
         var fNullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( RefGetNullableValueTupleHeterogeneous ) )! );
-        fNullInfo.IsNullable.Should().Be( true );
-        fNullInfo.IsHomogeneous.Should().Be( true );
-        fNullInfo.ReflectsReadState.Should().Be( true );
-        fNullInfo.ReflectsWriteState.Should().Be( true );
+        fNullInfo.IsNullable.ShouldBe( true );
+        fNullInfo.IsHomogeneous.ShouldBe( true );
+        fNullInfo.ReflectsReadState.ShouldBe( true );
+        fNullInfo.ReflectsWriteState.ShouldBe( true );
 
         var fNonNullInfoW = f.CreateNullabilityInfo( GetType().GetProperty( nameof( RefGetNonNullableValueTupleHeterogeneous ) )!, useReadState: false );
-        fNonNullInfoW.IsNullable.Should().Be( false );
-        fNonNullInfoW.IsHomogeneous.Should().Be( true );
-        fNonNullInfoW.ReflectsReadState.Should().Be( true );
-        fNonNullInfoW.ReflectsWriteState.Should().Be( true );
+        fNonNullInfoW.IsNullable.ShouldBe( false );
+        fNonNullInfoW.IsHomogeneous.ShouldBe( true );
+        fNonNullInfoW.ReflectsReadState.ShouldBe( true );
+        fNonNullInfoW.ReflectsWriteState.ShouldBe( true );
 
         // Regular properties can be heterogeneous if and only if the type is nullable.
         var vNullInfo = f.CreateNullabilityInfo( GetType().GetProperty( nameof( GetNullableValueTupleHeterogeneous ) )! );
-        vNullInfo.IsNullable.Should().Be( true );
-        vNullInfo.IsHomogeneous.Should().Be( false );
-        vNullInfo.ReflectsReadState.Should().Be( true );
-        vNullInfo.ReflectsWriteState.Should().Be( false );
+        vNullInfo.IsNullable.ShouldBe( true );
+        vNullInfo.IsHomogeneous.ShouldBe( false );
+        vNullInfo.ReflectsReadState.ShouldBe( true );
+        vNullInfo.ReflectsWriteState.ShouldBe( false );
         var vNullInfoW = f.CreateNullabilityInfo( GetType().GetProperty( nameof( GetNullableValueTupleHeterogeneous ) )!, useReadState: false );
-        vNullInfoW.IsNullable.Should().Be( false );
-        vNullInfoW.IsHomogeneous.Should().Be( false );
-        vNullInfoW.ReflectsReadState.Should().Be( false );
-        vNullInfoW.ReflectsWriteState.Should().Be( true );
+        vNullInfoW.IsNullable.ShouldBe( false );
+        vNullInfoW.IsHomogeneous.ShouldBe( false );
+        vNullInfoW.ReflectsReadState.ShouldBe( false );
+        vNullInfoW.ReflectsWriteState.ShouldBe( true );
 
         // Error CS0037  Cannot convert null to '(int A, string? B)' because it is a non - nullable value type.
         // GetNonNullableValueTupleHeterogeneous = null;
         //
         // This is correctly handled: [AllowNull] is ignored.
         var vNonNullInfoW = f.CreateNullabilityInfo( GetType().GetProperty( nameof( GetNonNullableValueTupleHeterogeneous ) )!, useReadState: false );
-        vNonNullInfoW.IsNullable.Should().Be( false );
-        vNonNullInfoW.IsHomogeneous.Should().Be( true );
-        vNonNullInfoW.ReflectsReadState.Should().Be( true );
-        vNonNullInfoW.ReflectsWriteState.Should().Be( true );
+        vNonNullInfoW.IsNullable.ShouldBe( false );
+        vNonNullInfoW.IsHomogeneous.ShouldBe( true );
+        vNonNullInfoW.ReflectsReadState.ShouldBe( true );
+        vNonNullInfoW.ReflectsWriteState.ShouldBe( true );
     }
 
     public class NoConstraint<T> { }
@@ -197,29 +197,29 @@ public class ExtNullabilityInfoTests
         var f = new ExtMemberInfoFactory();
 
         var ncif = f.CreateNullabilityInfo( GetType().GetField( nameof( NoConstraintIntField ) )! );
-        ncif.IsNullable.Should().BeFalse();
-        ncif.GenericTypeArguments[0].IsNullable.Should().BeFalse( "Value type: no issue." );
+        ncif.IsNullable.ShouldBeFalse();
+        ncif.GenericTypeArguments[0].IsNullable.ShouldBeFalse( "Value type: no issue." );
 
         var ncid = f.CreateNullabilityInfo( typeof( NoConstraint<int> ) );
-        ncid.IsNullable.Should().BeTrue();
-        ncid.GenericTypeArguments[0].IsNullable.Should().BeFalse( "Value type: no issue." );
+        ncid.IsNullable.ShouldBeTrue();
+        ncid.GenericTypeArguments[0].IsNullable.ShouldBeFalse( "Value type: no issue." );
 
         var ncof = f.CreateNullabilityInfo( GetType().GetField( nameof( NoConstraintObjectField ) )! );
-        ncof.IsNullable.Should().BeFalse();
-        ncof.GenericTypeArguments[0].IsNullable.Should().BeFalse( "Through member, nullability is detected." );
+        ncof.IsNullable.ShouldBeFalse();
+        ncof.GenericTypeArguments[0].IsNullable.ShouldBeFalse( "Through member, nullability is detected." );
 
         var ncod = f.CreateNullabilityInfo( typeof( NoConstraint<object> ) );
-        ncod.IsNullable.Should().BeTrue();
-        ncod.GenericTypeArguments[0].IsNullable.Should().BeTrue( ":-(" );
+        ncod.IsNullable.ShouldBeTrue();
+        ncod.GenericTypeArguments[0].IsNullable.ShouldBeTrue( ":-(" );
 
         // NotNullConstraint<object?> with a notnull constraint.
         var nncof = f.CreateNullabilityInfo( GetType().GetField( nameof( NotNullConstraintObjectField ) )! );
-        nncof.IsNullable.Should().BeFalse();
-        nncof.GenericTypeArguments[0].IsNullable.Should().BeTrue( "The warning is ignored, the actual definition wins against the generic constraint. Good!" );
+        nncof.IsNullable.ShouldBeFalse();
+        nncof.GenericTypeArguments[0].IsNullable.ShouldBeTrue( "The warning is ignored, the actual definition wins against the generic constraint. Good!" );
 
         var nncod = f.CreateNullabilityInfo( NotNullConstraintObjectDirect );
-        nncod.IsNullable.Should().BeTrue();
-        nncod.GenericTypeArguments[0].IsNullable.Should().BeTrue( "No surprise." );
+        nncod.IsNullable.ShouldBeTrue();
+        nncod.GenericTypeArguments[0].IsNullable.ShouldBeTrue( "No surprise." );
     }
 
 #pragma warning disable IDE0059 // Unnecessary assignment of a value
@@ -231,11 +231,11 @@ public class ExtNullabilityInfoTests
         int? v = 5;
 
         o = v;
-        o.GetType().Should().Be( typeof( int ) );
+        o.GetType().ShouldBe( typeof( int ) );
         v = null;
 
         o = v;
-        o.Should().BeNull();
+        o.ShouldBeNull();
 
     }
 #pragma warning restore IDE0059 // Unnecessary assignment of a value

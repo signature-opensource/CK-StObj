@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -100,7 +100,7 @@ public class ServiceSimpleMappingTests
         //    collector.RegisterType( typeof( ServiceS2Impl ) );
         //    var r = TestHelper.GetFailedResult( collector );
         //    Debug.Assert( r != null, "We have a (failed) result." );
-        //    r.CKTypeResult.AutoServices.RootClasses.Should().HaveCount( 2 );
+        //    r.CKTypeResult.AutoServices.RootClasses.Count.ShouldBe( 2 );
         //}
         // Same tests as above but excluding ISBase type: success since
         // ISBase is no more considered a IScopedAutoService.
@@ -111,15 +111,15 @@ public class ServiceSimpleMappingTests
             var r = await configuration.RunSuccessfullyAsync().ConfigureAwait( false );
             var map = r.FirstBinPath.EngineMap;
 
-            map.Services.Mappings.ContainsKey( typeof( ISBase ) ).Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( ISBase ) ).ShouldBeFalse();
 
             Setup.IStObjServiceFinalSimpleMapping s1 = map.Services.Mappings[typeof( IS1 )];
-            s1.ClassType.Should().BeSameAs( typeof( ServiceS1Impl ) );
-            s1.IsScoped.Should().BeTrue( "Excluding ISBase keeps IScopedAutoService (and hence the IAutoService) base." );
+            s1.ClassType.ShouldBeSameAs( typeof( ServiceS1Impl ) );
+            s1.IsScoped.ShouldBeTrue( "Excluding ISBase keeps IScopedAutoService (and hence the IAutoService) base." );
 
-            map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceS2Impl ) );
-            map.Services.Mappings[typeof( ServiceS1Impl )].ClassType.Should().BeSameAs( typeof( ServiceS1Impl ) );
-            map.Services.Mappings[typeof( ServiceS2Impl )].ClassType.Should().BeSameAs( typeof( ServiceS2Impl ) );
+            map.Services.Mappings[typeof( IS2 )].ClassType.ShouldBeSameAs( typeof( ServiceS2Impl ) );
+            map.Services.Mappings[typeof( ServiceS1Impl )].ClassType.ShouldBeSameAs( typeof( ServiceS1Impl ) );
+            map.Services.Mappings[typeof( ServiceS2Impl )].ClassType.ShouldBeSameAs( typeof( ServiceS2Impl ) );
         }
     }
 
@@ -128,10 +128,10 @@ public class ServiceSimpleMappingTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( ServiceS1S2Impl )] ).EngineMap;
         Debug.Assert( map != null, "No initialization error." );
-        map.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
-        map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
-        map.Services.Mappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
-        map.Services.Mappings[typeof( ServiceS1S2Impl )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
+        map.Services.Mappings[typeof( ISBase )].ClassType.ShouldBeSameAs( typeof( ServiceS1S2Impl ) );
+        map.Services.Mappings[typeof( IS2 )].ClassType.ShouldBeSameAs( typeof( ServiceS1S2Impl ) );
+        map.Services.Mappings[typeof( IS1 )].ClassType.ShouldBeSameAs( typeof( ServiceS1S2Impl ) );
+        map.Services.Mappings[typeof( ServiceS1S2Impl )].ClassType.ShouldBeSameAs( typeof( ServiceS1S2Impl ) );
     }
 
     public interface ISU : IS1, IS2
@@ -147,16 +147,16 @@ public class ServiceSimpleMappingTests
     {
         var r = TestHelper.GetSuccessfulCollectorResult( [typeof( ServiceUnifiedImpl )] );
         var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
-        interfaces.Should().HaveCount( 1 );
+        interfaces.Count.ShouldBe( 1 );
         var iSU = interfaces[0];
-        iSU.Type.Should().Be( typeof( ISU ) );
-        iSU.Interfaces.Select( i => i.Type ).Should().BeEquivalentTo( new[] { typeof( ISBase ), typeof( IS1 ), typeof( IS2 ) } );
-        r.CKTypeResult.AutoServices.RootClasses.Should().Contain( c => c.ClassType == typeof( ServiceUnifiedImpl ) || c.ClassType == typeof( DIContainerHub ) );
+        iSU.Type.ShouldBe( typeof( ISU ) );
+        iSU.Interfaces.Select( i => i.Type ).ShouldBe( new[] { typeof( ISBase ), typeof( IS1 ), typeof( IS2 ) } );
+        r.CKTypeResult.AutoServices.RootClasses.ShouldContain( c => c.ClassType == typeof( ServiceUnifiedImpl ) || c.ClassType == typeof( DIContainerHub ) );
         Debug.Assert( r.EngineMap != null, "No initialization error." );
-        r.EngineMap.Services.Mappings[typeof( ISU )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
-        r.EngineMap.Services.Mappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
-        r.EngineMap.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
-        r.EngineMap.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
+        r.EngineMap.Services.Mappings[typeof( ISU )].ClassType.ShouldBeSameAs( typeof( ServiceUnifiedImpl ) );
+        r.EngineMap.Services.Mappings[typeof( IS1 )].ClassType.ShouldBeSameAs( typeof( ServiceUnifiedImpl ) );
+        r.EngineMap.Services.Mappings[typeof( IS2 )].ClassType.ShouldBeSameAs( typeof( ServiceUnifiedImpl ) );
+        r.EngineMap.Services.Mappings[typeof( ISBase )].ClassType.ShouldBeSameAs( typeof( ServiceUnifiedImpl ) );
     }
 
     public interface IMultiImplService : IScopedAutoService
@@ -210,13 +210,13 @@ public class ServiceSimpleMappingTests
             var map = TestHelper.GetSuccessfulCollectorResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.Mappings[typeof( IMultiImplService )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
-            map.Services.Mappings[typeof( ServiceImplBaseBase )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
-            map.Services.Mappings[typeof( ServiceImplRootProblem )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
-            map.Services.Mappings[typeof( ServiceImpl2 )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
-            map.Services.Mappings[typeof( ServiceImpl3 )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
-            map.Services.Mappings[typeof( ResolveByClassUnification )].ClassType.Should().BeSameAs( typeof( ResolveByClassUnification ) );
-            map.Services.Mappings[typeof( ServiceImpl1 )].ClassType.Should().BeSameAs( typeof( ServiceImpl1 ) );
+            map.Services.Mappings[typeof( IMultiImplService )].ClassType.ShouldBeSameAs( typeof( ResolveByClassUnification ) );
+            map.Services.Mappings[typeof( ServiceImplBaseBase )].ClassType.ShouldBeSameAs( typeof( ResolveByClassUnification ) );
+            map.Services.Mappings[typeof( ServiceImplRootProblem )].ClassType.ShouldBeSameAs( typeof( ResolveByClassUnification ) );
+            map.Services.Mappings[typeof( ServiceImpl2 )].ClassType.ShouldBeSameAs( typeof( ResolveByClassUnification ) );
+            map.Services.Mappings[typeof( ServiceImpl3 )].ClassType.ShouldBeSameAs( typeof( ResolveByClassUnification ) );
+            map.Services.Mappings[typeof( ResolveByClassUnification )].ClassType.ShouldBeSameAs( typeof( ResolveByClassUnification ) );
+            map.Services.Mappings[typeof( ServiceImpl1 )].ClassType.ShouldBeSameAs( typeof( ServiceImpl1 ) );
         }
         else
         {
@@ -224,13 +224,13 @@ public class ServiceSimpleMappingTests
             Throw.DebugAssert( "We have a (failed) result.", r != null );
 
             var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
-            interfaces.Should().HaveCount( 1 );
+            interfaces.Count.ShouldBe( 1 );
             var classes = r.CKTypeResult.AutoServices.RootClasses;
-            classes.Select( c => c.ClassType ).Should().BeEquivalentTo( new[] { typeof( ServiceImplBaseBase ), typeof( DIContainerHub ), typeof( AmbientServiceHub ) } );
-            r.CKTypeResult.AutoServices.ClassAmbiguities.Should().HaveCount( 1 );
+            classes.Select( c => c.ClassType ).ShouldBe( new[] { typeof( ServiceImplBaseBase ), typeof( DIContainerHub ), typeof( AmbientServiceHub ) } );
+            r.CKTypeResult.AutoServices.ClassAmbiguities.Count.ShouldBe( 1 );
             r.CKTypeResult.AutoServices.ClassAmbiguities[0]
                 .Select( c => c.ClassType )
-                .Should().BeEquivalentTo( new[] { typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) } );
+                .ShouldBe( new[] { typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) } );
         }
     }
 
@@ -264,11 +264,11 @@ public class ServiceSimpleMappingTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S1 ), typeof( S2 ), typeof( S3 ), typeof( S4 )] ).EngineMap;
         Debug.Assert( map != null, "No initialization error." );
-        map.Services.Mappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( S1 ) );
-        map.Services.Mappings[typeof( S1 )].ClassType.Should().BeSameAs( typeof( S1 ) );
-        map.Services.Mappings[typeof( S2 )].ClassType.Should().BeSameAs( typeof( S2 ) );
-        map.Services.Mappings[typeof( S3 )].ClassType.Should().BeSameAs( typeof( S3 ) );
-        map.Services.Mappings[typeof( S4 )].ClassType.Should().BeSameAs( typeof( S4 ) );
+        map.Services.Mappings[typeof( ISBase )].ClassType.ShouldBeSameAs( typeof( S1 ) );
+        map.Services.Mappings[typeof( S1 )].ClassType.ShouldBeSameAs( typeof( S1 ) );
+        map.Services.Mappings[typeof( S2 )].ClassType.ShouldBeSameAs( typeof( S2 ) );
+        map.Services.Mappings[typeof( S3 )].ClassType.ShouldBeSameAs( typeof( S3 ) );
+        map.Services.Mappings[typeof( S4 )].ClassType.ShouldBeSameAs( typeof( S4 ) );
     }
 
     public abstract class AbstractS1 : ISBase
@@ -300,21 +300,21 @@ public class ServiceSimpleMappingTests
         var map = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
 
         var final = map.Services.Mappings[typeof( ISBase )];
-        final.FinalType.Should().NotBeSameAs( typeof( AbstractS1 ) );
-        final.FinalType.Should().BeAssignableTo( typeof( AbstractS1 ) );
-        map.Services.Mappings[typeof( AbstractS1 )].Should().BeSameAs( final );
+        final.FinalType.ShouldNotBeSameAs( typeof( AbstractS1 ) );
+        final.FinalType.ShouldBeAssignableTo( typeof( AbstractS1 ) );
+        map.Services.Mappings[typeof( AbstractS1 )].ShouldBeSameAs( final );
 
-        map.Services.Mappings[typeof( AbstractS2 )].FinalType.Should().NotBeSameAs( typeof( AbstractS2 ) );
-        map.Services.Mappings[typeof( AbstractS2 )].FinalType.Should().BeAssignableTo( typeof( AbstractS2 ) );
-        map.Services.Mappings[typeof( AbstractS3 )].FinalType.Should().NotBeSameAs( typeof( AbstractS3 ) );
-        map.Services.Mappings[typeof( AbstractS3 )].FinalType.Should().BeAssignableTo( typeof( AbstractS3 ) );
+        map.Services.Mappings[typeof( AbstractS2 )].FinalType.ShouldNotBeSameAs( typeof( AbstractS2 ) );
+        map.Services.Mappings[typeof( AbstractS2 )].FinalType.ShouldBeAssignableTo( typeof( AbstractS2 ) );
+        map.Services.Mappings[typeof( AbstractS3 )].FinalType.ShouldNotBeSameAs( typeof( AbstractS3 ) );
+        map.Services.Mappings[typeof( AbstractS3 )].FinalType.ShouldBeAssignableTo( typeof( AbstractS3 ) );
 
         var services = new ServiceCollection();
-        new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).Should().BeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
+        new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).ShouldBeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
         using ServiceProvider p = services.BuildServiceProvider();
 
         var oG = p.GetRequiredService( typeof( ISBase ) );
-        oG.GetType().FullName.Should().Be( "CK.StObj.Engine.Tests.Service.ServiceSimpleMappingTests_AbstractS1_CK" );
+        oG.GetType().FullName.ShouldBe( "CK.StObj.Engine.Tests.Service.ServiceSimpleMappingTests_AbstractS1_CK" );
     }
 
 

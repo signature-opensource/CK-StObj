@@ -2,7 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -82,23 +82,23 @@ public class DefaultImplementationMethodsTests
         Debug.Assert( fA != null );
         var magic = (IActualRoot)fA.Create();
 
-        magic.LineCount.Should().Be( 0 );
+        magic.LineCount.ShouldBe( 0 );
         magic.Lines.Add( "Crazy" );
-        magic.LineCount.Should().Be( 1 );
+        magic.LineCount.ShouldBe( 1 );
         magic.Lines.Add( "Isn't it?" );
-        magic.LineCount.Should().Be( 2 );
+        magic.LineCount.ShouldBe( 2 );
 
-        magic.RowCount.Should().Be( 0 );
+        magic.RowCount.ShouldBe( 0 );
         magic.Rows.Add( "Dingue" );
-        magic.RowCount.Should().Be( 1 );
+        magic.RowCount.ShouldBe( 1 );
         magic.Rows.Add( "N'est-il pas ?" );
-        magic.RowCount.Should().Be( 2 );
+        magic.RowCount.ShouldBe( 2 );
 
         magic.Clear();
-        magic.Lines.Should().BeEmpty();
-        magic.Rows.Should().BeEmpty();
-        magic.LineCount.Should().Be( 0 );
-        magic.RowCount.Should().Be( 0 );
+        magic.Lines.ShouldBeEmpty();
+        magic.Rows.ShouldBeEmpty();
+        magic.LineCount.ShouldBe( 0 );
+        magic.RowCount.ShouldBe( 0 );
     }
 
     public interface IOnActual : IActualRoot
@@ -168,7 +168,7 @@ public class DefaultImplementationMethodsTests
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope b )
         {
             IFunctionScope mB = b.CreateOverride( m );
-            mB.Parent.Should().BeSameAs( b, "The function is ready to be implemented." );
+            mB.Parent.ShouldBeSameAs( b, "The function is ready to be implemented." );
 
             if( IsLambda ) mB.Append( "=> " ).Append( ActualCode ).Append( ';' ).NewLine();
             else mB.Append( ActualCode );
@@ -212,10 +212,10 @@ public class DefaultImplementationMethodsTests
 
         DoSomethingResult = 0;
         o.Something( this, "12345" );
-        DoSomethingResult.Should().Be( 3712 + 5 );
+        DoSomethingResult.ShouldBe( 3712 + 5 );
 
-        o.Compute( null ).Should().Be( -1 );
-        o.Compute( "123" ).Should().Be( 3712 + 3 );
+        o.Compute( null ).ShouldBe( -1 );
+        o.Compute( "123" ).ShouldBe( 3712 + 3 );
     }
 
 }

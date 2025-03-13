@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.ComponentModel;
@@ -36,8 +36,8 @@ public class DefaultValueTests
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var h = auto.Services.GetRequiredService<IPocoFactory<IThingHolder>>().Create();
-        h.Value.Should().NotBeNull();
-        h.Value.Power.Should().Be( 3712 );
+        h.Value.ShouldNotBeNull();
+        h.Value.Power.ShouldBe( 3712 );
     }
 
     public enum TypeDefaultIsUnsignedMinimalValue
@@ -56,11 +56,11 @@ public class DefaultValueTests
         var t = ts.RegisterOblivious( TestHelper.Monitor, typeof( TypeDefaultIsUnsignedMinimalValue ) );
 
         Debug.Assert( t != null && t.DefaultValueInfo.DefaultValue != null );
-        t.DefaultValueInfo.DefaultValue.SimpleValue.Should().Be( TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault );
-        t.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( "CK.StObj.Engine.Tests.Poco.DefaultValueTests.TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault" );
+        t.DefaultValueInfo.DefaultValue.SimpleValue.ShouldBe( TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault );
+        t.DefaultValueInfo.DefaultValue.ValueCSharpSource.ShouldBe( "CK.StObj.Engine.Tests.Poco.DefaultValueTests.TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault" );
 
         var tE = (IEnumPocoType)t;
-        tE.DefaultValueName.Should().Be( "ThisIsTheDefault" );
+        tE.DefaultValueName.ShouldBe( "ThisIsTheDefault" );
     }
 
 }

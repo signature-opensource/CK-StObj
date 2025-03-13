@@ -2,7 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using System;
@@ -122,9 +122,9 @@ public class DynamicGenerationTests
             //collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             //collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-            //collector.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            //collector.FatalOrErrors.Count.ShouldBe( 0, "There must be no registration error (CKTypeCollector must be successful)." );
             //StObjCollectorResult? r = collector.GetResult( TestHelper.Monitor );
-            //r.HasFatalError.Should().Be( false, "There must be no error." );
+            //r.HasFatalError.ShouldBe( false, "There must be no error." );
 
             var engineMap = result.FirstBinPath.EngineMap;
 
@@ -254,7 +254,7 @@ public class DynamicGenerationTests
                 Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
 
                 ASpec theA = (ASpec)map.StObjs.Obtain<A>()!;
-                theA.Should().NotBeNull();
+                theA.ShouldNotBeNull();
                 Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                 Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
 
@@ -379,9 +379,9 @@ public class DynamicGenerationTests
             var a = map.GetType().Assembly;
             Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
             AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated )!;
-            done.Hip.Should().Be( "Value is \"3712\"..." );
-            done.Hop.Should().Be( 3712 );
-            done.Hup.Should().Be( 0.0 );
+            done.Hip.ShouldBe( "Value is \"3712\"..." );
+            done.Hop.ShouldBe( 3712 );
+            done.Hup.ShouldBe( 0.0 );
         }
 
     }
@@ -418,9 +418,9 @@ public class DynamicGenerationTests
             StObjCollector c = new StObjCollector( extraServices );
             c.RegisterType( TestHelper.Monitor, typeof( JustForTheAttribute ) );
 
-            c.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            c.FatalOrErrors.Count.ShouldBe( 0, "There must be no registration error (CKTypeCollector must be successful)." );
             StObjCollectorResult? r = c.GetResult( TestHelper.Monitor );
-            r.HasFatalError.Should().Be( false, "There must be no error." );
+            r.HasFatalError.ShouldBe( false, "There must be no error." );
         }
 
     }
@@ -461,8 +461,8 @@ public class DynamicGenerationTests
 
             CSCodeGenerationResult DoImplement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
             {
-                c.Should().NotBeNull();
-                scope.Should().NotBeNull();
+                c.ShouldNotBeNull();
+                scope.ShouldNotBeNull();
                 monitor.Info( $"AutoImpl2: {helper.IHelpTheCodeGeneration()}." );
                 return new CSCodeGenerationResult( nameof( FinalizeImpl ) );
             }
@@ -491,7 +491,7 @@ public class DynamicGenerationTests
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
                 (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
-                entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
+                entries.ShouldContain( e => e.Text == "AutoImpl2: I'm great!." )
                                 .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
             }
         }

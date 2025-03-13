@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -29,8 +29,8 @@ public class ContextBoundAttributeTests
         public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
         {
             Initialized = true;
-            owner.Type.Should().Be( typeof( S1 ) );
-            m.Name.Should().Be( "M" );
+            owner.Type.ShouldBe( typeof( S1 ) );
+            m.Name.ShouldBe( "M" );
         }
     }
 
@@ -48,8 +48,8 @@ public class ContextBoundAttributeTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S1 )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S1 ) );
-        AnAttributeWithInitializer.Initialized.Should().BeTrue();
+        map.AllTypesAttributesCache.Values.ShouldContain( a => a.Type == typeof( S1 ) );
+        AnAttributeWithInitializer.Initialized.ShouldBeTrue();
     }
 
     #endregion
@@ -67,8 +67,8 @@ public class ContextBoundAttributeTests
         void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
         {
             Initialized = true;
-            owner.Type.Should().Be( typeof( S2 ) );
-            m.Name.Should().Be( "M" );
+            owner.Type.ShouldBe( typeof( S2 ) );
+            m.Name.ShouldBe( "M" );
         }
     }
 
@@ -85,8 +85,8 @@ public class ContextBoundAttributeTests
         DirectAttributeImpl.Initialized = false;
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S2 )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S2 ) );
-        DirectAttributeImpl.Initialized.Should().BeTrue();
+        map.AllTypesAttributesCache.Values.ShouldContain( a => a.Type == typeof( S2 ) );
+        DirectAttributeImpl.Initialized.ShouldBeTrue();
     }
     #endregion
 
@@ -114,8 +114,8 @@ public class ContextBoundAttributeTests
         void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
         {
             Initialized = true;
-            owner.Type.Should().Be( typeof( S3 ) );
-            m.Name.Should().Be( "M" );
+            owner.Type.ShouldBe( typeof( S3 ) );
+            m.Name.ShouldBe( "M" );
         }
     }
 
@@ -145,8 +145,8 @@ public class ContextBoundAttributeTests
         OneAttributeImpl.Initialized = false;
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S3 )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S3 ) );
-        OneAttributeImpl.Initialized.Should().BeTrue();
+        map.AllTypesAttributesCache.Values.ShouldContain( a => a.Type == typeof( S3 ) );
+        OneAttributeImpl.Initialized.ShouldBeTrue();
     }
     #endregion
 
@@ -168,15 +168,15 @@ public class ContextBoundAttributeTests
             Constructed = true;
 
             // We use this attribute in the S5 and S6 scenario.
-            type.Should().Match( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
-            owner.Type.Should().Match( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
+            type.ShouldBe( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
+            owner.Type.ShouldBe( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
             if( type == typeof( S4 ) || type == typeof( S5 ) )
             {
-                m.Name.Should().Be( "M" );
+                m.Name.ShouldBe( "M" );
             }
             else
             {
-                m.Name.Should().Be( "OnAnInterface" );
+                m.Name.ShouldBe( "OnAnInterface" );
             }
         }
     }
@@ -207,8 +207,8 @@ public class ContextBoundAttributeTests
 
         var r = c.GetResult( TestHelper.Monitor );
         Throw.DebugAssert( r.EngineMap != null );
-        r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S4 ) );
-        OneCtorAttributeImpl.Constructed.Should().BeTrue();
+        r.EngineMap.AllTypesAttributesCache.Values.ShouldContain( a => a.Type == typeof( S4 ) );
+        OneCtorAttributeImpl.Constructed.ShouldBeTrue();
     }
     #endregion
 
@@ -228,15 +228,15 @@ public class ContextBoundAttributeTests
         {
             _attribute = a ?? throw new ArgumentNullException( nameof( a ) );
             Constructed = true;
-            owner.Type.Should().Be( typeof( S5 ) );
+            owner.Type.ShouldBe( typeof( S5 ) );
 
-            owner.GetAllCustomAttributes<IAttributeTypeSample>().Should().BeEmpty( "In the constructor, no attribute are available." );
+            owner.GetAllCustomAttributes<IAttributeTypeSample>().ShouldBeEmpty( "In the constructor, no attribute are available." );
         }
 
         void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister )
         {
             Initialized = true;
-            owner.GetAllCustomAttributes<IAttributeTypeSample>().Should().HaveCount( 2, "In the IAttributeContextBoundInitializer.Initialize, other attributes are available!" );
+            owner.GetAllCustomAttributes<IAttributeTypeSample>().Count().ShouldBe( 2, "In the IAttributeContextBoundInitializer.Initialize, other attributes are available!" );
         }
     }
 
@@ -273,11 +273,11 @@ public class ContextBoundAttributeTests
 
         var r = c.GetResult( TestHelper.Monitor );
         Throw.DebugAssert( r.EngineMap != null );
-        r.EngineMap.AllTypesAttributesCache.Values.SelectMany( x => x.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 3 );
+        r.EngineMap.AllTypesAttributesCache.Values.SelectMany( x => x.GetAllCustomAttributes<IAttributeTypeSample>() ).Count().ShouldBe( 3 );
 
-        OneCtorAttributeImpl.Constructed.Should().BeTrue();
-        OtherCtorAttributeImpl.Constructed.Should().BeTrue();
-        OtherCtorAttributeImpl.Initialized.Should().BeTrue();
+        OneCtorAttributeImpl.Constructed.ShouldBeTrue();
+        OtherCtorAttributeImpl.Constructed.ShouldBeTrue();
+        OtherCtorAttributeImpl.Initialized.ShouldBeTrue();
     }
 
     #endregion
@@ -319,13 +319,13 @@ public class ContextBoundAttributeTests
                       .Where( t => !typeof( PocoDirectory ).IsAssignableFrom( t )
                                    && !typeof( DIContainerHub ).IsAssignableFrom( t )
                                    && !typeof( AmbientServiceHub ).IsAssignableFrom( t ) )
-                      .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
+                      .ShouldBe( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
         r.EngineMap.AllTypesAttributesCache.Values
                       .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() )
-                      .Should().HaveCount( 1 );
+                      .Count.ShouldBe( 1 );
 
-        OneCtorAttributeImpl.Constructed.Should().BeTrue();
+        OneCtorAttributeImpl.Constructed.ShouldBeTrue();
     }
 
 
@@ -361,12 +361,12 @@ public class ContextBoundAttributeTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( S7 )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo(
+        map.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).ShouldBe(
             new[] { typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) } );
         map.AllTypesAttributesCache.Values
-            .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
+            .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Count.ShouldBe( 1 );
 
-        OneCtorAttributeImpl.Constructed.Should().BeTrue();
+        OneCtorAttributeImpl.Constructed.ShouldBeTrue();
     }
 
     #endregion

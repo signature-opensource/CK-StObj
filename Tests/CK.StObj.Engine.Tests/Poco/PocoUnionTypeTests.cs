@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -171,14 +171,14 @@ public partial class PocoUnionTypeTests
         var p = auto.Services.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
 
         p.Thing = 34;
-        p.Thing.Should().Be( 34 );
+        p.Thing.ShouldBe( 34 );
         p.Thing = "lklk";
-        p.Thing.Should().Be( "lklk" );
+        p.Thing.ShouldBe( "lklk" );
         p.Thing = null;
-        p.Thing.Should().BeNull();
+        p.Thing.ShouldBeNull();
 
-        p.Invoking( x => x.Thing = 25.88 ).Should().Throw<ArgumentException>();
-        p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
+        Util.Invokable( () => p.Thing = 25.88 ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => p.Thing = this ).ShouldThrow<ArgumentException>();
 
         // AnotherThing must not be null.
         p.AnotherThing = 3;
@@ -218,16 +218,15 @@ public partial class PocoUnionTypeTests
         {
             TestHelper.GetSuccessfulCollectorResult( [typeof( IPocoWithDuplicatesUnionTypes2 ), typeof( IPerson ), typeof( IStudent )] );
 
-            logs.Should().Contain( "Property 'AnotherThing' on Poco interfaces: 'I2': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IStudent' duplicated. Removing one." );
+            logs.ShouldContain( "Property 'AnotherThing' on Poco interfaces: 'I2': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IStudent' duplicated. Removing one." );
         }
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
             TestHelper.GetSuccessfulCollectorResult( [typeof( IPocoWithDuplicatesUnionTypes3 ), typeof( IPerson ), typeof( IStudent )] );
 
-            logs.Should()
-                .Contain( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPerson' duplicated. Removing one." );
+            logs.ShouldContain( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPerson' duplicated. Removing one." );
             logs.Count( t => t.Contains( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'string' duplicated. Removing one." ) )
-                .Should().Be( 3 );
+                .ShouldBe( 3 );
         }
     }
 
@@ -249,8 +248,7 @@ public partial class PocoUnionTypeTests
         {
             TestHelper.GetSuccessfulCollectorResult( [typeof( ICompositeOfNullableOrNotNullableValueTypes )] );
 
-            entries.Select( e => e.Text ).Should()
-                .NotContain( t => t.Contains( "duplicated", StringComparison.Ordinal ) );
+            entries.Select( e => e.Text ).ShouldNotContain( t => t.Contains( "duplicated", StringComparison.Ordinal ) );
         }
     }
 
@@ -297,18 +295,16 @@ public partial class PocoUnionTypeTests
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
-        p.Thing.Should().Be( 0m, "Since it's not null, it defaults to the first definition type that is 'defaultable': here the decimal." );
+        p.Thing.ShouldBe( 0m, "Since it's not null, it defaults to the first definition type that is 'defaultable': here the decimal." );
 
         p.Thing = 34;
-        p.Thing.Should().Be( 34 );
+        p.Thing.ShouldBe( 34 );
         p.Thing = 555m;
-        p.Thing.Should().Be( 555m );
+        p.Thing.ShouldBe( 555m );
 
-        p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>();
-        p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
+        Util.Invokable( () => p.Thing = null! ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => p.Thing = this ).ShouldThrow<ArgumentException>();
     }
-
-
 
     public interface IPocoNonExtendable : IPoco
     {

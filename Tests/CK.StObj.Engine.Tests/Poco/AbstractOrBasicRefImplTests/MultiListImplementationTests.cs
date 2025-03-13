@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -69,33 +69,31 @@ public class MultiListImplementationTests : CommonTypes
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithList)d.Find( type )!.Create();
 
-        p.List.Should()
-            .BeAssignableTo<IReadOnlyList<object>>()
-            .And.BeAssignableTo<IReadOnlyList<IPoco>>();
-        p.ConcreteList.GetType().Name.Should().Be( "List`1" );
+        p.List.ShouldBeAssignableTo<IReadOnlyList<object>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IPoco>>();
+        p.ConcreteList.GetType().Name.ShouldBe( "List`1" );
 
         if( type != typeof( IPocoWithListOfAbstract ) )
         {
-            p.List.Should()
-            .BeAssignableTo<IList<IVerySimplePoco>>()
-            .And.BeAssignableTo<IList<ISecondaryVerySimplePoco>>()
-            .And.BeAssignableTo<IList<IOtherSecondaryVerySimplePoco>>()
-            .And.BeAssignableTo<IReadOnlyList<object>>()
-            .And.BeAssignableTo<IReadOnlyList<IPoco>>()
-            .And.BeAssignableTo<IReadOnlyList<IVerySimplePoco>>()
-            .And.BeAssignableTo<IReadOnlyList<ISecondaryVerySimplePoco>>()
-            .And.BeAssignableTo<IReadOnlyList<IOtherSecondaryVerySimplePoco>>();
+            p.List.ShouldBeAssignableTo<IList<IVerySimplePoco>>()
+            .ShouldBeAssignableTo<IList<ISecondaryVerySimplePoco>>()
+            .ShouldBeAssignableTo<IList<IOtherSecondaryVerySimplePoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<object>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IPoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IVerySimplePoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<ISecondaryVerySimplePoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IOtherSecondaryVerySimplePoco>>();
 
             if( type != typeof( IPocoWithListOfPrimary ) )
             {
-                p.List.Should().BeAssignableTo<IReadOnlyList<IAbstractBase>>();
+                p.List.ShouldBeAssignableTo<IReadOnlyList<IAbstractBase>>();
                 if( type == typeof( IPocoWithListOfSecondary ) )
                 {
-                    p.List.Should().BeAssignableTo<IReadOnlyList<IAbstract1>>();
+                    p.List.ShouldBeAssignableTo<IReadOnlyList<IAbstract1>>();
                 }
                 else
                 {
-                    p.List.Should().BeAssignableTo<IReadOnlyList<IAbstract2>>();
+                    p.List.ShouldBeAssignableTo<IReadOnlyList<IAbstract2>>();
                 }
             }
         }
@@ -129,23 +127,23 @@ public class MultiListImplementationTests : CommonTypes
         var d = auto.Services.GetRequiredService<PocoDirectory>();
 
         var pBase = d.Create<IPocoWithListOfAbstractBase>();
-        pBase.List.Should().BeAssignableTo<IReadOnlyList<object>>()
-            .And.BeAssignableTo<IReadOnlyList<IPoco>>()
-            .And.BeAssignableTo<IReadOnlyList<IAbstractBase>>();
+        pBase.List.ShouldBeAssignableTo<IReadOnlyList<object>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IPoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IAbstractBase>>();
 
         var pAbstract1 = d.Create<IPocoWithListOfAbstract1>();
-        pAbstract1.List.Should().BeAssignableTo<IReadOnlyList<object>>()
-            .And.BeAssignableTo<IReadOnlyList<IPoco>>()
-            .And.BeAssignableTo<IReadOnlyList<IAbstractBase>>()
-            .And.BeAssignableTo<IReadOnlyList<IAbstract1>>();
+        pAbstract1.List.ShouldBeAssignableTo<IReadOnlyList<object>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IPoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IAbstractBase>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IAbstract1>>();
 
         var pClosed = d.Create<IPocoWithListOfClosed>();
-        pClosed.List.Should().BeAssignableTo<IReadOnlyList<object>>()
-            .And.BeAssignableTo<IReadOnlyList<IPoco>>()
-            .And.BeAssignableTo<IReadOnlyList<IAbstractBase>>()
-            .And.BeAssignableTo<IReadOnlyList<IAbstract1>>()
-            .And.BeAssignableTo<IReadOnlyList<IAbstract1Closed>>()
-            .And.BeAssignableTo<IReadOnlyList<IClosedPoco>>();
+        pClosed.List.ShouldBeAssignableTo<IReadOnlyList<object>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IPoco>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IAbstractBase>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IAbstract1>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IAbstract1Closed>>()
+            .ShouldBeAssignableTo<IReadOnlyList<IClosedPoco>>();
     }
 
     public interface IInvalid : IPocoWithListOfAbstractBase

@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -85,10 +85,10 @@ public partial class BasicTypeTests
         nMin.PChar = char.MinValue;
 
         var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(max) serialization: " + t ) );
-        nMax2.Should().BeEquivalentTo( nMax );
+        nMax2.ShouldBe( nMax );
 
         var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(min) serialization: " + t ) );
-        nMin2.Should().BeEquivalentTo( nMin );
+        nMin2.ShouldBe( nMin );
     }
 
 
@@ -164,12 +164,12 @@ public partial class BasicTypeTests
         nMin.PChar = char.MinValue;
 
         var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (null) serialization: " + t ) );
-        nNull2.Should().BeEquivalentTo( nNull );
+        nNull2.ShouldBe( nNull );
 
         var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (max) serialization: " + t ) );
-        nMax2.Should().BeEquivalentTo( nMax );
+        nMax2.ShouldBe( nMax );
 
         var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (min) serialization: " + t ) );
-        nMin2.Should().BeEquivalentTo( nMin );
+        nMin2.ShouldBe( nMin );
     }
 }

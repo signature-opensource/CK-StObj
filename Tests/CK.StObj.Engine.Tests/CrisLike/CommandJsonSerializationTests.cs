@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Poco.Exc.Json;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -108,18 +108,18 @@ public class CommandJsonSerializationTests
             var cmd2 = TestHelper.JsonIdempotenceCheck( cmd, ( w, c ) => c.WriteJson( w, writeContext ), ReadFunc, readContext );
             Debug.Assert( cmd2 != null );
 
-            cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );
+            cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).ShouldBe( "Tested Value" );
             if( cmd is ICommandAuthUnsafe )
             {
-                ((ICommandAuthUnsafe)cmd2).ActorId.Should().Be( 3712 );
+                ((ICommandAuthUnsafe)cmd2).ActorId.ShouldBe( 3712 );
             }
             if( cmd is ICommandAuthDeviceId )
             {
-                ((ICommandAuthDeviceId)cmd2).DeviceId.Should().Be( "The device identifier..." );
+                ((ICommandAuthDeviceId)cmd2).DeviceId.ShouldBe( "The device identifier..." );
             }
             if( cmd is ICommandAuthImpersonation )
             {
-                ((ICommandAuthImpersonation)cmd2).ActualActorId.Should().Be( 37123712 );
+                ((ICommandAuthImpersonation)cmd2).ActualActorId.ShouldBe( 37123712 );
             }
         }
     }

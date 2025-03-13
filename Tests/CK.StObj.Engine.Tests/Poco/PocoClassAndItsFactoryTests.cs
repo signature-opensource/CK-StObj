@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -28,7 +28,7 @@ public class PocoClassAndItsFactoryTests
         var f = auto.Services.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
         var o = f.Create();
         var f2 = ((IPocoGeneratedClass)o).Factory;
-        f.Should().BeSameAs( f2 );
+        f.ShouldBeSameAs( f2 );
     }
 
 }

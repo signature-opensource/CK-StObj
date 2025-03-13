@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections;
@@ -149,13 +149,13 @@ public class LabForCovariance
         IReadOnlyList<ICommand> roCmd = list;
         IReadOnlyList<object> roObject = list;
         IReadOnlyList<object?> ronObject = list;
-        roThing.Where( t => t.Power == 0 ).Should().HaveCount( 1 );
-        roThing.First( x => x.Power == 42 ).Should().BeSameAs( list[0] );
-        roCmd.Where( x => x is IThing ).Should().HaveCount( 2 );
+        roThing.Where( t => t.Power == 0 ).ShouldHaveSingleItem();
+        roThing.First( x => x.Power == 42 ).ShouldBeSameAs( list[0] );
+        roCmd.Where( x => x is IThing ).Count().ShouldBe( 2 );
 
         IList<IMoreOther> moreOthers = list;
         moreOthers.Add( new Thing_CK { OtherPower = 5 } );
-        roThing.Where( t => t.Power == 0 ).Should().HaveCount( 2 );
+        roThing.Where( t => t.Power == 0 ).Count().ShouldBe( 2 );
     }
 
     public sealed class CovPocoHashSet_CK<TImpl> : HashSet<TImpl>,
@@ -326,73 +326,73 @@ public class LabForCovariance
         var subSet2 = new object[] { t1, t2 };
         var otherSet = new object[] { new Thing_CK() };
 
-        nSet.Contains( this ).Should().BeFalse();
+        nSet.Contains( this ).ShouldBeFalse();
 
-        nSet.SetEquals( set ).Should().BeTrue();
-        nSet.SetEquals( empty ).Should().BeFalse();
-        nSet.SetEquals( set2 ).Should().BeTrue();
-        nSet.SetEquals( set2.Concat( set2 ) ).Should().BeTrue();
-        nSet.SetEquals( superSet2 ).Should().BeFalse();
-        nSet.SetEquals( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.SetEquals( subSet2 ).Should().BeFalse();
-        nSet.SetEquals( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.SetEquals( otherSet ).Should().BeFalse();
-        nSet.SetEquals( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.SetEquals( set ).ShouldBeTrue();
+        nSet.SetEquals( empty ).ShouldBeFalse();
+        nSet.SetEquals( set2 ).ShouldBeTrue();
+        nSet.SetEquals( set2.Concat( set2 ) ).ShouldBeTrue();
+        nSet.SetEquals( superSet2 ).ShouldBeFalse();
+        nSet.SetEquals( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.SetEquals( subSet2 ).ShouldBeFalse();
+        nSet.SetEquals( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.SetEquals( otherSet ).ShouldBeFalse();
+        nSet.SetEquals( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsProperSubsetOf( set ).Should().BeFalse();
-        nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-        nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-        nSet.IsProperSubsetOf( set2.Concat( set2 ) ).Should().BeFalse();
-        nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue();
-        nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue();
-        nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-        nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-        nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsProperSubsetOf( set ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( empty ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( set2 ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( set2.Concat( set2 ) ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( superSet2 ).ShouldBeTrue();
+        nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).ShouldBeTrue();
+        nSet.IsProperSubsetOf( subSet2 ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( otherSet ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsSubsetOf( set ).Should().BeTrue();
-        nSet.IsSubsetOf( empty ).Should().BeFalse();
-        nSet.IsSubsetOf( set2 ).Should().BeTrue();
-        nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeTrue();
-        nSet.IsSubsetOf( superSet2 ).Should().BeTrue();
-        nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue();
-        nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-        nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-        nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsSubsetOf( set ).ShouldBeTrue();
+        nSet.IsSubsetOf( empty ).ShouldBeFalse();
+        nSet.IsSubsetOf( set2 ).ShouldBeTrue();
+        nSet.IsSubsetOf( set2.Concat( set2 ) ).ShouldBeTrue();
+        nSet.IsSubsetOf( superSet2 ).ShouldBeTrue();
+        nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).ShouldBeTrue();
+        nSet.IsSubsetOf( subSet2 ).ShouldBeFalse();
+        nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.IsSubsetOf( otherSet ).ShouldBeFalse();
+        nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsProperSupersetOf( set ).Should().BeFalse();
-        nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-        nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-        nSet.IsProperSupersetOf( set2.Concat( set2 ) ).Should().BeFalse();
-        nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-        nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue();
-        nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue();
-        nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-        nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsProperSupersetOf( set ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( empty ).ShouldBeTrue();
+        nSet.IsProperSupersetOf( set2 ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( set2.Concat( set2 ) ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( superSet2 ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( subSet2 ).ShouldBeTrue();
+        nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).ShouldBeTrue();
+        nSet.IsProperSupersetOf( otherSet ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsSupersetOf( set ).Should().BeTrue();
-        nSet.IsSupersetOf( empty ).Should().BeTrue();
-        nSet.IsSupersetOf( set2 ).Should().BeTrue();
-        nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeTrue();
-        nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-        nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.IsSupersetOf( subSet2 ).Should().BeTrue();
-        nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue();
-        nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-        nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsSupersetOf( set ).ShouldBeTrue();
+        nSet.IsSupersetOf( empty ).ShouldBeTrue();
+        nSet.IsSupersetOf( set2 ).ShouldBeTrue();
+        nSet.IsSupersetOf( set2.Concat( set2 ) ).ShouldBeTrue();
+        nSet.IsSupersetOf( superSet2 ).ShouldBeFalse();
+        nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.IsSupersetOf( subSet2 ).ShouldBeTrue();
+        nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).ShouldBeTrue();
+        nSet.IsSupersetOf( otherSet ).ShouldBeFalse();
+        nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.Overlaps( set ).Should().BeTrue();
-        nSet.Overlaps( empty ).Should().BeFalse();
-        nSet.Overlaps( set2 ).Should().BeTrue();
-        nSet.Overlaps( set2.Concat( set2 ) ).Should().BeTrue();
-        nSet.Overlaps( superSet2 ).Should().BeTrue();
-        nSet.Overlaps( superSet2.Concat( superSet2 ) ).Should().BeTrue();
-        nSet.Overlaps( subSet2 ).Should().BeTrue();
-        nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
-        nSet.Overlaps( otherSet ).Should().BeFalse();
-        nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.Overlaps( set ).ShouldBeTrue();
+        nSet.Overlaps( empty ).ShouldBeFalse();
+        nSet.Overlaps( set2 ).ShouldBeTrue();
+        nSet.Overlaps( set2.Concat( set2 ) ).ShouldBeTrue();
+        nSet.Overlaps( superSet2 ).ShouldBeTrue();
+        nSet.Overlaps( superSet2.Concat( superSet2 ) ).ShouldBeTrue();
+        nSet.Overlaps( subSet2 ).ShouldBeTrue();
+        nSet.Overlaps( subSet2.Concat( subSet2 ) ).ShouldBeTrue();
+        nSet.Overlaps( otherSet ).ShouldBeFalse();
+        nSet.Overlaps( otherSet.Concat( otherSet ) ).ShouldBeFalse();
     }
 
     [Test]
@@ -410,73 +410,73 @@ public class LabForCovariance
         var subSet2 = new object?[] { t1, null };
         var otherSet = new object?[] { new Thing_CK() };
 
-        nSet.Contains( null ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.Contains( null ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
 
-        nSet.SetEquals( set ).Should().BeTrue();
-        nSet.SetEquals( empty ).Should().BeFalse();
-        nSet.SetEquals( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.SetEquals( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.SetEquals( superSet2 ).Should().BeFalse();
-        nSet.SetEquals( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.SetEquals( subSet2 ).Should().BeFalse();
-        nSet.SetEquals( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.SetEquals( otherSet ).Should().BeFalse();
-        nSet.SetEquals( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.SetEquals( set ).ShouldBeTrue();
+        nSet.SetEquals( empty ).ShouldBeFalse();
+        nSet.SetEquals( set2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.SetEquals( set2.Concat( set2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.SetEquals( superSet2 ).ShouldBeFalse();
+        nSet.SetEquals( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.SetEquals( subSet2 ).ShouldBeFalse();
+        nSet.SetEquals( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.SetEquals( otherSet ).ShouldBeFalse();
+        nSet.SetEquals( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsProperSubsetOf( set ).Should().BeFalse();
-        nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-        nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-        nSet.IsProperSubsetOf( set2.Concat( set2 ) ).Should().BeFalse();
-        nSet.IsProperSubsetOf( superSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-        nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-        nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsProperSubsetOf( set ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( empty ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( set2 ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( set2.Concat( set2 ) ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( superSet2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsProperSubsetOf( subSet2 ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( otherSet ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsSubsetOf( set ).Should().BeTrue();
-        nSet.IsSubsetOf( empty ).Should().BeFalse();
-        nSet.IsSubsetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSubsetOf( superSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-        nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-        nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsSubsetOf( set ).ShouldBeTrue();
+        nSet.IsSubsetOf( empty ).ShouldBeFalse();
+        nSet.IsSubsetOf( set2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSubsetOf( set2.Concat( set2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSubsetOf( superSet2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSubsetOf( subSet2 ).ShouldBeFalse();
+        nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.IsSubsetOf( otherSet ).ShouldBeFalse();
+        nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsProperSupersetOf( set ).Should().BeFalse();
-        nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-        nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-        nSet.IsProperSupersetOf( set2.Concat( set2 ) ).Should().BeFalse();
-        nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-        nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.IsProperSupersetOf( subSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-        nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsProperSupersetOf( set ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( empty ).ShouldBeTrue();
+        nSet.IsProperSupersetOf( set2 ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( set2.Concat( set2 ) ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( superSet2 ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( subSet2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsProperSupersetOf( otherSet ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsSupersetOf( set ).Should().BeTrue();
-        nSet.IsSupersetOf( empty ).Should().BeTrue();
-        nSet.IsSupersetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-        nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.IsSupersetOf( subSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-        nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-        nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsSupersetOf( set ).ShouldBeTrue();
+        nSet.IsSupersetOf( empty ).ShouldBeTrue();
+        nSet.IsSupersetOf( set2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSupersetOf( set2.Concat( set2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSupersetOf( superSet2 ).ShouldBeFalse();
+        nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.IsSupersetOf( subSet2 ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse( "BUG! :( The null must be explicitly handled." );
+        nSet.IsSupersetOf( otherSet ).ShouldBeFalse();
+        nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.Overlaps( set ).Should().BeTrue();
-        nSet.Overlaps( empty ).Should().BeFalse();
-        nSet.Overlaps( set2 ).Should().BeTrue();
-        nSet.Overlaps( set2.Concat( set2 ) ).Should().BeTrue();
-        nSet.Overlaps( superSet2 ).Should().BeTrue();
-        nSet.Overlaps( superSet2.Concat( superSet2 ) ).Should().BeTrue();
-        nSet.Overlaps( subSet2 ).Should().BeTrue();
-        nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
-        nSet.Overlaps( otherSet ).Should().BeFalse();
-        nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.Overlaps( set ).ShouldBeTrue();
+        nSet.Overlaps( empty ).ShouldBeFalse();
+        nSet.Overlaps( set2 ).ShouldBeTrue();
+        nSet.Overlaps( set2.Concat( set2 ) ).ShouldBeTrue();
+        nSet.Overlaps( superSet2 ).ShouldBeTrue();
+        nSet.Overlaps( superSet2.Concat( superSet2 ) ).ShouldBeTrue();
+        nSet.Overlaps( subSet2 ).ShouldBeTrue();
+        nSet.Overlaps( subSet2.Concat( subSet2 ) ).ShouldBeTrue();
+        nSet.Overlaps( otherSet ).ShouldBeFalse();
+        nSet.Overlaps( otherSet.Concat( otherSet ) ).ShouldBeFalse();
     }
 
     public sealed class CovPocoNullableHashSet_CK<TImpl> : HashSet<TImpl?>,
@@ -574,73 +574,73 @@ public class LabForCovariance
         var subSet2 = new object?[] { t1, null };
         var otherSet = new object?[] { new Thing_CK() };
 
-        nSet.Contains( null ).Should().BeTrue( "Fixed." );
+        nSet.Contains( null ).ShouldBeTrue( "Fixed." );
 
-        nSet.SetEquals( set ).Should().BeTrue();
-        nSet.SetEquals( empty ).Should().BeFalse();
-        nSet.SetEquals( set2 ).Should().BeTrue( "Fixed." );
-        nSet.SetEquals( set2.Concat( set2 ) ).Should().BeTrue( "Fixed." );
-        nSet.SetEquals( superSet2 ).Should().BeFalse();
-        nSet.SetEquals( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.SetEquals( subSet2 ).Should().BeFalse();
-        nSet.SetEquals( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.SetEquals( otherSet ).Should().BeFalse();
-        nSet.SetEquals( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.SetEquals( set ).ShouldBeTrue();
+        nSet.SetEquals( empty ).ShouldBeFalse();
+        nSet.SetEquals( set2 ).ShouldBeTrue( "Fixed." );
+        nSet.SetEquals( set2.Concat( set2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.SetEquals( superSet2 ).ShouldBeFalse();
+        nSet.SetEquals( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.SetEquals( subSet2 ).ShouldBeFalse();
+        nSet.SetEquals( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.SetEquals( otherSet ).ShouldBeFalse();
+        nSet.SetEquals( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsProperSubsetOf( set ).Should().BeFalse();
-        nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-        nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-        nSet.IsProperSubsetOf( set2.Concat( set2 ) ).Should().BeFalse();
-        nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue( "Fixed." );
-        nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue( "Fixed." );
-        nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-        nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-        nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsProperSubsetOf( set ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( empty ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( set2 ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( set2.Concat( set2 ) ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( superSet2 ).ShouldBeTrue( "Fixed." );
+        nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.IsProperSubsetOf( subSet2 ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( otherSet ).ShouldBeFalse();
+        nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsSubsetOf( set ).Should().BeTrue();
-        nSet.IsSubsetOf( empty ).Should().BeFalse();
-        nSet.IsSubsetOf( set2 ).Should().BeTrue( "Fixed." );
-        nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeTrue( "Fixed." );
-        nSet.IsSubsetOf( superSet2 ).Should().BeTrue( "Fixed." );
-        nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue( "Fixed." );
-        nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-        nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
-        nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-        nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsSubsetOf( set ).ShouldBeTrue();
+        nSet.IsSubsetOf( empty ).ShouldBeFalse();
+        nSet.IsSubsetOf( set2 ).ShouldBeTrue( "Fixed." );
+        nSet.IsSubsetOf( set2.Concat( set2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.IsSubsetOf( superSet2 ).ShouldBeTrue( "Fixed." );
+        nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.IsSubsetOf( subSet2 ).ShouldBeFalse();
+        nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).ShouldBeFalse();
+        nSet.IsSubsetOf( otherSet ).ShouldBeFalse();
+        nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsProperSupersetOf( set ).Should().BeFalse();
-        nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-        nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-        nSet.IsProperSupersetOf( set2.Concat( set2 ) ).Should().BeFalse();
-        nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-        nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue( "Fixed." );
-        nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue( "Fixed." );
-        nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-        nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsProperSupersetOf( set ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( empty ).ShouldBeTrue();
+        nSet.IsProperSupersetOf( set2 ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( set2.Concat( set2 ) ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( superSet2 ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( subSet2 ).ShouldBeTrue( "Fixed." );
+        nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.IsProperSupersetOf( otherSet ).ShouldBeFalse();
+        nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.IsSupersetOf( set ).Should().BeTrue();
-        nSet.IsSupersetOf( empty ).Should().BeTrue();
-        nSet.IsSupersetOf( set2 ).Should().BeTrue( "Fixed." );
-        nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeTrue( "Fixed." );
-        nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-        nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
-        nSet.IsSupersetOf( subSet2 ).Should().BeTrue( "Fixed." );
-        nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue( "Fixed." );
-        nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-        nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.IsSupersetOf( set ).ShouldBeTrue();
+        nSet.IsSupersetOf( empty ).ShouldBeTrue();
+        nSet.IsSupersetOf( set2 ).ShouldBeTrue( "Fixed." );
+        nSet.IsSupersetOf( set2.Concat( set2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.IsSupersetOf( superSet2 ).ShouldBeFalse();
+        nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).ShouldBeFalse();
+        nSet.IsSupersetOf( subSet2 ).ShouldBeTrue( "Fixed." );
+        nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).ShouldBeTrue( "Fixed." );
+        nSet.IsSupersetOf( otherSet ).ShouldBeFalse();
+        nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).ShouldBeFalse();
 
-        nSet.Overlaps( set ).Should().BeTrue();
-        nSet.Overlaps( empty ).Should().BeFalse();
-        nSet.Overlaps( set2 ).Should().BeTrue();
-        nSet.Overlaps( set2.Concat( set2 ) ).Should().BeTrue();
-        nSet.Overlaps( superSet2 ).Should().BeTrue();
-        nSet.Overlaps( superSet2.Concat( superSet2 ) ).Should().BeTrue();
-        nSet.Overlaps( subSet2 ).Should().BeTrue();
-        nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
-        nSet.Overlaps( otherSet ).Should().BeFalse();
-        nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
+        nSet.Overlaps( set ).ShouldBeTrue();
+        nSet.Overlaps( empty ).ShouldBeFalse();
+        nSet.Overlaps( set2 ).ShouldBeTrue();
+        nSet.Overlaps( set2.Concat( set2 ) ).ShouldBeTrue();
+        nSet.Overlaps( superSet2 ).ShouldBeTrue();
+        nSet.Overlaps( superSet2.Concat( superSet2 ) ).ShouldBeTrue();
+        nSet.Overlaps( subSet2 ).ShouldBeTrue();
+        nSet.Overlaps( subSet2.Concat( subSet2 ) ).ShouldBeTrue();
+        nSet.Overlaps( otherSet ).ShouldBeFalse();
+        nSet.Overlaps( otherSet.Concat( otherSet ) ).ShouldBeFalse();
     }
 
     public sealed class CovPocoDictionary_CK<TKey, TImpl> : Dictionary<TKey, TImpl>,
@@ -743,22 +743,22 @@ public class LabForCovariance
         {
             dThing.Add( i, new Thing_CK() { Power = i } );
         }
-        dCmd.Count.Should().Be( 10 );
-        dThing[0].Power.Should().Be( 0 );
+        dCmd.Count.ShouldBe( 10 );
+        dThing[0].Power.ShouldBe( 0 );
         int idx = 0;
         foreach( var kv in dCmd )
         {
-            kv.Key.Should().Be( idx );
-            ((Thing_CK)kv.Value).Power.Should().Be( idx );
+            kv.Key.ShouldBe( idx );
+            ((Thing_CK)kv.Value).Power.ShouldBe( idx );
             idx++;
         }
         // This uses an Unsafe.As<ICollection<IThing>>...
-        dThing.Values.Should().OnlyContain( v => v.Power >= 0 && v.Power < 10 );
+        dThing.Values.ShouldAllBe( v => v.Power >= 0 && v.Power < 10 );
         // This uses an Unsafe.As<KeyValuePair<TKey, TImpl>[]> to adapt the target...
         var target = new KeyValuePair<int, IThing>[20];
         dThing.CopyTo( target, 0 );
         dThing.CopyTo( target, 10 );
-        target.Should().OnlyContain( x => x.Value != null && dThing.Contains( x ) );
+        target.ShouldAllBe( x => x.Value != null && dThing.Contains( x ) );
     }
 
     class Animal { }
@@ -769,27 +769,27 @@ public class LabForCovariance
     public void array_IsAssignableFrom_is_covariant_but_this_is_a_dangerous_lie()
     {
         // No support if boxing is required.
-        typeof( int[] ).IsAssignableFrom( typeof( object[] ) ).Should().BeFalse();
-        typeof( object[] ).IsAssignableFrom( typeof( int[] ) ).Should().BeFalse();
+        typeof( int[] ).IsAssignableFrom( typeof( object[] ) ).ShouldBeFalse();
+        typeof( object[] ).IsAssignableFrom( typeof( int[] ) ).ShouldBeFalse();
 
-        typeof( Animal[] ).IsAssignableFrom( typeof( object[] ) ).Should().BeFalse();
-        typeof( object[] ).IsAssignableFrom( typeof( Animal[] ) ).Should().BeTrue( "Dangerous!" );
+        typeof( Animal[] ).IsAssignableFrom( typeof( object[] ) ).ShouldBeFalse();
+        typeof( object[] ).IsAssignableFrom( typeof( Animal[] ) ).ShouldBeTrue( "Dangerous!" );
 
         var o = new object();
         var cA = new Animal();
         object[] asObjects = new Animal[] { cA };
-        FluentActions.Invoking( () => asObjects[0] = o ).Should().Throw<ArrayTypeMismatchException>();
+        Util.Invokable( () => asObjects[0] = o ).ShouldThrow<ArrayTypeMismatchException>();
 
-        typeof( Dog[] ).IsAssignableFrom( typeof( Animal[] ) ).Should().BeFalse();
-        typeof( Animal[] ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous!" );
+        typeof( Dog[] ).IsAssignableFrom( typeof( Animal[] ) ).ShouldBeFalse();
+        typeof( Animal[] ).IsAssignableFrom( typeof( Dog[] ) ).ShouldBeTrue( "Dangerous!" );
 
 
-        typeof( IReadOnlyList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Safe." );
-        typeof( IReadOnlyList<object> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Safe." );
-        typeof( object ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Safe." );
+        typeof( IReadOnlyList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).ShouldBeTrue( "Safe." );
+        typeof( IReadOnlyList<object> ).IsAssignableFrom( typeof( Dog[] ) ).ShouldBeTrue( "Safe." );
+        typeof( object ).IsAssignableFrom( typeof( Dog[] ) ).ShouldBeTrue( "Safe." );
 
-        typeof( IList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous (nobody checks the bool IsReadOnly)." );
-        typeof( IList<object> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous( nobody checks the bool IsReadOnly )." );
+        typeof( IList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).ShouldBeTrue( "Dangerous (nobody checks the bool IsReadOnly)." );
+        typeof( IList<object> ).IsAssignableFrom( typeof( Dog[] ) ).ShouldBeTrue( "Dangerous( nobody checks the bool IsReadOnly )." );
     }
 
 

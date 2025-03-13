@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Linq;
@@ -30,12 +30,13 @@ public class PocoDirectoryTests
         var f0 = d.Find( "Test" );
         var f1 = d.Find( "PreviousTest1" );
         var f2 = d.Find( "PreviousTest2" );
-        f0.Should().NotBeNull().And.BeSameAs( f1 ).And.BeSameAs( f2 );
+        f0.ShouldNotBeNull().ShouldBeSameAs( f1 );
+        f0.ShouldBeSameAs( f2 );
         var f3 = d.Find( typeof( ICmdTest ) );
-        f3.Should().NotBeNull().And.BeSameAs( f0 );
+        f3.ShouldNotBeNull().ShouldBeSameAs( f0 );
 
         // Typed helper.
-        d.Find<ICmdTest>().Should().NotBeNull().And.BeSameAs( f0 );
+        d.Find<ICmdTest>().ShouldNotBeNull().ShouldBeSameAs( f0 );
     }
 
     [Test]
@@ -47,7 +48,7 @@ public class PocoDirectoryTests
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = d.Create<ICmdTest>();
-        d.Find( p.GetType() ).Should().NotBeNull().And.BeSameAs( ((IPocoGeneratedClass)p).Factory );
+        d.Find(p.GetType()).ShouldNotBeNull().ShouldBeSameAs( ((IPocoGeneratedClass)p).Factory );
     }
 
     [ExternalName( "Test", "Prev1", "Test" )]
@@ -86,8 +87,7 @@ public class PocoDirectoryTests
             await configuration.RunSuccessfullyAsync();
             entries.Where( x => x.MaskedLevel == LogLevel.Warn )
                    .Select( x => x.Text )
-                   .Should()
-                   .Contain( $"Type '{typeof( ICmdNoName ).ToCSharpName()}' use its full CSharpName as its name since no [ExternalName] attribute is defined." );
+                   .ShouldContain( $"Type '{typeof( ICmdNoName ).ToCSharpName()}' use its full CSharpName as its name since no [ExternalName] attribute is defined." );
         }
     }
 

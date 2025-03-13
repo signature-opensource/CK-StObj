@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
@@ -38,7 +38,7 @@ public class RawCodeGeneratorTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( Holder ) );
         (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
-        CGen.Called.Should().BeTrue();
+        CGen.Called.ShouldBeTrue();
     }
 
     [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
@@ -53,7 +53,7 @@ public class RawCodeGeneratorTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( StaticHolder ) );
         (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
-        CGen.Called.Should().BeTrue();
+        CGen.Called.ShouldBeTrue();
     }
 
     [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
@@ -68,7 +68,7 @@ public class RawCodeGeneratorTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( RawInterface ) );
         (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
-        CGen.Called.Should().BeTrue();
+        CGen.Called.ShouldBeTrue();
     }
 
     [ContextBoundDelegation( "CK.StObj.Engine.Tests.RawCodeGeneratorTests+CGen, CK.StObj.Engine.Tests" )]
@@ -83,7 +83,7 @@ public class RawCodeGeneratorTests
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
         configuration.FirstBinPath.Types.Add( typeof( EvenOnAnEnumItWorks ) );
         (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
-        CGen.Called.Should().BeTrue();
+        CGen.Called.ShouldBeTrue();
     }
 
 

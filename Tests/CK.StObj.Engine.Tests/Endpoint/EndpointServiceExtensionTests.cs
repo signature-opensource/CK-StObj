@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -27,9 +27,9 @@ public class EndpointServiceExtensionTests
     {
         var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IEPService1 ), typeof( IEPService2 )] ).EndpointResult;
         Debug.Assert( r != null );
-        r.Containers.Should().HaveCount( 0 );
-        r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped );
-        r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
+        r.Containers.Count.ShouldBe( 0 );
+        r.EndpointServices[typeof( IEPService1 )].ShouldBe( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsScoped );
+        r.EndpointServices[typeof( IEPService2 )].ShouldBe( AutoServiceKind.IsContainerConfiguredService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
     }
 
     public class AmbientThing

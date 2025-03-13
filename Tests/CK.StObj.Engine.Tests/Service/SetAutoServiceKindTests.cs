@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -34,8 +34,8 @@ public class SetAutoServiceKindTests
         var map = (await configuration.RunAsync().ConfigureAwait(false)).LoadMap();
 
         var d = map.Services.Mappings[typeof( TheService )];
-        d.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
-        d.MultipleMappings.Should().Contain( typeof( IService ) );
+        d.AutoServiceKind.ShouldBe( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
+        d.MultipleMappings.ShouldContain( typeof( IService ) );
     }
 
     // This is defined as a Singleton:
@@ -59,7 +59,7 @@ public class SetAutoServiceKindTests
                                       isOptional: true );
         collector.RegisterType( TestHelper.Monitor, typeof( GenService ) );
         var r = collector.GetResult( TestHelper.Monitor );
-        r.HasFatalError.Should().BeFalse();
+        r.HasFatalError.ShouldBeFalse();
     }
 
 
@@ -85,8 +85,8 @@ public class SetAutoServiceKindTests
             register.AddSingleton<IConfiguration>( new ThisIsTheConfig() );
         } );
 
-        auto.Services.GetService<IConfiguration>( throwOnNull: true ).Should().BeOfType<ThisIsTheConfig>();
-        auto.Services.GetService<IConfigurationSection>( throwOnNull: false ).Should().BeNull();
+        auto.Services.GetService<IConfiguration>( throwOnNull: true ).ShouldBeOfType<ThisIsTheConfig>();
+        auto.Services.GetService<IConfigurationSection>( throwOnNull: false ).ShouldBeNull();
     }
 
 }

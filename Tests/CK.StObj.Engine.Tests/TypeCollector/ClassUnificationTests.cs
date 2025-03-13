@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -26,10 +26,10 @@ public class ClassUnificationTests : TypeCollectorTestsBase
             collector.RegisterClass( TestHelper.Monitor, typeof( AS1 ) );
             collector.RegisterClass( TestHelper.Monitor, typeof( AS2 ) );
         } );
-        r.AutoServices.RootClasses.Should().HaveCount( 1 );
+        r.AutoServices.RootClasses.Count.ShouldBe( 1 );
         var c = r.AutoServices.RootClasses[0].MostSpecialized;
         Debug.Assert( c != null );
-        c.ClassType.Should().BeSameAs( typeof( UnifiedA ) );
+        c.ClassType.ShouldBeSameAs( typeof( UnifiedA ) );
     }
 
     [Test]
@@ -40,8 +40,8 @@ public class ClassUnificationTests : TypeCollectorTestsBase
             collector.RegisterClass( TestHelper.Monitor, typeof( UnifiedAWithoutS2 ) );
             collector.RegisterClass( TestHelper.Monitor, typeof( AS1 ) );
         } );
-        r.AutoServices.RootClasses.Should().HaveCount( 1 );
-        r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
+        r.AutoServices.RootClasses.Count.ShouldBe( 1 );
+        r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.ShouldBeSameAs( typeof( UnifiedAWithoutS2 ) );
     }
 
     public class _A : IScopedAutoService { }
@@ -62,8 +62,8 @@ public class ClassUnificationTests : TypeCollectorTestsBase
             collector.RegisterClass( TestHelper.Monitor, typeof( _AS2 ) );
             collector.RegisterClass( TestHelper.Monitor, typeof( _AS3 ) );
         } );
-        r.AutoServices.RootClasses.Should().HaveCount( 1 );
-        r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( _UnifiedA2 ) );
+        r.AutoServices.RootClasses.Count.ShouldBe( 1 );
+        r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.ShouldBeSameAs( typeof( _UnifiedA2 ) );
     }
 
     public class e_A : IScopedAutoService { }
@@ -84,9 +84,9 @@ public class ClassUnificationTests : TypeCollectorTestsBase
             collector.RegisterClass( TestHelper.Monitor, typeof( e_AS2 ) );
             collector.RegisterClass( TestHelper.Monitor, typeof( e_AS3 ) );
         } );
-        r.AutoServices.RootClasses.Should().HaveCount( 2 );
+        r.AutoServices.RootClasses.Count.ShouldBe( 2 );
         r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( e_A ) ).MostSpecialized!.ClassType
-            .Should().BeSameAs( typeof( e_UnifiedA2 ) );
+            .ShouldBeSameAs( typeof( e_UnifiedA2 ) );
     }
 
 
@@ -107,9 +107,9 @@ public class ClassUnificationTests : TypeCollectorTestsBase
                 collector.RegisterClass( TestHelper.Monitor, typeof( u_AS2 ) );
                 collector.RegisterClass( TestHelper.Monitor, typeof( u_UnifiedD ) );
             } );
-            r.AutoServices.RootClasses.Should().HaveCount( 1 );
+            r.AutoServices.RootClasses.Count.ShouldBe( 1 );
             r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
-                .Should().BeSameAs( typeof( u_UnifiedD ) );
+                .ShouldBeSameAs( typeof( u_UnifiedD ) );
         }
         {
             var r = CheckSuccess( collector =>
@@ -118,9 +118,9 @@ public class ClassUnificationTests : TypeCollectorTestsBase
                 collector.RegisterClass( TestHelper.Monitor, typeof( u_AS2 ) );
                 collector.RegisterClass( TestHelper.Monitor, typeof( u_UnifiedA ) );
             } );
-            r.AutoServices.RootClasses.Should().HaveCount( 1 );
+            r.AutoServices.RootClasses.Count.ShouldBe( 1 );
             r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
-                .Should().BeSameAs( typeof( u_UnifiedA ) );
+                .ShouldBeSameAs( typeof( u_UnifiedA ) );
         }
     }
 
@@ -167,11 +167,11 @@ public class ClassUnificationTests : TypeCollectorTestsBase
         collector.RegisterClass( TestHelper.Monitor, unifier );
         var r = CheckFailure( collector );
         var ambiguities = r.AutoServices.ClassAmbiguities;
-        ambiguities.Should().HaveCount( 1 );
+        ambiguities.Count.ShouldBe( 1 );
         var a = ambiguities[0];
-        a.Should().HaveCount( 1 + 2 );
-        a[0].ClassType.Should().BeSameAs( typeof( s_AS2Base ) );
-        a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( new[] { typeof( s_AS2a ), typeof( s_AS2b ) } );
+        a.Count.ShouldBe( 1 + 2 );
+        a[0].ClassType.ShouldBeSameAs( typeof( s_AS2Base ) );
+        a.Skip( 1 ).Select( i => i.ClassType ).ShouldBe( new[] { typeof( s_AS2a ), typeof( s_AS2b ) } );
     }
 
     [TestCase( typeof( s_SubUnifier1 ) )]
@@ -186,11 +186,11 @@ public class ClassUnificationTests : TypeCollectorTestsBase
         collector.RegisterClass( TestHelper.Monitor, unifier );
         var r = CheckFailure( collector );
         var ambiguities = r.AutoServices.ClassAmbiguities;
-        ambiguities.Should().HaveCount( 1 );
+        ambiguities.Count.ShouldBe( 1 );
         var a = ambiguities[0];
-        a.Should().HaveCount( 1 + 4 );
-        a[0].ClassType.Should().BeSameAs( typeof( s_A ) );
-        a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( new[] { typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) } );
+        a.Count.ShouldBe( 1 + 4 );
+        a[0].ClassType.ShouldBeSameAs( typeof( s_A ) );
+        a.Skip( 1 ).Select( i => i.ClassType ).ShouldBe( new[] { typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) } );
     }
 
     [Test]
@@ -202,7 +202,7 @@ public class ClassUnificationTests : TypeCollectorTestsBase
         collector.RegisterClass( TestHelper.Monitor, typeof( s_AS2b ) );
         var r = CheckFailure( collector );
         var ambiguities = r.AutoServices.ClassAmbiguities;
-        ambiguities.Should().HaveCount( 2 );
+        ambiguities.Count.ShouldBe( 2 );
     }
 
     [Test]

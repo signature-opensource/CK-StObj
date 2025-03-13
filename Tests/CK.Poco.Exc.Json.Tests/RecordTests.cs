@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -33,10 +33,10 @@ public class RecordTests
             o.Hop.Name = "Albert";
             o.Hop.Count = 3712;
         } );
-        o.ToString().Should().Be( @"{""Hop"":{""Name"":""Albert"",""Count"":3712}}" );
+        o.ToString().ShouldBe( @"{""Hop"":{""Name"":""Albert"",""Count"":3712}}" );
 
         var o2 = JsonTestHelper.Roundtrip( directory, o );
-        o2.Hop.Should().Be( new Thing( "Albert", 3712 ) );
+        o2.Hop.ShouldBe( new Thing( "Albert", 3712 ) );
     }
 
     public interface IWithNullableRecord : IPoco
@@ -55,16 +55,16 @@ public class RecordTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithNullableRecord>>();
         var o = f.Create( o => { o.Hop = new Thing( "Hip", 42 ); } );
-        o.ToString().Should().Be( @"{""Hop"":{""Name"":""Hip"",""Count"":42}}" );
+        o.ToString().ShouldBe( @"{""Hop"":{""Name"":""Hip"",""Count"":42}}" );
 
         var o2 = JsonTestHelper.Roundtrip( directory, o );
-        o2.Hop.Should().Be( new Thing( "Hip", 42 ) );
+        o2.Hop.ShouldBe( new Thing( "Hip", 42 ) );
 
         o.Hop = null;
-        o.ToString().Should().Be( @"{""Hop"":null}" );
+        o.ToString().ShouldBe( @"{""Hop"":null}" );
 
         var o3 = JsonTestHelper.Roundtrip( directory, o );
-        o3.Hop.Should().BeNull();
+        o3.Hop.ShouldBeNull();
     }
 
 }

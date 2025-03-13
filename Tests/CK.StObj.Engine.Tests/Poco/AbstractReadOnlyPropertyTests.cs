@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.StObj.Engine.Tests.CrisLike;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -74,10 +74,10 @@ public class AbstractReadOnlyPropertyTests
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IResolveSome>();
-            f.Some.V.Should().Be( "Yes!" );
+            f.Some.V.ShouldBe( "Yes!" );
             var cmd = d.Create<IRealCommand>();
             f.Some = cmd;
-            ((IWithNonNullAbstract)f).Some.Should().BeSameAs( cmd, "Implementations use the same backing field." );
+            ((IWithNonNullAbstract)f).Some.ShouldBeSameAs( cmd, "Implementations use the same backing field." );
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -86,10 +86,10 @@ public class AbstractReadOnlyPropertyTests
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IResolveSome2>();
-            f.Some.V.Should().Be( "Yes!" );
+            f.Some.V.ShouldBe( "Yes!" );
             var cmd = d.Create<IRealCommand>( c => c.V = "Changed!" );
             f.Some = cmd;
-            ((IWithNonNullAbstract2)f).Some.V.Should().Be( "Changed!", "Implementations use the same backing field." );
+            ((IWithNonNullAbstract2)f).Some.V.ShouldBe( "Changed!", "Implementations use the same backing field." );
         }
     }
 
@@ -113,7 +113,7 @@ public class AbstractReadOnlyPropertyTests
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract>();
-            f.Some.Should().Be( null );
+            f.Some.ShouldBe( null );
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -122,7 +122,7 @@ public class AbstractReadOnlyPropertyTests
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract2>();
-            f.Some.Should().Be( null );
+            f.Some.ShouldBe( null );
         }
     }
 
@@ -209,9 +209,9 @@ public class AbstractReadOnlyPropertyTests
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
         Debug.Assert( f != null );
-        f.Should().BeSameAs( d.Find( tExtension ) );
+        f.ShouldBeSameAs( d.Find( tExtension ) );
         var o = (IHaveAutoProperty)f.Create();
-        o.Auto.Should().NotBeNull().And.BeOfType( tAutoProperty );
+        o.Auto.ShouldNotBeNull().ShouldBeOfType( tAutoProperty );
     }
 
     public interface IInvalidAnonymousRecord : IPoco
@@ -251,7 +251,7 @@ public class AbstractReadOnlyPropertyTests
         var f = d.Find( tPrimary );
         Debug.Assert( f != null );
         var o = (IHaveNullableAutoProperty)f.Create();
-        o.Auto.Should().BeNull();
+        o.Auto.ShouldBeNull();
     }
 
     [Test]
@@ -306,14 +306,14 @@ public class AbstractReadOnlyPropertyTests
         impl.ReadOnlyList.Add( impl.Poco );
         impl.Poco = d.Create<IRealCommand>( c => c.V = "Changed!" );
         impl.ReadOnlyList.Add( impl.Poco );
-        impl.ReadOnlyList.Should().HaveCount( 2 );
+        impl.ReadOnlyList.Count.ShouldBe( 2 );
 
 
         var abs = (IHaveLotOfAbstractProperties)impl;
-        abs.Object.Should().Be( 3712 );
-        abs.ValueType.Should().Be( 42 );
-        abs.BasicRefType.Should().Be( "foo" );
-        abs.Array.Should().BeSameAs( impl.Array );
-        abs.ReadOnlyList.Should().BeSameAs( impl.ReadOnlyList );
+        abs.Object.ShouldBe( 3712 );
+        abs.ValueType.ShouldBe( 42 );
+        abs.BasicRefType.ShouldBe( "foo" );
+        abs.Array.ShouldBeSameAs( impl.Array );
+        abs.ReadOnlyList.ShouldBeSameAs( impl.ReadOnlyList );
     }
 }

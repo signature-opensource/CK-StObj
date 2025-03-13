@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -59,7 +59,7 @@ public partial class SecondaryPocoTests
             h.NullableSecondary = s2;
         } );
 
-        holder.ToString().Should().Be( """
+        holder.ToString().ShouldBe( """
             {"NullableSecondary":{"Power":-1,"Name":"Olly"},"SecondaryWithSetter":{"Power":3712,"Name":"Talia"},"Secondary":{"Power":42,"Name":"Albert"}}
             """ );
 
@@ -117,7 +117,7 @@ public partial class SecondaryPocoTests
         } );
 
         var s = holder.ToString();
-        s.Should().Be( """
+        s.ShouldBe( """
             {
                 "List1":[{"Power":3712,"Id":"","Name":"Talia"}],
                 "ConcreteList1":[{"Power":3712,"Id":"","Name":"Talia"}],
