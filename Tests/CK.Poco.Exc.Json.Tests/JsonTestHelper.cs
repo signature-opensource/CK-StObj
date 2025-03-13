@@ -1,11 +1,9 @@
 using CK.Core;
-using CK.Poco.Exc.Json;
 using Shouldly;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 
 namespace CK.Poco.Exc.Json.Tests;
 

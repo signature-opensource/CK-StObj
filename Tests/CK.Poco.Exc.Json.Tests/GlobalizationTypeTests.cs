@@ -44,7 +44,7 @@ public partial class GlobalizationTypeTests
         n.PExtendedCultureInfo = ExtendedCultureInfo.EnsureExtendedCultureInfo( "fr, es" );
 
         var n2 = JsonTestHelper.Roundtrip( directory, n, text: t => TestHelper.Monitor.Info( $"IAllTypes serialization: " + t ) );
-        n2.ShouldBe( n );
+        n2.ShouldBeEquivalentTo( n );
     }
 
     public interface IWithUserMessage : IPoco

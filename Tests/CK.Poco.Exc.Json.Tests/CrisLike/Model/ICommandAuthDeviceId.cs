@@ -1,7 +1,4 @@
 using CK.Core;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 

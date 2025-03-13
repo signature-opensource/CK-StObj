@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.PerfectEvent;
 using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;

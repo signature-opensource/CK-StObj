@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Immutable;
 using System.Reflection;
-using System.Text;
 
 namespace CK.Engine.TypeCollector;
 

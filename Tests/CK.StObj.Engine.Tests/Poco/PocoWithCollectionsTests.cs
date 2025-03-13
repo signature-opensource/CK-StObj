@@ -30,9 +30,9 @@ public class PocoWithCollectionsTests
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var p = auto.Services.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
-        p.Strings.ShouldNotBeNull().ShouldNotBeEmpty();
-        p.Configurations.ShouldNotBeNull().ShouldNotBeEmpty();
-        p.DistinctValues.ShouldNotBeNull().ShouldNotBeEmpty();
+        p.Strings.ShouldNotBeNull().ShouldBeEmpty();
+        p.Configurations.ShouldNotBeNull().ShouldBeEmpty();
+        p.DistinctValues.ShouldNotBeNull().ShouldBeEmpty();
     }
 
     public interface IWithArray : IPoco

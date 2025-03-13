@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Setup;
 using Shouldly;
 using System;
-using System.Collections.Generic;
 
 using static CK.Testing.MonitorTestHelper;
 

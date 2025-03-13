@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
@@ -135,14 +134,16 @@ public partial class AmbientPropertiesTests
             var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SpecializedObjectDirect )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
-            map.StObjs.OrderedStObjs.Select( o => o.ClassType ).ShouldContain( new[] { typeof( SpecializedObjectDirect ), typeof( SimpleObjectDirect ) } );
+            map.StObjs.OrderedStObjs.Select( o => o.ClassType ).ShouldContain( typeof( SpecializedObjectDirect ) );
+            map.StObjs.OrderedStObjs.Select( o => o.ClassType ).ShouldContain( typeof( SimpleObjectDirect ) );
             map.StObjs.Obtain<SpecializedObjectDirect>()!.OneIntValue.ShouldBe( 999, "Direct properties can be set by Attribute (or any IStObjStructuralConfigurator)." );
         }
         {
             var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SpecializedObjectAmbient )] ).EngineMap;
             Throw.DebugAssert( map != null );
 
-            map.StObjs.OrderedStObjs.Select( o => o.ClassType ).ShouldContain( new[] { typeof( SpecializedObjectAmbient ), typeof( SimpleObjectAmbient ) } );
+            map.StObjs.OrderedStObjs.Select( o => o.ClassType ).ShouldContain( typeof( SpecializedObjectAmbient ) );
+            map.StObjs.OrderedStObjs.Select( o => o.ClassType ).ShouldContain( typeof( SimpleObjectAmbient ) );
             map.StObjs.Obtain<SpecializedObjectAmbient>()!.OneIntValue.ShouldBe( 999, "Ambient properties can be set by Attribute (or any IStObjStructuralConfigurator)." );
         }
     }

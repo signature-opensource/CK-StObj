@@ -1,8 +1,6 @@
-using CK.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Text;
 
 namespace CK.Setup;
 

@@ -3,8 +3,6 @@ using CK.Testing;
 using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Diagnostics;
 
 namespace LibWithSampleModel.Tests;
 

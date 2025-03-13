@@ -34,7 +34,7 @@ public class RecordWithReadOnlyCompliantTypeTests
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStruct>>().Create();
         p.Thing1.ShouldBeNull();
-        p.Thing2.ShouldNotBeNull();
+        p.Thing2.Name.ShouldNotBeNull();
         p.Thing2.Name.ShouldBe( "Albert" );
     }
 

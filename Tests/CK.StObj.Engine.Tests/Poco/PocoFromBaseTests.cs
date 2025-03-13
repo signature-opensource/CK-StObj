@@ -43,7 +43,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.IPocoFromBase" );
             Debug.Assert( fA != null );
             var a = d.Create<IPocoFromBase>();
-            a.Values.ShouldNotBeNull().ShouldNotBeEmpty();
+            a.Values.ShouldBeEmpty();
             a.Power.ShouldBe( 3712 );
         }
     }

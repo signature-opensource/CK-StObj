@@ -6,9 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 
@@ -180,7 +178,7 @@ public class MultipleServiceTests
     {
         public MulipleConsumer( IEnumerable<IAuthProvider> providers )
         {
-            providers.Count.ShouldBe( 2 );
+            providers.Count().ShouldBe( 2 );
             Providers = providers.ToArray();
         }
 
@@ -235,7 +233,7 @@ public class MultipleServiceTests
             s2.IsScoped.ShouldBeTrue( "H2 is IScopedAutoService." );
 
             var hosts = auto.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
-            hosts.Count.ShouldBe( 2, "Only H1 and H2 are considered." );
+            hosts.Count().ShouldBe( 2, "Only H1 and H2 are considered." );
         }
         // Here, the HNot totally external service is registered in the ServiceCollection (at runtime):
         // it appears in the IEnumerable<IOfficialHostedService>.
@@ -261,7 +259,7 @@ public class MultipleServiceTests
             s2.IsScoped.ShouldBeTrue( "H2 is IScopedAutoService." );
 
             var hosts = auto.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
-            hosts.Count.ShouldBe( 3, "H1, H2 AND HNot are now considered. HNot appear in the DI container." );
+            hosts.Count().ShouldBe( 3, "H1, H2 AND HNot are now considered. HNot appear in the DI container." );
         }
     }
 
@@ -335,10 +333,11 @@ public class MultipleServiceTests
             auto.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.ShouldBeTrue( "Resolved as Scoped." );
 
             var m = auto.Services.GetRequiredService<ManyConsumer>();
-            m.All.Count.ShouldBe( 3 )
-                            .And.Contain( auto.Services.GetRequiredService<ManyAuto>() )
-                            .And.Contain( auto.Services.GetRequiredService<ManySingleton>() )
-                            .And.Contain( auto.Services.GetRequiredService<ManyScoped>() );
+            m.All.ShouldBe( [
+                auto.Services.GetRequiredService<ManyAuto>(),
+                auto.Services.GetRequiredService<ManySingleton>(),
+                auto.Services.GetRequiredService<ManyScoped>()
+                ], ignoreOrder: true );
         }
     }
 

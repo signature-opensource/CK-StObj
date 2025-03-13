@@ -1,6 +1,3 @@
-using CK.Core;
-using System;
-
 namespace CK.Setup;
 
 sealed class PrimaryPocoField : IPrimaryPocoField

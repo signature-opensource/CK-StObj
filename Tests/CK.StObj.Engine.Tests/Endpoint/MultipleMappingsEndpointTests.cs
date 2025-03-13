@@ -195,7 +195,9 @@ public class MultipleMappingsEndpointTests
         var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
         var gScoped1 = g.ServiceProvider.GetRequiredService<ManyScoped2>();
         var gScoped2 = g.ServiceProvider.GetRequiredService<ManyNothing>();
-        mG.All.ShouldContain( new IMany[] { gScoped, gScoped1, gScoped2 } );
+        mG.All.ShouldContain( gScoped );
+        mG.All.ShouldContain( gScoped1 );
+        mG.All.ShouldContain( gScoped2 );
 
         var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
         var m1Scoped = s1.ServiceProvider.GetRequiredService<ManyScoped>();
@@ -204,16 +206,25 @@ public class MultipleMappingsEndpointTests
         m1Scoped.ShouldNotBeSameAs( gScoped );
         m1Scoped1.ShouldNotBeSameAs( gScoped1 );
         m1Scoped2.ShouldNotBeSameAs( gScoped2 );
-        m1.All.ShouldContain( new IMany[] { m1Scoped, m1Scoped1, m1Scoped2 } );
+        m1.All.ShouldContain( m1Scoped );
+        m1.All.ShouldContain( m1Scoped1 );
+        m1.All.ShouldContain( m1Scoped2 );
 
         var m2 = s2.ServiceProvider.GetRequiredService<ManyConsumer>();
         var m2Scoped = s2.ServiceProvider.GetRequiredService<ManyScoped>();
         var m2Scoped1 = s2.ServiceProvider.GetRequiredService<ManyScoped2>();
         var m2Scoped2 = s2.ServiceProvider.GetRequiredService<ManyNothing>();
-        m2Scoped.ShouldNotBeSameAs( gScoped ).And.NotBeSameAs( m1Scoped );
-        m2Scoped1.ShouldNotBeSameAs( gScoped1 ).And.NotBeSameAs( m1Scoped1 );
-        m2Scoped2.ShouldNotBeSameAs( gScoped2 ).And.NotBeSameAs( m1Scoped2 );
-        m2.All.ShouldContain( new IMany[] { m2Scoped, m2Scoped1, m2Scoped2 } );
+        m2Scoped.ShouldNotBeSameAs( gScoped );
+        m2Scoped.ShouldNotBeSameAs( m1Scoped );
+        m2Scoped1.ShouldNotBeSameAs( gScoped1 );
+        m2Scoped1.ShouldNotBeSameAs( m1Scoped1 );
+
+        m2Scoped2.ShouldNotBeSameAs( gScoped2 );
+        m2Scoped2.ShouldNotBeSameAs( m1Scoped2 );
+
+        m2.All.ShouldContain( m2Scoped );
+        m2.All.ShouldContain( m2Scoped1 );
+        m2.All.ShouldContain( m2Scoped2 );
     }
 
 
@@ -284,7 +295,7 @@ public class MultipleMappingsEndpointTests
         var manySingleton = s1.ServiceProvider.GetRequiredService<ManySingleton>();
         var manyNothingFromEndpoint = s1.ServiceProvider.GetRequiredService<ManyNothing>();
 
-        var en = s1.ServiceProvider.GetService<IEnumerable<IMany>>();
+        var en = s1.ServiceProvider.GetRequiredService<IEnumerable<IMany>>();
         en.ShouldContain( manySingleton );
         en.ShouldContain( manyNothingFromEndpoint );
 

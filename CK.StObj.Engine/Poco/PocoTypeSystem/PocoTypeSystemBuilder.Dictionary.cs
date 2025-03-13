@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System;
 using System.Runtime.CompilerServices;
-using System.Collections;
 
 namespace CK.Setup;
 

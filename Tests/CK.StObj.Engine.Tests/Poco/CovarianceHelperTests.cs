@@ -4,10 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace CK.StObj.Engine.Tests.Poco;
 
@@ -20,26 +17,26 @@ public class CovarianceHelperTests
             var l = new CovariantHelpers.CovNotNullValueList<int>() { 1, 2 };
             foreach( var e in (IEnumerable)l )
             {
-                ((int)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 3 );
+                ((int)e).ShouldBeInRange( 0, 3 );
             }
             foreach( var e in (IEnumerable<object>)l )
             {
-                ((int)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 3 );
+                ((int)e).ShouldBeInRange( 0, 3 );
             }
             foreach( var e in (IEnumerable<int?>)l )
             {
-                ((int?)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 3 );
+                ((int?)e).ShouldNotBeNull().ShouldBeInRange( 0, 3 );
             }
         }
         {
             var l = new CovariantHelpers.CovNullableValueList<int>() { 1, 2 };
             foreach( var e in (IEnumerable)l )
             {
-                ((int?)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 3 );
+                ((int?)e).ShouldNotBeNull().ShouldBeInRange(0, 3);
             }
             foreach( var e in (IEnumerable<object?>)l )
             {
-                ((int?)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 3 );
+                ((int?)e).ShouldNotBeNull().ShouldBeInRange(0, 3);
             }
         }
     }
@@ -50,7 +47,7 @@ public class CovarianceHelperTests
         var set = new CovariantHelpers.CovNotNullValueHashSet<int>() { 1, 2, 3 };
         IReadOnlySet<object> nSet = set;
 
-        var empty = new object[] { };
+        var empty = Array.Empty<object>();
         var set2 = new object[] { 1, 2, 3 };
         var superSet2 = new object[] { 1, 2, 3, this };
         var subSet2 = new object[] { 1, 2 };
@@ -128,13 +125,13 @@ public class CovarianceHelperTests
         foreach( var e in nSet )
         {
             e.ShouldBeOfType<int>();
-            ((int)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 4 );
+            ((int)e).ShouldBeInRange(0, 4);
         }
 
         foreach( var e in (IEnumerable<int?>)nSet )
         {
             e.HasValue.ShouldBeTrue();
-            ((int?)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 4 );
+            ((int?)e).ShouldNotBeNull().ShouldBeInRange(0, 4);
         }
     }
 
@@ -144,7 +141,7 @@ public class CovarianceHelperTests
         var set = new CovariantHelpers.CovNotNullValueHashSet<int>() { 1, 2, 3 };
         IReadOnlySet<int?> nSet = set;
 
-        var empty = new int?[] { };
+        var empty = Array.Empty<int?>();
         var set2 = new int?[] { 1, 2, 3 };
         var superSet2 = new int?[] { 1, 2, 3, null };
         var subSet2 = new int?[] { 1, 2 };
@@ -227,7 +224,7 @@ public class CovarianceHelperTests
             var set = new CovariantHelpers.CovNullableValueHashSet<int>() { 1, 2, 3 };
             IReadOnlySet<object?> nSet = set;
 
-            var empty = new object?[] { };
+            var empty = Array.Empty<object?>();
             var set2 = new object?[] { 1, 2, 3 };
             var superSet2 = new object?[] { 1, 2, 3, this };
             var subSet2 = new object?[] { 1, 2 };
@@ -303,13 +300,13 @@ public class CovarianceHelperTests
 
             foreach( var e in nSet )
             {
-                ((int?)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 4 );
+                ((int?)e).ShouldNotBeNull().ShouldBeInRange(0, 4);
             }
 
             foreach( var e in (IEnumerable<int?>)nSet )
             {
                 e.HasValue.ShouldBeTrue();
-                ((int?)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 4 );
+                ((int?)e).ShouldNotBeNull().ShouldBeInRange(0, 4);
             }
 
         }
@@ -318,7 +315,7 @@ public class CovarianceHelperTests
             var set = new CovariantHelpers.CovNullableValueHashSet<int>() { 1, null, 3 };
             IReadOnlySet<object?> nSet = set;
 
-            var empty = new object?[] { };
+            var empty = Array.Empty<object?>();
             var set2 = new object?[] { 1, null, 3 };
             var superSet2 = new object?[] { 1, null, 3, this };
             var subSet2 = new object?[] { 1, null };
@@ -394,12 +391,12 @@ public class CovarianceHelperTests
 
             foreach( var e in nSet )
             {
-                if( e != null ) ((int)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 4 );
+                if( e != null ) ((int)e).ShouldBeInRange(0, 4);
             }
 
             foreach( var e in (IEnumerable<int?>)nSet )
             {
-                if( e.HasValue ) ((int)e).ShouldBeGreaterThan( 0 ).And.BeLessThan( 4 );
+                if( e.HasValue ) ((int)e).ShouldBeInRange(0, 4);
             }
         }
     }
@@ -432,7 +429,7 @@ public class CovarianceHelperTests
         var d = new CovariantHelpers.CovNullableValueDictionary<int, byte>() { { 0, 1 }, { 1, null } };
         IReadOnlyDictionary<int, object?> dN = d;
         dN[0].ShouldBe( 1 );
-        dN.Values.Count.ShouldBe( 2 ).And.OnlyContain( b => b == null || b.Equals( (byte)1 ) );
+        dN.Values.Distinct().ShouldBe( [null, 1], ignoreOrder: true );
         dN.Contains( new KeyValuePair<int, object?>( 0, this ) ).ShouldBeFalse();
         dN.Contains( new KeyValuePair<int, object?>( 0, (byte)1 ) ).ShouldBeTrue();
         dN.Contains( new KeyValuePair<int, object?>( 1, null ) ).ShouldBeTrue();

@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 using static CK.Testing.MonitorTestHelper;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities;
 
 namespace CK.StObj.Engine.Tests;
 
@@ -811,7 +810,7 @@ public class ConfigurationTests
         var e2 = c2.ToXml();
         e2 = NormalizeWithoutAnyOrder( e2 );
 
-        e1.ShouldBe( e2 );
+        e1.ShouldBeEquivalentTo( e2 );
     }
 
     static XElement NormalizeWithoutAnyOrder( XElement element )

@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
+using System.Linq;
 
 #pragma warning disable IDE0051 // Remove unused private members
 
@@ -412,8 +413,9 @@ public class FullServiceTests
         {
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
-            auto.ServiceCollection.ShouldHaveSingleItem().ShouldBe( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject )
-                                                                         && s.Lifetime == ServiceLifetime.Singleton );
+            auto.ServiceCollection.Where( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject )
+                                               && s.Lifetime == ServiceLifetime.Singleton )
+                                  .ShouldHaveSingleItem();
 
             entries.ShouldNotContain( e => e.MaskedLevel >= LogLevel.Error );
             entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." );
@@ -438,8 +440,8 @@ public class FullServiceTests
 
             entries.ShouldNotContain( e => e.MaskedLevel >= LogLevel.Error );
             entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." );
-            entries.ShouldContain( e => e.Text == "B is no more doing something." )
-                            .And.NotContain( e => e.Text == "I'm doing something from B." );
+            entries.ShouldContain( e => e.Text == "B is no more doing something." );
+            entries.ShouldNotContain( e => e.Text == "I'm doing something from B." );
         }
     }
 

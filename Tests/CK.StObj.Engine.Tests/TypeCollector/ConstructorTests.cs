@@ -1,10 +1,6 @@
-using CK.CodeGen;
 using CK.Core;
-using CK.Setup;
 using Shouldly;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
 using System.Diagnostics;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;

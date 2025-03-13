@@ -1,13 +1,7 @@
 using CK.Core;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace CK.Setup;
 

@@ -56,8 +56,8 @@ public class DIContainerDefinitionTests
 
         var manager = auto.Services.GetRequiredService<DIContainerHub>();
         manager.ContainerDefinitions.Count.ShouldBe( 2 );
-        manager.ContainerDefinitions.ShouldContain( e => e is AppIdentityDIContainerDefinition )
-                                            .And.Contain( e => e is BackdoorDIContainerDefinition );
+        manager.ContainerDefinitions.ShouldContain( e => e is AppIdentityDIContainerDefinition );
+        manager.ContainerDefinitions.ShouldContain( e => e is BackdoorDIContainerDefinition );
     }
 
     [Test]
@@ -97,12 +97,13 @@ public class DIContainerDefinitionTests
     static object[] GetEndpointsAndOtherTrueSingletons( IServiceProvider s )
     {
         var endpoints = s.GetRequiredService<IEnumerable<IDIContainer>>();
-        endpoints.Count.ShouldBe( 2 );
+        endpoints.Count().ShouldBe( 2 );
         var appIdentity = s.GetRequiredService<IDIContainer<AppIdentityDIContainerDefinition.Data>>();
         appIdentity.Name.ShouldBe( "AppIdentity" );
         var backdoor = s.GetRequiredService<IDIContainer<BackdoorDIContainerDefinition.Data>>();
         backdoor.Name.ShouldBe( "Backdoor" );
-        endpoints.ShouldContain( appIdentity ).And.Contain( backdoor );
+        endpoints.ShouldContain( appIdentity );
+        endpoints.ShouldContain( backdoor );
         return [endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>()];
     }
 

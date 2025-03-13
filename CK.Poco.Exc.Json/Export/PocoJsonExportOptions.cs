@@ -1,6 +1,4 @@
 using CK.Core;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 

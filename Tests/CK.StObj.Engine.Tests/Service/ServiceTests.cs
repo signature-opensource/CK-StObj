@@ -6,7 +6,6 @@ using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.Service.OpenGenericSupportTests;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
@@ -281,19 +280,19 @@ namespace CK.StObj.Engine.Tests.Service
 
             // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
             var rootA = auto.Services.GetRequiredService<A>();
-            rootA.ShouldBe( auto.Services.GetRequiredService<IA>() ).And.NotBeNull();
+            rootA.ShouldBe( auto.Services.GetRequiredService<IA>() );
             var rootB = auto.Services.GetRequiredService<B>();
-            rootB.ShouldBe( auto.Services.GetRequiredService<IB>() ).And.NotBeNull();
-            rootB.Ctx.ShouldBe( auto.Services.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
+            rootB.ShouldBe( auto.Services.GetRequiredService<IB>() );
+            rootB.Ctx.ShouldBe( auto.Services.GetRequiredService<ISqlCallContext>() );
 
             using( var scope = auto.Services.CreateScope() )
             {
                 var scopeA = scope.ServiceProvider.GetRequiredService<A>();
-                scopeA.ShouldNotBeSameAs( rootA ).And.NotBeNull();
+                scopeA.ShouldNotBeSameAs( rootA );
 
                 var scopeB = scope.ServiceProvider.GetRequiredService<B>();
-                scopeB.ShouldNotBeSameAs( rootB ).And.NotBeNull();
-                scopeB.Ctx.ShouldBe( scope.ServiceProvider.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
+                scopeB.ShouldNotBeSameAs( rootB );
+                scopeB.Ctx.ShouldBe( scope.ServiceProvider.GetRequiredService<ISqlCallContext>() );
 
                 scopeB.Ctx.ShouldNotBeSameAs( rootB.Ctx );
             }

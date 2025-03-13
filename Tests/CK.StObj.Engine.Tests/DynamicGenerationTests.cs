@@ -491,8 +491,8 @@ public class DynamicGenerationTests
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
                 configuration.FirstBinPath.Types.Add( typeof( S1 ), typeof( S2 ) );
                 (await configuration.RunAsync().ConfigureAwait( false )).LoadMap();
-                entries.ShouldContain( e => e.Text == "AutoImpl2: I'm great!." )
-                                .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
+                entries.ShouldContain( e => e.Text == "AutoImpl2: I'm great!." );
+                entries.ShouldContain( e => e.Text == "AutoImpl in another pass: I'm great!." );
             }
         }
 

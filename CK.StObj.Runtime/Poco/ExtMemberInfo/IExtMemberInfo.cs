@@ -1,9 +1,7 @@
 using CK.Core;
-using CK.Core.Impl;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Reflection.Metadata;
 
 namespace CK.Setup;
 

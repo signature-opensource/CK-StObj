@@ -1,9 +1,6 @@
-using CK.Core;
 using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-
-using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests;
 

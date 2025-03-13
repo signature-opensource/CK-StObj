@@ -4,12 +4,7 @@ using CK.Testing;
 using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.Service.MultipleServiceTests;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service;

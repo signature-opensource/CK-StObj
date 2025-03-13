@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace CK.StObj.Engine.Tests.Endpoint;
 
 /// <summary>

@@ -379,12 +379,19 @@ public partial class CollectionTests
         var oBack = f.ReadJson( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}" );
         Debug.Assert( oBack != null );
         oBack.OfInt["Three"].ShouldBe( 3 );
-        oBack.ShouldBe( o );
+        CheckEqual( oBack, o );
 
         var oBackA = f.ReadJson( @"{""OfInt"":[[""One"",1],[""Two"",2],[""Three"",3]]}" );
         Debug.Assert( oBackA != null );
-        oBackA.ShouldBe( oBack );
+        CheckEqual( oBackA, oBack );
+
+        static void CheckEqual( IWithDynamicObject x, IWithDynamicObject y )
+        {
+            x.OfInt.Keys.ShouldBe( y.OfInt.Keys );
+            x.OfInt.Values.ShouldBe( y.OfInt.Values );
+        }
     }
+
 
     public record struct Rec( object Obj );
 

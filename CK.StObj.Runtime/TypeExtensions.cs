@@ -1,13 +1,8 @@
 using CK.Core;
-using CommunityToolkit.HighPerformance.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Xml.Linq;
 
 namespace CK.Setup;
 

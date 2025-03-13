@@ -410,7 +410,7 @@ public class PocoGenericTests
                 "[AbstractPoco]IAbstractInput?",
                 "[AbstractPoco]ICrisPoco?",
                 "[AbstractPoco]IInput<int>?"
-            ] );
+            ], ignoreOrder: true );
 
         cmdNullable.PrimaryPocoType.MinimalAbstractTypes.ShouldHaveSingleItem().ToString()
                 .Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
@@ -427,7 +427,7 @@ public class PocoGenericTests
                 "[AbstractPoco]IAbstractInput",
                 "[AbstractPoco]ICrisPoco",
                 "[AbstractPoco]IInput<int>"
-            ] );
+            ], ignoreOrder: true );
 
         cmd.PrimaryPocoType.MinimalAbstractTypes.ShouldHaveSingleItem().ToString()
                 .Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
@@ -495,7 +495,7 @@ public class PocoGenericTests
                 "[AbstractPoco]IInput<IAbstractInput>",
                 "[AbstractPoco]IInput<IInput<object>>",
                 "[AbstractPoco]IInput<IInput<IInput<object>>>",
-            ] );
+            ], ignoreOrder: true );
         cmd.MinimalAbstractTypes.ShouldHaveSingleItem().ToString()
                 .Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                 .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" )
@@ -537,7 +537,7 @@ public class PocoGenericTests
                 "[AbstractPoco]ICommand<ICrisPoco>",
                 "[AbstractPoco]ICommand<CK.Core.IPoco>",
                 "[AbstractPoco]ICommand<object>"
-            ] );
+            ], ignoreOrder: true );
 
         primary.NonNullable.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
                                                                    .Replace( "CK.StObj.Engine.Tests.CrisLike.", "" ) )
@@ -551,7 +551,7 @@ public class PocoGenericTests
                 "[AbstractPoco]ICommand<IAbstractCommand>",
                 "[AbstractPoco]ICommand<ICommand<object>>",
                 "[AbstractPoco]ICommand<ICommand<ICommand<object>>>"
-            ] );
+            ], ignoreOrder: true );
     }
 
 

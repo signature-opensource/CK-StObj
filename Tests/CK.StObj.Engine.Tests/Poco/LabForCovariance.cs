@@ -320,7 +320,7 @@ public class LabForCovariance
         var set = new CovPocoHashSet_CK<Thing_CK>() { t1, t2, t3 };
         IReadOnlySet<object> nSet = set;
 
-        var empty = new object[] { };
+        var empty = Array.Empty<object>();
         var set2 = new object[] { t1, t2, t3 };
         var superSet2 = new object[] { t1, t2, t3, this };
         var subSet2 = new object[] { t1, t2 };
@@ -404,7 +404,7 @@ public class LabForCovariance
         var set = new CovPocoHashSet_CK<Thing_CK>() { t1, null!, t3 };
         IReadOnlySet<object?> nSet = set!;
 
-        var empty = new object?[] { };
+        var empty = Array.Empty<object?>();
         var set2 = new object?[] { t1, null, t3 };
         var superSet2 = new object?[] { t1, null, t3, this };
         var subSet2 = new object?[] { t1, null };
@@ -568,7 +568,7 @@ public class LabForCovariance
         var set = new CovPocoNullableHashSet_CK<Thing_CK>() { t1, null, t3 };
         IReadOnlySet<object?> nSet = set;
 
-        var empty = new object?[] { };
+        var empty = Array.Empty<object?>();
         var set2 = new object?[] { t1, null, t3 };
         var superSet2 = new object?[] { t1, null, t3, this };
         var subSet2 = new object?[] { t1, null };

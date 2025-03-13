@@ -2,9 +2,6 @@ using CK.Core;
 using CK.Testing;
 using Shouldly;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service;

@@ -131,8 +131,7 @@ public class CommandLikeTests
         var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
 
         var withCommandButNotItsResult = ts.SetManager.EmptyExchangeable.Include( [ts.FindByType( typeof( ICommandUnifiedWithTheResult ) )!] );
-        withCommandButNotItsResult.NonNullableTypes.Select(t => t.ToString()).Count().ShouldBe( 16 )
-            .And.BeEquivalentTo(
+        withCommandButNotItsResult.NonNullableTypes.Select(t => t.ToString()).ShouldBe( 
             [
                 "[PrimaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithPocoResult",
                 "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithMorePocoResult",
@@ -150,7 +149,7 @@ public class CommandLikeTests
                 "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICrisPoco",
                 "[AbstractPoco]CK.Core.IPoco",
                 "[Basic]int"
-            ] );
+            ], ignoreOrder: true );
 
     }
 

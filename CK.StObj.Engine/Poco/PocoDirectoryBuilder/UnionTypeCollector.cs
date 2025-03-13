@@ -1,13 +1,6 @@
-using CK.CodeGen;
 using CK.Core;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using static CK.Setup.PocoType;
 
 namespace CK.Setup;
 

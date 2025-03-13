@@ -150,7 +150,7 @@ public class ServiceSimpleMappingTests
         interfaces.Count.ShouldBe( 1 );
         var iSU = interfaces[0];
         iSU.Type.ShouldBe( typeof( ISU ) );
-        iSU.Interfaces.Select( i => i.Type ).ShouldBe( new[] { typeof( ISBase ), typeof( IS1 ), typeof( IS2 ) } );
+        iSU.Interfaces.Select( i => i.Type ).ShouldBe( [typeof( ISBase ), typeof( IS1 ), typeof( IS2 )], ignoreOrder: true );
         r.CKTypeResult.AutoServices.RootClasses.ShouldContain( c => c.ClassType == typeof( ServiceUnifiedImpl ) || c.ClassType == typeof( DIContainerHub ) );
         Debug.Assert( r.EngineMap != null, "No initialization error." );
         r.EngineMap.Services.Mappings[typeof( ISU )].ClassType.ShouldBeSameAs( typeof( ServiceUnifiedImpl ) );
@@ -230,7 +230,7 @@ public class ServiceSimpleMappingTests
             r.CKTypeResult.AutoServices.ClassAmbiguities.Count.ShouldBe( 1 );
             r.CKTypeResult.AutoServices.ClassAmbiguities[0]
                 .Select( c => c.ClassType )
-                .ShouldBe( new[] { typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) } );
+                .ShouldBe( [typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 )], ignoreOrder: true );
         }
     }
 
@@ -301,13 +301,13 @@ public class ServiceSimpleMappingTests
 
         var final = map.Services.Mappings[typeof( ISBase )];
         final.FinalType.ShouldNotBeSameAs( typeof( AbstractS1 ) );
-        final.FinalType.ShouldBeAssignableTo( typeof( AbstractS1 ) );
+        final.FinalType.IsAssignableTo( typeof( AbstractS1 ) ).ShouldBeTrue();
         map.Services.Mappings[typeof( AbstractS1 )].ShouldBeSameAs( final );
 
         map.Services.Mappings[typeof( AbstractS2 )].FinalType.ShouldNotBeSameAs( typeof( AbstractS2 ) );
-        map.Services.Mappings[typeof( AbstractS2 )].FinalType.ShouldBeAssignableTo( typeof( AbstractS2 ) );
+        map.Services.Mappings[typeof( AbstractS2 )].FinalType.IsAssignableTo( typeof( AbstractS2 ) ).ShouldBeTrue();
         map.Services.Mappings[typeof( AbstractS3 )].FinalType.ShouldNotBeSameAs( typeof( AbstractS3 ) );
-        map.Services.Mappings[typeof( AbstractS3 )].FinalType.ShouldBeAssignableTo( typeof( AbstractS3 ) );
+        map.Services.Mappings[typeof( AbstractS3 )].FinalType.IsAssignableTo( typeof( AbstractS3 ) ).ShouldBeTrue();
 
         var services = new ServiceCollection();
         new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).ShouldBeTrue( "ServiceRegister.AddStObjMap doesn't throw." );

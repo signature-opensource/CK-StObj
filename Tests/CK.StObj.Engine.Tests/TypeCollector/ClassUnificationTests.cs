@@ -171,7 +171,7 @@ public class ClassUnificationTests : TypeCollectorTestsBase
         var a = ambiguities[0];
         a.Count.ShouldBe( 1 + 2 );
         a[0].ClassType.ShouldBeSameAs( typeof( s_AS2Base ) );
-        a.Skip( 1 ).Select( i => i.ClassType ).ShouldBe( new[] { typeof( s_AS2a ), typeof( s_AS2b ) } );
+        a.Skip( 1 ).Select( i => i.ClassType ).ShouldBe( [typeof( s_AS2a ), typeof( s_AS2b )], ignoreOrder: true );
     }
 
     [TestCase( typeof( s_SubUnifier1 ) )]
@@ -190,7 +190,7 @@ public class ClassUnificationTests : TypeCollectorTestsBase
         var a = ambiguities[0];
         a.Count.ShouldBe( 1 + 4 );
         a[0].ClassType.ShouldBeSameAs( typeof( s_A ) );
-        a.Skip( 1 ).Select( i => i.ClassType ).ShouldBe( new[] { typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) } );
+        a.Skip( 1 ).Select( i => i.ClassType ).ShouldBe( [typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b )], ignoreOrder: true );
     }
 
     [Test]

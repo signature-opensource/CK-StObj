@@ -22,7 +22,7 @@ public class WithAmbientTests
         IEnumerable<IStObjResult> items = map.ToHead( typeof( T ) )!.Children;
         var s1 = items.Select( i => i.ClassType.Name );
         var s2 = childrenTypeNames.Split( ',' );
-        s1.ShouldBe( s2 );
+        s1.ShouldBe( s2, ignoreOrder: true );
     }
 
     [AttributeUsage( AttributeTargets.Class )]
@@ -258,7 +258,7 @@ public class WithAmbientTests
         {
             var fromAbove = o.ConstructParametersAboveRoot;
             Debug.Assert( fromAbove != null, "Since we are on the root of the specializations path." );
-            fromAbove.ShouldNotBeEmpty().And.HaveCount( 1, "We have only one base class with a StObjConstruct method." );
+            fromAbove.ShouldHaveSingleItem( "We have only one base class with a StObjConstruct method." );
             var (t, parameters) = fromAbove.Single();
             t.ShouldBe( typeof( SqlDatabase ) );
 

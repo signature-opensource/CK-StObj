@@ -1,6 +1,5 @@
 using CK.Core;
 using Microsoft.Extensions.Options;
-using System;
 
 namespace CK.StObj.Engine.Tests.Endpoint;
 

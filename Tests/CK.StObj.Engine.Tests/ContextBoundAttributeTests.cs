@@ -4,7 +4,6 @@ using CK.Testing;
 using Shouldly;
 using NUnit.Framework;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using static CK.Testing.MonitorTestHelper;
@@ -323,7 +322,7 @@ public class ContextBoundAttributeTests
 
         r.EngineMap.AllTypesAttributesCache.Values
                       .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() )
-                      .Count.ShouldBe( 1 );
+                      .ShouldHaveSingleItem();
 
         OneCtorAttributeImpl.Constructed.ShouldBeTrue();
     }
@@ -364,7 +363,7 @@ public class ContextBoundAttributeTests
         map.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).ShouldBe(
             new[] { typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) } );
         map.AllTypesAttributesCache.Values
-            .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Count.ShouldBe( 1 );
+            .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).ShouldHaveSingleItem();
 
         OneCtorAttributeImpl.Constructed.ShouldBeTrue();
     }

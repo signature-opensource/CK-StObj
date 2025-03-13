@@ -1,14 +1,8 @@
 using CK.Setup;
 using Shouldly;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 #pragma warning disable CA1822 // Mark members as static
 
@@ -38,11 +32,11 @@ public class ExtNullabilityInfoTests
 
         nullInfo.ToNullable().ShouldBeSameAs( nullInfo );
         var nonNullInfo2 = nullInfo.ToNonNullable();
-        nonNullInfo2.ShouldBe( nonNullInfo );
+        nonNullInfo2.ShouldBeEquivalentTo( nonNullInfo );
 
         nonNullInfo.ToNonNullable().ShouldBeSameAs( nonNullInfo );
         var nullInfo2 = nonNullInfo.ToNullable();
-        nullInfo2.ShouldBe( nullInfo );
+        nullInfo2.ShouldBeEquivalentTo( nullInfo );
     }
 
     public (int A, string? B)? NullableField;
@@ -71,11 +65,11 @@ public class ExtNullabilityInfoTests
 
         nullInfo.ToNullable().ShouldBeSameAs( nullInfo );
         var nonNullInfo2 = nullInfo.ToNonNullable();
-        nonNullInfo2.ShouldBe( nonNullInfo );
+        nonNullInfo2.ShouldBeEquivalentTo( nonNullInfo );
 
         nonNullInfo.ToNonNullable().ShouldBeSameAs( nonNullInfo );
         var nullInfo2 = nonNullInfo.ToNullable();
-        nullInfo2.ShouldBe( nullInfo );
+        nullInfo2.ShouldBeEquivalentTo( nullInfo );
     }
 
     [Test]
@@ -98,11 +92,11 @@ public class ExtNullabilityInfoTests
 
         nullInfo.ToNullable().ShouldBeSameAs( nullInfo );
         var nonNullInfo2 = nullInfo.ToNonNullable();
-        nonNullInfo2.ShouldBe( nonNullInfo );
+        nonNullInfo2.ShouldBeEquivalentTo( nonNullInfo );
 
         nonNullInfo.ToNonNullable().ShouldBeSameAs( nonNullInfo );
         var nullInfo2 = nonNullInfo.ToNullable();
-        nullInfo2.ShouldBe( nullInfo );
+        nullInfo2.ShouldBeEquivalentTo( nullInfo );
     }
 
     [DisallowNull]

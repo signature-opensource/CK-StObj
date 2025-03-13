@@ -92,10 +92,12 @@ public class ClosedPocoTests
 
         pocoDirectory.AllInterfaces.Count.ShouldBe( 3 );
         pocoDirectory.AllInterfaces.Values.Select( info => info.PocoInterface ).ShouldBe(
-            new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
+            [typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc )],
+            ignoreOrder: true );
 
         pocoDirectory.OtherInterfaces.Keys.ShouldBe(
-            new[] { typeof( IClosedPoco ), typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
+            [typeof( IClosedPoco ), typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart )],
+            ignoreOrder: true);
 
         pocoDirectory.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface )
             .ShouldBe( [typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc )], ignoreOrder: true );
@@ -107,7 +109,7 @@ public class ClosedPocoTests
         pocoDirectory.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].ShouldBe(
             pocoDirectory.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
         pocoDirectory.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).ShouldBe(
-            new[] { typeof( ICultureUserCloPoc ) } );
+            [typeof( ICultureUserCloPoc )] );
 
         var factoryCultCloPoc = services.GetService<IPocoFactory<ICultureUserCloPoc>>();
         factoryCultCloPoc.ShouldBeSameAs( factoryCloPoc );

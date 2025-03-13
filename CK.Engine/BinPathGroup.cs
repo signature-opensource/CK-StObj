@@ -1,8 +1,5 @@
 using CK.Core;
-using CK.Core.Impl;
 using CK.Engine.TypeCollector;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 
 namespace CK.Setup;
 

@@ -1,6 +1,5 @@
 using CK.Setup;
 using System;
-using System.Collections.Generic;
 
 namespace CK.Core;
 

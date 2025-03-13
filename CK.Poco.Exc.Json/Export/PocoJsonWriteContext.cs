@@ -1,8 +1,4 @@
 using CK.Core;
-using CK.Poco.Exc.Json;
-using System;
-using System.Reflection;
-using System.Text.Json;
 
 namespace CK.Poco.Exc.Json;
 

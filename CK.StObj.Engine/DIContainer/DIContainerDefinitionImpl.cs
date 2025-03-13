@@ -1,9 +1,7 @@
 using CK.CodeGen;
 using System;
 using CK.Core;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 
 namespace CK.Setup;
 

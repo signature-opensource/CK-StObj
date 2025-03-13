@@ -3,8 +3,6 @@ using CK.Setup;
 using Shouldly;
 using NUnit.Framework;
 using System;
-using System.Diagnostics.Metrics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using static CK.Testing.MonitorTestHelper;

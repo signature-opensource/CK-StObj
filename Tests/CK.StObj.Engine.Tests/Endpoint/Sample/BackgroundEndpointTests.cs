@@ -89,11 +89,12 @@ public partial class BackgroundEndpointTests
         await backExecutor.WaitForTerminationAsync();
 
         var history = auto.Services.GetRequiredService<SampleCommandMemory>();
-        history.ExecutionTrace.Count.ShouldBe( 3 ).And.Contain( "In-line - AcmeCorp - Request monitor",
-                                                                    "Background - AcmeCorp - Runner monitor",
-                                                                    "Background in another tenant - AnoherTenant - Runner monitor" );
+        history.ExecutionTrace.ShouldBe( [
+            "In-line - AcmeCorp - Request monitor",
+            "Background - AcmeCorp - Runner monitor.",
+            "Background in another tenant - AnotherTenant - Runner monitor."
+            ], ignoreOrder: true );
     }
-
 
     [Test]
     public async Task IOptions_in_the_background_Async()
@@ -122,7 +123,7 @@ public partial class BackgroundEndpointTests
             await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptions>() );
         }
         var history = app.Services.GetRequiredService<SampleCommandMemory>();
-        history.ExecutionTrace.Count.ShouldBe( 1 ).And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptions> - 42" );
+        history.ExecutionTrace.ShouldHaveSingleItem().ShouldBe( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptions> - 42" );
 
     }
 
@@ -158,7 +159,7 @@ public partial class BackgroundEndpointTests
             var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
             await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot>() );
         }
-        history.ExecutionTrace.Count.ShouldBe( 1 ).And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 3712" );
+        history.ExecutionTrace.ShouldHaveSingleItem().ShouldBe( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 3712" );
 
         config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "42" } } );
 
@@ -167,9 +168,10 @@ public partial class BackgroundEndpointTests
             var ubiq = scoped.ServiceProvider.GetRequiredService<AmbientServiceHub>();
             await backExecutor.RunAsync( TestHelper.Monitor, ubiq, new CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot>() );
         }
-        history.ExecutionTrace.Count.ShouldBe( 2 )
-            .And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 3712" )
-            .And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 42" );
+        history.ExecutionTrace.ShouldBe( [
+            "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 3712",
+            "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsSnapshot> - 42"
+            ], ignoreOrder: true );
 
     }
 
@@ -217,9 +219,10 @@ public partial class BackgroundEndpointTests
             config.AddInMemoryCollection( new Dictionary<string, string?> { { "Opt:Power", "42" } } );
             await t;
         }
-        history.ExecutionTrace.Count.ShouldBe( 2 )
-            .And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsMonitor> - 0" )
-            .And.Contain( "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsMonitor> - 42" );
+        history.ExecutionTrace.ShouldBe( [
+            "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsMonitor> - 0",
+            "CommandThatMustBeProcessedBy<SampleCommandProcessorWithOptionsMonitor> - 42"
+            ], ignoreOrder: true );
 
     }
 

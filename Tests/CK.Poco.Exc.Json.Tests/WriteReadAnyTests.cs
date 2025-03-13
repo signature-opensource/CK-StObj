@@ -59,7 +59,7 @@ public partial class WriteReadAnyTests
         var def = directory.ReadAnyJson( """["SomeType",{}]""" );
         Throw.DebugAssert( def != null );
         var tDef = (ISomeTypes)def;
-        tDef.Value.ShouldNotBeNull().ShouldNotBeEmpty();
+        tDef.Value.ShouldBeEmpty();
         tDef.Friends.ShouldBeEmpty();
 
         var withFriends = directory.ReadAnyJson( """
@@ -82,7 +82,7 @@ public partial class WriteReadAnyTests
         var tWithFriends = (ISomeTypes)withFriends;
         tWithFriends.Value.ShouldHaveSingleItem().ShouldBe( 1 );
         tWithFriends.Friends.Count.ShouldBe( 3 );
-        tWithFriends.Friends[0].ShouldBe( tDef );
+        tWithFriends.Friends[0].ShouldBeEquivalentTo( tDef );
         tWithFriends.Friends[1].Value.ShouldBe( [1, 2] );
         tWithFriends.Friends[2].Value.ShouldBe( [1, 2, 3] );
         tWithFriends.Friends[2].Friends[0].Value.ShouldBe( [1, 2, 3, 4] );

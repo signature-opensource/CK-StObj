@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector;

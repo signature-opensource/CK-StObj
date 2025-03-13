@@ -1,9 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Reflection;
-using System.Xml.Linq;
 
 namespace CK.Setup;
 

@@ -119,9 +119,9 @@ public partial class LabTests
         fromG2.S.ShouldNotBeSameAs( fromG.S );
 
         fromE2.A.ShouldBeSameAs( fromE.A );
-        fromE2.ShouldBeSameAs( fromG.A );
+        fromE2.A.ShouldBeSameAs( fromG.A );
         fromE2.B.ShouldBeSameAs( fromE.B );
-        fromE2.ShouldBeSameAs( fromG.B );
+        fromE2.B.ShouldBeSameAs( fromG.B );
         fromE2.S.ShouldNotBeSameAs( fromE.S );
 
         static (A A, B B, IEnumerable<A> MultiA, Scoped S) ResolveFrom( IServiceProvider sp )
@@ -239,7 +239,7 @@ public partial class LabTests
 
         // The multi from the endpoint container is the complex one.
         var mE = scopedE.ServiceProvider.GetServices<IMulti>();
-        mE.Select( m => m.Name ).ShouldBe( ["Sing1", "Sing2", "Scop1", "Scop2"] );
+        mE.Select( m => m.Name ).ShouldBe( ["Sing1", "Sing2", "Scop1", "Scop2"], ignoreOrder: true );
         mE.OfType<Sing1>().Single().ShouldBeSameAs( sing1 );
         mE.OfType<Sing2>().Single().ShouldBeSameAs( sing2 );
         // The scoped from the 2 scopes are not the same.

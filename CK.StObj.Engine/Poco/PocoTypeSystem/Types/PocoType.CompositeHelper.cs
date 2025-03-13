@@ -1,13 +1,5 @@
-using CK.CodeGen;
 using CK.Core;
-using System.Collections.Generic;
-using System;
-using System.Diagnostics;
-using System.Reflection;
 using System.Text;
-using System.Threading;
-using System.Linq;
-using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup;
 

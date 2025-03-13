@@ -80,7 +80,7 @@ public class ExchangeableSetTests
         t.Data.Ratio = Math.PI;
         t.MultipleDatas.Add( new Data( new LocalOnlyData( "LOCAL-DATA-ONLY" ), "Eva", 2, Guid.Empty, Math.E, new MemoryOnlyData( "NOWAY" ) ) );
         t.MoreData.CultureExt = ExtendedCultureInfo.EnsureExtendedCultureInfo( "fr,es,de,en" );
-        t.Raw = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        t.Raw = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         return t;
     }
 
@@ -99,11 +99,14 @@ public class ExchangeableSetTests
         PocoJsonExportOptions.ToStringDefault.TypeFilterName.ShouldBe( "AllSerializable" );
         string? t = thing.ToString();
         Throw.DebugAssert( t != null );
-        t.ShouldContain( "Power" ); t.ShouldNotContain( "power" );
+        t.ShouldContain( "Power", Case.Sensitive );
+        t.ShouldNotContain( "power", Case.Sensitive );
         // The [NotSerializable] doesn't appear.
-        t.ShouldNotContain( "SecureName" ); t.ShouldNotContain( "NOWAY" );
+        t.ShouldNotContain( "SecureName" );
+        t.ShouldNotContain( "NOWAY" );
         // But the [NotExchangeable] appears.
-        t.ShouldContain( "LocalName" ); t.ShouldContain( "LOCAL-DATA-ONLY" );
+        t.ShouldContain( "LocalName" );
+        t.ShouldContain( "LOCAL-DATA-ONLY" );
 
 
         // Using default export/import options: set is "AllExchangeable".
@@ -111,7 +114,8 @@ public class ExchangeableSetTests
         PocoJsonExportOptions.Default.TypeFilterName.ShouldBe( "AllExchangeable" );
         JsonTestHelper.Roundtrip( directory, thing, text: text => t = text );
         Throw.DebugAssert( t != null );
-        t.ShouldContain( "power" ); t.ShouldNotContain( "Power" );
+        t.ShouldContain( "power", Case.Sensitive );
+        t.ShouldNotContain( "Power", Case.Sensitive );
         // Both [NotSerializable] and [NotExchangeable] don't appear.
         t.ShouldNotContain( "secureName" );
         t.ShouldNotContain( "NOWAY" );

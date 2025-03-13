@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Setup;
 using Shouldly;
 using NUnit.Framework;
-using System.Diagnostics;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
@@ -45,6 +44,6 @@ public class AlsoRegisterTypeAttributeTests
 
         // The attribute can be on a method.
         r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.IOtherNestedPoco )].PocoInterface.FullName.ShouldBe( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+IOtherNestedPoco" );
-        r.CKTypeResult.RealObjects.ConcreteClasses.SelectMany( c => c ).ShouldHaveSingleItem().ShouldBe( x => x.ClassType.Name == "ARealObject" );
+        r.CKTypeResult.RealObjects.ConcreteClasses.SelectMany( c => c ).Where( x => x.ClassType.Name == "ARealObject" ).ShouldHaveSingleItem();
     }
 }

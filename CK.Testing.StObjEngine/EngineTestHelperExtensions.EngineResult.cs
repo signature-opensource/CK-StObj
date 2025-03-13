@@ -5,10 +5,7 @@ using Shouldly;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Primitives;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing;

@@ -1,6 +1,3 @@
-using CK.Core;
-using CK.Setup;
-
 namespace CK.StObj.Engine.Tests.Endpoint;
 
 /// <summary>

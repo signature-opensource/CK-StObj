@@ -113,7 +113,7 @@ public class AbstractReadOnlyPropertyTests
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract>();
-            f.Some.ShouldBe( null );
+            f.Some.ShouldBeNull();
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -122,7 +122,7 @@ public class AbstractReadOnlyPropertyTests
 
             var d = auto.Services.GetRequiredService<PocoDirectory>();
             var f = d.Create<IWithNullAbstract2>();
-            f.Some.ShouldBe( null );
+            f.Some.ShouldBeNull();
         }
     }
 

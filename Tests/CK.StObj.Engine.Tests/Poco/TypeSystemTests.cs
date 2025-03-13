@@ -269,7 +269,7 @@ public class TypeSystemTests
         var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );
         Debug.Assert( abs != null );
         abs.Fields.Count().ShouldBe( names.Length );
-        abs.Fields.Select( f => f.Name ).ShouldBe( names );
+        abs.Fields.Select( f => f.Name ).ShouldBe( names, ignoreOrder: true );
     }
 
     // Same structure but not same field names.
