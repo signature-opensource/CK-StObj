@@ -167,8 +167,8 @@ public class ContextBoundAttributeTests
             Constructed = true;
 
             // We use this attribute in the S5 and S6 scenario.
-            type.ShouldBe( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
-            owner.Type.ShouldBe( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
+            type.ShouldMatch( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
+            owner.Type.ShouldMatch( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
             if( type == typeof( S4 ) || type == typeof( S5 ) )
             {
                 m.Name.ShouldBe( "M" );

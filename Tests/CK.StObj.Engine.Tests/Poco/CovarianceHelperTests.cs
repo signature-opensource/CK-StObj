@@ -406,8 +406,8 @@ public class CovarianceHelperTests
     {
         var d = new CovariantHelpers.CovNotNullValueDictionary<int, byte>() { { 0, 1 } };
         IReadOnlyDictionary<int, byte?> dN = d;
-        dN[0].ShouldBe( 1 );
-        dN.Values.ShouldHaveSingleItem().ShouldBe( 1 );
+        dN[0].ShouldNotBeNull().ShouldBe( 1 );
+        dN.Values.ShouldHaveSingleItem().ShouldNotBeNull().ShouldBe( 1 );
         dN.Contains( new KeyValuePair<int, byte?>( 0, null ) ).ShouldBeFalse();
         dN.Contains( new KeyValuePair<int, byte?>( 0, 1 ) ).ShouldBeTrue();
     }
