@@ -1,15 +1,12 @@
 using CK.Core;
 using CK.Setup;
-using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector;
 

@@ -1,14 +1,11 @@
 using CK.AppIdentity;
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Primitives;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.Testing;
@@ -16,14 +13,16 @@ namespace CK.Testing;
 public static partial class EngineTestHelperExtensions
 {
     /// <summary>
-    /// Loads the <see cref="IStObjMap"/>. Must be called only if <see cref="Success"/> is true.
+    /// Loads the <see cref="IStObjMap"/>. Must be called only if <see cref="EngineResult.Status"/> is not <see cref="RunStatus.Failed"/>.
     /// </summary>
     /// <returns>The map.</returns>
     public static IStObjMap LoadMap( this EngineResult.BinPath binPath ) => binPath.LoadMap( TestHelper.Monitor );
 
     /// <summary>
-    /// Loads the <see cref="IStObjMap"/> for the specified BinPath. Must be called only if <see cref="Success"/> is true.
+    /// Loads the <see cref="IStObjMap"/> for the specified BinPath. Must be called only if <see cref="EngineResult.Status"/>
+    /// is not <see cref="RunStatus.Failed"/>.
     /// </summary>
+    /// <param name="engineResult">This result.</param>
     /// <param name="binPathName">The bin path name. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
     /// <returns>The map.</returns>
     public static IStObjMap LoadMap( this EngineResult engineResult, string binPathName = "First" ) => engineResult.FindRequiredBinPath( binPathName )
@@ -48,7 +47,7 @@ public static partial class EngineTestHelperExtensions
         var services = new ServiceCollection();
         var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services, startupServices );
         configureServices?.Invoke( services );
-        reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+        reg.AddStObjMap( map ).ShouldBeTrue( "Service configuration succeed." );
 
         var serviceProvider = reg.Services.BuildServiceProvider();
         // Getting the IHostedService is enough to initialize the DI containers.
@@ -127,7 +126,7 @@ public static partial class EngineTestHelperExtensions
         }
         var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, builder.Services, startupServices );
         configureServices?.Invoke( builder.Services );
-        reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+        reg.AddStObjMap( map ).ShouldBeTrue( "Service configuration succeed." );
 
         var host = builder.Build();
         // Getting the IHostedService is enough to initialize the DI containers.

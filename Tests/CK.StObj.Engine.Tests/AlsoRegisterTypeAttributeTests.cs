@@ -1,8 +1,7 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
-using System.Diagnostics;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
@@ -41,10 +40,10 @@ public class AlsoRegisterTypeAttributeTests
         var r = c.GetResult( TestHelper.Monitor );
         Throw.DebugAssert( !r.HasFatalError );
         // The nested Poco is registered.
-        r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.INestedPoco )].PocoInterface.FullName.Should().Be( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+INestedPoco" );
+        r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.INestedPoco )].PocoInterface.FullName.ShouldBe( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+INestedPoco" );
 
         // The attribute can be on a method.
-        r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.IOtherNestedPoco )].PocoInterface.FullName.Should().Be( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+IOtherNestedPoco" );
-        r.CKTypeResult.RealObjects.ConcreteClasses.SelectMany( c => c ).Should().ContainSingle( x => x.ClassType.Name == "ARealObject" );
+        r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.IOtherNestedPoco )].PocoInterface.FullName.ShouldBe( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+IOtherNestedPoco" );
+        r.CKTypeResult.RealObjects.ConcreteClasses.SelectMany( c => c ).Where( x => x.ClassType.Name == "ARealObject" ).ShouldHaveSingleItem();
     }
 }

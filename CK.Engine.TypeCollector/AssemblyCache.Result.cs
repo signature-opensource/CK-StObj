@@ -1,9 +1,5 @@
-using CK.Core;
-using CK.Setup;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace CK.Engine.TypeCollector;
 

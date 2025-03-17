@@ -2,8 +2,6 @@ using System;
 using CK.Core;
 using System.Reflection;
 using System.Linq;
-using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using CK.CodeGen;
 using System.Collections.Generic;

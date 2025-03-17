@@ -3,7 +3,6 @@ using CK.Core;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 
 namespace CK.Setup.PocoJson;
 

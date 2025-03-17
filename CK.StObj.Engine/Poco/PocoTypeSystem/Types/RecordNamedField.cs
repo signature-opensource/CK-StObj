@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace CK.Setup;
 
 sealed class RecordNamedField : IRecordPocoField

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -66,24 +66,24 @@ public class PocoUnionTypeTestsCanBeExtended
 
         // Thing allows int, decimal, string and List<string> (not nullable!)
         p.Thing = 34;
-        p.Thing.Should().Be( 34 );
+        p.Thing.ShouldBe( 34 );
         p.Thing = (decimal)555;
-        p.Thing.Should().Be( (decimal)555 );
+        p.Thing.ShouldBe( (decimal)555 );
         p.Thing = "It works!";
-        p.Thing.Should().Be( "It works!" );
+        p.Thing.ShouldBe( "It works!" );
 
-        p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>( "Null is forbidden." );
-        p.Invoking( x => x.Thing = new Dictionary<string, object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
+        Util.Invokable( () => p.Thing = null! ).ShouldThrow<ArgumentException>( "Null is forbidden." );
+        Util.Invokable( () => p.Thing = new Dictionary<string, object>() ).ShouldThrow<ArgumentException>( "Not an allowed type." );
 
         // AnotherThing allows int, double?, string? and List<string?>?
         p.AnotherThing = 34;
-        p.AnotherThing.Should().Be( 34 );
+        p.AnotherThing.ShouldBe( 34 );
         p.AnotherThing = 0.04e-5;
         p.AnotherThing = null;
-        p.AnotherThing.Should().BeNull();
+        p.AnotherThing.ShouldBeNull();
 
-        p.Invoking( x => x.AnotherThing = (decimal)555 ).Should().Throw<ArgumentException>( "Not an allowed type." );
-        p.Invoking( x => x.AnotherThing = new Dictionary<string, object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
+        Util.Invokable( () => p.AnotherThing = (decimal)555 ).ShouldThrow<ArgumentException>( "Not an allowed type." );
+        Util.Invokable( () => p.AnotherThing = new Dictionary<string, object>() ).ShouldThrow<ArgumentException>( "Not an allowed type." );
     }
 
 

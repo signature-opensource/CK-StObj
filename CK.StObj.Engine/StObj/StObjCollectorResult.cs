@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Net;
-using CK.CodeGen;
 using CK.Core;
 
 #nullable enable

@@ -3,7 +3,7 @@ using System.Linq;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
@@ -39,7 +39,7 @@ public class StObjPropertiesTests
             var result = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleContainer )] ).EngineMap!.StObjs;
             result.OrderedStObjs
                   .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
-                  .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
+                  .GetStObjProperty( "OneIntValue" ).ShouldBe( 3712 );
         }
     }
 

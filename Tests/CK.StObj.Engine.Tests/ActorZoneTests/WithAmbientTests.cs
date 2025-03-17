@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using static CK.Testing.MonitorTestHelper;
 
@@ -22,7 +22,7 @@ public class WithAmbientTests
         IEnumerable<IStObjResult> items = map.ToHead( typeof( T ) )!.Children;
         var s1 = items.Select( i => i.ClassType.Name );
         var s2 = childrenTypeNames.Split( ',' );
-        s1.Should().BeEquivalentTo( s2 );
+        s1.ShouldBe( s2, ignoreOrder: true );
     }
 
     [AttributeUsage( AttributeTargets.Class )]
@@ -258,9 +258,9 @@ public class WithAmbientTests
         {
             var fromAbove = o.ConstructParametersAboveRoot;
             Debug.Assert( fromAbove != null, "Since we are on the root of the specializations path." );
-            fromAbove.Should().NotBeEmpty().And.HaveCount( 1, "We have only one base class with a StObjConstruct method." );
+            fromAbove.ShouldHaveSingleItem( "We have only one base class with a StObjConstruct method." );
             var (t, parameters) = fromAbove.Single();
-            t.Should().Be( typeof( SqlDatabase ) );
+            t.ShouldBe( typeof( SqlDatabase ) );
 
             if( parameters.Count != 3
                 || parameters[0].Name != "connectionString"
@@ -324,28 +324,28 @@ public class WithAmbientTests
 
         var basicPackage = map.StObjs.Obtain<BasicPackage>();
         Debug.Assert( basicPackage != null );
-        basicPackage.Should().BeAssignableTo<ZonePackage>();
-        basicPackage.GroupHome.Should().BeAssignableTo<ZoneGroup>();
-        basicPackage.Schema.Should().Be( "CK" );
+        basicPackage.ShouldBeAssignableTo<ZonePackage>();
+        basicPackage.GroupHome.ShouldBeAssignableTo<ZoneGroup>();
+        basicPackage.Schema.ShouldBe( "CK" );
 
         var authenticationUser = map.StObjs.Obtain<AuthenticationUser>();
         Debug.Assert( authenticationUser != null );
-        authenticationUser.Schema.Should().Be( "CK" );
+        authenticationUser.Schema.ShouldBe( "CK" );
 
         var authenticationDetail = map.StObjs.Obtain<AuthenticationDetail>();
         Debug.Assert( authenticationDetail != null );
-        authenticationDetail.Schema.Should().Be( "CKAuth" );
+        authenticationDetail.Schema.ShouldBe( "CKAuth" );
 
         var db = map.StObjs.Obtain<SqlDefaultDatabase>();
         Debug.Assert( db != null );
-        db.ConnectionString.Should().Be( "The default connection string." );
+        db.ConnectionString.ShouldBe( "The default connection string." );
 
         var histo = map.StObjs.Obtain<SqlHistoDatabase>();
         Debug.Assert( histo != null );
-        histo.ConnectionString.Should().Be( "The histo connection string." );
+        histo.ConnectionString.ShouldBe( "The histo connection string." );
 
         var alien = map.StObjs.Obtain<SqlAlienDatabase>();
         Debug.Assert( alien != null );
-        alien.ConnectionString.Should().BeNull();
+        alien.ConnectionString.ShouldBeNull();
     }
 }

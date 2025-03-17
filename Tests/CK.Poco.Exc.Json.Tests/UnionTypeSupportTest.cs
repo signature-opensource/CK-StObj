@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -33,16 +33,16 @@ public class UnionTypeSupportTest
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
         var o = directory.Create<IBasicUnion>();
-        o.ToString().Should().Be( @"{""Thing"":[""string"",""""]}", "The first possible default is selected, here it's the string that defaults to empty." );
+        o.ToString().ShouldBe( @"{""Thing"":[""string"",""""]}", "The first possible default is selected, here it's the string that defaults to empty." );
 
         o.Thing = "Hip!";
-        o.ToString().Should().Be( @"{""Thing"":[""string"",""Hip!""]}" );
+        o.ToString().ShouldBe( @"{""Thing"":[""string"",""Hip!""]}" );
 
         o.Thing = 3712;
-        o.ToString().Should().Be( @"{""Thing"":[""int"",3712]}" );
+        o.ToString().ShouldBe( @"{""Thing"":[""int"",3712]}" );
 
         o.Thing = 3712m;
-        o.ToString().Should().Be( @"{""Thing"":[""decimal"",""3712""]}" );
+        o.ToString().ShouldBe( @"{""Thing"":[""decimal"",""3712""]}" );
     }
 
 }

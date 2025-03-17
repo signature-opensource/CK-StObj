@@ -1,7 +1,7 @@
 
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -55,9 +55,9 @@ public class DIContainerDefinitionTests
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
         var manager = auto.Services.GetRequiredService<DIContainerHub>();
-        manager.ContainerDefinitions.Should().HaveCount( 2 );
-        manager.ContainerDefinitions.Should().Contain( e => e is AppIdentityDIContainerDefinition )
-                                            .And.Contain( e => e is BackdoorDIContainerDefinition );
+        manager.ContainerDefinitions.Count.ShouldBe( 2 );
+        manager.ContainerDefinitions.ShouldContain( e => e is AppIdentityDIContainerDefinition );
+        manager.ContainerDefinitions.ShouldContain( e => e is BackdoorDIContainerDefinition );
     }
 
     [Test]
@@ -87,22 +87,23 @@ public class DIContainerDefinitionTests
         var o5 = GetEndpointsAndOtherTrueSingletons( sScopeA.ServiceProvider );
         var o6 = GetEndpointsAndOtherTrueSingletons( sScopeB.ServiceProvider );
 
-        o1.SequenceEqual( o2 ).Should().BeTrue();
-        o2.SequenceEqual( o3 ).Should().BeTrue();
-        o3.SequenceEqual( o4 ).Should().BeTrue();
-        o4.SequenceEqual( o5 ).Should().BeTrue();
-        o5.SequenceEqual( o6 ).Should().BeTrue();
+        o1.SequenceEqual( o2 ).ShouldBeTrue();
+        o2.SequenceEqual( o3 ).ShouldBeTrue();
+        o3.SequenceEqual( o4 ).ShouldBeTrue();
+        o4.SequenceEqual( o5 ).ShouldBeTrue();
+        o5.SequenceEqual( o6 ).ShouldBeTrue();
     }
 
     static object[] GetEndpointsAndOtherTrueSingletons( IServiceProvider s )
     {
         var endpoints = s.GetRequiredService<IEnumerable<IDIContainer>>();
-        endpoints.Should().HaveCount( 2 );
+        endpoints.Count().ShouldBe( 2 );
         var appIdentity = s.GetRequiredService<IDIContainer<AppIdentityDIContainerDefinition.Data>>();
-        appIdentity.Name.Should().Be( "AppIdentity" );
+        appIdentity.Name.ShouldBe( "AppIdentity" );
         var backdoor = s.GetRequiredService<IDIContainer<BackdoorDIContainerDefinition.Data>>();
-        backdoor.Name.Should().Be( "Backdoor" );
-        endpoints.Should().Contain( appIdentity ).And.Contain( backdoor );
+        backdoor.Name.ShouldBe( "Backdoor" );
+        endpoints.ShouldContain( appIdentity );
+        endpoints.ShouldContain( backdoor );
         return [endpoints, appIdentity, backdoor, s.GetRequiredService<DIContainerHub>(), s.GetRequiredService<IStObjMap>()];
     }
 

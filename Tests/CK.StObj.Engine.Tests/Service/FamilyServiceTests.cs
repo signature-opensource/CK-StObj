@@ -1,10 +1,7 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service;
@@ -41,9 +38,9 @@ public class FamilyServiceTests
             // OnlyForS, that covers NotALinkBetweenFamilies, is the final best for IS1 and IS2.
             var map = TestHelper.GetSuccessfulCollectorResult( [typeof( NotALinkBetweenFamilies ), typeof( OnlyForS )] ).EngineMap;
             Throw.DebugAssert( map != null );
-            map.Services.Mappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
-            map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
-            map.Services.Mappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );
+            map.Services.Mappings[typeof( IS1 )].ClassType.ShouldBeSameAs( typeof( OnlyForS ) );
+            map.Services.Mappings[typeof( IS2 )].ClassType.ShouldBeSameAs( typeof( OnlyForS ) );
+            map.Services.Mappings[typeof( IOtherServiceBase )].ClassType.ShouldBeSameAs( typeof( NotALinkBetweenFamilies ) );
         }
     }
 

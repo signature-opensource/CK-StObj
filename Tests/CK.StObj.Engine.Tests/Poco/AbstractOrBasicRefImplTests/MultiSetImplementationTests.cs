@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -59,17 +59,17 @@ public class MultiSetImplementationTests : CommonTypes
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var p = (IWithSet)d.Find( type )!.Create();
 
-        p.Set.Should().BeAssignableTo<IReadOnlySet<object>>();
+        p.Set.ShouldBeAssignableTo<IReadOnlySet<object>>();
 
         if( type == typeof( IPocoWithSetOfString ) )
         {
             ((IPocoWithSetOfString)p).Set.Add( "Here" );
-            ((IEnumerable<object>)p.Set).Should().Contain( "Here" );
+            ((IEnumerable<object>)p.Set).ShouldContain( "Here" );
         }
         if( type == typeof( IPocoWithSetOfGuid ) )
         {
             ((IPocoWithSetOfGuid)p).Set.Add( Guid.Empty );
-            ((IEnumerable<Guid>)p.Set).Should().Contain( Guid.Empty );
+            ((IEnumerable<Guid>)p.Set).ShouldContain( Guid.Empty );
         }
     }
 
@@ -97,9 +97,9 @@ public class MultiSetImplementationTests : CommonTypes
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var pBase = d.Create<IBasicRefSets>();
-        pBase.StringSet.Should().NotBeNull();
-        pBase.ExtendedCultureInfoSet.Should().NotBeNull();
-        pBase.NormalizedCultureInfoSet.Should().NotBeNull();
-        pBase.NormalizedCultureInfoSet.Should().BeAssignableTo<IReadOnlySet<ExtendedCultureInfo>>();
+        pBase.StringSet.ShouldNotBeNull();
+        pBase.ExtendedCultureInfoSet.ShouldNotBeNull();
+        pBase.NormalizedCultureInfoSet.ShouldNotBeNull();
+        pBase.NormalizedCultureInfoSet.ShouldBeAssignableTo<IReadOnlySet<ExtendedCultureInfo>>();
     }
 }

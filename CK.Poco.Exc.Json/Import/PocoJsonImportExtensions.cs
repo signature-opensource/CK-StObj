@@ -1,5 +1,4 @@
 using CK.Poco.Exc.Json;
-using Microsoft.IO;
 using System;
 using System.Buffers;
 using System.IO;
@@ -31,8 +30,7 @@ public static class PocoJsonImportExtensions
     /// <returns>The read object (null for <see cref="JsonTokenType.Null"/>).</returns>
     public static object? ReadAnyJson( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null )
     {
-        // Dispose even if it is not currently required (no data provider).
-        using var rCtx = new PocoJsonReadContext( @this, options );
+        var rCtx = new PocoJsonReadContext( @this, options );
         var r = new Utf8JsonReader( utf8Json, rCtx.Options.ReaderOptions );
         return @this.ReadAnyJson( ref r, rCtx );
     }
@@ -40,8 +38,7 @@ public static class PocoJsonImportExtensions
     /// <inheritdoc cref="ReadJson(PocoDirectory, ReadOnlySpan{byte}, PocoJsonImportOptions?)"/>
     public static object? ReadAnyJson( this PocoDirectory @this, ReadOnlySequence<byte> utf8Json, PocoJsonImportOptions? options = null )
     {
-        // Dispose even if it is not currently required (no data provider).
-        using var rCtx = new PocoJsonReadContext( @this, options );
+        var rCtx = new PocoJsonReadContext( @this, options );
         var r = new Utf8JsonReader( utf8Json, rCtx.Options.ReaderOptions );
         return @this.ReadAnyJson( ref r, rCtx );
     }
@@ -71,13 +68,6 @@ public static class PocoJsonImportExtensions
     /// <summary>
     /// Reads a <see cref="IPoco"/> (that can be null) from a utf8 encoded stream.
     /// The Poco must have been written with its type.
-    /// <para>
-    /// If the stream is a <see cref="RecyclableMemoryStream"/>, this uses
-    /// its <see cref="RecyclableMemoryStream.GetReadOnlySequence()"/>.
-    /// </para>
-    /// <para>
-    /// For any other kind of stream, a <see cref="Utf8JsonStreamReader"/> is used.
-    /// </para>
     /// </summary>
     /// <param name="this">This directory.</param>
     /// <param name="utf8JsonStream">The stream to deserialize from.</param>
@@ -85,16 +75,12 @@ public static class PocoJsonImportExtensions
     /// <returns>The Poco (can be null).</returns>
     public static object? ReadAnyJson( this PocoDirectory @this, Stream utf8JsonStream, PocoJsonImportOptions? options = null )
     {
-        if( utf8JsonStream is RecyclableMemoryStream r )
-        {
-            return ReadAnyJson( @this, r.GetReadOnlySequence(), options );
-        }
         options ??= PocoJsonImportOptions.Default;
-        Utf8JsonStreamReader sr = Utf8JsonStreamReader.Create( utf8JsonStream,
-                                                               options.ReaderOptions,
-                                                               out var reader,
-                                                               leaveOpened: false );
-        using var rCtx = new PocoJsonReadContext( @this, options, sr );
+        var sr = Utf8JsonStreamReaderContext.Create( utf8JsonStream,
+                                                     options.ReaderOptions,
+                                                     out var reader,
+                                                     leaveOpened: true );
+        var rCtx = new PocoJsonReadContext( @this, options, sr );
         return @this.ReadAnyJson( ref reader, rCtx );
     }
     #endregion
@@ -110,8 +96,7 @@ public static class PocoJsonImportExtensions
     /// <returns>The Poco (can be null).</returns>
     public static IPoco? ReadJson( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null )
     {
-        // Dispose even if it is not currently required (no read context).
-        using var rCtx = new PocoJsonReadContext( @this, options );
+        var rCtx = new PocoJsonReadContext( @this, options );
         var r = new Utf8JsonReader( utf8Json, rCtx.Options.ReaderOptions );
         return @this.ReadJson( ref r, rCtx );
     }
@@ -119,8 +104,7 @@ public static class PocoJsonImportExtensions
     /// <inheritdoc cref="ReadJson(PocoDirectory, ReadOnlySpan{byte}, PocoJsonImportOptions?)"/>
     public static IPoco? ReadJson( this PocoDirectory @this, ReadOnlySequence<byte> utf8Json, PocoJsonImportOptions? options = null )
     {
-        // Dispose even if it is not currently required (no read context).
-        using var rCtx = new PocoJsonReadContext( @this, options );
+        var rCtx = new PocoJsonReadContext( @this, options );
         var r = new Utf8JsonReader( utf8Json, rCtx.Options.ReaderOptions );
         return @this.ReadJson( ref r, rCtx );
     }
@@ -150,13 +134,6 @@ public static class PocoJsonImportExtensions
     /// <summary>
     /// Reads a <see cref="IPoco"/> (that can be null) from a utf8 encoded stream.
     /// The Poco must have been written with its type.
-    /// <para>
-    /// If the stream is a <see cref="RecyclableMemoryStream"/>, this uses
-    /// its <see cref="RecyclableMemoryStream.GetReadOnlySequence()"/>.
-    /// </para>
-    /// <para>
-    /// For any other kind of stream, a <see cref="Utf8JsonStreamReader"/> is used.
-    /// </para>
     /// </summary>
     /// <param name="this">This directory.</param>
     /// <param name="utf8JsonStream">The stream to deserialize from.</param>
@@ -164,16 +141,12 @@ public static class PocoJsonImportExtensions
     /// <returns>The Poco (can be null).</returns>
     public static IPoco? ReadJson( this PocoDirectory @this, Stream utf8JsonStream, PocoJsonImportOptions? options = null )
     {
-        if( utf8JsonStream is RecyclableMemoryStream r )
-        {
-            return ReadJson( @this, r.GetReadOnlySequence(), options );
-        }
         options ??= PocoJsonImportOptions.Default;
-        Utf8JsonStreamReader sr = Utf8JsonStreamReader.Create( utf8JsonStream,
-                                                               options.ReaderOptions,
-                                                               out var reader,
-                                                               leaveOpened: false );
-        using var rCtx = new PocoJsonReadContext( @this, options, sr );
+        var sr = Utf8JsonStreamReaderContext.Create( utf8JsonStream,
+                                                     options.ReaderOptions,
+                                                     out var reader,
+                                                     leaveOpened: true );
+        var rCtx = new PocoJsonReadContext( @this, options, sr );
         return @this.ReadJson( ref reader, rCtx );
     }
     #endregion
@@ -195,8 +168,7 @@ public static class PocoJsonImportExtensions
     /// <returns>The Poco (can be null).</returns>
     public static T? ReadJson<T>( this IPocoFactory<T> @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null ) where T : class, IPoco
     {
-        // Dispose even if it is not currently required (no data provider).
-        using var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options );
+        var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options );
         var r = new Utf8JsonReader( utf8Json, rCtx.Options.ReaderOptions );
         return @this.ReadJson( ref r, rCtx );
     }
@@ -204,8 +176,7 @@ public static class PocoJsonImportExtensions
     /// <inheritdoc cref="ReadJson{T}(IPocoFactory{T}, ReadOnlySpan{byte}, PocoJsonImportOptions?)"/>
     public static T? ReadJson<T>( this IPocoFactory<T> @this, ReadOnlySequence<byte> utf8Json, PocoJsonImportOptions? options = null ) where T : class, IPoco
     {
-        // Dispose even if it is not currently required (no data provider).
-        using var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options );
+        var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options );
         var r = new Utf8JsonReader( utf8Json, rCtx.Options.ReaderOptions );
         return @this.ReadJson( ref r, rCtx );
     }
@@ -244,10 +215,6 @@ public static class PocoJsonImportExtensions
     /// comes first (otherwise an exception is thrown).
     /// If the buffer starts with a '{', then it must be the Poco's value.
     /// </para>
-    /// <para>
-    /// If the stream is a <see cref="RecyclableMemoryStream"/>, this uses
-    /// its <see cref="RecyclableMemoryStream.GetReadOnlySequence()"/>.
-    /// </para>
     /// </summary>
     /// <typeparam name="T">The poco type.</typeparam>
     /// <param name="this">This poco factory.</param>
@@ -256,16 +223,12 @@ public static class PocoJsonImportExtensions
     /// <returns>The Poco (can be null).</returns>
     public static T? ReadJson<T>( this IPocoFactory<T> @this, Stream utf8JsonStream, PocoJsonImportOptions? options = null ) where T : class, IPoco
     {
-        if( utf8JsonStream is RecyclableMemoryStream r )
-        {
-            return ReadJson( @this, r.GetReadOnlySequence(), options );
-        }
         options ??= PocoJsonImportOptions.Default;
-        Utf8JsonStreamReader sr = Utf8JsonStreamReader.Create( utf8JsonStream,
-                                                               options.ReaderOptions,
-                                                               out var reader,
-                                                               leaveOpened: false );
-        using var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options, sr );
+        var sr = Utf8JsonStreamReaderContext.Create( utf8JsonStream,
+                                                     options.ReaderOptions,
+                                                     out var reader,
+                                                     leaveOpened: true );
+        var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options, sr );
         return @this.ReadJson( ref reader, rCtx );
     }
 

@@ -1,11 +1,9 @@
 using CK.Core;
-using CK.Poco.Exc.Json;
-using FluentAssertions;
+using Shouldly;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 
 namespace CK.Poco.Exc.Json.Tests;
 
@@ -73,7 +71,7 @@ public static class JsonTestHelper
             m.Position = 0;
             directory.WriteJson( m, o, true, exportOptions );
             var bin2 = m.ToArray();
-            bin2.Should().BeEquivalentTo( bin1 );
+            bin2.ShouldBe( bin1 );
 
             // Check the extension method on IPocoFactory.ReadJson and IPoco.WriteJson.
             var o3 = directory.Find<T>()!.ReadJson( bin2, importOptions );
@@ -81,9 +79,9 @@ public static class JsonTestHelper
             if( o3 != null )
             {
                 m.Position = 0;
-                o3.WriteJson( m, true, exportOptions ).Should().BeTrue();
+                o3.WriteJson( m, true, exportOptions ).ShouldBeTrue();
                 var bin3 = m.ToArray();
-                bin3.Should().BeEquivalentTo( bin1 );
+                bin3.ShouldBe( bin1 );
             }
             return (T?)o3;
         }

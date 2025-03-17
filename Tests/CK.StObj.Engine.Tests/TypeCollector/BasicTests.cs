@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Diagnostics;
 using static CK.Testing.MonitorTestHelper;
@@ -34,28 +34,28 @@ public class BasicTests : TypeCollectorTestsBase
     {
         var r = CheckSuccess( collector => collector.RegisterType( TestHelper.Monitor, typeof( ServiceNotRegisteredImpl ) ) );
         var interfaces = r.AutoServices.LeafInterfaces;
-        interfaces.Should().HaveCount( 1 );
+        interfaces.Count.ShouldBe( 1 );
         var iSpec = interfaces[0];
         var iBase = iSpec.Interfaces[0];
-        iBase.Type.Should().Be( typeof( IServiceRegistered ) );
-        iBase.SpecializationDepth.Should().Be( 0 );
-        iBase.IsSpecialized.Should().BeTrue();
-        iBase.Interfaces.Should().BeEmpty();
-        iSpec.Type.Should().Be( typeof( IServiceNotRegisteredSinceNotImplemented ) );
-        iSpec.SpecializationDepth.Should().Be( 1 );
-        iSpec.IsSpecialized.Should().BeFalse();
-        iSpec.Interfaces.Should().ContainSingle().And.Contain( iBase );
+        iBase.Type.ShouldBe( typeof( IServiceRegistered ) );
+        iBase.SpecializationDepth.ShouldBe( 0 );
+        iBase.IsSpecialized.ShouldBeTrue();
+        iBase.Interfaces.ShouldBeEmpty();
+        iSpec.Type.ShouldBe( typeof( IServiceNotRegisteredSinceNotImplemented ) );
+        iSpec.SpecializationDepth.ShouldBe( 1 );
+        iSpec.IsSpecialized.ShouldBeFalse();
+        iSpec.Interfaces.ShouldHaveSingleItem().ShouldBe( iBase );
         var classes = r.AutoServices.RootClasses;
-        classes.Should().HaveCount( 1 );
+        classes.Count.ShouldBe( 1 );
         var cBase = classes[0];
-        cBase.ClassType.Should().Be( typeof( ServiceRegisteredImpl ) );
-        cBase.TypeInfo.IsSpecialized.Should().BeTrue();
+        cBase.ClassType.ShouldBe( typeof( ServiceRegisteredImpl ) );
+        cBase.TypeInfo.IsSpecialized.ShouldBeTrue();
         var cSpec = cBase.MostSpecialized;
         Debug.Assert( cSpec != null );
-        cBase.Specializations.Should().ContainSingle().And.Contain( cSpec );
-        cSpec.ClassType.Should().Be( typeof( ServiceNotRegisteredImpl ) );
-        cSpec.Generalization.Should().BeSameAs( cBase );
-        cSpec.Interfaces.Should().BeEquivalentTo( new[] { iBase, iSpec } );
+        cBase.Specializations.ShouldHaveSingleItem().ShouldBe( cSpec );
+        cSpec.ClassType.ShouldBe( typeof( ServiceNotRegisteredImpl ) );
+        cSpec.Generalization.ShouldBeSameAs( cBase );
+        cSpec.Interfaces.ShouldBe( new[] { iBase, iSpec } );
     }
 
 }

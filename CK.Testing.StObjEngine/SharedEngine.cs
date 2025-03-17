@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.PerfectEvent;
 using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -33,6 +32,7 @@ public static class SharedEngine
 
     /// <summary>
     /// Gets the engine configuration that has been used (or will be used) by <see cref="EngineResult"/>, <see cref="Map"/> or <see cref="AutomaticServices"/>.
+    /// </summary>
     /// <returns>The engine configuration.</returns>
     public static EngineConfiguration GetEngineConfiguration()
     {
@@ -127,7 +127,7 @@ public static class SharedEngine
     /// </para>
     /// <para>
     /// The internal configuration is cloned so the <paramref name="engineConfiguration"/> argument can be freely reused
-    /// without interfering with the current one. To retrieve the internal configuration, use <see cref="GetEngineConfiguration(bool)"/>.
+    /// without interfering with the current one. To retrieve the internal configuration, use <see cref="GetEngineConfiguration"/>.
     /// </para>
     /// <para>
     /// A failing run is not retried, instead the initial exception is rethrown immediately until <see cref="ResetAsync(EngineConfiguration?)"/>
@@ -174,7 +174,7 @@ public static class SharedEngine
     }
 
     /// <summary>
-    /// Gets whether the last run failed. <see cref="Reset"/> must be called to retry.
+    /// Gets whether the last run failed. One of the ResetAsync methods must be called to retry.
     /// </summary>
     public static bool HasError => _runLevel != null || _mapLevel != null || _serviceLevel != null;
 

@@ -142,12 +142,13 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
         return false;
     }
 
+
     public struct Enumerator : IEnumerator<TypeConfiguration>
     {
         // Don't make this readonly or nothing will work!
         Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator _e;
 
-        public Enumerator( Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator e ) => _e = e;
+        internal Enumerator( Dictionary<Type, ConfigurableAutoServiceKind>.Enumerator e ) => _e = e;
 
         public TypeConfiguration Current => new TypeConfiguration( _e.Current.Key, _e.Current.Value );
 

@@ -1,11 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace CK.Setup.PocoJson;

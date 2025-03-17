@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
@@ -32,7 +32,7 @@ public class FrontEndpointTests
         {
             var tenant = scoped.ServiceProvider.GetService<IFakeTenantInfo>();
             Debug.Assert( tenant != null );
-            tenant.Name.Should().Be( "DefaultTenant" );
+            tenant.Name.ShouldBe( "DefaultTenant" );
         }
     }
 
@@ -86,7 +86,7 @@ public class FrontEndpointTests
                 var monitor = scoped.ServiceProvider.GetRequiredService<IActivityMonitor>();
                 monitor.Trace( $"TenantI: {tenantI.Name}, TenantC: {tenantC.Name}, AuthI: {authI.ActorId}, AuthC: {authC.ActorId}, Cult: {culture.Culture}" );
             }
-            logs.Should().Contain( "TenantI: DefaultTenant, TenantC: DefaultTenant, AuthI: 0, AuthC: 0, Cult: default" );
+            logs.ShouldContain( "TenantI: DefaultTenant, TenantC: DefaultTenant, AuthI: 0, AuthC: 0, Cult: default" );
         }
     }
 

@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -116,12 +116,12 @@ public class ObliviousTests
             // List<IVerySimplePoco?> (oblivious, final)
             ICollectionPocoType? tPRNR = List_PocoN( revert, ts, n );
 
-            tSPRR.ObliviousType.Should().BeSameAs( tSPRNR.Nullable );
-            tSPRR.StructuralFinalType.Should().BeSameAs( tSPRNR.Nullable );
-            tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
-            tPRR.StructuralFinalType.Should().BeSameAs( tPRNR.Nullable );
-            tPIR.ObliviousType.Should().BeSameAs( tPINR.Nullable );
-            tPIR.StructuralFinalType.Should().BeSameAs( tPINR.Nullable );
+            tSPRR.ObliviousType.ShouldBeSameAs( tSPRNR.Nullable );
+            tSPRR.StructuralFinalType.ShouldBeSameAs( tSPRNR.Nullable );
+            tPRR.ObliviousType.ShouldBeSameAs( tPRNR.Nullable );
+            tPRR.StructuralFinalType.ShouldBeSameAs( tPRNR.Nullable );
+            tPIR.ObliviousType.ShouldBeSameAs( tPINR.Nullable );
+            tPIR.StructuralFinalType.ShouldBeSameAs( tPINR.Nullable );
 
             // List of Reference type (object)
             // IList<object> (non oblivious, non final)
@@ -133,11 +133,11 @@ public class ObliviousTests
             // List<object?> (oblivious, final)
             ICollectionPocoType? tRNR = List_ObjectN( revert, ts );
 
-            tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
-            tRR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
-            tINR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
-            tIR.ObliviousType.Should().BeSameAs( tINR.Nullable );
-            tIR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+            tRR.ObliviousType.ShouldBeSameAs( tRNR.Nullable );
+            tRR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
+            tINR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
+            tIR.ObliviousType.ShouldBeSameAs( tINR.Nullable );
+            tIR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
 
             // List of Value type
             // IList<int?> (oblivious, final)
@@ -154,13 +154,13 @@ public class ObliviousTests
         {
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListV ) )! );
             Debug.Assert( tRV != null );
-            tRV.IsNullable.Should().BeFalse();
-            tRV.IsOblivious.Should().BeFalse();
-            tRV.Nullable.IsOblivious.Should().BeTrue();
-            tRV.CSharpName.Should().Be( "List<int>" );
-            tRV.ImplTypeName.Should().Be( "List<int>" );
-            tRV.IsStructuralFinalType.Should().BeFalse();
-            tRV.Nullable.IsStructuralFinalType.Should().BeTrue();
+            tRV.IsNullable.ShouldBeFalse();
+            tRV.IsOblivious.ShouldBeFalse();
+            tRV.Nullable.IsOblivious.ShouldBeTrue();
+            tRV.CSharpName.ShouldBe( "List<int>" );
+            tRV.ImplTypeName.ShouldBe( "List<int>" );
+            tRV.IsStructuralFinalType.ShouldBeFalse();
+            tRV.Nullable.IsStructuralFinalType.ShouldBeTrue();
             return tRV;
         }
 
@@ -168,13 +168,13 @@ public class ObliviousTests
         {
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNV ) )! );
             Debug.Assert( tRNV != null );
-            tRNV.IsNullable.Should().BeFalse();
-            tRNV.IsOblivious.Should().BeFalse();
-            tRNV.Nullable.IsOblivious.Should().BeTrue();
-            tRNV.CSharpName.Should().Be( "List<int?>" );
-            tRNV.ImplTypeName.Should().Be( "List<int?>" );
-            tRNV.IsStructuralFinalType.Should().BeFalse();
-            tRNV.Nullable.IsStructuralFinalType.Should().BeTrue();
+            tRNV.IsNullable.ShouldBeFalse();
+            tRNV.IsOblivious.ShouldBeFalse();
+            tRNV.Nullable.IsOblivious.ShouldBeTrue();
+            tRNV.CSharpName.ShouldBe( "List<int?>" );
+            tRNV.ImplTypeName.ShouldBe( "List<int?>" );
+            tRNV.IsStructuralFinalType.ShouldBeFalse();
+            tRNV.Nullable.IsStructuralFinalType.ShouldBeTrue();
             return tRNV;
         }
 
@@ -183,12 +183,12 @@ public class ObliviousTests
             var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
             var tIV = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListV ) ).Type;
             Debug.Assert( tIV != null );
-            tIV.IsNullable.Should().BeFalse();
-            tIV.Nullable.IsOblivious.Should().BeTrue();
-            tIV.CSharpName.Should().Be( "IList<int>" );
-            tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
-            tIV.IsStructuralFinalType.Should().BeFalse();
-            tIV.Nullable.IsStructuralFinalType.Should().BeTrue();
+            tIV.IsNullable.ShouldBeFalse();
+            tIV.Nullable.IsOblivious.ShouldBeTrue();
+            tIV.CSharpName.ShouldBe( "IList<int>" );
+            tIV.ImplTypeName.ShouldBe( "CovariantHelpers.CovNotNullValueList<int>" );
+            tIV.IsStructuralFinalType.ShouldBeFalse();
+            tIV.Nullable.IsStructuralFinalType.ShouldBeTrue();
             return tIV;
         }
 
@@ -197,12 +197,12 @@ public class ObliviousTests
             var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
             var tINV = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListNV ) ).Type;
             Debug.Assert( tINV != null );
-            tINV.IsNullable.Should().BeFalse();
-            tINV.Nullable.IsOblivious.Should().BeTrue();
-            tINV.CSharpName.Should().Be( "IList<int?>" );
-            tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
-            tINV.IsStructuralFinalType.Should().BeFalse();
-            tINV.Nullable.IsStructuralFinalType.Should().BeTrue();
+            tINV.IsNullable.ShouldBeFalse();
+            tINV.Nullable.IsOblivious.ShouldBeTrue();
+            tINV.CSharpName.ShouldBe( "IList<int?>" );
+            tINV.ImplTypeName.ShouldBe( "CovariantHelpers.CovNullableValueList<int>" );
+            tINV.IsStructuralFinalType.ShouldBeFalse();
+            tINV.Nullable.IsStructuralFinalType.ShouldBeTrue();
             return tINV;
         }
 
@@ -211,13 +211,13 @@ public class ObliviousTests
         {
             var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNR ) )! );
             Debug.Assert( tRNR != null );
-            tRNR.IsNullable.Should().BeFalse();
-            tRNR.IsOblivious.Should().BeFalse();
-            tRNR.Nullable.IsOblivious.Should().BeTrue();
-            tRNR.CSharpName.Should().Be( "List<object?>" );
-            tRNR.ImplTypeName.Should().Be( "List<object?>" );
-            tRNR.IsStructuralFinalType.Should().BeFalse();
-            tRNR.Nullable.IsStructuralFinalType.Should().BeTrue();
+            tRNR.IsNullable.ShouldBeFalse();
+            tRNR.IsOblivious.ShouldBeFalse();
+            tRNR.Nullable.IsOblivious.ShouldBeTrue();
+            tRNR.CSharpName.ShouldBe( "List<object?>" );
+            tRNR.ImplTypeName.ShouldBe( "List<object?>" );
+            tRNR.IsStructuralFinalType.ShouldBeFalse();
+            tRNR.Nullable.IsStructuralFinalType.ShouldBeTrue();
             return tRNR;
         }
 
@@ -225,17 +225,17 @@ public class ObliviousTests
         {
             var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListR ) )! );
             Debug.Assert( tRR != null );
-            tRR.IsNullable.Should().BeFalse();
-            tRR.IsOblivious.Should().BeFalse();
-            tRR.Nullable.IsOblivious.Should().BeFalse();
-            tRR.CSharpName.Should().Be( "List<object>" );
-            tRR.ImplTypeName.Should().Be( "List<object?>" );
-            tRR.IsStructuralFinalType.Should().BeFalse();
-            tRR.Nullable.IsStructuralFinalType.Should().BeFalse();
+            tRR.IsNullable.ShouldBeFalse();
+            tRR.IsOblivious.ShouldBeFalse();
+            tRR.Nullable.IsOblivious.ShouldBeFalse();
+            tRR.CSharpName.ShouldBe( "List<object>" );
+            tRR.ImplTypeName.ShouldBe( "List<object?>" );
+            tRR.IsStructuralFinalType.ShouldBeFalse();
+            tRR.Nullable.IsStructuralFinalType.ShouldBeFalse();
             if( !revert )
             {
-                tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
-                tRR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+                tRR.ObliviousType.ShouldBeSameAs( tRNR.Nullable );
+                tRR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
             }
             return tRR;
         }
@@ -245,15 +245,15 @@ public class ObliviousTests
             var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
             var tINR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListNR ) ).Type;
             Debug.Assert( tINR != null );
-            tINR.IsNullable.Should().BeFalse();
-            tINR.Nullable.IsOblivious.Should().BeTrue();
-            tINR.CSharpName.Should().Be( "IList<object?>" );
-            tINR.ImplTypeName.Should().Be( "List<object?>" );
-            tINR.IsStructuralFinalType.Should().BeFalse();
-            tINR.Nullable.IsStructuralFinalType.Should().BeFalse();
+            tINR.IsNullable.ShouldBeFalse();
+            tINR.Nullable.IsOblivious.ShouldBeTrue();
+            tINR.CSharpName.ShouldBe( "IList<object?>" );
+            tINR.ImplTypeName.ShouldBe( "List<object?>" );
+            tINR.IsStructuralFinalType.ShouldBeFalse();
+            tINR.Nullable.IsStructuralFinalType.ShouldBeFalse();
             if( !revert )
             {
-                tINR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+                tINR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
             }
             return tINR;
         }
@@ -263,14 +263,14 @@ public class ObliviousTests
             var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
             var tIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListR ) ).Type;
             Debug.Assert( tIR != null );
-            tIR.IsOblivious.Should().BeFalse();
-            tIR.CSharpName.Should().Be( "IList<object>" );
-            tIR.ImplTypeName.Should().Be( "List<object?>" );
-            tIR.IsStructuralFinalType.Should().BeFalse();
+            tIR.IsOblivious.ShouldBeFalse();
+            tIR.CSharpName.ShouldBe( "IList<object>" );
+            tIR.ImplTypeName.ShouldBe( "List<object?>" );
+            tIR.IsStructuralFinalType.ShouldBeFalse();
             if( !revert )
             {
-                tIR.ObliviousType.Should().BeSameAs( tINR.Nullable );
-                tIR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+                tIR.ObliviousType.ShouldBeSameAs( tINR.Nullable );
+                tIR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
             }
             return tIR;
         }
@@ -279,9 +279,9 @@ public class ObliviousTests
         {
             var tSPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListSecPNR ) )! );
             Debug.Assert( tSPRNR != null );
-            tSPRNR.IsOblivious.Should().BeFalse();
-            tSPRNR.CSharpName.Should().Be( $"List<{n}?>" );
-            tSPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
+            tSPRNR.IsOblivious.ShouldBeFalse();
+            tSPRNR.CSharpName.ShouldBe( $"List<{n}?>" );
+            tSPRNR.ImplTypeName.ShouldBe( $"List<{n}?>" );
             return tSPRNR;
         }
 
@@ -289,12 +289,12 @@ public class ObliviousTests
         {
             var tSPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListSecPR ) )! );
             Debug.Assert( tSPRR != null );
-            tSPRR.IsOblivious.Should().BeFalse();
-            tSPRR.CSharpName.Should().Be( $"List<{n}>" );
-            tSPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
+            tSPRR.IsOblivious.ShouldBeFalse();
+            tSPRR.CSharpName.ShouldBe( $"List<{n}>" );
+            tSPRR.ImplTypeName.ShouldBe( $"List<{n}?>" );
             if( !revert )
             {
-                tSPRR.ObliviousType.Should().BeSameAs( tSPRNR.Nullable );
+                tSPRR.ObliviousType.ShouldBeSameAs( tSPRNR.Nullable );
             }
             return tSPRR;
         }
@@ -304,9 +304,9 @@ public class ObliviousTests
         {
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPNR ) )! );
             Debug.Assert( tPRNR != null );
-            tPRNR.IsOblivious.Should().BeFalse();
-            tPRNR.CSharpName.Should().Be( $"List<{n}?>" );
-            tPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
+            tPRNR.IsOblivious.ShouldBeFalse();
+            tPRNR.CSharpName.ShouldBe( $"List<{n}?>" );
+            tPRNR.ImplTypeName.ShouldBe( $"List<{n}?>" );
             return tPRNR;
         }
 
@@ -314,12 +314,12 @@ public class ObliviousTests
         {
             var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPR ) )! );
             Debug.Assert( tPRR != null );
-            tPRR.IsOblivious.Should().BeFalse();
-            tPRR.CSharpName.Should().Be( $"List<{n}>" );
-            tPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
+            tPRR.IsOblivious.ShouldBeFalse();
+            tPRR.CSharpName.ShouldBe( $"List<{n}>" );
+            tPRR.ImplTypeName.ShouldBe( $"List<{n}?>" );
             if( !revert )
             {
-                tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
+                tPRR.ObliviousType.ShouldBeSameAs( tPRNR.Nullable );
             }
             return tPRR;
         }
@@ -329,9 +329,9 @@ public class ObliviousTests
             var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
             var tPINR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPNR ) ).Type;
             Debug.Assert( tPINR != null );
-            tPINR.IsOblivious.Should().BeFalse();
-            tPINR.CSharpName.Should().Be( $"IList<{n}?>" );
-            tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoList_*_CK" );
+            tPINR.IsOblivious.ShouldBeFalse();
+            tPINR.CSharpName.ShouldBe( $"IList<{n}?>" );
+            tPINR.ImplTypeName.ShouldMatch( @"CK\.GRSupport\.PocoList_.*_CK" );
             return tPINR;
         }
 
@@ -340,14 +340,14 @@ public class ObliviousTests
             var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
             var tPIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPR ) ).Type;
             Debug.Assert( tPIR != null );
-            tPIR.Nullable.IsOblivious.Should().BeFalse();
-            tPIR.CSharpName.Should().Be( $"IList<{n}>" );
-            tPIR.Nullable.IsStructuralFinalType.Should().BeFalse();
+            tPIR.Nullable.IsOblivious.ShouldBeFalse();
+            tPIR.CSharpName.ShouldBe( $"IList<{n}>" );
+            tPIR.Nullable.IsStructuralFinalType.ShouldBeFalse();
             if( !revert )
             {
-                tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName );
-                tPIR.ObliviousType.Should().BeSameAs( tPINR.Nullable );
-                tPIR.StructuralFinalType.Should().BeSameAs( tPINR.Nullable );
+                tPIR.ImplTypeName.ShouldBe( tPINR.ImplTypeName );
+                tPIR.ObliviousType.ShouldBeSameAs( tPINR.Nullable );
+                tPIR.StructuralFinalType.ShouldBeSameAs( tPINR.Nullable );
             }
             return tPIR;
         }
@@ -385,22 +385,22 @@ public class ObliviousTests
         // Dictionary<string,int> (oblivious, final).
         var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicV ) )! );
         Debug.Assert( tRV != null );
-        tRV.IsNullable.Should().BeFalse();
-        tRV.IsOblivious.Should().BeFalse();
-        tRV.Nullable.IsOblivious.Should().BeTrue();
-        tRV.CSharpName.Should().Be( "Dictionary<string,int>" );
-        tRV.ImplTypeName.Should().Be( "Dictionary<string,int>" );
-        tRV.IsStructuralFinalType.Should().BeFalse();
-        tRV.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tRV.IsNullable.ShouldBeFalse();
+        tRV.IsOblivious.ShouldBeFalse();
+        tRV.Nullable.IsOblivious.ShouldBeTrue();
+        tRV.CSharpName.ShouldBe( "Dictionary<string,int>" );
+        tRV.ImplTypeName.ShouldBe( "Dictionary<string,int>" );
+        tRV.IsStructuralFinalType.ShouldBeFalse();
+        tRV.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         // Dictionary<string,int?> (oblivious, final).
         var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNV ) )! );
         Debug.Assert( tRNV != null );
-        tRNV.IsNullable.Should().BeFalse();
-        tRNV.Nullable.IsOblivious.Should().BeTrue();
-        tRNV.CSharpName.Should().Be( "Dictionary<string,int?>" );
-        tRNV.ImplTypeName.Should().Be( "Dictionary<string,int?>" );
-        tRNV.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tRNV.IsNullable.ShouldBeFalse();
+        tRNV.Nullable.IsOblivious.ShouldBeTrue();
+        tRNV.CSharpName.ShouldBe( "Dictionary<string,int?>" );
+        tRNV.ImplTypeName.ShouldBe( "Dictionary<string,int?>" );
+        tRNV.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         var defPoco = ts.FindByType<IPrimaryPocoType>( typeof( IProperDictionaryDefinition ) );
         Throw.DebugAssert( defPoco != null );
@@ -408,63 +408,63 @@ public class ObliviousTests
         // IDictionary<string,int> (oblivious, final)
         var tIV = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == "IDicV" ).Type;
         Debug.Assert( tIV != null );
-        tIV.IsNullable.Should().BeFalse();
-        tIV.Nullable.IsOblivious.Should().BeTrue();
-        tIV.CSharpName.Should().Be( "IDictionary<string,int>" );
-        tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueDictionary<string,int>" );
-        tIV.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tIV.IsNullable.ShouldBeFalse();
+        tIV.Nullable.IsOblivious.ShouldBeTrue();
+        tIV.CSharpName.ShouldBe( "IDictionary<string,int>" );
+        tIV.ImplTypeName.ShouldBe( "CovariantHelpers.CovNotNullValueDictionary<string,int>" );
+        tIV.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         // IDictionary<string,int?> (oblivious, final)
         var tINV = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == "IDicNV" ).Type;
         Debug.Assert( tINV != null );
-        tINV.IsNullable.Should().BeFalse();
-        tINV.Nullable.IsOblivious.Should().BeTrue();
-        tINV.CSharpName.Should().Be( "IDictionary<string,int?>" );
-        tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueDictionary<string,int>" );
-        tINV.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tINV.IsNullable.ShouldBeFalse();
+        tINV.Nullable.IsOblivious.ShouldBeTrue();
+        tINV.CSharpName.ShouldBe( "IDictionary<string,int?>" );
+        tINV.ImplTypeName.ShouldBe( "CovariantHelpers.CovNullableValueDictionary<string,int>" );
+        tINV.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         ////// Dictionary of reference type (object) for the value.
 
         // Dictionary<int,object?> (oblivious, final)
         var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNR ) )! );
         Debug.Assert( tRNR != null );
-        tRNR.IsNullable.Should().BeFalse();
-        tRNR.Nullable.IsOblivious.Should().BeTrue();
-        tRNR.CSharpName.Should().Be( "Dictionary<int,object?>" );
-        tRNR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-        tRNR.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tRNR.IsNullable.ShouldBeFalse();
+        tRNR.Nullable.IsOblivious.ShouldBeTrue();
+        tRNR.CSharpName.ShouldBe( "Dictionary<int,object?>" );
+        tRNR.ImplTypeName.ShouldBe( "Dictionary<int,object?>" );
+        tRNR.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         // Dictionary<int,object> (non oblivious, non final).
         var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicR ) )! );
         Debug.Assert( tRR != null );
-        tRR.IsNullable.Should().BeFalse();
-        tRR.Nullable.IsOblivious.Should().BeFalse();
-        tRR.CSharpName.Should().Be( "Dictionary<int,object>" );
-        tRR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-        tRR.Nullable.IsStructuralFinalType.Should().BeFalse();
-        tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
-        tRR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+        tRR.IsNullable.ShouldBeFalse();
+        tRR.Nullable.IsOblivious.ShouldBeFalse();
+        tRR.CSharpName.ShouldBe( "Dictionary<int,object>" );
+        tRR.ImplTypeName.ShouldBe( "Dictionary<int,object?>" );
+        tRR.Nullable.IsStructuralFinalType.ShouldBeFalse();
+        tRR.ObliviousType.ShouldBeSameAs( tRNR.Nullable );
+        tRR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
 
         // IDictionary<int,object?> (oblivious, non final)
         var tINR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicNR ) ).Type;
         Debug.Assert( tINR != null );
-        tINR.IsNullable.Should().BeFalse();
-        tINR.Nullable.IsOblivious.Should().BeTrue();
-        tINR.CSharpName.Should().Be( "IDictionary<int,object?>" );
-        tINR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-        tINR.Nullable.IsStructuralFinalType.Should().BeFalse();
-        tINR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+        tINR.IsNullable.ShouldBeFalse();
+        tINR.Nullable.IsOblivious.ShouldBeTrue();
+        tINR.CSharpName.ShouldBe( "IDictionary<int,object?>" );
+        tINR.ImplTypeName.ShouldBe( "Dictionary<int,object?>" );
+        tINR.Nullable.IsStructuralFinalType.ShouldBeFalse();
+        tINR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
 
         // IDictionary<int,object> (non oblivious, non final)
         var tIR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicR ) ).Type;
         Debug.Assert( tIR != null );
-        tIR.IsNullable.Should().BeFalse();
-        tIR.NonNullable.IsOblivious.Should().BeFalse();
-        tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
-        tIR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-        tIR.NonNullable.IsStructuralFinalType.Should().BeFalse();
-        tIR.ObliviousType.Should().BeSameAs( tINR.Nullable );
-        tIR.StructuralFinalType.Should().BeSameAs( tRNR.Nullable );
+        tIR.IsNullable.ShouldBeFalse();
+        tIR.NonNullable.IsOblivious.ShouldBeFalse();
+        tIR.CSharpName.ShouldBe( "IDictionary<int,object>" );
+        tIR.ImplTypeName.ShouldBe( "Dictionary<int,object?>" );
+        tIR.NonNullable.IsStructuralFinalType.ShouldBeFalse();
+        tIR.ObliviousType.ShouldBeSameAs( tINR.Nullable );
+        tIR.StructuralFinalType.ShouldBeSameAs( tRNR.Nullable );
 
         // Dictionary of IPoco type (IVerySimplePoco) for the value.
         var n = typeof( IVerySimplePoco ).ToCSharpName();
@@ -472,39 +472,39 @@ public class ObliviousTests
         // Dictionary<int,IVerySimplePoco?> (oblivious, final)
         var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPNR ) )! );
         Debug.Assert( tPRNR != null );
-        tPRNR.IsNullable.Should().BeFalse();
-        tPRNR.Nullable.IsOblivious.Should().BeTrue();
-        tPRNR.CSharpName.Should().Be( $"Dictionary<int,{n}?>" );
-        tPRNR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
-        tPRNR.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tPRNR.IsNullable.ShouldBeFalse();
+        tPRNR.Nullable.IsOblivious.ShouldBeTrue();
+        tPRNR.CSharpName.ShouldBe( $"Dictionary<int,{n}?>" );
+        tPRNR.ImplTypeName.ShouldBe( $"Dictionary<int,{n}?>" );
+        tPRNR.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         // Dictionary<int,IVerySimplePoco> (non oblivious, non final)
         var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPR ) )! );
         Debug.Assert( tPRR != null );
-        tPRR.Nullable.IsOblivious.Should().BeFalse();
-        tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
-        tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
-        tPRR.Nullable.IsStructuralFinalType.Should().BeFalse();
-        tPRNR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
-        tPRNR.StructuralFinalType.Should().BeSameAs( tPRNR.Nullable );
+        tPRR.Nullable.IsOblivious.ShouldBeFalse();
+        tPRR.CSharpName.ShouldBe( $"Dictionary<int,{n}>" );
+        tPRR.ImplTypeName.ShouldBe( $"Dictionary<int,{n}?>" );
+        tPRR.Nullable.IsStructuralFinalType.ShouldBeFalse();
+        tPRNR.ObliviousType.ShouldBeSameAs( tPRNR.Nullable );
+        tPRNR.StructuralFinalType.ShouldBeSameAs( tPRNR.Nullable );
 
         // IDictionary<int,IVerySimplePoco?> (oblivious, final)
         var tPINR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicPNR ) ).Type;
         Debug.Assert( tPINR != null );
-        tPINR.Nullable.IsOblivious.Should().BeTrue();
-        tPINR.CSharpName.Should().Be( $"IDictionary<int,{n}?>" );
-        tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoDictionary_*_*_CK" );
-        tPINR.Nullable.IsStructuralFinalType.Should().BeTrue();
+        tPINR.Nullable.IsOblivious.ShouldBeTrue();
+        tPINR.CSharpName.ShouldBe( $"IDictionary<int,{n}?>" );
+        tPINR.ImplTypeName.ShouldMatch( @"CK\.GRSupport\.PocoDictionary_.*_.*_CK" );
+        tPINR.Nullable.IsStructuralFinalType.ShouldBeTrue();
 
         // IDictionary<int,IVerySimplePoco> (non oblivious, non final)
         var tPIR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicPR ) ).Type;
         Debug.Assert( tPIR != null );
-        tPIR.Nullable.IsOblivious.Should().BeFalse();
-        tPIR.CSharpName.Should().Be( $"IDictionary<int,{n}>" );
-        tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the Dictionary<int,IVerySimplePoco>." );
-        tPIR.Nullable.IsStructuralFinalType.Should().BeFalse();
-        tPIR.ObliviousType.Should().BeSameAs( tPINR.Nullable );
-        tPIR.StructuralFinalType.Should().BeSameAs( tPINR.Nullable );
+        tPIR.Nullable.IsOblivious.ShouldBeFalse();
+        tPIR.CSharpName.ShouldBe( $"IDictionary<int,{n}>" );
+        tPIR.ImplTypeName.ShouldBe( tPINR.ImplTypeName, "Same implementation as the Dictionary<int,IVerySimplePoco>." );
+        tPIR.Nullable.IsStructuralFinalType.ShouldBeFalse();
+        tPIR.ObliviousType.ShouldBeSameAs( tPINR.Nullable );
+        tPIR.StructuralFinalType.ShouldBeSameAs( tPINR.Nullable );
     }
 
     // AnonymousSampleO is the common ObliviousType: 
@@ -536,19 +536,19 @@ public class ObliviousTests
         if( mode == "ObliviousLast" ) tO = (IRecordPocoType?)ts.FindByType( GetType().GetField( nameof( AnonymousSampleO ) )!.FieldType );
         Debug.Assert( tO != null );
 
-        (tO.IsAnonymous && tO.IsOblivious).Should().BeTrue();
-        t1.IsOblivious.Should().BeFalse();
-        t2.IsOblivious.Should().BeFalse();
-        t3.IsOblivious.Should().BeFalse();
-        t4.IsOblivious.Should().BeFalse();
+        (tO.IsAnonymous && tO.IsOblivious).ShouldBeTrue();
+        t1.IsOblivious.ShouldBeFalse();
+        t2.IsOblivious.ShouldBeFalse();
+        t3.IsOblivious.ShouldBeFalse();
+        t4.IsOblivious.ShouldBeFalse();
 
-        tO.ObliviousType.Should().BeSameAs( tO );
-        t1.ObliviousType.Should().BeSameAs( tO );
-        t2.ObliviousType.Should().BeSameAs( tO );
-        t3.ObliviousType.Should().BeSameAs( tO );
-        t4.ObliviousType.Should().BeSameAs( tO );
+        tO.ObliviousType.ShouldBeSameAs( tO );
+        t1.ObliviousType.ShouldBeSameAs( tO );
+        t2.ObliviousType.ShouldBeSameAs( tO );
+        t3.ObliviousType.ShouldBeSameAs( tO );
+        t4.ObliviousType.ShouldBeSameAs( tO );
 
-        new object[] { tO, t1, t2, t3, t4 }.Distinct().Should().HaveCount( 5, "Different PocoTypes." );
+        new object[] { tO, t1, t2, t3, t4 }.Distinct().Count().ShouldBe( 5, "Different PocoTypes." );
     }
 
     public List<List<Dictionary<int, object?>?>?>? ListCollectionO = null!;
@@ -580,12 +580,12 @@ public class ObliviousTests
         Throw.DebugAssert( tO != null );
 
         var culprits = others.Fields.Where( f => f.Type.ObliviousType != tO );
-        culprits.Should().BeEmpty( "All these collections have the same oblivious type." );
+        culprits.ShouldBeEmpty( "All these collections have the same oblivious type." );
 
         var oA = others.ObliviousType;
-        oA.IsOblivious.Should().BeTrue();
-        oA.Fields.Where( f => !f.IsUnnamed ).Should().BeEmpty( "The oblivious anonymous record has no field name." );
-        oA.Fields.Where( f => f.Type != tO ).Should().BeEmpty( "The oblivious anonymous record has oblivious field types." );
+        oA.IsOblivious.ShouldBeTrue();
+        oA.Fields.Where( f => !f.IsUnnamed ).ShouldBeEmpty( "The oblivious anonymous record has no field name." );
+        oA.Fields.Where( f => f.Type != tO ).ShouldBeEmpty( "The oblivious anonymous record has oblivious field types." );
     }
 
 }

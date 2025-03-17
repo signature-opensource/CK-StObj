@@ -1,10 +1,6 @@
-using CK.CodeGen;
 using CK.Core;
-using CK.Setup;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
+using Shouldly;
 using NUnit.Framework;
-using System;
 using System.Diagnostics;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
@@ -79,9 +75,9 @@ public class ConstructorTests : TypeCollectorTestsBase
             } );
             var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
             Debug.Assert( c.ConstructorParameters != null );
-            c.ConstructorParameters.Should().HaveCount( 1 );
-            c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
-            c.ConstructorParameters[0].Name.Should().Be( "a" );
+            c.ConstructorParameters.Count.ShouldBe( 1 );
+            c.ConstructorParameters[0].IsAutoService.ShouldBeFalse();
+            c.ConstructorParameters[0].Name.ShouldBe( "a" );
         }
         {
             var r = CheckSuccess( collector =>
@@ -89,7 +85,7 @@ public class ConstructorTests : TypeCollectorTestsBase
                 collector.RegisterType( TestHelper.Monitor, typeof( ServiceWithDefaultCtor ) );
             } );
             var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
-            c.ConstructorParameters.Should().BeEmpty();
+            c.ConstructorParameters.ShouldBeEmpty();
         }
     }
 

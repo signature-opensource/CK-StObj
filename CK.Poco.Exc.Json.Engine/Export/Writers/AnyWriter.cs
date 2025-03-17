@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using System;
 using System.Linq;
 
 namespace CK.Setup.PocoJson;

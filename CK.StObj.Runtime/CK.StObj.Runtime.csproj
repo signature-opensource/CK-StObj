@@ -13,9 +13,9 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="11.1.0" />
-    <PackageReference Include="CK.Globalization" Version="1.1.0" />
-    <PackageReference Include="CK.Setup.Dependency" Version="19.1.0" />
+    <PackageReference Include="CK.CodeGen" Version="12.0.0" />
+    <PackageReference Include="CK.Globalization" Version="2.0.0" />
+    <PackageReference Include="CK.Setup.Dependency" Version="20.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

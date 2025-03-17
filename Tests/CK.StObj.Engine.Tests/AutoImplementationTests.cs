@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using static CK.Testing.MonitorTestHelper;
@@ -42,7 +42,7 @@ public class AutoImplementationTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A2 )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2>();
+        map.StObjs.Obtain<A>().ShouldNotBeNull().ShouldBeAssignableTo<A2>();
     }
 
     public abstract class A2Spec : A2
@@ -55,7 +55,7 @@ public class AutoImplementationTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A2Spec )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2Spec>();
+        map.StObjs.Obtain<A>().ShouldNotBeNull().ShouldBeAssignableTo<A2Spec>();
     }
 
     public abstract class A3 : A
@@ -69,7 +69,7 @@ public class AutoImplementationTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A3 )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A3>();
+        map.StObjs.Obtain<A>().ShouldNotBeNull().ShouldBeAssignableTo<A>().ShouldNotBeAssignableTo<A3>();
     }
 
     [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
@@ -89,7 +89,7 @@ public class AutoImplementationTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( A4 )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A4>();
+        map.StObjs.Obtain<A>().ShouldNotBeNull().ShouldBeAssignableTo<A>().ShouldNotBeAssignableTo<A4>();
     }
 
 }

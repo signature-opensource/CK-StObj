@@ -1,8 +1,7 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
+using Shouldly;
 using System;
-using System.Collections.Generic;
 
 using static CK.Testing.MonitorTestHelper;
 
@@ -25,7 +24,7 @@ public class TypeCollectorTestsBase
             registerTypes( existing );
             var r = existing.GetResult( TestHelper.Monitor );
             r.LogErrorAndWarnings( TestHelper.Monitor );
-            (r.HasFatalError || error).Should().Be( false, "There must be no error." );
+            (r.HasFatalError || error).ShouldBe( false, "There must be no error." );
             return r;
         }
     }
@@ -34,7 +33,7 @@ public class TypeCollectorTestsBase
     {
         var r = c.GetResult( TestHelper.Monitor );
         r.LogErrorAndWarnings( TestHelper.Monitor );
-        r.HasFatalError.Should().Be( true, "There must be at least one fatal error." );
+        r.HasFatalError.ShouldBe( true, "There must be at least one fatal error." );
         return r;
     }
 

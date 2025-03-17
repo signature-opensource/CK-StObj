@@ -2,7 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
+using System.Linq;
 
 #pragma warning disable IDE0051 // Remove unused private members
 
@@ -147,10 +148,10 @@ public class FullServiceTests
         void RegisterStartupServices( IActivityMonitor m, SimpleServiceContainer startupServices )
         {
             startupServices.GetService( typeof( SuperStartupService ) )
-                .Should().BeNull( "B depends on A: B.RegisterStartupServices is called after this one." );
+                .ShouldBeNull( "B depends on A: B.RegisterStartupServices is called after this one." );
 
             startupServices.GetService( typeof( IStObjObjectMap ) )
-                .Should().NotBeNull( "The StObj side of the map (that handles the Real objects) is available." );
+                .ShouldNotBeNull( "The StObj side of the map (that handles the Real objects) is available." );
         }
 
         /// <summary>
@@ -173,9 +174,9 @@ public class FullServiceTests
                                 TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem ext,
                                 IOptionalStartupService? optionalService = null )
         {
-            ambientObjects.Obtain<IA1>().Should().BeSameAs( this );
-            superService.Should().NotBeNull();
-            ext.Should().NotBeNull();
+            ambientObjects.Obtain<IA1>().ShouldBeSameAs( this );
+            superService.ShouldNotBeNull();
+            ext.ShouldNotBeNull();
             superService.Talk( register.Monitor );
         }
     }
@@ -226,7 +227,7 @@ public class FullServiceTests
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope b )
         {
             IFunctionScope mB = b.CreateOverride( m );
-            mB.Parent.Should().BeSameAs( b, "The function is ready to be implemented." );
+            mB.Parent.ShouldBeSameAs( b, "The function is ready to be implemented." );
 
             if( IsLambda ) mB.Append( "=> " ).Append( ActualCode ).Append( ';' ).NewLine();
             else mB.Append( ActualCode );
@@ -307,13 +308,15 @@ public class FullServiceTests
 
             auto.Services.GetRequiredService<IBIsRealObject>()
                 .BCanTalkToYou( TestHelper.Monitor, "Magic!" )
-                .Should().Be( 3172 );
+                .ShouldBe( 3172 );
 
             auto.Services.GetRequiredService<IBIsRealObject>()
-                .Should().BeSameAs( auto.Services.GetRequiredService<B>() )
-                .And.BeSameAs( auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
+                .ShouldBeSameAs( auto.Services.GetRequiredService<B>() );
+            auto.Services.GetRequiredService<IBIsRealObject>()
+                .ShouldBeSameAs( auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(),
+                "The Auto Service/Object must be the same instance!" );
 
-            entries.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
+            entries.ShouldContain( e => e.Text == "This is from generated code: Magic!" );
         }
     }
 
@@ -339,9 +342,9 @@ public class FullServiceTests
 
             auto.Services.GetRequiredService<ServiceCanTalk>()
                 .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
-                .Should().Be( 3172 );
+                .ShouldBe( 3172 );
 
-            entries.Should().Contain( e => e.Text == "This is from generated code: Magic! (Again)" );
+            entries.ShouldContain( e => e.Text == "This is from generated code: Magic! (Again)" );
         }
     }
 
@@ -363,12 +366,12 @@ public class FullServiceTests
             // Just to be sure it's actually a Scoped service.
             using( var scoped = auto.Services.CreateScope() )
             {
-                scoped.ServiceProvider.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().Should().NotBeSameAs( s );
+                scoped.ServiceProvider.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().ShouldNotBeSameAs( s );
             }
-            entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            entries.Should().NotContain( e => e.Text == "I'm doing something from B." );
-            entries.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Alice'.'."
+            entries.ShouldNotContain( e => e.MaskedLevel >= LogLevel.Error );
+            entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." );
+            entries.ShouldNotContain( e => e.Text == "I'm doing something from B." );
+            entries.ShouldContain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Alice'.'."
                                         || e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Bob'.'." );
         }
     }
@@ -387,13 +390,13 @@ public class FullServiceTests
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             // We are using here the ScopedImplementation.
             var s = auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
-            s.Should().BeOfType<ScopedImplementation>();
+            s.ShouldBeOfType<ScopedImplementation>();
             s.DoSomething( TestHelper.Monitor );
 
-            entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            entries.Should().NotContain( e => e.Text == "I'm doing something from B." );
-            entries.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is ALWAYS 'Alice'.'." );
+            entries.ShouldNotContain( e => e.MaskedLevel >= LogLevel.Error );
+            entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." );
+            entries.ShouldNotContain( e => e.Text == "I'm doing something from B." );
+            entries.ShouldContain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is ALWAYS 'Alice'.'." );
         }
     }
 
@@ -410,12 +413,14 @@ public class FullServiceTests
         {
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
-            auto.ServiceCollection.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
+            auto.ServiceCollection.Where( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject )
+                                               && s.Lifetime == ServiceLifetime.Singleton )
+                                  .ShouldHaveSingleItem();
 
-            entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            entries.Should().Contain( e => e.Text == "I'm wrapping the default B's implementation." );
-            entries.Should().Contain( e => e.Text == "I'm doing something from B." );
+            entries.ShouldNotContain( e => e.MaskedLevel >= LogLevel.Error );
+            entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." );
+            entries.ShouldContain( e => e.Text == "I'm wrapping the default B's implementation." );
+            entries.ShouldContain( e => e.Text == "I'm doing something from B." );
         }
     }
 
@@ -433,10 +438,10 @@ public class FullServiceTests
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).LoadMap().CreateAutomaticServices( startupServices: startupServices );
             auto.Services.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
-            entries.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            entries.Should().Contain( e => e.Text == "B is no more doing something." )
-                            .And.NotContain( e => e.Text == "I'm doing something from B." );
+            entries.ShouldNotContain( e => e.MaskedLevel >= LogLevel.Error );
+            entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." );
+            entries.ShouldContain( e => e.Text == "B is no more doing something." );
+            entries.ShouldNotContain( e => e.Text == "I'm doing something from B." );
         }
     }
 
@@ -454,7 +459,7 @@ public class FullServiceTests
             await configuration.GetFailedAutomaticServicesAsync( "But SuperStartupService has been told to fail miserably.",
                                                                  startupServices: startupServices );
 
-            entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." && e.MaskedLevel == LogLevel.Info );
+            entries.ShouldContain( e => e.Text == "SuperStartupService is talking to you." && e.MaskedLevel == LogLevel.Info );
         }
     }
 
@@ -479,9 +484,9 @@ public class FullServiceTests
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn, 1000 ) )
             {
                 await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
-                auto.Services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+                Util.Invokable( auto.Services.GetService<ServiceWithValueTypeCtorParameters> ).ShouldThrow<InvalidOperationException>();
 
-                entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                entries.ShouldContain( e => e.MaskedLevel == LogLevel.Warn
                                                && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
         }
@@ -494,9 +499,9 @@ public class FullServiceTests
 
                 } );
                 var resolved = auto.Services.GetRequiredService<ServiceWithValueTypeCtorParameters>();
-                resolved.RequiredValueType.Should().BeTrue();
+                resolved.RequiredValueType.ShouldBeTrue();
 
-                entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                entries.ShouldContain( e => e.MaskedLevel == LogLevel.Warn
                                             && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.OrdinalIgnoreCase ) );
             }
         }
@@ -523,7 +528,7 @@ public class FullServiceTests
             configuration.FirstBinPath.Types.Add( typeof( ServiceWithVaryingParams ) );
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-            auto.Services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
+            Util.Invokable( auto.Services.GetService<ServiceWithVaryingParams> ).ShouldThrow<InvalidOperationException>();
         }
         {
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -534,7 +539,7 @@ public class FullServiceTests
 
             } );
             var resolved = auto.Services.GetRequiredService<ServiceWithVaryingParams>();
-            resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
+            resolved.Things.ShouldBe( new[] { 1, 2, 3 } );
         }
 
     }
@@ -553,7 +558,7 @@ public class FullServiceTests
         configuration.FirstBinPath.Types.Add( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-        auto.Services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
+        auto.Services.GetService<ServiceWithOptionalValueTypeCtorParameters>().ShouldNotBeNull();
     }
 
     public interface IPublicService : IAutoService

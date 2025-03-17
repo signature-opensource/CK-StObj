@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
@@ -42,7 +42,7 @@ public class EnumSupportTest
 
         var f = auto.Services.GetRequiredService<IPocoFactory<ITest>>();
         var o = f.Create( o => { o.Working = Code.Pending; o.NullableWorking = Code.Working; o.Result = Code.None; } );
-        o.ToString().Should().Be( @"{""Working"":2,""NullableWorking"":1,""Result"":[""WorkingCode"",0]}" );
+        o.ToString().ShouldBe( @"{""Working"":2,""NullableWorking"":1,""Result"":[""WorkingCode"",0]}" );
     }
 
     [Test]
@@ -59,15 +59,15 @@ public class EnumSupportTest
         var o2 = JsonTestHelper.Roundtrip( directory, o );
 
         Debug.Assert( o2 != null );
-        o2.Working.Should().Be( Code.Pending );
-        o2.NullableWorking.Should().Be( Code.Working );
-        o2.Result.Should().Be( Code.None );
+        o2.Working.ShouldBe( Code.Pending );
+        o2.NullableWorking.ShouldBe( Code.Working );
+        o2.Result.ShouldBe( Code.None );
 
         o.NullableWorking = null;
         o2 = JsonTestHelper.Roundtrip( directory, o );
-        o2.Working.Should().Be( Code.Pending );
-        o2.NullableWorking.Should().BeNull();
-        o2.Result.Should().Be( Code.None );
+        o2.Working.ShouldBe( Code.Pending );
+        o2.NullableWorking.ShouldBeNull();
+        o2.Result.ShouldBe( Code.None );
     }
 
     [ExternalName( "ULCode" )]
@@ -96,15 +96,15 @@ public class EnumSupportTest
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithULong>>();
         var o = f.Create( o => { o.Code = CodeOnULong.None; o.Result = CodeOnULong.None; } );
-        o.ToString().Should().Be( @"{""Code"":""0"",""Result"":[""ULCode"",""0""]}" );
+        o.ToString().ShouldBe( @"{""Code"":""0"",""Result"":[""ULCode"",""0""]}" );
 
         o.Code = CodeOnULong.Working;
         o.Result = o.Code;
-        o.ToString().Should().Be( @"{""Code"":""9223372036854775807"",""Result"":[""ULCode"",""9223372036854775807""]}" );
+        o.ToString().ShouldBe( @"{""Code"":""9223372036854775807"",""Result"":[""ULCode"",""9223372036854775807""]}" );
 
         o.Code = CodeOnULong.Pending;
         o.Result = o.Code;
-        o.ToString().Should().Be( @"{""Code"":""18446744073709551615"",""Result"":[""ULCode"",""18446744073709551615""]}" );
+        o.ToString().ShouldBe( @"{""Code"":""18446744073709551615"",""Result"":[""ULCode"",""18446744073709551615""]}" );
     }
 
     public interface IWithList : IPoco
@@ -127,7 +127,7 @@ public class EnumSupportTest
             o.Codes.Add( Code.Working );
             o.Codes.Add( Code.Pending );
         } );
-        o.ToString().Should().Be( """{"Codes":[1,2]}""" );
+        o.ToString().ShouldBe( """{"Codes":[1,2]}""" );
 
         JsonTestHelper.Roundtrip( directory, o );
     }

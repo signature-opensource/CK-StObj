@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -42,10 +42,10 @@ public class PocoCovariantPropertyTests
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var a = d.Create<IActualRootA>();
-        a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
-        a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
-        a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
-        a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
+        a.Lines.ShouldBeAssignableTo<IList<IActualSubA>>();
+        a.Lines.ShouldBeAssignableTo<IReadOnlyList<IActualSubA>>();
+        a.Lines.ShouldBeAssignableTo<IReadOnlyList<ISubDefiner>>();
+        a.Lines.ShouldBeAssignableTo<IReadOnlyList<object>>();
     }
 
     public interface IActualRootAConcrete : IRootDefiner
@@ -62,10 +62,10 @@ public class PocoCovariantPropertyTests
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var a = d.Create<IActualRootAConcrete>();
-        a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
-        a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
-        a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
-        a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
+        a.Lines.ShouldBeAssignableTo<IList<IActualSubA>>();
+        a.Lines.ShouldBeAssignableTo<IReadOnlyList<IActualSubA>>();
+        a.Lines.ShouldBeAssignableTo<IReadOnlyList<ISubDefiner>>();
+        a.Lines.ShouldBeAssignableTo<IReadOnlyList<object>>();
     }
 
     [CKTypeDefiner]

@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
@@ -34,7 +34,7 @@ public class CommandLikeTests
             Throw.DebugAssert( command != null );
             var unified1 = ts.FindByType<ISecondaryPocoType>( typeof( IUnified1 ) );
             Throw.DebugAssert( unified1 != null );
-            command.SecondaryTypes.Should().HaveCount( 1 ).And.Contain( unified1 );
+            command.SecondaryTypes.ShouldHaveSingleItem().ShouldBe( unified1 );
         }
         {
             var r = TestHelper.GetSuccessfulCollectorResult( [typeof( IUnified2 ), typeof( IUnified1 )] );
@@ -44,7 +44,7 @@ public class CommandLikeTests
             var unified1 = ts.FindByType<ISecondaryPocoType>( typeof( IUnified1 ) );
             var unified2 = ts.FindByType<ISecondaryPocoType>( typeof( IUnified2 ) );
             Throw.DebugAssert( unified1 != null && unified2 != null );
-            command.SecondaryTypes.Should().HaveCount( 2 ).And.Contain( new[] { unified1, unified2 } );
+            command.SecondaryTypes.ShouldBe( [unified1, unified2], ignoreOrder: true );
         }
     }
 
@@ -61,11 +61,11 @@ public class CommandLikeTests
         var icr = ts.FindGenericTypeDefinition( typeof( ICommand<> ) );
         Throw.DebugAssert( icr != null );
         var withResult = command.AbstractTypes.Where( a => a.GenericTypeDefinition == icr );
-        withResult.Should().HaveCount( 3 );
+        withResult.Count().ShouldBe( 3 );
 
         var minimal = withResult.ComputeMinimal();
-        minimal.Should().HaveCount( 2 );
-        minimal.Select( m => m.ToString() ).OrderBy( Util.FuncIdentity ).Should().BeEquivalentTo(
+        minimal.Count.ShouldBe( 2 );
+        minimal.Select( m => m.ToString() ).OrderBy( Util.FuncIdentity ).ShouldBe(
         [
             "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<int>",
             "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<string>"
@@ -115,13 +115,13 @@ public class CommandLikeTests
 
         var command = ts.FindByType<IPrimaryPocoType>( typeof( ICommandWithPocoResult ) );
         Throw.DebugAssert( command != null );
-        command.AllAbstractTypes.Should().HaveCount( 6 );
-        command.AbstractTypes.Should().BeEquivalentTo( command.AllAbstractTypes, "No ImplementationLess since we registered the IUnifiedResult." );
+        command.AllAbstractTypes.Count.ShouldBe( 6 );
+        command.AbstractTypes.ShouldBe( command.AllAbstractTypes, "No ImplementationLess since we registered the IUnifiedResult." );
         // Consider all ICommand<T> and reduce them.
         var withResult = command.AbstractTypes.Where( a => a.GenericTypeDefinition == commandWithResultType );
         var reduced = withResult.ComputeMinimal();
-        reduced.Should().HaveCount( 1 );
-        reduced[0].GenericArguments[0].Type.ToString().Should().Be( "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IUnifiedResult?" );
+        reduced.Count.ShouldBe( 1 );
+        reduced[0].GenericArguments[0].Type.ToString().ShouldBe( "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IUnifiedResult?" );
     }
 
     [Test]
@@ -131,8 +131,7 @@ public class CommandLikeTests
         var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
 
         var withCommandButNotItsResult = ts.SetManager.EmptyExchangeable.Include( [ts.FindByType( typeof( ICommandUnifiedWithTheResult ) )!] );
-        withCommandButNotItsResult.NonNullableTypes.Select( t => t.ToString() ).Should().HaveCount( 16 )
-            .And.BeEquivalentTo(
+        withCommandButNotItsResult.NonNullableTypes.Select(t => t.ToString()).ShouldBe( 
             [
                 "[PrimaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithPocoResult",
                 "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithMorePocoResult",
@@ -150,7 +149,7 @@ public class CommandLikeTests
                 "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICrisPoco",
                 "[AbstractPoco]CK.Core.IPoco",
                 "[Basic]int"
-            ] );
+            ], ignoreOrder: true );
 
     }
 

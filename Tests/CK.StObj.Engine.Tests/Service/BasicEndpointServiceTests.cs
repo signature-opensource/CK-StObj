@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -27,7 +27,7 @@ public class BasicEndpointServiceTests
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( EndpointService1 )] ).EngineMap;
         Throw.DebugAssert( map != null );
 
-        map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeTrue();
+        map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).ShouldBeTrue();
     }
 
     [ScopedContainerConfiguredService]
@@ -71,7 +71,7 @@ public class BasicEndpointServiceTests
         Debug.Assert( map != null, "No initialization error." );
 
         IStObjServiceClassDescriptor descriptor = map.Services.Mappings[typeof( EndpointDependentService1 )];
-        descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
+        descriptor.AutoServiceKind.ShouldBe( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
     }
 
     public interface IEndpointDependentService2 : IAutoService
@@ -93,9 +93,9 @@ public class BasicEndpointServiceTests
 
         IStObjServiceClassDescriptor dDep2 = map.Services.Mappings[typeof( IEndpointDependentService2 )];
         IStObjServiceClassDescriptor dDep1 = map.Services.Mappings[typeof( EndpointDependentService1 )];
-        map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeTrue( "A Endpoint service can be an Automatic service." );
-        dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
-        dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
+        map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).ShouldBeTrue( "A Endpoint service can be an Automatic service." );
+        dDep2.AutoServiceKind.ShouldBe( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
+        dDep1.AutoServiceKind.ShouldBe( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
     }
 
 }

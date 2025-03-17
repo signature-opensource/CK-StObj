@@ -1,9 +1,6 @@
-using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-
-using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests;
 
@@ -23,10 +20,10 @@ public class StObjServiceCollectionExtensionsTests
 
         var sp = services.BuildServiceProvider();
 
-        sp.GetService( typeof( A ) ).Should().BeNull();
+        sp.GetService( typeof( A ) ).ShouldBeNull();
         var a = sp.GetRequiredService<IA>();
         var b = sp.GetRequiredService<IB>();
-        a.Should().NotBeSameAs( b );
+        a.ShouldNotBeSameAs( b );
     }
 
 }

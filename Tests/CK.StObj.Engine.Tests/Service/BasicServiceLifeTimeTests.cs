@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Linq;
@@ -30,9 +30,9 @@ public class BasicServiceLifetimeTests
     {
         var r = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleClassSingleton ), typeof( SimpleClassScoped ), typeof( SimpleClassAmbient )] ).EngineMap;
         Debug.Assert( r != null, "No initialization error." );
-        r.Services.Mappings[typeof( SimpleClassSingleton )].IsScoped.Should().BeFalse();
-        r.Services.Mappings[typeof( SimpleClassScoped )].IsScoped.Should().BeTrue();
-        r.Services.Mappings[typeof( SimpleClassAmbient )].IsScoped.Should().BeFalse();
+        r.Services.Mappings[typeof( SimpleClassSingleton )].IsScoped.ShouldBeFalse();
+        r.Services.Mappings[typeof( SimpleClassScoped )].IsScoped.ShouldBeTrue();
+        r.Services.Mappings[typeof( SimpleClassAmbient )].IsScoped.ShouldBeFalse();
     }
 
     public class BuggyDoubleScopeClassAmbient : IScopedAutoService, Core.ISingletonAutoService { }
@@ -80,7 +80,7 @@ public class BasicServiceLifetimeTests
         collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), ConfigurableAutoServiceKind.IsSingleton );
         collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
         var r = collector.GetResult( TestHelper.Monitor );
-        r.HasFatalError.Should().BeFalse();
+        r.HasFatalError.ShouldBeFalse();
     }
 
     [Test]
@@ -91,7 +91,7 @@ public class BasicServiceLifetimeTests
         collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
         var r = collector.GetResult( TestHelper.Monitor );
         collector.FatalOrErrors.Any( m => m.Contains( "s marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." ) )
-                        .Should().BeTrue();
+                        .ShouldBeTrue();
     }
 
     public class SingletonThatDependsOnSingleton : Core.ISingletonAutoService
@@ -119,7 +119,7 @@ public class BasicServiceLifetimeTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SimpleClassSingleton ), typeof( AmbientThatDependsOnSingleton )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.Services.Mappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
+        map.Services.Mappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.ShouldBeFalse();
     }
 
     public interface IAmbientThatDependsOnNothing : IAutoService { }
@@ -131,8 +131,8 @@ public class BasicServiceLifetimeTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( AmbientThatDependsOnNothing )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.Services.Mappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
-        map.Services.Mappings[typeof( AmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
+        map.Services.Mappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.ShouldBeFalse();
+        map.Services.Mappings[typeof( AmbientThatDependsOnNothing )].IsScoped.ShouldBeFalse();
     }
 
     public class AmbientThatDependsOnExternal : IAutoService
@@ -147,7 +147,7 @@ public class BasicServiceLifetimeTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( AmbientThatDependsOnExternal )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.Services.Mappings[typeof( AmbientThatDependsOnExternal )].IsScoped.Should().BeTrue();
+        map.Services.Mappings[typeof( AmbientThatDependsOnExternal )].IsScoped.ShouldBeTrue();
     }
 
     public interface ISampleRealObject : IRealObject { }
@@ -190,7 +190,7 @@ public class BasicServiceLifetimeTests
         collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatWillBeResolvedAsSingleton ) );
         var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingleton )].IsScoped.Should().BeFalse();
+        map.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingleton )].IsScoped.ShouldBeFalse();
     }
 
     public interface IOtherExternalService { }
@@ -234,7 +234,7 @@ public class BasicServiceLifetimeTests
         var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
         Throw.DebugAssert( map != null );
         bool isScoped = map.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
-        isScoped.Should().Be( mode == "UnknwonLifetimeExternalService" );
+        isScoped.ShouldBe( mode == "UnknwonLifetimeExternalService" );
     }
 
 
@@ -250,8 +250,8 @@ public class BasicServiceLifetimeTests
         collector.RegisterType( TestHelper.Monitor, typeof( CBase1 ) );
         var map = collector.GetResult( TestHelper.Monitor ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.Services.Mappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
-        map.Services.Mappings.ContainsKey( typeof( CBase2 ) ).Should().BeFalse();
+        map.Services.Mappings.ContainsKey( typeof( CBase1 ) ).ShouldBeTrue();
+        map.Services.Mappings.ContainsKey( typeof( CBase2 ) ).ShouldBeFalse();
     }
 
     public class OneSingleton : ISingletonAutoService
@@ -285,6 +285,6 @@ public class BasicServiceLifetimeTests
     {
         var map = TestHelper.GetSuccessfulCollectorResult( [typeof( Scoped ), typeof( Unknown ), typeof( ServiceFreeLifetime )] ).EngineMap;
         Throw.DebugAssert( map != null );
-        map.Services.Mappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
+        map.Services.Mappings[typeof( ServiceFreeLifetime )].IsScoped.ShouldBeTrue();
     }
 }

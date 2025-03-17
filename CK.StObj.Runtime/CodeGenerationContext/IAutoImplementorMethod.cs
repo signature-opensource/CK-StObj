@@ -1,4 +1,3 @@
-using CK.Core;
 using System.Reflection;
 
 namespace CK.Setup;

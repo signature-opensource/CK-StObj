@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -43,11 +43,11 @@ public partial class ConformantDITests
         c.AddSingleton<IB>( sp => sp.GetRequiredService<B>() );
 
         var s = c.BuildServiceProvider();
-        s.GetRequiredService<A>().Name.Should().Be( "I'm the A." );
-        s.GetRequiredService<B>().Name.Should().Be( "I'm the B." );
+        s.GetRequiredService<A>().Name.ShouldBe( "I'm the A." );
+        s.GetRequiredService<B>().Name.ShouldBe( "I'm the B." );
 
-        s.GetRequiredService<IA>().Name.Should().Be( "I'm the B." );
-        s.GetRequiredService<IB>().Name.Should().Be( "I'm the B." );
+        s.GetRequiredService<IA>().Name.ShouldBe( "I'm the B." );
+        s.GetRequiredService<IB>().Name.ShouldBe( "I'm the B." );
     }
 
     [Test]
@@ -62,8 +62,8 @@ public partial class ConformantDITests
             CheckValid( services );
             // This is a "multiple" compliant registration but we don't care since the IActivityMonitor
             // must fundamentally be a shared instance!
-            IsMultipleCompliant( services, typeof( IActivityMonitor ) ).Should().BeTrue();
-            IsMultipleCompliant( services, typeof( IParallelLogger ) ).Should().BeTrue();
+            IsMultipleCompliant( services, typeof( IActivityMonitor ) ).ShouldBeTrue();
+            IsMultipleCompliant( services, typeof( IParallelLogger ) ).ShouldBeTrue();
         }
         // Without the ActivityMonitor type exposed.
         {
@@ -74,8 +74,8 @@ public partial class ConformantDITests
 
             CheckValid( services );
             // This is also "multiple" compliant.
-            IsMultipleCompliant( services, typeof( IActivityMonitor ) ).Should().BeTrue();
-            IsMultipleCompliant( services, typeof( IParallelLogger ) ).Should().BeTrue();
+            IsMultipleCompliant( services, typeof( IActivityMonitor ) ).ShouldBeTrue();
+            IsMultipleCompliant( services, typeof( IParallelLogger ) ).ShouldBeTrue();
         }
 
         static void CheckValid( ServiceCollection services )
@@ -85,7 +85,7 @@ public partial class ConformantDITests
             var sp = scoped.ServiceProvider;
             var monitor = sp.GetRequiredService<IActivityMonitor>();
             var parallel = sp.GetRequiredService<IParallelLogger>();
-            parallel.Should().BeSameAs( monitor.ParallelLogger );
+            parallel.ShouldBeSameAs( monitor.ParallelLogger );
         }
 
         bool IsMultipleCompliant( ServiceCollection services, Type type )

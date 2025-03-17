@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Threading.Tasks;
@@ -48,18 +48,18 @@ public class PocoWithGlobalizationTypesTests
 
         var p = auto.Services.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
-        p.ExtendedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
-        p.NormalizedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
-        p.MCString.Should().BeSameAs( MCString.Empty );
-        p.CodeString.Should().BeSameAs( CodeString.Empty );
+        p.ExtendedCultureInfo.ShouldBeSameAs( NormalizedCultureInfo.CodeDefault );
+        p.NormalizedCultureInfo.ShouldBeSameAs( NormalizedCultureInfo.CodeDefault );
+        p.MCString.ShouldBeSameAs( MCString.Empty );
+        p.CodeString.ShouldBeSameAs( CodeString.Empty );
 
-        p.NExtendedCultureInfo.Should().BeNull();
-        p.NNormalizedCultureInfo.Should().BeNull();
-        p.NSimpleUserMessage.Should().BeNull();
-        p.NUserMessage.Should().BeNull();
-        p.NMCString.Should().BeNull();
-        p.NCodeString.Should().BeNull();
-        p.NFormattedString.Should().BeNull();
-        p.NUserMessage.HasValue.Should().BeFalse();
+        p.NExtendedCultureInfo.ShouldBeNull();
+        p.NNormalizedCultureInfo.ShouldBeNull();
+        p.NSimpleUserMessage.ShouldBeNull();
+        p.NUserMessage.ShouldBeNull();
+        p.NMCString.ShouldBeNull();
+        p.NCodeString.ShouldBeNull();
+        p.NFormattedString.ShouldBeNull();
+        p.NUserMessage.HasValue.ShouldBeFalse();
     }
 }

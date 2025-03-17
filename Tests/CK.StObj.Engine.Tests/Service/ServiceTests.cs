@@ -1,12 +1,11 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.Service.OpenGenericSupportTests;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
@@ -44,8 +43,8 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SampleService ), typeof( SampleService2 )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
-            map.Services.Mappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
+            map.Services.Mappings[typeof( ISampleService )].ClassType.ShouldBe( typeof( SampleService2 ) );
+            map.Services.Mappings[typeof( SampleService )].ClassType.ShouldBe( typeof( SampleService ) );
         }
 
         [Local.ReplaceAutoService( "CK.StObj.Engine.Tests.Service.ServiceTests+SampleService2, CK.StObj.Engine.Tests" )]
@@ -59,9 +58,9 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulCollectorResult( [typeof( SampleService ), typeof( SampleService2 ), typeof( SampleService3 )] ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
-            map.Services.Mappings[typeof( SampleService2 )].ClassType.Should().Be( typeof( SampleService2 ) );
-            map.Services.Mappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
+            map.Services.Mappings[typeof( ISampleService )].ClassType.ShouldBe( typeof( SampleService3 ) );
+            map.Services.Mappings[typeof( SampleService2 )].ClassType.ShouldBe( typeof( SampleService2 ) );
+            map.Services.Mappings[typeof( SampleService )].ClassType.ShouldBe( typeof( SampleService ) );
         }
 
 
@@ -100,12 +99,12 @@ namespace CK.StObj.Engine.Tests.Service
                 configuration.FirstBinPath.Types.Add( typeof( Obj ) );
                 await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-                auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
-                auto.Map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
-                auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.ShouldBeOfType<Obj>();
+                auto.Map.StObjs.Obtain<Obj>().ShouldBeOfType<Obj>();
+                auto.Map.StObjs.Obtain<ISampleService>().ShouldBeNull( "ISampleService is a Service." );
                 // On built ServiceProvider.
                 var o = auto.Services.GetRequiredService<Obj>();
-                auto.Services.GetRequiredService<ISampleService>().Should().BeSameAs( o );
+                auto.Services.GetRequiredService<ISampleService>().ShouldBeSameAs( o );
             }
             {
                 var configuration = TestHelper.CreateDefaultEngineConfiguration();
@@ -125,14 +124,14 @@ namespace CK.StObj.Engine.Tests.Service
             configuration.FirstBinPath.Types.Add( typeof( ObjSpec ) );
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-            auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
-            auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            auto.Map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
-            auto.Map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
+            auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.ShouldBeAssignableTo<ObjSpec>();
+            auto.Map.StObjs.Obtain<ISampleService>().ShouldBeNull( "ISampleService is a Service." );
+            auto.Map.StObjs.Obtain<Obj>().ShouldBeAssignableTo<ObjSpec>();
+            auto.Map.StObjs.Obtain<ObjSpec>().ShouldBeAssignableTo<ObjSpec>();
             // On the built ServiceProvider.
             var o = auto.Services.GetRequiredService<Obj>();
-            auto.Services.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
-            auto.Services.GetRequiredService<ISampleService>().Should().BeSameAs( o );
+            auto.Services.GetRequiredService<ObjSpec>().ShouldBeSameAs( o );
+            auto.Services.GetRequiredService<ISampleService>().ShouldBeSameAs( o );
         }
 
         public interface ISampleServiceSpec : ISampleService
@@ -156,20 +155,20 @@ namespace CK.StObj.Engine.Tests.Service
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             // On generated data.
-            auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            auto.Map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            auto.Map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            auto.Map.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
-            auto.Map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
-            auto.Map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
-            auto.Map.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
+            auto.Map.Services.ObjectMappings[typeof( ISampleService )].Implementation.ShouldBeAssignableTo<ObjSpecFinal>();
+            auto.Map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.ShouldBeAssignableTo<ObjSpecFinal>();
+            auto.Map.StObjs.Obtain<ISampleService>().ShouldBeNull( "ISampleService is a Service." );
+            auto.Map.StObjs.Obtain<ISampleServiceSpec>().ShouldBeNull( "ISampleServiceSpec is a Service." );
+            auto.Map.StObjs.Obtain<Obj>().ShouldBeAssignableTo<ObjSpecFinal>();
+            auto.Map.StObjs.Obtain<ObjSpec>().ShouldBeAssignableTo<ObjSpecFinal>();
+            auto.Map.StObjs.Obtain<ObjSpecIntermediate>().ShouldBeAssignableTo<ObjSpecFinal>();
             // On build ServiceProvider.
             var o = auto.Services.GetRequiredService<ObjSpecFinal>();
-            auto.Services.GetRequiredService<Obj>().Should().BeSameAs( o );
-            auto.Services.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
-            auto.Services.GetRequiredService<ObjSpecIntermediate>().Should().BeSameAs( o );
-            auto.Services.GetRequiredService<ISampleService>().Should().BeSameAs( o );
-            auto.Services.GetRequiredService<ISampleServiceSpec>().Should().BeSameAs( o );
+            auto.Services.GetRequiredService<Obj>().ShouldBeSameAs( o );
+            auto.Services.GetRequiredService<ObjSpec>().ShouldBeSameAs( o );
+            auto.Services.GetRequiredService<ObjSpecIntermediate>().ShouldBeSameAs( o );
+            auto.Services.GetRequiredService<ISampleService>().ShouldBeSameAs( o );
+            auto.Services.GetRequiredService<ISampleServiceSpec>().ShouldBeSameAs( o );
         }
 
         public interface IBase : IAutoService
@@ -200,8 +199,8 @@ namespace CK.StObj.Engine.Tests.Service
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
             var oDep = auto.Services.GetRequiredService<ODep>();
-            auto.Services.GetRequiredService<IBase>().Should().BeSameAs( oDep );
-            auto.Services.GetRequiredService<IDerived>().Should().BeSameAs( oDep );
+            auto.Services.GetRequiredService<IBase>().ShouldBeSameAs( oDep );
+            auto.Services.GetRequiredService<IDerived>().ShouldBeSameAs( oDep );
         }
 
 
@@ -275,27 +274,27 @@ namespace CK.StObj.Engine.Tests.Service
             configuration.FirstBinPath.Types.Add( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-            auto.Map.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
-            auto.Map.Services.Mappings[typeof( A )].IsScoped.Should().BeTrue();
-            auto.Map.Services.Mappings[typeof( IA )].IsScoped.Should().BeTrue();
+            auto.Map.Services.Mappings[typeof( IB )].IsScoped.ShouldBeTrue();
+            auto.Map.Services.Mappings[typeof( A )].IsScoped.ShouldBeTrue();
+            auto.Map.Services.Mappings[typeof( IA )].IsScoped.ShouldBeTrue();
 
             // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
             var rootA = auto.Services.GetRequiredService<A>();
-            rootA.Should().Be( auto.Services.GetRequiredService<IA>() ).And.NotBeNull();
+            rootA.ShouldBe( auto.Services.GetRequiredService<IA>() );
             var rootB = auto.Services.GetRequiredService<B>();
-            rootB.Should().Be( auto.Services.GetRequiredService<IB>() ).And.NotBeNull();
-            rootB.Ctx.Should().Be( auto.Services.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
+            rootB.ShouldBe( auto.Services.GetRequiredService<IB>() );
+            rootB.Ctx.ShouldBe( auto.Services.GetRequiredService<ISqlCallContext>() );
 
             using( var scope = auto.Services.CreateScope() )
             {
                 var scopeA = scope.ServiceProvider.GetRequiredService<A>();
-                scopeA.Should().NotBeSameAs( rootA ).And.NotBeNull();
+                scopeA.ShouldNotBeSameAs( rootA );
 
                 var scopeB = scope.ServiceProvider.GetRequiredService<B>();
-                scopeB.Should().NotBeSameAs( rootB ).And.NotBeNull();
-                scopeB.Ctx.Should().Be( scope.ServiceProvider.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
+                scopeB.ShouldNotBeSameAs( rootB );
+                scopeB.Ctx.ShouldBe( scope.ServiceProvider.GetRequiredService<ISqlCallContext>() );
 
-                scopeB.Ctx.Should().NotBeSameAs( rootB.Ctx );
+                scopeB.Ctx.ShouldNotBeSameAs( rootB.Ctx );
             }
         }
 
@@ -313,7 +312,7 @@ namespace CK.StObj.Engine.Tests.Service
             configuration.FirstBinPath.Types.Add( typeof( SampleServiceGenerated ), typeof( SampleService ) );
             await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-            auto.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
+            auto.Services.GetRequiredService<ISampleService>().ShouldBeOfType<SampleService>();
         }
 
 

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -61,13 +61,13 @@ public class PocoInterfacesAndOtherInterfacesTests
         var poco = TestHelper.GetSuccessfulCollectorResult( TheseValidNestedTypes ).PocoTypeSystemBuilder.PocoDirectory;
         Debug.Assert( poco != null );
 
-        poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) } );
-        poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
-                                                                   typeof( ICommandPart ),
-                                                                   typeof( ICommandAuthUnsafe ),
-                                                                   typeof( ICommandAuthNormal ),
-                                                                   typeof( ICommandAuthCritical ),
-                                                                   typeof( ICommandAuthDeviceId ) } );
+        poco.AllInterfaces.Keys.ShouldBe( [typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent )], ignoreOrder: true );
+        poco.OtherInterfaces.Keys.ShouldBe( [ typeof( ICommand ),
+                                              typeof( ICommandPart ),
+                                              typeof( ICommandAuthUnsafe ),
+                                              typeof( ICommandAuthNormal ),
+                                              typeof( ICommandAuthCritical ),
+                                              typeof( ICommandAuthDeviceId ) ], ignoreOrder: true );
     }
 
     [Test]
@@ -79,13 +79,13 @@ public class PocoInterfacesAndOtherInterfacesTests
             var poco = TestHelper.GetSuccessfulCollectorResult( types ).PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null );
 
-            poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IIndependent ) } );
-            poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
-                                                                       typeof( ICommandPart ),
-                                                                       typeof( ICommandAuthUnsafe ),
-                                                                       typeof( ICommandAuthNormal ),
-                                                                       typeof( ICommandAuthCritical ),
-                                                                       typeof( ICommandAuthDeviceId ) } );
+            poco.AllInterfaces.Keys.ShouldBe( [typeof( IFinal1 ), typeof( IIndependent )], ignoreOrder: true );
+            poco.OtherInterfaces.Keys.ShouldBe( [ typeof( ICommand ),
+                                                  typeof( ICommandPart ),
+                                                  typeof( ICommandAuthUnsafe ),
+                                                  typeof( ICommandAuthNormal ),
+                                                  typeof( ICommandAuthCritical ),
+                                                  typeof( ICommandAuthDeviceId ) ], ignoreOrder: true );
         }
         // Without IPoco at all: no definers are referenced.
         {
@@ -93,13 +93,13 @@ public class PocoInterfacesAndOtherInterfacesTests
             var poco = TestHelper.GetSuccessfulCollectorResult( types ).PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null );
 
-            poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );
-            poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
-                                                                       typeof( ICommandPart ),
-                                                                       typeof( ICommandAuthUnsafe ),
-                                                                       typeof( ICommandAuthNormal ),
-                                                                       typeof( ICommandAuthCritical ),
-                                                                       typeof( ICommandAuthDeviceId ) } );
+            poco.AllInterfaces.Keys.ShouldBe( [typeof( IIndependent )] );
+            poco.OtherInterfaces.Keys.ShouldBe( [ typeof( ICommand ),
+                                                  typeof( ICommandPart ),
+                                                  typeof( ICommandAuthUnsafe ),
+                                                  typeof( ICommandAuthNormal ),
+                                                  typeof( ICommandAuthCritical ),
+                                                  typeof( ICommandAuthDeviceId ) ], ignoreOrder: true );
         }
     }
 

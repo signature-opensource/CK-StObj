@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.CrisLike;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -80,7 +80,7 @@ public class ExchangeableSetTests
         t.Data.Ratio = Math.PI;
         t.MultipleDatas.Add( new Data( new LocalOnlyData( "LOCAL-DATA-ONLY" ), "Eva", 2, Guid.Empty, Math.E, new MemoryOnlyData( "NOWAY" ) ) );
         t.MoreData.CultureExt = ExtendedCultureInfo.EnsureExtendedCultureInfo( "fr,es,de,en" );
-        t.Raw = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        t.Raw = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         return t;
     }
 
@@ -96,25 +96,31 @@ public class ExchangeableSetTests
 
         // Using ToString: the "AllSerializable" set is used.
         // Fields use the Pascal casing.
-        PocoJsonExportOptions.ToStringDefault.TypeFilterName.Should().Be( "AllSerializable" );
+        PocoJsonExportOptions.ToStringDefault.TypeFilterName.ShouldBe( "AllSerializable" );
         string? t = thing.ToString();
         Throw.DebugAssert( t != null );
-        t.Should().Contain( "Power" ).And.NotContain( "power" );
+        t.ShouldContain( "Power", Case.Sensitive );
+        t.ShouldNotContain( "power", Case.Sensitive );
         // The [NotSerializable] doesn't appear.
-        t.Should().NotContain( "SecureName" ).And.NotContain( "NOWAY" );
+        t.ShouldNotContain( "SecureName" );
+        t.ShouldNotContain( "NOWAY" );
         // But the [NotExchangeable] appears.
-        t.Should().Contain( "LocalName" ).And.Contain( "LOCAL-DATA-ONLY" );
+        t.ShouldContain( "LocalName" );
+        t.ShouldContain( "LOCAL-DATA-ONLY" );
 
 
         // Using default export/import options: set is "AllExchangeable".
         // Fields use the camel casing.
-        PocoJsonExportOptions.Default.TypeFilterName.Should().Be( "AllExchangeable" );
+        PocoJsonExportOptions.Default.TypeFilterName.ShouldBe( "AllExchangeable" );
         JsonTestHelper.Roundtrip( directory, thing, text: text => t = text );
         Throw.DebugAssert( t != null );
-        t.Should().Contain( "power" ).And.NotContain( "Power" );
+        t.ShouldContain( "power", Case.Sensitive );
+        t.ShouldNotContain( "Power", Case.Sensitive );
         // Both [NotSerializable] and [NotExchangeable] don't appear.
-        t.Should().NotContain( "secureName" ).And.NotContain( "NOWAY" )
-              .And.NotContain( "localName" ).And.NotContain( "LOCAL-DATA-ONLY" );
+        t.ShouldNotContain( "secureName" );
+        t.ShouldNotContain( "NOWAY" );
+        t.ShouldNotContain( "localName" );
+        t.ShouldNotContain( "LOCAL-DATA-ONLY" );
     }
 
     public record struct SafeData( LocalOnlyData LocalOnly, MemoryOnlyData MemoryOnly );
@@ -143,7 +149,7 @@ public class ExchangeableSetTests
         poco.LocalOnly.LocalName = "LOCAL-ONLY-2";
         poco.IAmHere = 42;
         // [NotSerializable] cannot be serialized at all.
-        poco.ToString().Should().Be( """{"SafeData":{"LocalOnly":{"LocalName":"LOCAL-ONLY-1"}},"LocalOnly":{"LocalName":"LOCAL-ONLY-2"},"IAmHere":42}""" );
+        poco.ToString().ShouldBe( """{"SafeData":{"LocalOnly":{"LocalName":"LOCAL-ONLY-1"}},"LocalOnly":{"LocalName":"LOCAL-ONLY-2"},"IAmHere":42}""" );
 
         // Forged payload.
         var attack = """{"SafeData":{"MemoryOnly":{"SecureName":"EVIL-1"},"LocalOnly":{"LocalName":"LOCAL-IN-1"}},"MemoryOnly":{"SecureName":"EVIL-2"},"LocalOnly":{"LocalName":"LOCAL-IN-2"},"IAmHere":-5}""";
@@ -152,19 +158,19 @@ public class ExchangeableSetTests
         var factory = directory.Find<ICannotBeSpoofed>();
         Throw.DebugAssert( factory != null );
         var r1 = factory.ReadJson( attack, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } )!;
-        r1.SafeData.MemoryOnly.SecureName.Should().Be( "" );
-        r1.SafeData.LocalOnly.LocalName.Should().Be( "LOCAL-IN-1" );
-        r1.MemoryOnly.SecureName.Should().Be( "" );
-        r1.LocalOnly.LocalName.Should().Be( "LOCAL-IN-2" );
-        r1.IAmHere.Should().Be( -5 );
+        r1.SafeData.MemoryOnly.SecureName.ShouldBe( "" );
+        r1.SafeData.LocalOnly.LocalName.ShouldBe( "LOCAL-IN-1" );
+        r1.MemoryOnly.SecureName.ShouldBe( "" );
+        r1.LocalOnly.LocalName.ShouldBe( "LOCAL-IN-2" );
+        r1.IAmHere.ShouldBe( -5 );
 
         // Reading with "AllExchangeable": [NotExchangeable] types are also ignored.
         var r2 = factory.ReadJson( attack, new PocoJsonImportOptions { TypeFilterName = "AllExchangeable" } )!;
-        r2.SafeData.MemoryOnly.SecureName.Should().Be( "" );
-        r2.SafeData.LocalOnly.LocalName.Should().Be( "" );
-        r2.MemoryOnly.SecureName.Should().Be( "" );
-        r2.LocalOnly.LocalName.Should().Be( "" );
-        r2.IAmHere.Should().Be( -5 );
+        r2.SafeData.MemoryOnly.SecureName.ShouldBe( "" );
+        r2.SafeData.LocalOnly.LocalName.ShouldBe( "" );
+        r2.MemoryOnly.SecureName.ShouldBe( "" );
+        r2.LocalOnly.LocalName.ShouldBe( "" );
+        r2.IAmHere.ShouldBe( -5 );
     }
 
     public interface ICannotBeSpoofed2 : IPoco
@@ -188,7 +194,7 @@ public class ExchangeableSetTests
 
         // [NotSerializable] cannot be serialized at all.
         // Serialization use array syntax for value tuples.
-        poco.ToString().Should().Be( """{"SafeData":[{"LocalName":"LOCAL-ONLY-1"}],"More":[[{"LocalName":"LOCAL-ONLY-2"}]]}""" );
+        poco.ToString().ShouldBe( """{"SafeData":[{"LocalName":"LOCAL-ONLY-1"}],"More":[[{"LocalName":"LOCAL-ONLY-2"}]]}""" );
 
         var factory = directory.Find<ICannotBeSpoofed2>();
         Throw.DebugAssert( factory != null );
@@ -196,23 +202,23 @@ public class ExchangeableSetTests
         // Forged payload with array syntax: the number of cells are incorrect, reading this throws.
         var attack1 = """{"SafeData":[{"SecureName":"EVIL-1"},{"LocalName":"LOCAL-IN-1"}],"More":[[{"SecureName":"EVIL-1"},{"LocalName":"LOCAL-IN-2"}]]}""";
 
-        FluentActions.Invoking( () => factory.ReadJson( attack1, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } ) )
-                     .Should().Throw<JsonException>();
+        Util.Invokable( () => factory.ReadJson( attack1, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } ) )
+                     .ShouldThrow<JsonException>();
 
         // Using the object syntax that is allowed by anonymous records:
         var attack2 = """{"SafeData":{"Item1":{"SecureName":"EVIL-1"},"Item2":{"LocalName":"LOCAL-IN-1"}},"More":[{"Memory":{"SecureName":"EVIL-1"},"Item2":{"LocalName":"LOCAL-IN-2"}}]}""";
         // Reading with "AllSerializable": [NotSerializable] types are ignored.
         var r1 = factory.ReadJson( attack2, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } )!;
-        r1.SafeData.Item1.SecureName.Should().Be( "" );
-        r1.SafeData.Local.LocalName.Should().Be( "LOCAL-IN-1" );
-        r1.More.Should().HaveCount( 1 );
-        r1.More[0].Memory.SecureName.Should().Be( "" );
-        r1.More[0].Item2.LocalName.Should().Be( "LOCAL-IN-2" );
+        r1.SafeData.Item1.SecureName.ShouldBe( "" );
+        r1.SafeData.Local.LocalName.ShouldBe( "LOCAL-IN-1" );
+        r1.More.Count.ShouldBe( 1 );
+        r1.More[0].Memory.SecureName.ShouldBe( "" );
+        r1.More[0].Item2.LocalName.ShouldBe( "LOCAL-IN-2" );
 
         // Reading with "AllExchangeable": [NotExchangeable] types are also ignored.
         var r2 = factory.ReadJson( attack2, new PocoJsonImportOptions { TypeFilterName = "AllExchangeable" } )!;
-        r2.SafeData.Item1.SecureName.Should().Be( "" );
-        r2.SafeData.Local.LocalName.Should().Be( "" );
-        r2.More.Should().HaveCount( 0, "The List itself is excluded from the type set!" );
+        r2.SafeData.Item1.SecureName.ShouldBe( "" );
+        r2.SafeData.Local.LocalName.ShouldBe( "" );
+        r2.More.Count.ShouldBe( 0, "The List itself is excluded from the type set!" );
     }
 }

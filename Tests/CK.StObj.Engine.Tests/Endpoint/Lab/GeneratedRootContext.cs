@@ -1,10 +1,8 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant;
 

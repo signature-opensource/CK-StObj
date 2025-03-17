@@ -334,11 +334,8 @@ public sealed partial class EngineConfiguration
         FinalizeBinPaths( monitor, c, ref success );
         return success;
 
-        /// <summary>
-        /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
-        /// are rooted.
-        /// </summary>
-        /// <returns>Non empty path on success.</returns>
+        // Ensures that BinPathConfiguration.Path and BinPathConfiguration.OutputPath are rooted.
+        // Returne a non empty path on success.
         static NormalizedPath CheckEnginePaths( IActivityMonitor monitor, EngineConfiguration c )
         {
             // Roots the BasePath.

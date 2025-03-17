@@ -2,10 +2,9 @@ using CK.Core;
 using CK.Setup;
 using CK.StObj.Engine.Tests.SimpleObjects;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -73,21 +72,21 @@ public class SimpleObjectsTests
         Debug.Assert( map != null, "No initialization error." );
 
         IStObjResult oa = map.StObjs.ToHead( typeof( ObjectA ) )!;
-        oa.Container!.ClassType.Should().Be( typeof( PackageForAB ) );
-        oa.LeafSpecialization.ClassType.Should().Be( typeof( ObjectALevel3 ) );
+        oa.Container!.ClassType.ShouldBe( typeof( PackageForAB ) );
+        oa.LeafSpecialization.ClassType.ShouldBe( typeof( ObjectALevel3 ) );
 
         IStObjResult oa1 = map.StObjs.ToHead( typeof( ObjectALevel1 ) )!;
-        oa1.Generalization.Should().BeSameAs( oa );
-        oa1.Container!.ClassType.Should().Be( typeof( PackageForABLevel1 ) );
+        oa1.Generalization.ShouldBeSameAs( oa );
+        oa1.Container!.ClassType.ShouldBe( typeof( PackageForABLevel1 ) );
 
         IStObjResult oa2 = map.StObjs.ToHead( typeof( ObjectALevel2 ) )!;
-        oa2.Generalization.Should().BeSameAs( oa1 );
-        oa2.Container!.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
+        oa2.Generalization.ShouldBeSameAs( oa1 );
+        oa2.Container!.ClassType.ShouldBe( typeof( PackageForABLevel1 ), "Inherited." );
 
         IStObjResult oa3 = map.StObjs.ToHead( typeof( ObjectALevel3 ) )!;
-        oa3.Generalization.Should().BeSameAs( oa2 );
-        oa3.Container!.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
-        oa.RootGeneralization.ClassType.Should().Be( typeof( ObjectA ) );
+        oa3.Generalization.ShouldBeSameAs( oa2 );
+        oa3.Container!.ClassType.ShouldBe( typeof( PackageForABLevel1 ), "Inherited." );
+        oa.RootGeneralization.ClassType.ShouldBe( typeof( ObjectA ) );
     }
 
     [Test]
@@ -267,15 +266,15 @@ public class SimpleObjectsTests
         configuration.FirstBinPath.Types.Add( typeof( Dep0 ), typeof( Dep1 ), typeof( Dep2 ), typeof( Defined ) );
         await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
 
-        auto.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
-        auto.Services.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
+        auto.Services.GetService<SuperDef>().ShouldBeNull( "This is a SuperDefiner. It is NOT a real object." );
+        auto.Services.GetService<Def>().ShouldBeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
         var defined = auto.Services.GetRequiredService<Defined>();
-        defined.Dep0.Should().NotBeNull();
-        defined.Dep1.Should().NotBeNull();
-        defined.Dep2.Should().NotBeNull();
-        defined.StObjInitializeCallCount.Should().Be( 3 );
-        defined.RegisterStartupServicesCallCount.Should().Be( 3 );
-        defined.ConfigureServicesCallCount.Should().Be( 3 );
+        defined.Dep0.ShouldNotBeNull();
+        defined.Dep1.ShouldNotBeNull();
+        defined.Dep2.ShouldNotBeNull();
+        defined.StObjInitializeCallCount.ShouldBe( 3 );
+        defined.RegisterStartupServicesCallCount.ShouldBe( 3 );
+        defined.ConfigureServicesCallCount.ShouldBe( 3 );
     }
 
 
@@ -368,6 +367,6 @@ public class SimpleObjectsTests
     {
         var m = TestHelper.GetSuccessfulCollectorResult( [typeof( MissingAutoImplementation )] ).EngineMap;
         Debug.Assert( m != null );
-        m.StObjs.FinalImplementations.Should().NotContain( i => i.FinalImplementation.Implementation is MissingAutoImplementation );
+        m.StObjs.FinalImplementations.ShouldNotContain( i => i.FinalImplementation.Implementation is MissingAutoImplementation );
     }
 }

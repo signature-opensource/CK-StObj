@@ -2,7 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Text;
@@ -56,7 +56,7 @@ public class PocoExternalPropertyImplementationTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();
         var o = f.Create();
-        o.GlobalSequence.Should().Be( 45343 );
+        o.GlobalSequence.ShouldBe( 45343 );
     }
 
 }

@@ -6,7 +6,6 @@ using System.Reflection;
 using CSemVer;
 using CK.Core;
 using System.Collections.Immutable;
-using System.Collections;
 
 namespace CK.Setup;
 

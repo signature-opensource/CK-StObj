@@ -45,6 +45,9 @@ public enum AssemblyKind
     PFeature = 32
 }
 
+/// <summary>
+/// Encapsulates bit flags operations for <see cref="AssemblyKind"/>.
+/// </summary>
 public static class AssemblyKindExtensions
 {
     /// <summary>
@@ -62,7 +65,7 @@ public static class AssemblyKindExtensions
 
     public static bool IsPFeatureOrDefiner( this AssemblyKind kind ) => (kind & (AssemblyKind.PFeature | AssemblyKind.PFeatureDefiner)) != 0;
 
-    // Thes two ones are warnings and Excluded is removed.
+    // These two are warnings and Excluded is removed.
     public static bool IsExcludedEngine( this AssemblyKind kind ) => (kind & (AssemblyKind.Engine | AssemblyKind.Excluded)) == (AssemblyKind.Engine | AssemblyKind.Excluded);
     public static bool IsExcludedPFeatureDefiner( this AssemblyKind kind ) => (kind & (AssemblyKind.PFeatureDefiner | AssemblyKind.Excluded)) == (AssemblyKind.PFeatureDefiner | AssemblyKind.Excluded);
 

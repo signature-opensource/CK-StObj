@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System;
-using System.Reflection.Metadata;
-using System.Collections.Immutable;
 
 namespace CK.Setup;
 

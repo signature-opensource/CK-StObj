@@ -1,5 +1,5 @@
 using CK.Core;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
@@ -84,27 +84,28 @@ public partial class LabTests
         fromE = ResolveFrom( scopedE.ServiceProvider );
         fromG = ResolveFrom( scopedG.ServiceProvider );
 
-        fromE.A.Should().BeSameAs( fromG.A );
-        fromE.B.Should().BeSameAs( fromG.B );
-        fromE.MultiA.Should().NotBeSameAs( fromG.MultiA, "Unfortunately... But its content is okay, and anyway, see below: " +
+        fromE.A.ShouldBeSameAs( fromG.A );
+        fromE.B.ShouldBeSameAs( fromG.B );
+        fromE.MultiA.ShouldNotBeSameAs( fromG.MultiA, "Unfortunately... But its content is okay, and anyway, see below: " +
                                                          "instances are always different for resolved IEnumerable<>." );
-        fromE.MultiA.Select( a => a.Name ).Should().BeEquivalentTo( ["A instance", "A instance by factory"] );
-        fromE.MultiA.ElementAt( 0 ).Should().BeSameAs( fromG.MultiA.ElementAt( 0 ) );
-        fromE.MultiA.ElementAt( 1 ).Should().BeSameAs( fromG.MultiA.ElementAt( 1 ) );
+        fromE.MultiA.Select( a => a.Name ).ShouldBe( ["A instance", "A instance by factory"] );
+        fromE.MultiA.ElementAt( 0 ).ShouldBeSameAs( fromG.MultiA.ElementAt( 0 ) );
+        fromE.MultiA.ElementAt( 1 ).ShouldBeSameAs( fromG.MultiA.ElementAt( 1 ) );
 
-        fromE.S.Should().NotBeSameAs( fromG.S, "Scoped are obviously different instances." );
-        fromE.S.B.Should().BeSameAs( fromG.S.B ).And.BeSameAs( fromG.B );
-        fromE.S.MultipleA.Should().BeSameAs( fromE.MultiA );
-        fromG.S.MultipleA.Should().NotBeSameAs( fromG.MultiA, "Each resolution of IEnumerable<> leads to a different instance." );
+        fromE.S.ShouldNotBeSameAs( fromG.S, "Scoped are obviously different instances." );
+        fromE.S.B.ShouldBeSameAs( fromG.S.B );
+        fromE.S.B.ShouldBeSameAs( fromG.B );
+        fromE.S.MultipleA.ShouldBeSameAs( fromE.MultiA );
+        fromG.S.MultipleA.ShouldNotBeSameAs( fromG.MultiA, "Each resolution of IEnumerable<> leads to a different instance." );
 
         // When we ask for IEnumerable<B>, we always have a different (single) enumeration.
         var gB = scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>();
-        gB.Should().NotBeSameAs( scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>() );
+        gB.ShouldNotBeSameAs( scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>() );
         var eB = scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>();
-        eB.Should().NotBeSameAs( scopedE.ServiceProvider.GetRequiredService<IEnumerable<B>>() );
+        eB.ShouldNotBeSameAs( scopedE.ServiceProvider.GetRequiredService<IEnumerable<B>>() );
 
-        gB.Should().HaveCount( 1 ).And.Contain( new[] { e.GetRequiredService<B>() } );
-        eB.Should().HaveCount( 1 ).And.Contain( new[] { e.GetRequiredService<B>() } );
+        gB.ShouldHaveSingleItem().ShouldBe( e.GetRequiredService<B>() );
+        eB.ShouldHaveSingleItem().ShouldBe(e.GetRequiredService<B>());
 
         //
         using var scopedG2 = g.CreateScope();
@@ -113,13 +114,15 @@ public partial class LabTests
         var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
         var fromG2 = ResolveFrom( scopedG2.ServiceProvider );
 
-        fromG2.A.Should().BeSameAs( fromG.A );
-        fromG2.B.Should().BeSameAs( fromG.B );
-        fromG2.S.Should().NotBeSameAs( fromG.S );
+        fromG2.A.ShouldBeSameAs( fromG.A );
+        fromG2.B.ShouldBeSameAs( fromG.B );
+        fromG2.S.ShouldNotBeSameAs( fromG.S );
 
-        fromE2.A.Should().BeSameAs( fromE.A ).And.BeSameAs( fromG.A );
-        fromE2.B.Should().BeSameAs( fromE.B ).And.BeSameAs( fromG.B );
-        fromE2.S.Should().NotBeSameAs( fromE.S );
+        fromE2.A.ShouldBeSameAs( fromE.A );
+        fromE2.A.ShouldBeSameAs( fromG.A );
+        fromE2.B.ShouldBeSameAs( fromE.B );
+        fromE2.B.ShouldBeSameAs( fromG.B );
+        fromE2.S.ShouldNotBeSameAs( fromE.S );
 
         static (A A, B B, IEnumerable<A> MultiA, Scoped S) ResolveFrom( IServiceProvider sp )
         {
@@ -165,10 +168,10 @@ public partial class LabTests
         var sing1 = sp.GetRequiredService<Sing1>();
         var sing2 = sp.GetRequiredService<Sing2>();
         var multi = sp.GetRequiredService<IEnumerable<IMultiSing>>();
-        multi.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2"] );
+        multi.Select( m => m.Name ).ShouldBe( ["Sing1", "Sing2"] );
         // The multiple singletons are the ones.
-        multi.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
-        multi.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
+        multi.OfType<Sing1>().Single().ShouldBeSameAs( sing1 );
+        multi.OfType<Sing2>().Single().ShouldBeSameAs( sing2 );
     }
 
     [TestCase( true )]
@@ -189,10 +192,10 @@ public partial class LabTests
         var sing2 = sp.GetRequiredService<Sing2>();
         var multi = sp.GetRequiredService<IEnumerable<IMultiSing>>();
         // Seems okay but...
-        multi.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2"] );
+        multi.Select( m => m.Name ).ShouldBe( ["Sing1", "Sing2"] );
         // ...the multiple singletons are NOT the same.
-        multi.OfType<Sing1>().Single().Should().NotBeSameAs( sing1 );
-        multi.OfType<Sing2>().Single().Should().NotBeSameAs( sing2 );
+        multi.OfType<Sing1>().Single().ShouldNotBeSameAs( sing1 );
+        multi.OfType<Sing2>().Single().ShouldNotBeSameAs( sing2 );
     }
 
     [Test]
@@ -228,20 +231,20 @@ public partial class LabTests
         var sing1 = CheckTrueSingleton<Sing1>( g, e, scopedG, scopedE );
 
         var mG = scopedG.ServiceProvider.GetServices<IMulti>();
-        mG.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2", "Scop1", "Scop2"] );
-        mG.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
+        mG.Select( m => m.Name ).ShouldBe( ["Sing1", "Sing2", "Scop1", "Scop2"] );
+        mG.OfType<Sing1>().Single().ShouldBeSameAs( sing1 );
 
         var sing2 = CheckTrueSingleton<Sing2>( g, e, scopedG, scopedE );
-        mG.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
+        mG.OfType<Sing2>().Single().ShouldBeSameAs( sing2 );
 
         // The multi from the endpoint container is the complex one.
         var mE = scopedE.ServiceProvider.GetServices<IMulti>();
-        mE.Select( m => m.Name ).Should().BeEquivalentTo( ["Sing1", "Sing2", "Scop1", "Scop2"] );
-        mE.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
-        mE.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
+        mE.Select( m => m.Name ).ShouldBe( ["Sing1", "Sing2", "Scop1", "Scop2"], ignoreOrder: true );
+        mE.OfType<Sing1>().Single().ShouldBeSameAs( sing1 );
+        mE.OfType<Sing2>().Single().ShouldBeSameAs( sing2 );
         // The scoped from the 2 scopes are not the same.
-        mE.OfType<Scop1>().Single().Should().NotBeSameAs( mG.OfType<Scop1>().Single() );
-        mE.OfType<Scop2>().Single().Should().NotBeSameAs( mG.OfType<Scop2>().Single() );
+        mE.OfType<Scop1>().Single().ShouldNotBeSameAs( mG.OfType<Scop1>().Single() );
+        mE.OfType<Scop2>().Single().ShouldNotBeSameAs( mG.OfType<Scop2>().Single() );
 
         // Creating other scopes.
         using var scopedG2 = g.CreateScope();
@@ -250,26 +253,27 @@ public partial class LabTests
         var mG2 = scopedG2.ServiceProvider.GetServices<IMulti>();
         var mE2 = scopedE2.ServiceProvider.GetServices<IMulti>();
 
-        mE2.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
-        mE2.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
-        mE2.OfType<Scop1>().Single().Should().NotBeSameAs( mG2.OfType<Scop1>().Single() );
-        mE2.OfType<Scop2>().Single().Should().NotBeSameAs( mG2.OfType<Scop2>().Single() );
-        mE2.OfType<Scop1>().Single().Should().NotBeSameAs( mE.OfType<Scop1>().Single() );
-        mE2.OfType<Scop2>().Single().Should().NotBeSameAs( mE.OfType<Scop2>().Single() );
+        mE2.OfType<Sing1>().Single().ShouldBeSameAs( sing1 );
+        mE2.OfType<Sing2>().Single().ShouldBeSameAs( sing2 );
+        mE2.OfType<Scop1>().Single().ShouldNotBeSameAs( mG2.OfType<Scop1>().Single() );
+        mE2.OfType<Scop2>().Single().ShouldNotBeSameAs( mG2.OfType<Scop2>().Single() );
+        mE2.OfType<Scop1>().Single().ShouldNotBeSameAs( mE.OfType<Scop1>().Single() );
+        mE2.OfType<Scop2>().Single().ShouldNotBeSameAs( mE.OfType<Scop2>().Single() );
 
-        mG2.OfType<Sing1>().Single().Should().BeSameAs( sing1 );
-        mG2.OfType<Sing2>().Single().Should().BeSameAs( sing2 );
-        mG2.OfType<Scop1>().Single().Should().NotBeSameAs( mG.OfType<Scop1>().Single() );
-        mG2.OfType<Scop2>().Single().Should().NotBeSameAs( mG.OfType<Scop2>().Single() );
-        mG2.OfType<Scop1>().Single().Should().NotBeSameAs( mE2.OfType<Scop1>().Single() );
-        mG2.OfType<Scop2>().Single().Should().NotBeSameAs( mE2.OfType<Scop2>().Single() );
+        mG2.OfType<Sing1>().Single().ShouldBeSameAs( sing1 );
+        mG2.OfType<Sing2>().Single().ShouldBeSameAs( sing2 );
+        mG2.OfType<Scop1>().Single().ShouldNotBeSameAs( mG.OfType<Scop1>().Single() );
+        mG2.OfType<Scop2>().Single().ShouldNotBeSameAs( mG.OfType<Scop2>().Single() );
+        mG2.OfType<Scop1>().Single().ShouldNotBeSameAs( mE2.OfType<Scop1>().Single() );
+        mG2.OfType<Scop2>().Single().ShouldNotBeSameAs( mE2.OfType<Scop2>().Single() );
 
         static T CheckTrueSingleton<T>( IServiceProvider g, IServiceProvider e, IServiceScope scopedG, IServiceScope scopedE ) where T : notnull
         {
             var sing1 = scopedG.ServiceProvider.GetRequiredService<T>();
-            scopedE.ServiceProvider.GetService( typeof( T ) ).Should().BeSameAs( sing1 );
+            scopedE.ServiceProvider.GetService( typeof( T ) ).ShouldBeSameAs( sing1 );
             // That is the one ultimately stored in the root container.
-            g.GetService( typeof( T ) ).Should().BeSameAs( sing1 ).And.BeSameAs( e.GetService( typeof( T ) ) );
+            g.GetService( typeof( T ) ).ShouldBeSameAs( sing1 );
+            g.GetService( typeof( T ) ).ShouldBeSameAs( e.GetService( typeof( T ) ) );
             return sing1;
         }
     }
@@ -326,27 +330,27 @@ public partial class LabTests
 
         // The container works as usual.
         IEnumerable<Sing1> eSing1 = scopedE.ServiceProvider.GetServices<Sing1>();
-        eSing1.Single().Should().BeOfType<Sing1>();
+        eSing1.Single().ShouldBeOfType<Sing1>();
         IEnumerable<Scop1> eScop1 = scopedE.ServiceProvider.GetServices<Scop1>();
-        eScop1.Single().Should().BeOfType<Scop1>();
+        eScop1.Single().ShouldBeOfType<Scop1>();
 
         if( mode == "hidden scoped" )
         {
             // Except if the IEnumerable is requested.
-            FluentActions.Invoking( () => scopedE.ServiceProvider.GetServices<IMulti>() )
-                .Should().Throw<InvalidOperationException>();
+            Util.Invokable( () => scopedE.ServiceProvider.GetServices<IMulti>() )
+                .ShouldThrow<InvalidOperationException>();
         }
         else
         {
             var m = scopedE.ServiceProvider.GetServices<IMulti>();
             if( mode == "hidden singleton (undetectable bug)" )
             {
-                m.Select( o => o.GetType() ).Should().BeEquivalentTo( new[] { typeof( Scop1 ), typeof( Scop1 ) } );
+                m.Select( o => o.GetType() ).ShouldBe( new[] { typeof( Scop1 ), typeof( Scop1 ) } );
             }
             else
             {
                 // Miraculous good registration order...
-                m.Select( o => o.GetType() ).Should().BeEquivalentTo( new[] { typeof( Scop1 ), typeof( Sing1 ) } );
+                m.Select( o => o.GetType() ).ShouldBe( new[] { typeof( Scop1 ), typeof( Sing1 ) } );
             }
         }
     }
@@ -379,32 +383,32 @@ public partial class LabTests
 
         using var scopedG = g.CreateScope();
         var fromGlobal = scopedG.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        fromGlobal.AuthInfo.UserName.Should().Be( "Bob" );
-        fromGlobal.CultureInfo.Culture.Should().Be( "fr" );
-        fromGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
+        fromGlobal.AuthInfo.UserName.ShouldBe( "Bob" );
+        fromGlobal.CultureInfo.Culture.ShouldBe( "fr" );
+        fromGlobal.TenantInfo.Name.ShouldBe( "MyFavoriteTenant" );
 
         // From the global, obtains a AmbientServiceHub.
         var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
         // This endpoint transfers the AmbientServiceHub as-is.
         using var scopedNoOverride = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiq, TestHelper.Monitor ) );
-        ubiq.IsDirty.Should().BeFalse( "The AmbientServiceHub has no override." );
-        ubiq.IsLocked.Should().BeTrue( "The AmbientServiceHub has been locked." );
+        ubiq.IsDirty.ShouldBeFalse( "The AmbientServiceHub has no override." );
+        ubiq.IsLocked.ShouldBeTrue( "The AmbientServiceHub has been locked." );
         var sameAsGlobal = scopedNoOverride.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        sameAsGlobal.AuthInfo.UserName.Should().Be( "Bob" );
-        sameAsGlobal.CultureInfo.Culture.Should().Be( "fr" );
-        sameAsGlobal.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
+        sameAsGlobal.AuthInfo.UserName.ShouldBe( "Bob" );
+        sameAsGlobal.CultureInfo.Culture.ShouldBe( "fr" );
+        sameAsGlobal.TenantInfo.Name.ShouldBe( "MyFavoriteTenant" );
         // The ubiq is locked since it is used.
-        FluentActions.Invoking( () => ubiq.Override( new ExternalCultureInfo( "en" ) ) ).Should().Throw<InvalidOperationException>();
+        Util.Invokable( () => ubiq.Override( new ExternalCultureInfo( "en" ) ) ).ShouldThrow<InvalidOperationException>();
 
         var ubiqWithCulture = ubiq.CleanClone();
-        ubiqWithCulture.IsLocked.Should().BeFalse();
+        ubiqWithCulture.IsLocked.ShouldBeFalse();
         ubiqWithCulture.Override( new ExternalCultureInfo( "en" ) );
-        ubiqWithCulture.IsDirty.Should().BeTrue();
+        ubiqWithCulture.IsDirty.ShouldBeTrue();
         using var scopedDiffCulture = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithCulture, TestHelper.Monitor ) );
         var withEnCulture = scopedDiffCulture.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        withEnCulture.AuthInfo.UserName.Should().Be( "Bob" );
-        withEnCulture.CultureInfo.Culture.Should().Be( "en" );
-        withEnCulture.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
+        withEnCulture.AuthInfo.UserName.ShouldBe( "Bob" );
+        withEnCulture.CultureInfo.Culture.ShouldBe( "en" );
+        withEnCulture.TenantInfo.Name.ShouldBe( "MyFavoriteTenant" );
 
         // IFakeAuthentication is NOT a IAutoService:
         // We MUST manually handle the registrations... And we can do very bad things!
@@ -413,42 +417,42 @@ public partial class LabTests
         ubiqWithAlice.Override( typeof( IExternalAuthenticationInfo ), new ExternalAuthenticationInfo( "Alice (interface)", 3712 ) );
         using var scopedForAlice = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithAlice, TestHelper.Monitor ) );
         var withAlice = scopedForAlice.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        withAlice.AuthInfo.UserName.Should().Be( "Alice (interface)" );
+        withAlice.AuthInfo.UserName.ShouldBe( "Alice (interface)" );
         // If the consumer depended on the class, it would have used the other instance!
-        scopedForAlice.ServiceProvider.GetRequiredService<ExternalAuthenticationInfo>().UserName.Should().Be( "Alice (class)" );
-        withAlice.CultureInfo.Culture.Should().Be( "fr" );
-        withAlice.TenantInfo.Name.Should().Be( "MyFavoriteTenant" );
+        scopedForAlice.ServiceProvider.GetRequiredService<ExternalAuthenticationInfo>().UserName.ShouldBe( "Alice (class)" );
+        withAlice.CultureInfo.Culture.ShouldBe( "fr" );
+        withAlice.TenantInfo.Name.ShouldBe( "MyFavoriteTenant" );
 
         // IFakeTenantInfo is an auto service and this is really safer: overriding the class,
         // automatically correctly associates the interface.
         var ubiqWithTenant = ubiq.CleanClone( restoreInitialValues: true );
-        ubiqWithTenant.IsLocked.Should().BeFalse();
+        ubiqWithTenant.IsLocked.ShouldBeFalse();
         ubiqWithTenant.Override( new FakeTenantInfo( "AnotherTenant" ) );
         using var scopedDiffTenant = e.CreateScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenant, TestHelper.Monitor ) );
         var withTenant = scopedDiffTenant.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        withTenant.AuthInfo.UserName.Should().Be( "Bob" );
-        withTenant.CultureInfo.Culture.Should().Be( "fr" );
-        withTenant.TenantInfo.Name.Should().Be( "AnotherTenant" );
+        withTenant.AuthInfo.UserName.ShouldBe( "Bob" );
+        withTenant.CultureInfo.Culture.ShouldBe( "fr" );
+        withTenant.TenantInfo.Name.ShouldBe( "AnotherTenant" );
 
         // And overriding the interface, sets the class.
         var ubiqWithTenantByI = ubiq.CleanClone( restoreInitialValues: true );
-        ubiqWithTenantByI.IsLocked.Should().BeFalse();
+        ubiqWithTenantByI.IsLocked.ShouldBeFalse();
         ubiqWithTenantByI.Override( typeof( IFakeTenantInfo ), new FakeTenantInfo( "AnotherTenant" ) );
         using var scopedDiffTenantByI = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByI, TestHelper.Monitor ) );
         var withTenantByI = scopedDiffTenantByI.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        withTenantByI.AuthInfo.UserName.Should().Be( "Bob" );
-        withTenantByI.CultureInfo.Culture.Should().Be( "fr" );
-        withTenantByI.TenantInfo.Name.Should().Be( "AnotherTenant" );
+        withTenantByI.AuthInfo.UserName.ShouldBe( "Bob" );
+        withTenantByI.CultureInfo.Culture.ShouldBe( "fr" );
+        withTenantByI.TenantInfo.Name.ShouldBe( "AnotherTenant" );
 
         var ubiqWithTenantByIAndEn = ubiqWithTenantByI.CleanClone( restoreInitialValues: false );
-        ubiqWithTenantByIAndEn.IsDirty.Should().BeFalse();
+        ubiqWithTenantByIAndEn.IsDirty.ShouldBeFalse();
         ubiqWithTenantByIAndEn.Override( new ExternalCultureInfo( "en" ) );
-        ubiqWithTenantByIAndEn.IsDirty.Should().BeTrue();
+        ubiqWithTenantByIAndEn.IsDirty.ShouldBeTrue();
         using var scopedTenantByIAndEn = e.CreateAsyncScope( new FakeBackDIContainerDefinition.Data( ubiqWithTenantByIAndEn, TestHelper.Monitor ) );
         var withTenantByIAndEn = scopedTenantByIAndEn.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();
-        withTenantByIAndEn.AuthInfo.UserName.Should().Be( "Bob" );
-        withTenantByIAndEn.CultureInfo.Culture.Should().Be( "en" );
-        withTenantByIAndEn.TenantInfo.Name.Should().Be( "AnotherTenant" );
+        withTenantByIAndEn.AuthInfo.UserName.ShouldBe( "Bob" );
+        withTenantByIAndEn.CultureInfo.Culture.ShouldBe( "en" );
+        withTenantByIAndEn.TenantInfo.Name.ShouldBe( "AnotherTenant" );
 
     }
 

@@ -1,6 +1,6 @@
 using CK.Core;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
@@ -52,15 +52,15 @@ public partial class WriteReadAnyTests
 
         var directory = auto.Services.GetRequiredService<PocoDirectory>();
 
-        directory.ReadAnyJson( "null" ).Should().BeNull();
-        directory.ReadAnyJson( "3712" ).Should().Be( 3712.0 );
-        directory.ReadAnyJson( "true" ).Should().Be( true );
-        directory.ReadAnyJson( "false" ).Should().Be( false );
+        directory.ReadAnyJson( "null" ).ShouldBeNull();
+        directory.ReadAnyJson( "3712" ).ShouldBe( 3712.0 );
+        directory.ReadAnyJson( "true" ).ShouldBe( true );
+        directory.ReadAnyJson( "false" ).ShouldBe( false );
         var def = directory.ReadAnyJson( """["SomeType",{}]""" );
         Throw.DebugAssert( def != null );
         var tDef = (ISomeTypes)def;
-        tDef.Value.Should().NotBeNull().And.BeEmpty();
-        tDef.Friends.Should().BeEmpty();
+        tDef.Value.ShouldBeEmpty();
+        tDef.Friends.ShouldBeEmpty();
 
         var withFriends = directory.ReadAnyJson( """
                                                  ["SomeType",{
@@ -80,13 +80,13 @@ public partial class WriteReadAnyTests
                                                  """ );
         Throw.DebugAssert( withFriends != null );
         var tWithFriends = (ISomeTypes)withFriends;
-        tWithFriends.Value.Should().HaveCount( 1 ).And.Contain( 1 );
-        tWithFriends.Friends.Should().HaveCount( 3 );
-        tWithFriends.Friends[0].Should().BeEquivalentTo( tDef );
-        tWithFriends.Friends[1].Value.Should().HaveCount( 2 ).And.Contain( new[] { 1, 2 } );
-        tWithFriends.Friends[2].Value.Should().HaveCount( 3 ).And.Contain( new[] { 1, 2, 3 } );
-        tWithFriends.Friends[2].Friends[0].Value.Should().HaveCount( 4 ).And.Contain( new[] { 1, 2, 3, 4 } );
-        tWithFriends.Friends[2].Friends[1].Value.Should().HaveCount( 5 ).And.Contain( new[] { 1, 2, 3, 4, 5 } );
+        tWithFriends.Value.ShouldHaveSingleItem().ShouldBe( 1 );
+        tWithFriends.Friends.Count.ShouldBe( 3 );
+        tWithFriends.Friends[0].ShouldBeEquivalentTo( tDef );
+        tWithFriends.Friends[1].Value.ShouldBe( [1, 2] );
+        tWithFriends.Friends[2].Value.ShouldBe( [1, 2, 3] );
+        tWithFriends.Friends[2].Friends[0].Value.ShouldBe( [1, 2, 3, 4] );
+        tWithFriends.Friends[2].Friends[1].Value.ShouldBe( [1, 2, 3, 4, 5] );
     }
 
     [CKTypeDefiner]

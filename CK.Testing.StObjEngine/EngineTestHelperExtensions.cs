@@ -1,14 +1,9 @@
 using CK.Core;
 using CK.Setup;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Shouldly;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CK.Testing;
 
@@ -17,10 +12,9 @@ namespace CK.Testing;
 /// <para>
 /// Extends <see cref="EngineConfiguration"/> objects with configuration helper methods and run methods
 /// like <see cref="RunSuccessfullyAsync(EngineConfiguration, bool)"/>.
-/// <para>
+/// </para>
 /// Extends the CKomposable <see cref="EngineResult"/> with <see cref="IStObjMap"/> load capabilites
 /// and <see cref="AutomaticServices"/> creation.
-/// </para>
 /// </summary>
 public static partial class EngineTestHelperExtensions
 {
@@ -55,7 +49,7 @@ public static partial class EngineTestHelperExtensions
         var c = new StObjCollector( new SimpleServiceContainer() );
         c.RegisterTypes( helper.Monitor, types );
         StObjCollectorResult r = c.GetResult( helper.Monitor );
-        r.HasFatalError.Should().Be( false, "There must be no error." );
+        r.HasFatalError.ShouldBe( false, "There must be no error." );
         return r;
     }
 
@@ -84,7 +78,7 @@ public static partial class EngineTestHelperExtensions
             return null;
         }
         var r = c.GetResult( helper.Monitor );
-        r.HasFatalError.Should().Be( true, "GetFailedCollectorResult: StObjCollector.GetResult() must have failed with at least one fatal error." );
+        r.HasFatalError.ShouldBe( true, "GetFailedCollectorResult: StObjCollector.GetResult() must have failed with at least one fatal error." );
         CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
         return r;
     }
@@ -103,8 +97,8 @@ public static partial class EngineTestHelperExtensions
             {
                 m = m.ReplaceLineEndings();
                 var errors = fatalOrErrors.Select( m => m.ReplaceLineEndings() );
-                errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
-                    .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
+                errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) )
+                    .ShouldBeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
             }
         }
     }

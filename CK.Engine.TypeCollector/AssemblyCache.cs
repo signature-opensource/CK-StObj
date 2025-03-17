@@ -1,19 +1,17 @@
 using CK.Core;
 using CK.Setup;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
+/// <summary>
+/// Collects, analyses and caches Assembly information.
+/// </summary>
 public sealed partial class AssemblyCache
 {
     // Don't be tempted to move this excluder down to each BinPath as

@@ -3,11 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CK.Core;
 using System.Diagnostics;
-using System.Xml.Linq;
-using System.IO;
-using Microsoft.Extensions.Configuration;
 using CK.Engine.TypeCollector;
-using System.Text.RegularExpressions;
 
 #nullable enable
 

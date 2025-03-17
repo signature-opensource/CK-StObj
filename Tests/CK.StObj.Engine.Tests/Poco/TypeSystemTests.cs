@@ -1,7 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.CodeAnalysis;
 using NUnit.Framework;
 using System;
@@ -108,31 +108,33 @@ public class TypeSystemTests
                                                       //   - and the oblivious's RegularCollection List<(int,string?)> 
         const int anonymousTypesCount = 2 + 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective unnamed and oblivious types.
 
-        builder.Count.Should().Be( (basicTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
+        builder.Count.ShouldBe( (basicTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
         int before = builder.Count;
         var tRec = builder.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
         Throw.DebugAssert( tRec != null );
-        builder.Count.Should().Be( before + 2 );
-        tRec.Kind.Should().Be( PocoTypeKind.Record );
-        ((IRecordPocoType)tRec).IsReadOnlyCompliant.Should().BeTrue();
+        builder.Count.ShouldBe( before + 2 );
+        tRec.Kind.ShouldBe( PocoTypeKind.Record );
+        ((IRecordPocoType)tRec).IsReadOnlyCompliant.ShouldBeTrue();
 
         IPrimaryPocoType wA = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
         IPocoType countAndName = wA.Fields[0].Type;
 
         IPrimaryPocoType wR = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
-        ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
+        ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.ShouldBeSameAs( countAndName );
 
         var tAnonymous = ((IRecordPocoType)tRec).Fields.Single( f => f.Name == "Inside" ).Type as IRecordPocoType;
         Throw.DebugAssert( tAnonymous != null );
-        tAnonymous.IsOblivious.Should().BeFalse();
-        tAnonymous.IsAnonymous.Should().BeTrue();
-        tAnonymous.RegularType.Should().NotBeSameAs( tAnonymous );
-        tAnonymous.RegularType.Fields.All( f => f.IsUnnamed && f.Type.IsRegular ).Should().BeTrue();
-        tAnonymous.RegularType.IsOblivious.Should().BeFalse();
+        tAnonymous.IsOblivious.ShouldBeFalse();
+        tAnonymous.IsAnonymous.ShouldBeTrue();
+        tAnonymous.RegularType.ShouldNotBeSameAs( tAnonymous );
+        tAnonymous.RegularType.Fields.All( f => f.IsUnnamed && f.Type.IsRegular ).ShouldBeTrue();
+        tAnonymous.RegularType.IsOblivious.ShouldBeFalse();
 
-        tAnonymous.RegularType.ObliviousType.Should().NotBeSameAs( tAnonymous ).And.NotBeSameAs( tAnonymous.RegularType );
-        tAnonymous.RegularType.ObliviousType.Should().BeSameAs( tAnonymous.ObliviousType );
+        tAnonymous.RegularType.ObliviousType.ShouldNotBeSameAs( tAnonymous );
+        tAnonymous.RegularType.ObliviousType.ShouldNotBeSameAs( tAnonymous.RegularType );
+
+        tAnonymous.RegularType.ObliviousType.ShouldBeSameAs( tAnonymous.ObliviousType );
     }
 
 
@@ -144,23 +146,23 @@ public class TypeSystemTests
 
         var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
         Throw.DebugAssert( p != null );
-        p.IsOblivious.Should().BeTrue();
-        p.IsNullable.Should().BeTrue();
-        p.Should().BeAssignableTo<IPrimaryPocoType>();
+        p.IsOblivious.ShouldBeTrue();
+        p.IsNullable.ShouldBeTrue();
+        p.ShouldBeAssignableTo<IPrimaryPocoType>();
 
         var p2 = ts.FindByType( typeof( IWithList ) );
-        p2.Should().BeSameAs( p );
+        p2.ShouldBeSameAs( p );
 
         var a = ts.FindByType( typeof( ILinkedListPart ) );
         Debug.Assert( a != null );
-        a.IsOblivious.Should().BeTrue();
-        a.IsNullable.Should().BeTrue();
-        a.Should().BeAssignableTo<IAbstractPocoType>();
+        a.IsOblivious.ShouldBeTrue();
+        a.IsNullable.ShouldBeTrue();
+        a.ShouldBeAssignableTo<IAbstractPocoType>();
 
-        ((IAbstractPocoType)a).AllowedTypes.Should().Contain( p );
+        ((IAbstractPocoType)a).AllowedTypes.ShouldContain( p );
 
         var impl = ts.FindByType( p.FamilyInfo.PocoClass );
-        impl.Should().BeSameAs( p );
+        impl.ShouldBeSameAs( p );
     }
 
     public record struct EmptyRec();
@@ -178,25 +180,25 @@ public class TypeSystemTests
         var emptyRec = ts.FindByType( typeof( EmptyRec ) );
         var poco = ts.FindByType( typeof( IValidEmptyRec ) );
         Throw.DebugAssert( emptyRec != null && poco != null );
-        ts.SetManager.All.Contains( emptyRec ).Should().BeTrue();
-        ts.SetManager.All.Contains( poco ).Should().BeTrue();
-        ts.SetManager.AllSerializable.Should().BeSameAs( ts.SetManager.All );
-        ts.SetManager.AllExchangeable.Should().BeSameAs( ts.SetManager.All );
+        ts.SetManager.All.Contains( emptyRec ).ShouldBeTrue();
+        ts.SetManager.All.Contains( poco ).ShouldBeTrue();
+        ts.SetManager.AllSerializable.ShouldBeSameAs( ts.SetManager.All );
+        ts.SetManager.AllExchangeable.ShouldBeSameAs( ts.SetManager.All );
 
         // When excluding empty records:
         var noEmptyRecSet = ts.SetManager.All.ExcludeEmptyRecords();
-        noEmptyRecSet.Contains( emptyRec ).Should().BeFalse();
-        noEmptyRecSet.Contains( poco ).Should().BeTrue();
+        noEmptyRecSet.Contains( emptyRec ).ShouldBeFalse();
+        noEmptyRecSet.Contains( poco ).ShouldBeTrue();
 
         // When excluding empty records and empty pocos:
         var noEmptyRecSetAndPoco1 = noEmptyRecSet.ExcludeEmptyPocos();
         var noEmptyRecSetAndPoco2 = ts.SetManager.All.ExcludeEmptyRecordsAndPocos();
 
-        noEmptyRecSetAndPoco1.Contains( emptyRec ).Should().BeFalse();
-        noEmptyRecSetAndPoco2.Contains( emptyRec ).Should().BeFalse();
+        noEmptyRecSetAndPoco1.Contains( emptyRec ).ShouldBeFalse();
+        noEmptyRecSetAndPoco2.Contains( emptyRec ).ShouldBeFalse();
 
-        noEmptyRecSetAndPoco1.Contains( poco ).Should().BeFalse();
-        noEmptyRecSetAndPoco2.Contains( poco ).Should().BeFalse();
+        noEmptyRecSetAndPoco1.Contains( poco ).ShouldBeFalse();
+        noEmptyRecSetAndPoco2.Contains( poco ).ShouldBeFalse();
     }
 
     public enum EmptyEnum
@@ -212,9 +214,9 @@ public class TypeSystemTests
     public void even_if_an_empty_enum_is_csharp_valid_it_is_invalid_in_the_Poco_world()
     {
         EmptyEnum t = default;
-        t.Should().Be( 0 );
+        ((int)t).ShouldBe( 0 );
         t = 0;
-        t.Should().Be( 0 );
+        ((int)t).ShouldBe( 0 );
         // Compilation error.
         // t = 1;
         TestHelper.GetFailedCollectorResult( [typeof( IInvalidEmptyEnum )], "Enum type 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.EmptyEnum' is empty. Empty enum are not valid in a Poco Type System." );
@@ -266,8 +268,8 @@ public class TypeSystemTests
 
         var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );
         Debug.Assert( abs != null );
-        abs.Fields.Should().HaveCount( names.Length );
-        abs.Fields.Select( f => f.Name ).Should().BeEquivalentTo( names );
+        abs.Fields.Count().ShouldBe( names.Length );
+        abs.Fields.Select( f => f.Name ).ShouldBe( names, ignoreOrder: true );
     }
 
     // Same structure but not same field names.
@@ -329,21 +331,21 @@ public class TypeSystemTests
         var tNotFieldName = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameFieldNameAsNamedRec ) )! );
         Debug.Assert( tNotFieldName != null );
 
-        tNotFieldName.Should().NotBeSameAs( tRec );
+        tNotFieldName.ShouldNotBeSameAs( tRec );
 
         var tRecDef = tRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
         var tNotFieldNameDef = tNotFieldName.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 
-        tRecDef.Should().Be( "new(){Name = \"\", Inside = (default, \"\")}" );
-        tNotFieldNameDef.Should().Be( "new(){B = \"\", C = (default, \"\")}" );
+        tRecDef.ShouldBe( "new(){Name = \"\", Inside = (default, \"\")}" );
+        tNotFieldNameDef.ShouldBe( "new(){B = \"\", C = (default, \"\")}" );
 
         var tNotSameDefault = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameDefaultAsNamedRec ) )! );
         Debug.Assert( tNotSameDefault != null );
-        tNotSameDefault.Should().NotBeSameAs( tRec );
+        tNotSameDefault.ShouldNotBeSameAs( tRec );
 
         var tNotSameDefaultDef = tNotSameDefault.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 
-        tNotSameDefaultDef.Should().Be( "new(){B = @\"Not the default string.\", C = (default, \"\")}" );
+        tNotSameDefaultDef.ShouldBe( "new(){B = @\"Not the default string.\", C = (default, \"\")}" );
     }
 
     public struct AnEmptyOne : IEquatable<AnEmptyOne>
@@ -392,55 +394,55 @@ public class TypeSystemTests
         var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
 
         // Readonly compliant records are valid keys.
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantValid ) )! ).Should().NotBeNull();
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantValid ) )! ).Should().NotBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantValid ) )! ).ShouldNotBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantValid ) )! ).ShouldNotBeNull();
         // Non readonly compliant records and Poco are invalid.
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalid ) )! ).Should().BeNull();
-            logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.SetROCompliantInvalid': " +
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalid ) )! ).ShouldBeNull();
+            logs.ShouldContain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.SetROCompliantInvalid': " +
                                    "'HashSet<TypeSystemTests.NotReadOnlyCompliant>' item type cannot be " +
                                    "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
         }
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalid ) )! ).Should().BeNull();
-            logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.DicROCompliantInvalid': " +
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalid ) )! ).ShouldBeNull();
+            logs.ShouldContain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.DicROCompliantInvalid': " +
                                    "'Dictionary<TypeSystemTests.NotReadOnlyCompliant,object>' key cannot be " +
                                    "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
         }
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalidPoco ) )! ).Should().BeNull();
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalidPoco ) )! ).Should().BeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalidPoco ) )! ).ShouldBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalidPoco ) )! ).ShouldBeNull();
 
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalidObject ) )! ).Should().BeNull();
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalidObject ) )! ).Should().BeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalidObject ) )! ).ShouldBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalidObject ) )! ).ShouldBeNull();
 
         // ReadOnly
         // This is the same for IReadOnlySet/Dictionary, except that IReadOnlySet/Dictionary<object> is allowed.
 
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantValidObject ) )! ).Should().NotBeNull( "IReadOnlySet<object> is valid." );
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantValidObject ) )! ).Should().NotBeNull( "IReadOnlyDictionary<object,...> is valid." );
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantValidObject ) )! ).ShouldNotBeNull( "IReadOnlySet<object> is valid." );
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantValidObject ) )! ).ShouldNotBeNull( "IReadOnlyDictionary<object,...> is valid." );
 
         // Readonly compliant records are valid keys.
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantValid ) )! ).Should().NotBeNull();
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantValid ) )! ).Should().NotBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantValid ) )! ).ShouldNotBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantValid ) )! ).ShouldNotBeNull();
         // Non readonly compliant records and Poco are invalid.
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantInvalid ) )! ).Should().BeNull();
-            logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.ROSetROCompliantInvalid': " +
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantInvalid ) )! ).ShouldBeNull();
+            logs.ShouldContain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.ROSetROCompliantInvalid': " +
                                    "'IReadOnlySet<TypeSystemTests.NotReadOnlyCompliant>' item type cannot be " +
                                    "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
         }
         using( TestHelper.Monitor.CollectTexts( out var logs ) )
         {
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantInvalid ) )! ).Should().BeNull();
-            logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.RODicROCompliantInvalid': " +
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantInvalid ) )! ).ShouldBeNull();
+            logs.ShouldContain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.RODicROCompliantInvalid': " +
                                    "'IReadOnlyDictionary<TypeSystemTests.NotReadOnlyCompliant,object>' key cannot be " +
                                    "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
         }
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantInvalidPoco ) )! ).Should().BeNull();
-        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantInvalidPoco ) )! ).Should().BeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantInvalidPoco ) )! ).ShouldBeNull();
+        ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantInvalidPoco ) )! ).ShouldBeNull();
 
 
     }

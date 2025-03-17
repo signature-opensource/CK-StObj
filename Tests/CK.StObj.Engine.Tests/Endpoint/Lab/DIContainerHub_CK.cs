@@ -1,12 +1,8 @@
 using CK.Core;
-using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using static CK.Core.ActivityMonitorSimpleCollector;
-using static CK.Core.DIContainerHub;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant;
 
