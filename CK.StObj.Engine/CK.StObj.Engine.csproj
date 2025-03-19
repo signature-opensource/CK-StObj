@@ -15,7 +15,7 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
     <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
     <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="12.0.0" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="12.0.1" />
     <PackageReference Include="CK.Core" Version="22.0.0" />
   </ItemGroup>
   <ItemGroup>
