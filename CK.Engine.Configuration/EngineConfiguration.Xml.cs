@@ -171,16 +171,6 @@ public sealed partial class EngineConfiguration
     static public readonly XName xTypes = XNamespace.None + "Types";
 
     /// <summary>
-    /// The ExternalSingletonTypes element name.
-    /// </summary>
-    static public readonly XName xExternalSingletonTypes = XNamespace.None + "ExternalSingletonTypes";
-
-    /// <summary>
-    /// The ExternalScopedTypes element name.
-    /// </summary>
-    static public readonly XName xExternalScopedTypes = XNamespace.None + "ExternalScopedTypes";
-
-    /// <summary>
     /// The ExcludedTypes element name.
     /// </summary>
     static public readonly XName xExcludedTypes = XNamespace.None + "ExcludedTypes";

@@ -120,7 +120,7 @@ public interface ICachedType : ICachedItem
     ICachedType? ElementType { get; }
 
     /// <summary>
-    /// Gets whether this type is a regular visible type or should almost always be ignored.
+    /// Gets whether this type is not a regular visible type and should almost always be ignored.
     /// </summary>
     EngineUnhandledType EngineUnhandledType { get; }
 
