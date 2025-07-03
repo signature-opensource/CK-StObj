@@ -78,14 +78,14 @@ public sealed partial class EngineConfiguration
                     InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
                     !BaseSHA1.IsZero ? new XElement( xBaseSHA1, BaseSHA1.ToString() ) : null,
                     ForceRun ? new XElement( xForceRun, true ) : null,
-                    ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( TypeExtensions.GetWeakAssemblyQualifiedName ) ),
+                    ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( TypeExtensions.GetWeakAssemblyQualifiedName )! ),
                     _globalTypes.Count > 0
                         ? _globalTypes.ToXml( xGlobalTypes )
                         : null,
                     _excludedAssemblies.Count > 0
                         ? ToXml( xExcludedAssemblies, xAssembly, _excludedAssemblies )
                         : null,
-                    Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, a.GetType().GetWeakAssemblyQualifiedName() ) ) ) ),
+                    Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, a.GetType().GetWeakAssemblyQualifiedName()! ) ) ) ),
                     new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation." ),
                     new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
     }

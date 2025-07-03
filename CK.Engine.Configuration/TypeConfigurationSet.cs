@@ -56,7 +56,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
                                                                 kv.Value != ConfigurableAutoServiceKind.None
                                                                     ? new XAttribute( EngineConfiguration.xKind, kv.Value )
                                                                     : null,
-                                                                    EngineConfiguration.CleanName( kv.Key ) ) ) );
+                                                                    kv.Key.GetWeakAssemblyQualifiedName() ) ) );
     }
 
     /// <inheritdoc />
