@@ -35,7 +35,7 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
         SaveSource
     }
 
-    internal IConfiguredTypeSet ConfiguredTypes => _typeGroup!.ConfiguredTypes;
+    internal IConfiguredTypeSet ConfiguredTypes => _typeGroup.ConfiguredTypes;
 
     internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
     {
@@ -155,6 +155,8 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
 
     /// <inheritdoc />
     public IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations => _similarConfigurations;
+
+    public IReadOnlySet<ICachedType> AllTypes => _typeGroup.ConfiguredTypes.AllTypes; 
 
     /// <inheritdoc />
     public SHA1Value RunSignature { get => _runSignature; internal set => _runSignature = value; }

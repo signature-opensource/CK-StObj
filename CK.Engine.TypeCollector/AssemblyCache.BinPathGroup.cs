@@ -277,7 +277,7 @@ public sealed partial class AssemblyCache // BinPathGroup
                     }
                     // We don't analyze references of PFeatureDefiner: a definer is a "leaf", it says "Here starts the interesting parts".
                     // We analyze Engine references in Folder mode only to remove referenced PFeatures from the set of heads.
-                    // We analyze PFeature references only if it is not excluded except in Folder mode: we don't wand to miss fake heads.
+                    // We analyze PFeature references only if it is not excluded except in Folder mode: we don't want to miss fake heads.
                     // We always analyze None (excluded or not) to know what it is.
                     bool mustHandleRefererences = cached._kind != AssemblyKind.AutoSkipped
                                                   &&
