@@ -1,27 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <Description>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Description>
             Facade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
             This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
         </Description>
-        <LangVersion>11</LangVersion>
-    </PropertyGroup>
-    <ItemGroup>
-        <Compile Remove="Poco\Json\**" />
-        <EmbeddedResource Remove="Poco\Json\**" />
-        <None Remove="Poco\Json\**" />
-    </ItemGroup>
-    <ItemGroup>
-        <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
-        <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
-
-        <PackageReference Include="CK.CodeGen" Version="12.1.0" />
-        <PackageReference Include="CK.Globalization" Version="2.1.0" />
-        <PackageReference Include="CK.Setup.Dependency" Version="20.1.0" />
-        <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-        <Folder Include="Properties\" />
-    </ItemGroup>
+    <LangVersion>11</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Poco\Json\**" />
+    <EmbeddedResource Remove="Poco\Json\**" />
+    <None Remove="Poco\Json\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
+    <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
+    <PackageReference Include="CK.CodeGen" Version="12.1.1--0001-develop" />
+    <PackageReference Include="CK.Globalization" Version="2.1.1--0001-develop" />
+    <PackageReference Include="CK.Setup.Dependency" Version="20.1.1--0002-develop" />
+    <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
 </Project>
