@@ -78,38 +78,16 @@ public sealed partial class EngineConfiguration
                     InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
                     !BaseSHA1.IsZero ? new XElement( xBaseSHA1, BaseSHA1.ToString() ) : null,
                     ForceRun ? new XElement( xForceRun, true ) : null,
-                    ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( t => CleanName( t ) ) ),
+                    ToXml( xGlobalExcludedTypes, xType, _globalExcludedTypes.Select( TypeExtensions.GetWeakAssemblyQualifiedName ) ),
                     _globalTypes.Count > 0
                         ? _globalTypes.ToXml( xGlobalTypes )
                         : null,
                     _excludedAssemblies.Count > 0
                         ? ToXml( xExcludedAssemblies, xAssembly, _excludedAssemblies )
                         : null,
-                    Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
+                    Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, a.GetType().GetWeakAssemblyQualifiedName() ) ) ) ),
                     new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.Engine.Configuration/BinPathConfiguration.cs for documentation." ),
                     new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
-    }
-
-    static internal string CleanName( Type type )
-    {
-        if( type.IsGenericType ) return GetShortGenericName( type, false );
-        return $"{type.FullName}, {type.Assembly.GetName().Name}";
-
-        static string GetShortTypeName( Type type, bool inBrackets )
-        {
-            if( type.IsGenericType ) return GetShortGenericName( type, inBrackets );
-            if( inBrackets ) return $"[{type.FullName}, {type.Assembly.GetName().Name}]";
-            return $"{type.FullName}, {type.Assembly.GetName().Name}";
-        }
-
-        static string GetShortGenericName( Type type, bool inBrackets )
-        {
-            string? name = type.Assembly.GetName().Name;
-            if( inBrackets )
-                return $"[{type.GetGenericTypeDefinition().FullName}[{string.Join( ", ", type.GenericTypeArguments.Select( a => GetShortTypeName( a, true ) ) )}], {name}]";
-            else
-                return $"{type.GetGenericTypeDefinition().FullName}[{string.Join( ", ", type.GenericTypeArguments.Select( a => GetShortTypeName( a, true ) ) )}], {name}";
-        }
     }
 
     static internal XElement ToXml( XName names, XName name, IEnumerable<string> strings )
@@ -119,7 +97,7 @@ public sealed partial class EngineConfiguration
 
     static internal XElement ToXml( XName names, XName name, IEnumerable<Type> types )
     {
-        return new XElement( names, types.Select( t => new XElement( name, CleanName( t ) ) ) );
+        return new XElement( names, types.Select( t => new XElement( name, t.GetWeakAssemblyQualifiedName() ) ) );
     }
 
     static internal IEnumerable<string> StringsFromXml( XElement e, XName names, XName name )
