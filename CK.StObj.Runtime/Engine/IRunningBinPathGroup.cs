@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -36,8 +37,14 @@ public interface IRunningBinPathGroup
 
     /// <summary>
     /// Gets this and other configurations that are similar.
+    /// See <see cref="BinPathTypeGroup.Configurations"/>.
     /// </summary>
     IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations { get; }
+
+    /// <summary>
+    /// Gets the set of types that must be considered.
+    /// </summary>
+    IReadOnlySet<ICachedType> AllTypes { get; }
 
     /// <summary>
     /// Gets the SHA1 for this BinPath. All <see cref="SimilarConfigurations"/> share the same SHA1.

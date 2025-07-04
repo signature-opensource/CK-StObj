@@ -516,7 +516,7 @@ public sealed partial class EngineConfiguration
                 // if they are on errors, we don't care: the error has been already emitted.
                 CheckTypeConfigurationSet( monitor, b.Types, b.ExcludedTypes, b, ref success );
                 // Adds the GlobalTypes.
-                b.Types.UnionWith( c.GlobalTypes );
+                b.Types.ApplyMerge( c.GlobalTypes );
             }
 
             static void EvalKnownPaths( IActivityMonitor monitor,

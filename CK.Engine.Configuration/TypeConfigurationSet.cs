@@ -56,7 +56,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
                                                                 kv.Value != ConfigurableAutoServiceKind.None
                                                                     ? new XAttribute( EngineConfiguration.xKind, kv.Value )
                                                                     : null,
-                                                                    EngineConfiguration.CleanName( kv.Key ) ) ) );
+                                                                    kv.Key.GetWeakAssemblyQualifiedName() ) ) );
     }
 
     /// <inheritdoc />
@@ -103,10 +103,12 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
     public IDictionary<Type, ConfigurableAutoServiceKind> AsDictionary => _types;
 
     /// <summary>
-    /// Merges this set with the other one.
+    /// Updates this set from the content of other one. <paramref name="other"/> configurations
+    /// replace any current ones: this is used to apply <see cref="EngineConfiguration.GlobalTypes"/>
+    /// to each <see cref="BinPathConfiguration.Types"/>.
     /// </summary>
     /// <param name="other">The set to merge.</param>
-    public void UnionWith( TypeConfigurationSet other )
+    internal void ApplyMerge( TypeConfigurationSet other )
     {
         foreach( var kv in other._types )
         {

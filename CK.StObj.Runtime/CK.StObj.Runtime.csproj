@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Description>Facade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
-This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
-    </Description>
+    <Description>
+            Facade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
+            This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
+        </Description>
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -12,10 +13,12 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
     <None Remove="Poco\Json\**" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
+    <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
+    <PackageReference Include="CK.CodeGen" Version="13.0.0" />
+    <PackageReference Include="CK.Globalization" Version="3.0.0" />
+    <PackageReference Include="CK.Setup.Dependency" Version="21.0.0" />
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="12.1.0" />
-    <PackageReference Include="CK.Globalization" Version="2.1.0" />
-    <PackageReference Include="CK.Setup.Dependency" Version="20.1.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

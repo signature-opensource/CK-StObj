@@ -1,6 +1,8 @@
+using CK.Core;
 using CK.Setup;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Engine.TypeCollector;
 
@@ -27,7 +29,7 @@ public interface IConfiguredTypeSet
     /// <summary>
     /// Gets the type configurations with a <see cref="TypeConfiguration.Kind"/> that is not <see cref="ConfigurableAutoServiceKind.None"/>.
     /// <para>
-    /// TypeConfiguration uses <see cref="Type"/>, not <see cref="ICachedType"/> because it comes from the "running side" (the configuration).
+    /// TypeConfiguration uses <see cref="Type"/>, not <see cref="ICachedType"/> because it comes from the configuration.
     /// </para>
     /// </summary>
     IReadOnlyCollection<TypeConfiguration> ConfiguredTypes { get; }

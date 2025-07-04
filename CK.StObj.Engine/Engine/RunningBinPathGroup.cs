@@ -12,13 +12,13 @@ namespace CK.Setup;
 /// <summary>
 /// Implements <see cref="IRunningBinPathGroup"/>.
 /// </summary>
-public sealed class RunningBinPathGroup : IRunningBinPathGroup
+sealed class RunningBinPathGroup : IRunningBinPathGroup
 {
+    readonly BinPathTypeGroup _typeGroup;
     readonly string _generatedDllName;
     readonly string _names;
     readonly EngineConfiguration _engineConfiguration;
     readonly BinPathConfiguration _configuration;
-    readonly bool _isUnifiedPure;
     readonly IReadOnlyCollection<BinPathConfiguration> _similarConfigurations;
     readonly GeneratedFileArtifactWithTextSignature? _generatedAssembly;
     readonly GeneratedG0Artifact? _generatedSource;
@@ -35,11 +35,7 @@ public sealed class RunningBinPathGroup : IRunningBinPathGroup
         SaveSource
     }
 
-
-    // New way
-    readonly BinPathTypeGroup? _typeGroup;
-
-    internal IConfiguredTypeSet ConfiguredTypes => _typeGroup!.ConfiguredTypes;
+    internal IConfiguredTypeSet ConfiguredTypes => _typeGroup.ConfiguredTypes;
 
     internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
     {
@@ -48,8 +44,7 @@ public sealed class RunningBinPathGroup : IRunningBinPathGroup
         _names = typeGroup.GroupName;
         if( typeGroup.IsUnifiedPure )
         {
-            _isUnifiedPure = true;
-            // Legacy unified had a Configuration. Let'es create a stupid empty one
+            // Legacy unified had a Configuration. Let's create a stupid empty one
             // because we already have the types.
             var unified = new BinPathConfiguration()
             {
@@ -78,39 +73,6 @@ public sealed class RunningBinPathGroup : IRunningBinPathGroup
     static GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "$StObjGen" ).AppendPart( "G0.cs" ) );
 
     GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
-
-
-    internal RunningBinPathGroup( EngineConfiguration engineConfiguration,
-                                  BinPathConfiguration head,
-                                  BinPathConfiguration[] similars,
-                                  SHA1Value sha )
-    {
-        Throw.DebugAssert( similars != null && similars.Length > 0 && similars[0] == head );
-        _generatedDllName = $"{engineConfiguration.GeneratedAssemblyName}.{head.Name}.dll";
-        _engineConfiguration = engineConfiguration;
-        _configuration = head;
-        _similarConfigurations = similars;
-        _runSignature = sha;
-        _generatedSource = CreateG0( head );
-        _generatedAssembly = CreateAssembly( head );
-        _names = similars.Select( c => c.Name ).Concatenate();
-    }
-
-    internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathConfiguration head, SHA1Value sha )
-        : this( engineConfiguration, head, new[] { head }, sha )
-    {
-    }
-
-    internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathConfiguration unifiedPure )
-    {
-        _isUnifiedPure = true;
-        _generatedDllName = String.Empty;
-        _engineConfiguration = engineConfiguration;
-        _configuration = unifiedPure;
-        _similarConfigurations = new[] { unifiedPure };
-        _names = "_Unified_";
-    }
-
 
     internal bool Initialize( IActivityMonitor monitor, bool forceRun, ref bool canSkipRun )
     {
@@ -189,10 +151,12 @@ public sealed class RunningBinPathGroup : IRunningBinPathGroup
 
     /// <inheritdoc />
     [MemberNotNullWhen( false, nameof( _generatedSource ), nameof( _generatedAssembly ), nameof( GeneratedSource ), nameof( GeneratedAssembly ) )]
-    public bool IsUnifiedPure => _isUnifiedPure;
+    public bool IsUnifiedPure => _typeGroup.IsUnifiedPure;
 
     /// <inheritdoc />
     public IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations => _similarConfigurations;
+
+    public IReadOnlySet<ICachedType> AllTypes => _typeGroup.ConfiguredTypes.AllTypes; 
 
     /// <inheritdoc />
     public SHA1Value RunSignature { get => _runSignature; internal set => _runSignature = value; }

@@ -30,7 +30,7 @@ assembly load context involved. This collector works in two exclusive ways:
 
   - Each of these explicitly loaded assemblies are "heads": they will provide their types.
 
-- Discover mode (typcally in regular CKomposable application), all files in the `Path` are analyzed.
+- Discover mode (typically in regular CKomposable application), all files in the `Path` are analyzed.
   - Only "*.dll" files are considered.
   - Only their file name matters: the same assembly file name must be available in the `AppContext.BaseDirectory`.
   - When `Path` is not the `AppContext.BaseDirectory`, the last write time of the `Path`'s file must not be newer than the BaseDirectory's one.
