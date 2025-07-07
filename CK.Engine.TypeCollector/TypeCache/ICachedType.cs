@@ -56,7 +56,7 @@ public interface ICachedType : ICachedItem
     ICachedType NonNullable { get; }
 
     /// <summary>
-    /// Gets the public interfaces that this type implements.
+    /// Gets all the public interfaces that this type implements.
     /// <para>
     /// Type analysis heavily relies on supported interfaces but only public ones.
     /// Internal interfaces are "transparent". They can bring some CKomposable interface (IAutoService, etc.)
@@ -65,6 +65,12 @@ public interface ICachedType : ICachedItem
     /// </para>
     /// </summary>
     ImmutableArray<ICachedType> Interfaces { get; }
+
+    /// <summary>
+    /// Gets the subset of <see cref="Interfaces"/> that are declared on the type itself. Interface indirectly
+    /// provided by another interface or the <see cref="BaseType"/> don't appear here.
+    /// </summary>
+    ImmutableArray<ICachedType> DirectInterfaces { get; }
 
     /// <summary>
     /// Gets the base type if this type is a class that inherits from a class that is not <see cref="object"/>.

@@ -17,6 +17,7 @@ partial class CachedType : CachedItem, ICachedType
     readonly ICachedType? _baseType;
     [AllowNull]readonly ICachedType _nullable;
 
+    ImmutableArray<ICachedType> _directInterfaces;
     ICachedType? _genericTypeDefinition;
     string? _csharpName;
     ICachedType? _declaringType;
@@ -61,6 +62,8 @@ partial class CachedType : CachedItem, ICachedType
         public string Name => _nonNullable.Name;
 
         public ImmutableArray<ICachedType> Interfaces => _nonNullable.Interfaces;
+
+        public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.Interfaces;
 
         public ICachedType? BaseType => _nonNullable.BaseType?.Nullable;
 
@@ -120,6 +123,8 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedType> Interfaces => _nonNullable.Interfaces;
 
+        public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.Interfaces;
+
         public ICachedType? BaseType => null;
 
         public ICachedType? DeclaringType => _nonNullable.DeclaringType;
@@ -154,6 +159,7 @@ partial class CachedType : CachedItem, ICachedType
         _typeDepth = typeDepth;
         _assembly = assembly;
         _interfaces = interfaces;
+        if( interfaces.IsEmpty ) _directInterfaces = interfaces;
         _isGenericTypeDefinition = type.IsGenericTypeDefinition;
         _isGenericType = type.IsGenericType;
         if( !_isGenericType ) _genericArguments = ImmutableArray<ICachedType>.Empty;
@@ -197,6 +203,34 @@ partial class CachedType : CachedItem, ICachedType
     public CachedAssembly Assembly => _assembly;
 
     public ImmutableArray<ICachedType> Interfaces => _interfaces;
+
+    public ImmutableArray<ICachedType> DirectInterfaces => _directInterfaces.IsDefault ? ComputeDirectInterfaces() : _directInterfaces;
+
+    ImmutableArray<ICachedType> ComputeDirectInterfaces()
+    {
+        Throw.DebugAssert( !_interfaces.IsEmpty );
+        var b = ImmutableArray.CreateBuilder<ICachedType>( _interfaces.Length );
+        foreach( var i in _interfaces )
+        {
+            if( _baseType != null && _baseType.Interfaces.Contains( i ) ) continue;
+            if( AppearAbove( i, _interfaces ) ) continue;
+            b.Add( i );
+        }
+        _directInterfaces = b.DrainToImmutable();
+        return _directInterfaces;
+
+        static bool AppearAbove( ICachedType candidate, ImmutableArray<ICachedType> interfaces  )
+        {
+            foreach( var i in interfaces )
+            {
+                if( candidate != i && i.Interfaces.Contains( candidate ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
 
     public ICachedType? BaseType => _baseType;
 

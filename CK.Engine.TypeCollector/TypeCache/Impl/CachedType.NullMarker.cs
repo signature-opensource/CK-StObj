@@ -29,6 +29,8 @@ partial class CachedType
 
         public ImmutableArray<ICachedType> Interfaces => throw new NotImplementedException();
 
+        public ImmutableArray<ICachedType> DirectInterfaces => throw new NotImplementedException();
+
         public ICachedType? BaseType => throw new NotImplementedException();
 
         public int TypeDepth => throw new NotImplementedException();

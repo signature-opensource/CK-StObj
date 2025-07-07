@@ -41,6 +41,8 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedType> Interfaces => ImmutableArray<ICachedType>.Empty;
 
+    public ImmutableArray<ICachedType> DirectInterfaces => ImmutableArray<ICachedType>.Empty;
+
     public ICachedType? BaseType => null;
 
     public ICachedType? DeclaringType => _declaringType ??= _typeCache.Get( _parameter.DeclaringType! );
