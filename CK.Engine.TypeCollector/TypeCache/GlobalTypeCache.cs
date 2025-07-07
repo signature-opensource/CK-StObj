@@ -21,7 +21,16 @@ public sealed partial class GlobalTypeCache
     readonly ICachedType _iAutoService;
 
     /// <summary>
-    /// Initializes a new cahe for types based on an assembly cache.
+    /// Initializes a new empty cache for types.
+    /// 
+    /// </summary>
+    public GlobalTypeCache()
+        : this( new AssemblyCache() )
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new cache for types bound to an existing assembly cache.
     /// </summary>
     /// <param name="assemblies">The assembly cache.</param>
     public GlobalTypeCache( AssemblyCache assemblies )
