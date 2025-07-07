@@ -77,7 +77,7 @@ public sealed partial class AssemblyCache
         }
         // Dumps a summary.
         var sb = new StringBuilder( success ? "Successfully analyzed " : "Error while analyzing " );
-        sb.Append( assemblyCache._binPaths.Count ).AppendLine( " assembly configurations:" );
+        sb.Append( assemblyCache._binPaths.Count ).AppendLine( " BinPath configurations:" );
         foreach( var b in assemblyCache._binPaths.Values )
         {
             if( b.Success )

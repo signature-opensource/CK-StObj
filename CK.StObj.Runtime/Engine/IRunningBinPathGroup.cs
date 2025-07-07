@@ -42,9 +42,19 @@ public interface IRunningBinPathGroup
     IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations { get; }
 
     /// <summary>
+    /// Gets the global type cache.
+    /// <para>
+    /// This is a global cache, <see cref="GlobalTypeCache.Get(Type)"/> can add unregistered types to it.
+    /// This is not the restricted set of types that must be considered for a BinPath: <see cref="TypeSet"/>
+    /// is the subset of types that must be considered.
+    /// </para>
+    /// </summary>
+    GlobalTypeCache TypeCache { get; }
+
+    /// <summary>
     /// Gets the set of types that must be considered.
     /// </summary>
-    IReadOnlySet<ICachedType> AllTypes { get; }
+    IReadOnlySet<ICachedType> TypeSet { get; }
 
     /// <summary>
     /// Gets the SHA1 for this BinPath. All <see cref="SimilarConfigurations"/> share the same SHA1.

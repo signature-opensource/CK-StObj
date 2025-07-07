@@ -113,14 +113,28 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                         var ctorArgs = a.ConstructorArguments;
                         if( ctorArgs[0].Value is Type t )
                         {
-                            success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, t, ConfigurableAutoServiceKind.None );
+                            success &= HandleTypeConfiguration( monitor,
+                                                                typeCache,
+                                                                c,
+                                                                ref changed,
+                                                                add: false,
+                                                                assemblySourceName,
+                                                                t,
+                                                                ConfigurableAutoServiceKind.None );
                         }
                         if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
                         {
                             foreach( var o in others )
                             {
                                 if( o == null ) continue;
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, o, ConfigurableAutoServiceKind.None );
+                                success &= HandleTypeConfiguration( monitor,
+                                                                    typeCache,
+                                                                    c,
+                                                                    ref changed,
+                                                                    add: false,
+                                                                    assemblySourceName,
+                                                                    o,
+                                                                    ConfigurableAutoServiceKind.None );
                             }
                         }
                     }
