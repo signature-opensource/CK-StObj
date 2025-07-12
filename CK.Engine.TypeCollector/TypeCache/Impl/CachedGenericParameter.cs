@@ -53,7 +53,7 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedType> GenericArguments => ImmutableArray<ICachedType>.Empty;
 
-    public ImmutableArray<CustomAttributeData> CustomAttributes => ImmutableArray<CustomAttributeData>.Empty;
+    public ImmutableArray<CustomAttributeData> AttributesData => ImmutableArray<CustomAttributeData>.Empty;
 
     public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
 
@@ -67,7 +67,17 @@ class CachedGenericParameter : ICachedType
 
     public EngineUnhandledType EngineUnhandledType => EngineUnhandledType.NullFullName;
 
+    public ImmutableArray<object> RawAttributes => ImmutableArray<object>.Empty;
+
+    public ImmutableArray<object> GetAttributes( IActivityMonitor monitor ) => ImmutableArray<object>.Empty;
+
     public override string ToString() => _parameter.Name;
+
+    public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+    {
+        attributes = ImmutableArray<object>.Empty;
+        return true;
+    }
 
     public StringBuilder Write( StringBuilder b ) => b.Append( _parameter.Name );
 }

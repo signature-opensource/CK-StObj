@@ -1,13 +1,21 @@
+using CK.Core;
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-abstract class CachedItem : ICachedItem
+abstract partial class CachedItem : ICachedItem
 {
     private protected readonly MemberInfo _member;
     ImmutableArray<CustomAttributeData> _customAttributes;
+    ImmutableArray<object> _attributes;
+    ImmutableArray<object> _finalAttributes;
+    bool _finalAttributesInitialized;
 
     internal CachedItem( MemberInfo member )
     {
@@ -16,7 +24,7 @@ abstract class CachedItem : ICachedItem
 
     public string Name => _member.Name;
 
-    public ImmutableArray<CustomAttributeData> CustomAttributes
+    public ImmutableArray<CustomAttributeData> AttributesData
     {
         get
         {
@@ -27,6 +35,19 @@ abstract class CachedItem : ICachedItem
                 _customAttributes = _member.CustomAttributes.ToImmutableArray();
             }
             return _customAttributes;
+        }
+    }
+
+
+    public ImmutableArray<object> RawAttributes
+    {
+        get
+        {
+            if( _attributes.IsDefault )
+            {
+                _attributes = ImmutableCollectionsMarshal.AsImmutableArray( _member.GetCustomAttributes( inherit: false ) );
+            }
+            return _attributes;
         }
     }
 

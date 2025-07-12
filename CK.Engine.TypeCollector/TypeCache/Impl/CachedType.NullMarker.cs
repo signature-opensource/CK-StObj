@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -47,16 +48,23 @@ partial class CachedType
 
         public string Name => throw new NotImplementedException();
 
-        public ImmutableArray<CustomAttributeData> CustomAttributes => throw new NotImplementedException();
+        public ImmutableArray<CustomAttributeData> AttributesData => throw new NotImplementedException();
 
         public ICachedType? ElementType => throw new NotImplementedException();
 
         public EngineUnhandledType EngineUnhandledType => throw new NotImplementedException();
+
+        public ImmutableArray<object> RawAttributes => throw new NotImplementedException();
 
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 
         public override string ToString() => throw new NotImplementedException();
 
         internal static ICachedType? Filter( ICachedType declaringType ) => declaringType == _nullMarker ? null : declaringType;
+
+        public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+        {
+            throw new NotImplementedException();
+        }
     }
 }

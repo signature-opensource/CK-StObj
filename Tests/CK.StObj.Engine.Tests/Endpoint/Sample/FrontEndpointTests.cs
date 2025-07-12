@@ -1,5 +1,4 @@
 using CK.Core;
-using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;

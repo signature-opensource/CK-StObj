@@ -1,17 +1,20 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
 partial class CachedType : CachedItem, ICachedType
 {
     readonly GlobalTypeCache _cache;
-    readonly int _typeDepth;
     readonly CachedAssembly _assembly;
     readonly ImmutableArray<ICachedType> _interfaces;
     readonly ICachedType? _baseType;
@@ -24,6 +27,7 @@ partial class CachedType : CachedItem, ICachedType
     ICachedType? _elementType;
     ImmutableArray<ICachedMember> _declaredMembers;
     ImmutableArray<ICachedType> _genericArguments;
+    readonly ushort _typeDepth;
 
     const EngineUnhandledType _uninitialized = (EngineUnhandledType)0xFF;
     EngineUnhandledType _unhandledType;
@@ -73,7 +77,7 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedType> GenericArguments => _nonNullable.GenericArguments;
 
-        public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
+        public ImmutableArray<CustomAttributeData> AttributesData => _nonNullable.AttributesData;
 
         public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 
@@ -82,6 +86,11 @@ partial class CachedType : CachedItem, ICachedType
         public ICachedType? ElementType => _nonNullable.ElementType;
 
         public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
+
+        public ImmutableArray<object> RawAttributes => _nonNullable.RawAttributes;
+
+        public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+                     => _nonNullable.TryGetInitializedAttributes( monitor, out attributes );
 
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
@@ -133,7 +142,7 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedType> GenericArguments => _nonNullable.GenericArguments;
 
-        public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
+        public ImmutableArray<CustomAttributeData> AttributesData => _nonNullable.AttributesData;
 
         public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 
@@ -143,9 +152,14 @@ partial class CachedType : CachedItem, ICachedType
 
         public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
 
+        public ImmutableArray<object> RawAttributes => _nonNullable.RawAttributes;
+
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
         public override string ToString() => CSharpName;
+
+        public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+            => _nonNullable.TryGetInitializedAttributes( monitor, out attributes );
     }
 
     CachedType( GlobalTypeCache cache,
@@ -156,7 +170,7 @@ partial class CachedType : CachedItem, ICachedType
         : base( type )
     {
         _cache = cache;
-        _typeDepth = typeDepth;
+        _typeDepth = (ushort)typeDepth;
         _assembly = assembly;
         _interfaces = interfaces;
         if( interfaces.IsEmpty ) _directInterfaces = interfaces;
@@ -191,6 +205,8 @@ partial class CachedType : CachedItem, ICachedType
                     ? new NullValueType( this, nullableValueType )
                     : this;
     }
+
+    public GlobalTypeCache TypeCache => _cache;
 
     public Type Type => Unsafe.As<Type>( _member );
 
@@ -322,8 +338,6 @@ partial class CachedType : CachedItem, ICachedType
             return _declaredMembers;
         }
     }
-
-    public GlobalTypeCache TypeCache => _cache;
 
     public override StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 

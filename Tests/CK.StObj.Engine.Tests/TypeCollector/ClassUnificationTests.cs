@@ -1,5 +1,4 @@
 using CK.Core;
-using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;

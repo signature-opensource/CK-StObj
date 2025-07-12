@@ -1,3 +1,5 @@
+using CK.Core;
+using System.Collections.Immutable;
 using System.Reflection;
 
 namespace CK.Engine.TypeCollector;
@@ -17,4 +19,5 @@ abstract class CachedMemberInfo : CachedItem, ICachedMember
     public MemberInfo Member => _member;
 
     internal GlobalTypeCache TypeCache => _declaringType.TypeCache;
+
 }

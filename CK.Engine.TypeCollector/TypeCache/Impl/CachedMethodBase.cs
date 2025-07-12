@@ -7,13 +7,11 @@ namespace CK.Engine.TypeCollector;
 
 abstract class CachedMethodBase : CachedMemberInfo, ICachedMethodBase
 {
-    readonly ICachedType _declaringType;
     ImmutableArray<CachedParameterInfo> _parameterInfos;
 
     internal CachedMethodBase( ICachedType declaringType, MethodBase method )
         : base( declaringType, method )
     {
-        _declaringType = declaringType;
     }
 
     /// <summary>

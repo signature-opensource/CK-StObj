@@ -5,7 +5,7 @@ namespace CK.Engine.TypeCollector;
 /// <summary>
 /// Cached type member.
 /// <para>
-/// This differs from the .Net model: a <see cref="ICachedType"/> is not a <see cref="ICachedMember"/>:
+/// This differs from the .Net reflection model: a <see cref="ICachedType"/> is not a <see cref="ICachedMember"/>:
 /// <see cref="ICachedItem"/> generalizes them.
 /// </para>
 /// </summary>

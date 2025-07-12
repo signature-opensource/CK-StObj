@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Testing;
-using Shouldly;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Setup;
-using Shouldly;
 using System;
 
 using static CK.Testing.MonitorTestHelper;
