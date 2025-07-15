@@ -1,9 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\CK.StObj.Model\CK.StObj.Model.csproj" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+    <ItemGroup>
+        <!-- Unused for the moment. -->
+        <PackageReference Include="CK.Abstractions" Version="27.0.1--0008-develop" />
+        <ProjectReference Include="..\..\..\CK.StObj.Model\CK.StObj.Model.csproj" />
+    </ItemGroup>
 </Project>
