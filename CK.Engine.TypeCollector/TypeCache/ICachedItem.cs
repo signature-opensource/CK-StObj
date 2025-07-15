@@ -34,12 +34,11 @@ public interface ICachedItem
     ImmutableArray<object> RawAttributes { get; }
 
     /// <summary>
-    /// Gets the attributes where any <see cref="PrimaryTypeAttribute"/>, <see cref="SecondaryTypeAttribute{T}"/>
-    /// (for <see cref="ICachedType"/>) and <see cref="PrimaryMemberAttribute"/> and <see cref="SecondaryMemberAttribute{T}"/>
-    /// (for <see cref="ICachedMember"/>) have been replaced with their initialized Engine side "AttributeImpl" peers.
+    /// Gets the attributes where any <see cref="EngineAttribute"/>, <see cref="EngineAttribute{T}"/> have been
+    /// replaced with their initialized Engine side "AttributeImpl" peers.
     /// <para>
-    /// This array has the same length and is in the same order as <see cref="RawAttributes"/>: the Primary/Secondary
-    /// original attributes at the same index are replaced by their peers.
+    /// This array has the same length and is in the same order as <see cref="RawAttributes"/>: the orignal Engine
+    /// Attribute attributes at the same index are replaced by their peers.
     /// </para>
     /// </summary>
     /// <param name="monitor">Required monitor to log any peer instantiation error on the first call.</param>
@@ -48,7 +47,7 @@ public interface ICachedItem
     /// <see cref="ImmutableArray{T}.IsDefault"/> on error.
     /// </param>
     /// <returns>True on success, false on error.</returns>
-    bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes );
+    bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes );
 
     /// <summary>
     /// Writes the C# name of this item. 

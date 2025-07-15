@@ -1,14 +1,10 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace CK.Engine.TypeCollector;
 
@@ -89,8 +85,8 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<object> RawAttributes => _nonNullable.RawAttributes;
 
-        public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
-                     => _nonNullable.TryGetInitializedAttributes( monitor, out attributes );
+        public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+           => _nonNullable.TryGetAllAttributes( monitor, out attributes );
 
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
@@ -158,8 +154,8 @@ partial class CachedType : CachedItem, ICachedType
 
         public override string ToString() => CSharpName;
 
-        public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
-            => _nonNullable.TryGetInitializedAttributes( monitor, out attributes );
+        public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+            => _nonNullable.TryGetAllAttributes( monitor, out attributes );
     }
 
     CachedType( GlobalTypeCache cache,

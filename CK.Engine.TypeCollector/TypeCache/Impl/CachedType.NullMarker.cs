@@ -62,9 +62,10 @@ partial class CachedType
 
         internal static ICachedType? Filter( ICachedType declaringType ) => declaringType == _nullMarker ? null : declaringType;
 
-        public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+        public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
         {
             throw new NotImplementedException();
         }
+
     }
 }

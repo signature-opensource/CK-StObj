@@ -73,7 +73,7 @@ class CachedGenericParameter : ICachedType
 
     public override string ToString() => _parameter.Name;
 
-    public bool TryGetInitializedAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+    public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
     {
         attributes = ImmutableArray<object>.Empty;
         return true;
