@@ -71,7 +71,7 @@ internal class MutableAmbientProperty : MutableReferenceWithValue, IStObjAmbient
 
     internal bool SetValue( int setterSpecializationDepth, IActivityMonitor monitor, object value )
     {
-        Debug.Assert( _maxSpecializationDepthSet != Int32.MaxValue );
+        Throw.DebugAssert( _maxSpecializationDepthSet != Int32.MaxValue );
         if( setterSpecializationDepth < _maxSpecializationDepthSet )
         {
             monitor.Error( $"'{ToString()}' has already been set or configured through a more specialized object." );
@@ -85,7 +85,7 @@ internal class MutableAmbientProperty : MutableReferenceWithValue, IStObjAmbient
 
     internal bool SetConfiguration( int setterSpecializationDepth, IActivityMonitor monitor, Type type, StObjRequirementBehavior behavior )
     {
-        Debug.Assert( _maxSpecializationDepthSet != Int32.MaxValue );
+        Throw.DebugAssert( _maxSpecializationDepthSet != Int32.MaxValue );
         if( setterSpecializationDepth < _maxSpecializationDepthSet )
         {
             monitor.Error( $"'{this}' has already been set or configured through a more specialized object." );

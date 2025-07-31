@@ -110,7 +110,7 @@ internal class RealObjectClassInfo : CKTypeInfo, IStObjTypeInfoFromParent
                         IReadOnlyList<AmbientPropertyInfo> propList;
                         IReadOnlyList<InjectObjectInfo> injectList;
                         CreateAllAmbientPropertyList( monitor, t, result.SpecializationDepth, stObjProperties, out propList, out injectList );
-                        Debug.Assert( propList != null && injectList != null );
+                        Throw.DebugAssert( propList != null && injectList != null );
                         result.AmbientProperties = propList;
                         result.InjectObjects = injectList;
                         result.StObjProperties = stObjProperties;
@@ -193,7 +193,7 @@ internal class RealObjectClassInfo : CKTypeInfo, IStObjTypeInfoFromParent
                                   Action<Type> alsoRegister )
         : base( monitor, parent, t, provider, isExcluded, null, alsoRegister )
     {
-        Debug.Assert( parent == Generalization );
+        Throw.DebugAssert( parent == Generalization );
         if( IsExcluded ) return;
 
         IStObjTypeInfoFromParent infoFromParent = Generalization;
@@ -238,7 +238,7 @@ internal class RealObjectClassInfo : CKTypeInfo, IStObjTypeInfoFromParent
         AmbientProperties = AmbientPropertyInfo.MergeWithAboveProperties( monitor, infoFromParent.AmbientProperties, apCollector );
         InjectObjects = AmbientPropertyInfo.MergeWithAboveProperties( monitor, infoFromParent.InjectObjects, acCollector );
         StObjProperties = stObjProperties;
-        Debug.Assert( InjectObjects != null && AmbientProperties != null && StObjProperties != null );
+        Throw.DebugAssert( InjectObjects != null && AmbientProperties != null && StObjProperties != null );
 
         // Simple detection of name clashing: I prefer to keep it simple and check property kind coherency here instead of injecting 
         // the detection inside CreateAmbientPropertyListForExactType and MergeWithAboveProperties with a multi-type property collector. 
@@ -576,12 +576,12 @@ internal class RealObjectClassInfo : CKTypeInfo, IStObjTypeInfoFromParent
                                           List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
                                           List<Type> abstractTails )
     {
-        Debug.Assert( tempAssembly != null );
+        Throw.DebugAssert( tempAssembly != null );
         var item = new MutableItem( this, generalization, engineMap );
         bool concreteBelow = false;
         foreach( RealObjectClassInfo c in Specializations )
         {
-            Debug.Assert( !c.IsExcluded );
+            Throw.DebugAssert( !c.IsExcluded );
             concreteBelow |= c.CreateMutableItemsPath( monitor, services, engineMap, item, tempAssembly, lastConcretes, abstractTails );
         }
         if( !concreteBelow )

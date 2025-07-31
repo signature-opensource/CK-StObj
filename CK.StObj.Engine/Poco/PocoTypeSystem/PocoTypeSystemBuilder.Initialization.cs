@@ -123,7 +123,7 @@ public sealed partial class PocoTypeSystemBuilder
         var builder = new PocoPropertyBuilder( this );
         foreach( var p in allPrimaries )
         {
-            Debug.Assert( p.FamilyInfo != null );
+            Throw.DebugAssert( p.FamilyInfo != null );
             PrimaryPocoField[] fields = new PrimaryPocoField[p.FamilyInfo.Properties.Count];
             foreach( var prop in p.FamilyInfo.Properties.Values )
             {

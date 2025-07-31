@@ -126,7 +126,7 @@ sealed class EngineConfigureContext : IStObjEngineConfigureContext
                     // Registers the configuration instance itself.
                     _container.Add( c.GetType(), c, null );
                     Type? t = SimpleTypeFinder.WeakResolver( aspectTypeName, true );
-                    Debug.Assert( t != null );
+                    Throw.DebugAssert( t != null );
                     if( !aspectsType.Add( t ) )
                     {
                         success = onError();

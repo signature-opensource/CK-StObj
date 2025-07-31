@@ -39,7 +39,7 @@ public sealed partial class PocoTypeSystemBuilder
             {
                 return null;
             }
-            Debug.Assert( _bestReg != null && _bestProperty != null );
+            Throw.DebugAssert( _bestReg != null && _bestProperty != null );
             // Now that we know that there are no issues on the unified type across the property implementations:
             //  - We handle the potential UnionType type.
             //  - Or check the default value instance if there's one that will apply to the field.
@@ -56,7 +56,7 @@ public sealed partial class PocoTypeSystemBuilder
             IPocoType? finalType;
             if( props.UnionTypeDefinition != null )
             {
-                Debug.Assert( _bestReg.Kind == PocoTypeKind.Any, "Only 'object' property can be used for union types." );
+                Throw.DebugAssert( "Only 'object' property can be used for union types.", _bestReg.Kind == PocoTypeKind.Any );
                 // This has the awful side effect to alter the _defaultValue...
                 // But I'm tired and lazy.
                 finalType = HandleUnionTypeDefinition( monitor, props );
@@ -83,7 +83,7 @@ public sealed partial class PocoTypeSystemBuilder
 
         IUnionPocoType? HandleUnionTypeDefinition( IActivityMonitor monitor, IPocoPropertyInfo prop )
         {
-            Debug.Assert( _bestReg != null && prop.UnionTypeDefinition != null );
+            Throw.DebugAssert( _bestReg != null && prop.UnionTypeDefinition != null );
             var isNullable = _bestReg.IsNullable;
             bool success = true;
             // The final list of Poco types to build.
@@ -204,7 +204,7 @@ public sealed partial class PocoTypeSystemBuilder
                 var tDef = types.FirstOrDefault( t => !t.DefaultValueInfo.IsDisallowed );
                 types.Sort( ( t1, t2 ) => StringComparer.Ordinal.Compare( t1.CSharpName, t2.CSharpName ) );
                 var unionType = _system.RegisterUnionType( monitor, types );
-                Debug.Assert( unionType != null && !unionType.IsNullable );
+                Throw.DebugAssert( unionType != null && !unionType.IsNullable );
 
                 // Handle default value now.
                 if( _defaultValue != null )
@@ -254,7 +254,7 @@ public sealed partial class PocoTypeSystemBuilder
         /// </summary>
         bool TryFindWritableAndCheckReadOnlys( IActivityMonitor monitor )
         {
-            Debug.Assert( _props != null );
+            Throw.DebugAssert( _props != null );
             List<(IExtPropertyInfo P, IPocoType T)>? abstractReadOnlyToCheck = null;
             foreach( var p in _props.DeclaredProperties )
             {
@@ -269,7 +269,7 @@ public sealed partial class PocoTypeSystemBuilder
                 }
                 else
                 {
-                    Debug.Assert( _defaultValueSource != null );
+                    Throw.DebugAssert( _defaultValueSource != null );
                     if( !_defaultValue.CheckSameOrNone( monitor, _defaultValueSource, _system.StringBuilderPool, p ) )
                     {
                         return false;
@@ -306,7 +306,7 @@ public sealed partial class PocoTypeSystemBuilder
 
         bool Add( IActivityMonitor monitor, IExtPropertyInfo p, ref List<(IExtPropertyInfo, IPocoType)>? abstractReadOnlyToCheck )
         {
-            Debug.Assert( _props != null );
+            Throw.DebugAssert( _props != null );
             var reg = _system.RegisterPocoField( monitor, p );
             if( reg == null ) return false;
 
@@ -345,8 +345,8 @@ public sealed partial class PocoTypeSystemBuilder
                 }
                 // On success, always check that an abstract collection must not
                 // have a setter and that any other type must be a regular property.
-                Debug.Assert( _bestReg != null );
-                Debug.Assert( _bestReg is not IRecordPocoType || _bestReg.Type.IsValueType, "IRecordPocoType => ValueType." );
+                Throw.DebugAssert( _bestReg != null );
+                Throw.DebugAssert( "IRecordPocoType => ValueType.", _bestReg is not IRecordPocoType || _bestReg.Type.IsValueType );
                 if( _bestReg is IRecordPocoType )
                 {
                     Throw.DebugAssert( "Already checked.", p.Type.IsByRef );

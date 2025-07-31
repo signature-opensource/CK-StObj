@@ -22,7 +22,7 @@ sealed partial class StObjObjectEngineMap
 
     internal void RegisterServiceFinalObjectMapping( Type t, CKTypeInfo typeInfo )
     {
-        Debug.Assert( typeInfo is RealObjectClassInfo );
+        Throw.DebugAssert( typeInfo is RealObjectClassInfo );
         var c = (RealObjectClassInfo)typeInfo;
         MutableItem mapping = c.AutoServiceImpl;
         if( mapping == null )

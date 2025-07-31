@@ -29,7 +29,7 @@ public class DynamicAssembly : IDynamicAssembly
 
         _memory = new Dictionary<object, object?>();
         Code = CodeWorkspace.Create();
-        Debug.Assert( typeof( StObjGenAttribute ).FullName == "CK.Core.StObjGenAttribute" );
+        Throw.DebugAssert( typeof( StObjGenAttribute ).FullName == "CK.Core.StObjGenAttribute" );
         Code.TypeCreated += t => t.Definition.Attributes.Ensure( CodeAttributeTarget.Type ).Attributes.Add( new AttributeDefinition( "CK.Core.StObjGen" ) );
     }
 

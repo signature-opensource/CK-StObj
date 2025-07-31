@@ -29,7 +29,7 @@ public partial class StObjCollector
                 get => _canUseDefault;
                 set
                 {
-                    Debug.Assert( value == false || HasDefault );
+                    Throw.DebugAssert( value == false || HasDefault );
                     _canUseDefault = value;
                 }
             }
@@ -52,7 +52,7 @@ public partial class StObjCollector
 
         internal bool Initialize( IActivityMonitor m )
         {
-            Debug.Assert( Class.ConstructorParameters != null );
+            Throw.DebugAssert( Class.ConstructorParameters != null );
             bool success = true;
             _params = new List<CtorParameter>();
             foreach( var p in Class.ConstructorParameters )
@@ -68,7 +68,7 @@ public partial class StObjCollector
             }
             if( success )
             {
-                Debug.Assert( Class.Interfaces != null );
+                Throw.DebugAssert( Class.Interfaces != null );
                 _isHeadCandidate = !Family.Interfaces.Except( Class.Interfaces ).Any();
                 _isHead = _isHeadCandidate
                           && Family.Classes.Where( c => c != this )
@@ -111,7 +111,7 @@ public partial class StObjCollector
 
         bool InitializeClasses( IActivityMonitor monitor )
         {
-            Debug.Assert( Classes.Count > 0 );
+            Throw.DebugAssert( Classes.Count > 0 );
             bool success = true;
             foreach( var c in Classes )
             {
@@ -123,7 +123,7 @@ public partial class StObjCollector
         public bool Resolve( IActivityMonitor monitor )
         {
             bool success = true;
-            Debug.Assert( Classes.Count > 0 && Interfaces.Count > 0 );
+            Throw.DebugAssert( Classes.Count > 0 && Interfaces.Count > 0 );
             if( Classes.Count == 1 )
             {
                 Resolved = Classes.Single().Class;
@@ -189,7 +189,7 @@ public partial class StObjCollector
             bool familiesHasBeenMerged = false;
             foreach( var c in classes )
             {
-                Debug.Assert( c.IsIncluded
+                Throw.DebugAssert( c.IsIncluded
                               && c.Interfaces != null
                               && (c.Interfaces.Count == 0 || c.Interfaces.Any( i => i.SpecializationDepth == 0 )) );
                 foreach( var baseInterface in c.Interfaces.Where( i => !i.IsSpecialized ) )
@@ -235,7 +235,7 @@ public partial class StObjCollector
 
         void MergeWith( InterfaceFamily f )
         {
-            Debug.Assert( _interfaces.Intersect( f._interfaces ).Any() == false );
+            Throw.DebugAssert( _interfaces.Intersect( f._interfaces ).Any() == false );
             _interfaces.UnionWith( f._interfaces );
             _classes.AddRange( f._classes );
         }
@@ -273,7 +273,7 @@ public partial class StObjCollector
                 var allClasses = typeResult.AutoServices.RootClasses
                                     .Concat( typeResult.AutoServices.SubGraphRootClasses )
                                     .Select( c => c.MostSpecialized! );
-                Debug.Assert( allClasses.GroupBy( c => c ).All( g => g.Count() == 1 ) );
+                Throw.DebugAssert( allClasses.GroupBy( c => c ).All( g => g.Count() == 1 ) );
                 IReadOnlyCollection<InterfaceFamily> families = InterfaceFamily.Build( monitor, allClasses );
                 if( families.Count == 0 )
                 {
@@ -313,7 +313,7 @@ public partial class StObjCollector
                 }
                 foreach( var f in families )
                 {
-                    Debug.Assert( f.Resolved != null );
+                    Throw.DebugAssert( f.Resolved != null );
                     foreach( var i in f.Interfaces )
                     {
                         RegisterMapping( monitor, engineMap, kindComputeFacade, i.Type, f.Resolved, ref success );
@@ -331,7 +331,7 @@ public partial class StObjCollector
             {
                 if( !c.IsRealObject )
                 {
-                    Debug.Assert( c.MostSpecialized != null );
+                    Throw.DebugAssert( c.MostSpecialized != null );
                     RegisterMapping( monitor, engineMap, kindComputeFacade, c.ClassType, c.MostSpecialized, ref success );
                     foreach( var s in c.Specializations )
                     {

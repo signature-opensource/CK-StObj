@@ -32,14 +32,14 @@ public partial class CKTypeCollector
 
     internal AutoServiceClassInfo? FindServiceClassInfo( IActivityMonitor monitor, Type t )
     {
-        Debug.Assert( IsAutoService( monitor, t ) && t.IsClass );
+        Throw.DebugAssert( IsAutoService( monitor, t ) && t.IsClass );
         _serviceCollector.TryGetValue( t, out var info );
         return info;
     }
 
     internal AutoServiceInterfaceInfo? FindServiceInterfaceInfo( IActivityMonitor monitor, Type t )
     {
-        Debug.Assert( IsAutoService( monitor, t ) && t.IsInterface );
+        Throw.DebugAssert( IsAutoService( monitor, t ) && t.IsInterface );
         _serviceInterfaces.TryGetValue( t, out var info );
         return info;
     }
@@ -50,7 +50,7 @@ public partial class CKTypeCollector
     /// </summary>
     AutoServiceInterfaceInfo? RegisterServiceInterface( IActivityMonitor monitor, Type t, CKTypeKind lt )
     {
-        Debug.Assert( t.IsInterface && lt == KindDetector.GetNonDefinerKind( monitor, t ) );
+        Throw.DebugAssert( t.IsInterface && lt == KindDetector.GetNonDefinerKind( monitor, t ) );
         if( !_serviceInterfaces.TryGetValue( t, out var info ) )
         {
             if( (lt & CKTypeKind.IsExcludedType) == 0 )
@@ -100,8 +100,8 @@ public partial class CKTypeCollector
             {
                 s.FinalizeMostSpecializedAndCollectSubGraphs( subGraphs );
             }
-            Debug.Assert( _serviceRoots.All( c => c.MostSpecialized != null ) );
-            Debug.Assert( subGraphs.All( c => c.MostSpecialized != null ) );
+            Throw.DebugAssert( _serviceRoots.All( c => c.MostSpecialized != null ) );
+            Throw.DebugAssert( subGraphs.All( c => c.MostSpecialized != null ) );
         }
         // Collecting all, roots and leaves interfaces.
         var leafInterfaces = new List<AutoServiceInterfaceInfo>();
@@ -118,8 +118,8 @@ public partial class CKTypeCollector
                 if( it.Interfaces.Count == 0 ) rootInterfaces[idxRoot++] = it;
             }
         }
-        Debug.Assert( idxAll == allInterfaces.Length );
-        Debug.Assert( idxRoot == rootInterfaces.Length );
+        Throw.DebugAssert( idxAll == allInterfaces.Length );
+        Throw.DebugAssert( idxRoot == rootInterfaces.Length );
         monitor.Info( $"{allInterfaces.Length} Service interfaces with {rootInterfaces.Length} roots and {leafInterfaces.Count} interface leaves." );
         return new AutoServiceCollectorResult( success,
                                                allInterfaces,
@@ -140,8 +140,8 @@ public partial class CKTypeCollector
         {
             bool error = false;
             var deepestConcretes = new List<AutoServiceClassInfo>();
-            Debug.Assert( _serviceRoots.All( info => info != null && !info.TypeInfo.IsExcluded && info.Generalization == null ),
-                "_serviceRoots contains only not Excluded types." );
+            Throw.DebugAssert( "_serviceRoots contains only not Excluded types.",
+                                _serviceRoots.All( info => info != null && !info.TypeInfo.IsExcluded && info.Generalization == null ) );
             List<(AutoServiceClassInfo Root, AutoServiceClassInfo[] Leaves)>? ambiguities = null;
             // We must wait until all paths have been initialized before ensuring constructor parameters
             AutoServiceClassInfo[] resolvedLeaves = new AutoServiceClassInfo[_serviceRoots.Count];
@@ -197,7 +197,7 @@ public partial class CKTypeCollector
                             error |= initError;
                             if( success )
                             {
-                                Debug.Assert( a.Root.MostSpecialized != null, "This is null only on error." );
+                                Throw.DebugAssert( "This is null only on error.", a.Root.MostSpecialized != null );
                                 monitor.CloseGroup( "Succeeds, resolved to: " + a.Root.MostSpecialized.ClassType );
                             }
                             else
@@ -233,7 +233,7 @@ public partial class CKTypeCollector
 
             public ClassAmbiguity( AutoServiceClassInfo c )
             {
-                Debug.Assert( c.TypeInfo.SpecializationsCount > 0 && c.MostSpecialized == null );
+                Throw.DebugAssert( c.TypeInfo.SpecializationsCount > 0 && c.MostSpecialized == null );
                 Class = c;
                 Leaves = new List<AutoServiceClassInfo>();
             }
@@ -249,9 +249,9 @@ public partial class CKTypeCollector
 
         public (bool Success, bool InitializationError) TryClassUnification( AutoServiceClassInfo root, AutoServiceClassInfo[] allLeaves )
         {
-            Debug.Assert( allLeaves.Length > 1
-                          && NextUpperAmbiguity( allLeaves[0] ) != null
-                          && NextUpperAmbiguity( allLeaves[1] ) != null );
+            Throw.DebugAssert( allLeaves.Length > 1
+                              && NextUpperAmbiguity( allLeaves[0] ) != null
+                              && NextUpperAmbiguity( allLeaves[1] ) != null );
             _root = root;
             _allLeaves = allLeaves;
             while( root.TypeInfo.SpecializationsCount == 1 )
@@ -271,8 +271,8 @@ public partial class CKTypeCollector
                 && !initializationError
                 && _root != _rootAmbiguity )
             {
-                Debug.Assert( _root.MostSpecialized == null );
-                Debug.Assert( _rootAmbiguity.MostSpecialized != null );
+                Throw.DebugAssert( _root.MostSpecialized == null );
+                Throw.DebugAssert( _rootAmbiguity.MostSpecialized != null );
                 initializationError |= !_root.SetMostSpecialized( _monitor, _engineMap, _rootAmbiguity.MostSpecialized );
             }
             return (allSuccess, initializationError);
@@ -280,7 +280,7 @@ public partial class CKTypeCollector
 
         public void CollectRemainingAmbiguities( List<IReadOnlyList<AutoServiceClassInfo>> ambiguities )
         {
-            Debug.Assert( _ambiguities.Count > 0 );
+            Throw.DebugAssert( _ambiguities.Count > 0 );
             foreach( var ca in _ambiguities.Values )
             {
                 if( ca.Class.MostSpecialized == null )
@@ -294,7 +294,7 @@ public partial class CKTypeCollector
 
         bool Initialize()
         {
-            Debug.Assert( _allLeaves != null, "TryClassUnification initialized it." );
+            Throw.DebugAssert( "TryClassUnification initialized it.", _allLeaves != null );
             _ambiguities.Clear();
             bool initializationError = false;
             foreach( var leaf in _allLeaves )
@@ -350,7 +350,7 @@ public partial class CKTypeCollector
                 }
 #if DEBUG
                 // If this leaf worked, it must be the very first one: subsequent ones must fail.
-                Debug.Assert( !thisPathIsResolved || ++resolvedPathCount == 1 );
+                Throw.DebugAssert( !thisPathIsResolved || ++resolvedPathCount == 1 );
 #endif
                 success |= thisPathIsResolved;
             }

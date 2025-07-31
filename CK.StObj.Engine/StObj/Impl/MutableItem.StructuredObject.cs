@@ -11,8 +11,8 @@ partial class MutableItem
 
     public object? CreateStructuredObject( IActivityMonitor monitor )
     {
-        Debug.Assert( Specialization == null );
-        Debug.Assert( _leafData.StructuredObject == null, "Called once and only once." );
+        Throw.DebugAssert( Specialization == null );
+        Throw.DebugAssert( "Called once and only once.", _leafData.StructuredObject == null );
         try
         {
             return _leafData.CreateStructuredObject( ClassType );

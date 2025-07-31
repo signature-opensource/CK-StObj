@@ -377,12 +377,12 @@ public partial class CollectionTests
 
         var f = auto.Services.GetRequiredService<IPocoFactory<IWithDynamicObject>>();
         var oBack = f.ReadJson( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}" );
-        Debug.Assert( oBack != null );
+        Throw.DebugAssert( oBack != null );
         oBack.OfInt["Three"].ShouldBe( 3 );
         CheckEqual( oBack, o );
 
         var oBackA = f.ReadJson( @"{""OfInt"":[[""One"",1],[""Two"",2],[""Three"",3]]}" );
-        Debug.Assert( oBackA != null );
+        Throw.DebugAssert( oBackA != null );
         CheckEqual( oBackA, oBack );
 
         static void CheckEqual( IWithDynamicObject x, IWithDynamicObject y )

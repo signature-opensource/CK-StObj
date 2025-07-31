@@ -14,7 +14,7 @@ public sealed class DIContainerHubImpl : CSCodeGeneratorType
     /// <inheritdoc />
     public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
     {
-        Debug.Assert( scope.FullName == "CK.Core.DIContainerHub_CK" );
+        Throw.DebugAssert( scope.FullName == "CK.Core.DIContainerHub_CK" );
         scope.Definition.Modifiers |= Modifiers.Sealed;
 
         scope.Append( """
@@ -91,7 +91,7 @@ public sealed class DIContainerHubImpl : CSCodeGeneratorType
                           .Append( " = sp => CK.StObj.ScopeDataHolder.GetAmbientService( sp, " ).Append( e.MappingIndex ).Append( " );" ).NewLine();
                 sharedPart.Memory.Add( e.MappingIndex, oGetter );
             }
-            Debug.Assert( oGetter != null );
+            Throw.DebugAssert( oGetter != null );
             scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
                  .AppendTypeOf( e.AmbientServiceType ).Append( ", " ).Append( (string)oGetter )
                  .Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
@@ -114,7 +114,7 @@ public sealed class DIContainerHubImpl : CSCodeGeneratorType
                               .Append( " )!).Default;" ).NewLine();
                     sharedPart.Memory.Add( defaultProvider.Provider.ClassType, oGetter );
                 }
-                Debug.Assert( oGetter != null );
+                Throw.DebugAssert( oGetter != null );
                 scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
                      .AppendTypeOf( e.AmbientServiceType ).Append( ", " ).Append( (string)oGetter )
                      .Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();

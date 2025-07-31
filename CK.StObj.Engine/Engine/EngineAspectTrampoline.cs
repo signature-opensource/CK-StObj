@@ -33,7 +33,7 @@ sealed class EngineAspectTrampoline<T>
             while( i < _postActions.Count )
             {
                 var a = _postActions[i];
-                Debug.Assert( a != null );
+                Throw.DebugAssert( a != null );
                 _postActions[i++] = null;
                 try
                 {

@@ -30,7 +30,7 @@ public class FrontEndpointTests
         using( var scoped = auto.Services.CreateScope() )
         {
             var tenant = scoped.ServiceProvider.GetService<IFakeTenantInfo>();
-            Debug.Assert( tenant != null );
+            Throw.DebugAssert( tenant != null );
             tenant.Name.ShouldBe( "DefaultTenant" );
         }
     }

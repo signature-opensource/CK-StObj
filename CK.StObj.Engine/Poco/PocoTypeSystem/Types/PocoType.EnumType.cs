@@ -22,7 +22,7 @@ partial class PocoType
                                          IPocoType underlyingType,
                                          ExternalNameAttribute? externalName )
     {
-        Debug.Assert( tNotNull.IsEnum );
+        Throw.DebugAssert( tNotNull.IsEnum );
         return new EnumType( monitor, s, tNotNull, tNull, underlyingType, externalName );
     }
 
@@ -78,7 +78,7 @@ partial class PocoType
                     PocoTypeKind.Enum,
                     t => new Null( t, tNull ) )
         {
-            Debug.Assert( underlyingType.Kind == PocoTypeKind.Basic );
+            Throw.DebugAssert( underlyingType.Kind == PocoTypeKind.Basic );
             _underlyingType = underlyingType;
             if( externalName != null )
             {

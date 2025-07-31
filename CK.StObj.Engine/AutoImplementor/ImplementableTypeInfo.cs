@@ -214,7 +214,7 @@ public class ImplementableTypeInfo
             }
             if( extra != null )
             {
-                Debug.Assert( impl != null );
+                Throw.DebugAssert( impl != null );
                 var ignoring = extra.Select( e => e.GetType().ToCSharpName( false ) ).Concatenate( "', '" );
                 monitor.Warn( $"More than one AutoImplementor attribute found on {m.DeclaringType:N}.{m.Name}. Considering '{impl.GetType():C}', ignoring '{ignoring}'." );
             }
@@ -224,7 +224,7 @@ public class ImplementableTypeInfo
         static void WarnMissingImplementor( IActivityMonitor monitor, Type abstractType, MemberInfo m )
         {
             var declaringType = m.DeclaringType;
-            Debug.Assert( declaringType != null );
+            Throw.DebugAssert( declaringType != null );
             var mType = m is MethodInfo ? "method" : "property";
             if( declaringType != abstractType )
             {

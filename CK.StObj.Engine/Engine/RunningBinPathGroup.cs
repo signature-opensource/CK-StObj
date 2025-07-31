@@ -54,7 +54,7 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
                 // The root (the Working directory) doesn't want any output by itself.
                 GenerateSourceFiles = false
             };
-            Debug.Assert( unified.CompileOption == CompileOption.None );
+            Throw.DebugAssert( unified.CompileOption == CompileOption.None );
             _configuration = unified;
             _generatedDllName = String.Empty;
             _similarConfigurations = new[] { unified };
@@ -237,7 +237,7 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
 
     internal bool UpdateSimilarArtifactsFromHead( IActivityMonitor monitor )
     {
-        Debug.Assert( !IsUnifiedPure );
+        Throw.DebugAssert( !IsUnifiedPure );
         bool source = _saveSource == SaveSourceLevel.SaveSource && _generatedSource.Exists();
         bool compile = _compileOption == CompileOption.Compile && _generatedAssembly.Exists();
         if( !source && !compile ) return true;

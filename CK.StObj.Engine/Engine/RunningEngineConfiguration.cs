@@ -62,7 +62,7 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
             p = p.ResolveDots();
             return p;
         }
-        Debug.Assert( ckSetupConfig != null );
+        Throw.DebugAssert( ckSetupConfig != null );
         using( monitor.OpenInfo( "Applying CKSetup configuration." ) )
         {
             var ckSetupSHA1 = (string?)ckSetupConfig.Element( "RunSignature" );
@@ -119,7 +119,7 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
 
         public bool Equals( BinPathConfiguration? x, BinPathConfiguration? y )
         {
-            Debug.Assert( x != null && y != null );
+            Throw.DebugAssert( x != null && y != null );
             return x.Assemblies.SetEquals( y.Assemblies )
                    && x.ExcludedTypes.SetEquals( y.ExcludedTypes )
                    && x.Types.SetEquals( y.Types );
@@ -129,49 +129,6 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
         public int GetHashCode( BinPathConfiguration b ) => b.ExcludedTypes.Count
                                                             + b.Types.Count * 79
                                                             + b.Assemblies.Count * 117;
-    }
-
-    /// <summary>
-    /// Creates a <see cref="BinPathConfiguration"/> that unifies multiple <see cref="BinPathConfiguration"/>.
-    /// This configuration is the one used on the unified working directory.
-    /// This unified configuration doesn't contain any <see cref="BinPathConfiguration.Aspects"/>.
-    /// </summary>
-    /// <param name="monitor">Monitor for error.</param>
-    /// <param name="configurations">Multiple configurations.</param>
-    /// <param name="globalExcludedTypes">Types to exclude: see <see cref="EngineConfiguration.GlobalExcludedTypes"/>.</param>
-    /// <returns>The unified configuration or null on error.</returns>
-    static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
-                                                                    IEnumerable<RunningBinPathGroup> configurations,
-                                                                    HashSet<Type> globalExcludedTypes )
-    {
-        var unified = new BinPathConfiguration()
-        {
-            Path = AppContext.BaseDirectory,
-            OutputPath = AppContext.BaseDirectory,
-            Name = "_Unified_",
-            // The root (the Working directory) doesn't want any output by itself.
-            GenerateSourceFiles = false
-        };
-        Debug.Assert( unified.CompileOption == CompileOption.None );
-        // Assemblies are the union of the assemblies of the bin paths.
-        unified.Assemblies.AddRange( configurations.SelectMany( b => b.Configuration.Assemblies ) );
-        // Excluded types are only the global ones.
-        unified.ExcludedTypes.AddRange( globalExcludedTypes );
-
-        // Unified is only interested in IPoco and IRealObject (kind is useless).
-        // The BinPath Types that also appear in their BinPath ExcludedTypes have already been filtered out,
-        // we don't need to remove them.
-        Throw.DebugAssert( configurations.All( c => c.Configuration.Types.Select( tc => tc.Type )
-                                                                         .Any( t => c.Configuration.ExcludedTypes.Contains( t ) ) is false ) );
-
-        var all = configurations.SelectMany( b => b.Configuration.Types.Select( tc => tc.Type ) )
-                                .Where( t => typeof( IPoco ).IsAssignableFrom( t ) || typeof( IRealObject ).IsAssignableFrom( t ) )
-                                .Select( t => new TypeConfiguration( t ) );
-        foreach( var tc in all )
-        {
-            unified.Types.Add( tc );
-        }
-        return unified;
     }
     #endregion // Legacy
 }

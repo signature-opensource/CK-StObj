@@ -301,7 +301,7 @@ public sealed partial class PocoTypeSystemBuilder
 
     string EnsurePocoListOrHashSetType( IPrimaryPocoType tI, bool isList, string listOrHasSet )
     {
-        Debug.Assert( tI.IsNullable );
+        Throw.DebugAssert( tI.IsNullable );
         var genTypeName = $"Poco{listOrHasSet}_{tI.Index}_CK";
         if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
         {
@@ -313,7 +313,7 @@ public sealed partial class PocoTypeSystemBuilder
 
     string EnsurePocoHashSetOfAbstractOrBasicRefType( IPocoType tI )
     {
-        Debug.Assert( tI.IsNullable );
+        Throw.DebugAssert( tI.IsNullable );
         var genTypeName = $"PocoHashSet_{tI.Index}_CK";
         if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
         {

@@ -123,7 +123,7 @@ public abstract partial class StObjContextRoot
                     var sha1S = info.GeneratedSignature.ToString();
                     if( _alreadyHandled.TryGetValue( sha1S, out var exists ) )
                     {
-                        Debug.Assert( exists != null );
+                        Throw.DebugAssert( exists != null );
                         monitor.Info( $"StObjMap found with the same signature as an already existing one. Keeping the previous one." );
                         info = exists;
                     }
@@ -271,7 +271,7 @@ public abstract partial class StObjContextRoot
             LockedGetAvailableMapInfos( ref monitor );
             if( _alreadyHandled.TryGetValue( signature.ToString(), out var info ) )
             {
-                Debug.Assert( info != null );
+                Throw.DebugAssert( info != null );
                 return LockedGetStObjMapFromInfo( info, ref monitor );
 
             }

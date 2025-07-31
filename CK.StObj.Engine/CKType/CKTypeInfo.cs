@@ -48,7 +48,7 @@ public class CKTypeInfo
                          AutoServiceClassInfo? serviceClass,
                          Action<Type> alsoRegister )
     {
-        Debug.Assert( (serviceClass == null) == (this is RealObjectClassInfo) );
+        Throw.DebugAssert( (serviceClass == null) == (this is RealObjectClassInfo) );
         ServiceClass = serviceClass;
         Generalization = parent;
         Type = t;
@@ -228,7 +228,7 @@ public class CKTypeInfo
     /// <returns>Concrete Type builder or null.</returns>
     internal protected ImplementableTypeInfo? InitializeImplementableTypeInfo( IActivityMonitor monitor, IDynamicAssembly assembly )
     {
-        Debug.Assert( Type.IsAbstract && assembly != null && !IsExcluded );
+        Throw.DebugAssert( Type.IsAbstract && assembly != null && !IsExcluded );
 
         if( _initializeImplementableTypeInfo ) return ImplementableTypeInfo;
         _initializeImplementableTypeInfo = true;
@@ -237,7 +237,7 @@ public class CKTypeInfo
         CKTypeInfo? p = this;
         do
         {
-            Debug.Assert( p.Attributes != null );
+            Throw.DebugAssert( p.Attributes != null );
             combined.Add( p.Attributes );
             p = p.Generalization;
         }
@@ -293,7 +293,7 @@ public class CKTypeInfo
 
     internal bool IsAssignableFrom( CKTypeInfo child )
     {
-        Debug.Assert( child != null );
+        Throw.DebugAssert( child != null );
         CKTypeInfo? c = child;
         do
         {
@@ -305,7 +305,7 @@ public class CKTypeInfo
 
     internal void RemoveSpecialization( CKTypeInfo child )
     {
-        Debug.Assert( child.Generalization == this );
+        Throw.DebugAssert( child.Generalization == this );
         if( _firstChild == child )
         {
             _firstChild = child._nextSibling;
@@ -331,11 +331,11 @@ public class CKTypeInfo
     /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
     internal void AddUniqueMapping( Type t )
     {
-        Debug.Assert( SpecializationsCount == 0, "We are on the leaf." );
-        Debug.Assert( t != Type, $"Unique mapping {ToString()} must not be mapped to itself." );
-        Debug.Assert( t.IsAssignableFrom( Type ), $"Unique mapping '{t}' must be assignable from {ToString()}!" );
-        Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Unique mapping '{t}' already registered in {ToString()}." );
-        Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Unique mapping '{t}' already registered in MULTIPLE mappings of {ToString()}." );
+        Throw.DebugAssert( "We are on the leaf.", SpecializationsCount == 0 );
+        Throw.DebugAssert( "Unique mapping must not be mapped to itself.", t != Type );
+        Throw.DebugAssert( "Unique mapping must be assignable to its target!", t.IsAssignableFrom( Type ) );
+        Throw.DebugAssert( "Duplicate unique mapping registration.", _uniqueMappings == null || !_uniqueMappings.Contains( t ) );
+        Throw.DebugAssert( "Unique mapping already registered in MULTIPLE mappings.", _multipleMappings == null || !_multipleMappings.Contains( t ) );
         _uniqueMappings ??= new List<Type>();
         _uniqueMappings.Add( t );
     }
@@ -351,12 +351,12 @@ public class CKTypeInfo
     /// <param name="collector">The type collector.</param>
     internal void AddMultipleMapping( IActivityMonitor monitor, Type t, CKTypeKind k, CKTypeCollector collector )
     {
-        Debug.Assert( !IsSpecialized, "We are on the leaf." );
-        Debug.Assert( t != Type, $"Multiple mapping {ToString()} must not be mapped to itself." );
-        Debug.Assert( t.IsAssignableFrom( Type ), $"Multiple mapping '{t}' must be assignable from {ToString()}!" );
-        Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Multiple mapping '{t}' already registered in {ToString()}." );
-        Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Multiple mapping '{t}' already registered in UNIQUE mappings of {ToString()}." );
-        Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
+        Throw.DebugAssert( "We are on the leaf.", !IsSpecialized );
+        Throw.DebugAssert( "Multiple mapping must not be mapped to itself.", t != Type );
+        Throw.DebugAssert( "Multiple mapping must be assignable to its target!", t.IsAssignableFrom( Type ) );
+        Throw.DebugAssert( "Duplicate Multiple mapping.", _multipleMappings == null || !_multipleMappings.Contains( t ) );
+        Throw.DebugAssert( "Multiple mapping already registered in UNIQUE mappings.", _uniqueMappings == null || !_uniqueMappings.Contains( t ) );
+        Throw.DebugAssert( (k & CKTypeKind.IsMultipleService) != 0 );
         _multipleMappings ??= new List<Type>();
         _multipleMappings.Add( t );
         collector.RegisterMultipleInterfaces( monitor, t, k, this );
@@ -369,7 +369,7 @@ public class CKTypeInfo
     public override string ToString()
     {
         var s = Type.FullName;
-        Debug.Assert( s != null, "Null FullName is for generic parameters." );
+        Throw.DebugAssert( "Null FullName is for generic parameters.", s != null );
         if( ServiceClass != null ) s += "|IsService";
         if( this is RealObjectClassInfo ) s += "|IsObject";
         if( IsExcluded ) s += "|IsExcluded";

@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Diagnostics;
 
@@ -17,7 +18,7 @@ internal sealed class RealObjectInterfaceKey
 
     public RealObjectInterfaceKey( Type ambientObjectInterface )
     {
-        Debug.Assert( ambientObjectInterface.IsInterface );
+        Throw.DebugAssert( ambientObjectInterface.IsInterface );
         InterfaceType = ambientObjectInterface;
     }
 

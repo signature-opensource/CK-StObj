@@ -269,7 +269,7 @@ public static class TypeBuilderExtension
             // DefineParameter use 0 for the return parameter.
             ParameterInfo param = parameters[i];
             ParameterBuilder pB = vM.DefineParameter( i + 1, param.Attributes, param.Name );
-            Debug.Assert( pB.IsIn == param.IsIn && pB.IsOptional == param.IsOptional && pB.IsOut == param.IsOut && pB.Name == param.Name && pB.Position == param.Position + 1 );
+            Throw.DebugAssert( pB.IsIn == param.IsIn && pB.IsOptional == param.IsOptional && pB.IsOut == param.IsOut && pB.Name == param.Name && pB.Position == param.Position + 1 );
             foreach( var pAttr in param.CustomAttributes )
             {
                 if( pAttr.AttributeType != typeof( System.Runtime.InteropServices.InAttribute ) )
@@ -279,7 +279,7 @@ public static class TypeBuilderExtension
             }
             if( param.IsOut )
             {
-                Debug.Assert( param.ParameterType.IsByRef, "'Out' is just an attribute on 'by ref' parameters (unfortunate for covariance support)." );
+                Throw.DebugAssert( "'Out' is just an attribute on 'by ref' parameters (unfortunate for covariance support).", param.ParameterType.IsByRef );
                 gVM.StoreDefaultValueForOutParameter( param );
             }
         }

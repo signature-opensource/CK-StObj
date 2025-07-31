@@ -193,7 +193,7 @@ public class AnonymousRecordTests
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
         var tPoco = ts.FindByType<IPrimaryPocoType>( typeof( IWithLongTuple ) );
-        Debug.Assert( tPoco != null );
+        Throw.DebugAssert( tPoco != null );
         var tA = (IRecordPocoType)tPoco.Fields[0].Type;
         tA.Fields.Count.ShouldBe( 20 );
 

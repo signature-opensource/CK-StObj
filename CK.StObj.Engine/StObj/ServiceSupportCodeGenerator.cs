@@ -110,7 +110,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             _rootCtor.Append( "_serviceMappingList = new IStObjServiceClassDescriptor[] {" ).NewLine();
             foreach( var d in serviceMap.MappingList )
             {
-                Debug.Assert( d.MappingIndex >= 0 );
+                Throw.DebugAssert( d.MappingIndex >= 0 );
                 _rootCtor.Append( "new StObjServiceClassDescriptor(" )
                             .AppendTypeOf( d.ClassType )
                             .Append( ", " )
@@ -151,7 +151,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                     }
                     else
                     {
-                        Debug.Assert( i is IStObjServiceFinalSimpleMapping );
+                        Throw.DebugAssert( i is IStObjServiceFinalSimpleMapping );
                         _rootCtor.Append( "_serviceMappingList[" ).Append( ((IStObjServiceFinalSimpleMapping)i).MappingIndex ).Append( "]" );
                     }
                     _rootCtor.Append( ", " );

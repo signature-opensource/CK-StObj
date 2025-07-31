@@ -9,7 +9,7 @@ partial class StObjCollector
 {
     void AddWellKnownServices( IActivityMonitor monitor )
     {
-        Debug.Assert( !_wellKnownServiceKindRegistered );
+        Throw.DebugAssert( !_wellKnownServiceKindRegistered );
         _wellKnownServiceKindRegistered = true;
 
         // The IActivityMonitor and its ParallelLogger are scoped services that must be

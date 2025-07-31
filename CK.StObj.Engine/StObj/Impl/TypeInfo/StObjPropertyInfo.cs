@@ -14,7 +14,7 @@ internal class StObjPropertyInfo : INamedPropertyInfo
 
     public StObjPropertyInfo( Type declaringType, PropertyResolutionSource source, string name, Type type, PropertyInfo pInfo )
     {
-        Debug.Assert( declaringType != null && name != null && type != null );
+        Throw.DebugAssert( declaringType != null && name != null && type != null );
         DeclaringType = declaringType;
         Name = name;
         Type = type;

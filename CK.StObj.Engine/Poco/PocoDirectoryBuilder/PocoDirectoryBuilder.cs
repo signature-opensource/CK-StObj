@@ -30,7 +30,7 @@ partial class PocoDirectoryBuilder
             Type = type;
             if( primary != null )
             {
-                Debug.Assert( primary.RootCollector != null, "The root centralizes the collector." );
+                Throw.DebugAssert( "The root centralizes the collector.", primary.RootCollector != null );
                 Primary = primary;
                 primary.RootCollector.Add( type );
             }
@@ -310,7 +310,7 @@ partial class PocoDirectoryBuilder
                 tBF.DefineMethodOverride( m, iCreate.GetMethod( nameof( IPocoFactory<IPoco>.Create ) )! );
             }
         }
-        Debug.Assert( closure != null, "Since there is at least one interface." );
+        Throw.DebugAssert( "Since there is at least one interface." , closure != null );
 
         // Is the biggest interface the closure?
         if( maxICount < expanded.Count - 1 )
@@ -320,7 +320,7 @@ partial class PocoDirectoryBuilder
         // If the IClosedPoco has been found, we ensure that a closure interface has been found.
         if( mustBeClosed )
         {
-            Debug.Assert( maxICount < expanded.Count );
+            Throw.DebugAssert( maxICount < expanded.Count );
             if( closure == null )
             {
                 monitor.Error( $"Poco family '{interfaces.Select( b => b.ToCSharpName() ).Concatenate( "', '" )}' must be closed but none of these interfaces covers the other ones." );
@@ -361,7 +361,7 @@ partial class PocoDirectoryBuilder
                 }
                 else
                 {
-                    Debug.Assert( p.GetMethod != null );
+                    Throw.DebugAssert( p.GetMethod != null );
                     // As soon as a property claims to be implemented, we remove it from the PocoProperties.
                     //
                     // C#8 introduced Default Implementation Methods (DIM). It MUST be an "AutoImplementationClaim":
@@ -467,10 +467,10 @@ partial class PocoDirectoryBuilder
         if( !success ) return null;
 
         var tPoCo = tB.CreateType();
-        Debug.Assert( tPoCo != null );
+        Throw.DebugAssert( tPoCo != null );
 
         var tPocoFactory = tBF.CreateType();
-        Debug.Assert( tPocoFactory != null );
+        Throw.DebugAssert( tPocoFactory != null );
 
         return new PocoRootInfo( tPoCo,
                                  tPocoFactory,
@@ -491,7 +491,7 @@ partial class PocoDirectoryBuilder
                                     IExtPropertyInfo p,
                                     MemberInfo[]? unionTypesDef )
     {
-        Debug.Assert( p.DeclaringType == tInterface && p.PropertyInfo.GetMethod != null );
+        Throw.DebugAssert( p.DeclaringType == tInterface && p.PropertyInfo.GetMethod != null );
 
         if( (p.PropertyInfo.GetMethod.Attributes & MethodAttributes.Abstract) == 0 )
         {

@@ -147,7 +147,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
 
     bool DoRegisterClass( IActivityMonitor monitor, Type t, out RealObjectClassInfo? objectInfo, out AutoServiceClassInfo? serviceInfo )
     {
-        Debug.Assert( t != null && t != typeof( object ) && t.IsClass );
+        Throw.DebugAssert( t != null && t != typeof( object ) && t.IsClass );
 
         // Skips already processed types.
         // The object collectors contains null RealObjectClassInfo and AutoServiceClassInfo value for
@@ -164,7 +164,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
         AutoServiceClassInfo? sParent = null;
         if( t.BaseType != typeof( object ) )
         {
-            Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
+            Throw.DebugAssert( "Since t is not 'object'.", t.BaseType != null );
             DoRegisterClass( monitor, t.BaseType, out acParent, out sParent );
         }
         CKTypeKind lt = KindDetector.GetNonDefinerKind( monitor, t );
@@ -174,7 +174,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
             if( acParent != null || (lt & CKTypeKind.IsRealObject) != 0 )
             {
                 objectInfo = RegisterObjectClassInfo( monitor, t, isExcluded, acParent );
-                Debug.Assert( objectInfo != null );
+                Throw.DebugAssert( objectInfo != null );
             }
             if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
             {
@@ -199,7 +199,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
             RegisterAssembly( monitor, t, isVFeature: true );
             if( parent == null )
             {
-                Debug.Assert( !_roots.Contains( result ) );
+                Throw.DebugAssert( !_roots.Contains( result ) );
                 _roots.Add( result );
             }
         }
@@ -287,13 +287,13 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
                     monitor.CloseGroup( "Failed" );
                 }
                 _tempAssembly.Memory.Add( typeof( IPocoTypeSystemBuilder ), pocoTypeSystemBuilder );
-                Debug.Assert( _tempAssembly.GetPocoTypeSystemBuilder() == pocoTypeSystemBuilder, "The extension method GetPocoTypeSystemBuilder() provides it." );
+                Throw.DebugAssert( "The extension method GetPocoTypeSystemBuilder() provides it.", _tempAssembly.GetPocoTypeSystemBuilder() == pocoTypeSystemBuilder );
             }
             RealObjectCollectorResult realObjects;
             using( monitor.OpenInfo( "Real objects handling." ) )
             {
                 realObjects = GetRealObjectResult( monitor );
-                Debug.Assert( realObjects != null );
+                Throw.DebugAssert( realObjects != null );
             }
             AutoServiceCollectorResult services;
             using( monitor.OpenInfo( "Auto services handling." ) )
@@ -313,7 +313,7 @@ public partial class CKTypeCollector : IAutoServiceKindComputeFacade
         List<Type> abstractTails = new List<Type>();
         var deepestConcretes = new List<(MutableItem, ImplementableTypeInfo)>();
 
-        Debug.Assert( _roots.All( info => info != null && !info.IsExcluded && info.Generalization == null ),
+        Throw.DebugAssert( _roots.All( info => info != null && !info.IsExcluded && info.Generalization == null ),
             "_roots contains only not Excluded types." );
         foreach( RealObjectClassInfo newOne in _roots )
         {

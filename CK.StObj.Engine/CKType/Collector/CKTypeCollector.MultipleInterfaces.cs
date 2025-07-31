@@ -92,7 +92,7 @@ public partial class CKTypeCollector
 
         bool DoComputeFinalTypeKind( IActivityMonitor m, IAutoServiceKindComputeFacade ctx, AutoServiceKind initial, ref bool success )
         {
-            Debug.Assert( _rawImpls != null );
+            Throw.DebugAssert( _rawImpls != null );
 
             bool isScoped = (initial & AutoServiceKind.IsScoped) != 0;
 
@@ -103,9 +103,9 @@ public partial class CKTypeCollector
                     // RealObject are singleton, are not marshallable and not process service.
                     if( info is RealObjectClassInfo ) continue;
 
-                    Debug.Assert( info.ServiceClass != null && info.ServiceClass.MostSpecialized == info.ServiceClass );
+                    Throw.DebugAssert( info.ServiceClass != null && info.ServiceClass.MostSpecialized == info.ServiceClass );
                     var impl = info.ServiceClass;
-                    Debug.Assert( impl != null );
+                    Throw.DebugAssert( impl != null );
                     // We provide a new empty "cycle detection context" to the class constructors: IEnumerable
                     // of interfaces break potential cycles since they handle their own cycle by resolving to
                     // the "worst" IsScoped.
@@ -160,7 +160,7 @@ public partial class CKTypeCollector
                 for( int i = 0; i < _finalImpl.Length; ++i )
                 {
                     var f = toLeaf( _rawImpls[i].Type );
-                    Debug.Assert( f != null );
+                    Throw.DebugAssert( f != null );
                     _finalImpl[i] = f;
                 }
             }
@@ -169,17 +169,17 @@ public partial class CKTypeCollector
 
     internal void RegisterMultipleInterfaces( IActivityMonitor monitor, Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
     {
-        Debug.Assert( !final.IsSpecialized );
+        Throw.DebugAssert( !final.IsSpecialized );
         if( !_multipleMappings.TryGetValue( tAbstraction, out var multiple ) )
         {
-            Debug.Assert( enumeratedKind.GetCombinationError( false ) == null );
+            Throw.DebugAssert( enumeratedKind.GetCombinationError( false ) == null );
             // A IEnumerable of IScoped is scoped, a IEnumerable of ISingleton is singleton.
             Type tEnumerable = typeof( IEnumerable<> ).MakeGenericType( tAbstraction );
 
             // The IEnumerable itself may have been explicitly registered via SetAutoServiceKind.
             // We will check its compatibility with the enumerated item kind (there may be incoherences) later in the DoComputeFinalTypeKind.
             CKTypeKind enumKind = KindDetector.GetValidKind( monitor, tEnumerable );
-            Debug.Assert( enumKind.GetCombinationError( false ) == null );
+            Throw.DebugAssert( enumKind.GetCombinationError( false ) == null );
             _multipleMappings.Add( tAbstraction, new MultipleImpl( tEnumerable, enumKind, tAbstraction, enumeratedKind, final ) );
         }
         else

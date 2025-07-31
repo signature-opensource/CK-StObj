@@ -170,7 +170,7 @@ public sealed class StObjEngine
 
     StObjCollectorResult? UseLegacyStObjCollector( RunningBinPathGroup group, IConfiguredTypeSet configuredTypes )
     {
-        Debug.Assert( _startContext != null, "Work started." );
+        Throw.DebugAssert( "Work started.", _startContext != null );
         bool hasError = false;
         using( _monitor.OnError( () => hasError = true ) )
         {
@@ -200,7 +200,7 @@ public sealed class StObjEngine
                 using( _monitor.OpenInfo( "Resolving Real Objects & AutoService dependency graph." ) )
                 {
                     result = stObjC.GetResult( _monitor );
-                    Debug.Assert( !result.HasFatalError || hasError, "result.HasFatalError ==> An error has been logged." );
+                    Throw.DebugAssert( "result.HasFatalError ==> An error has been logged.", !result.HasFatalError || hasError );
                 }
                 if( !result.HasFatalError ) return result;
             }
@@ -228,7 +228,7 @@ public sealed class StObjEngine
     /// </summary>
     void DisposeDisposableAspects()
     {
-        Debug.Assert( _startContext != null, "Work started." );
+        Throw.DebugAssert( "Work started.", _startContext != null );
         foreach( var aspect in _startContext.Aspects.OfType<IDisposable>() )
         {
             try

@@ -14,7 +14,7 @@ sealed partial class ImportCodeGenerator
                               ReaderMap readerMap )
     {
         var pocoClass = ctx.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
-        Debug.Assert( type.FamilyInfo.PocoClass.Name == pocoClass.Name );
+        Throw.DebugAssert( type.FamilyInfo.PocoClass.Name == pocoClass.Name );
         ImplementFactorySupport( monitor, ctx, type, pocoClass.Name );
 
         using var region = pocoClass.Region();

@@ -38,7 +38,7 @@ public sealed partial class EngineConfiguration
         {
             string type = (string)a.AttributeRequired( xType );
             Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
-            Debug.Assert( tAspect != null );
+            Throw.DebugAssert( tAspect != null );
             EngineAspectConfiguration aspect = (EngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
             if( _namedAspects.ContainsKey( aspect.AspectName ) )
             {

@@ -171,7 +171,7 @@ partial class PocoTypeSystemBuilder
 
         void PopPath( bool isAnonymous )
         {
-            Debug.Assert( _typedPathCount > 0 && _path.Count >= _typedPathCount );
+            Throw.DebugAssert( _typedPathCount > 0 && _path.Count >= _typedPathCount );
             if( isAnonymous )
             {
                 var p = _path[_typedPathCount - 1];

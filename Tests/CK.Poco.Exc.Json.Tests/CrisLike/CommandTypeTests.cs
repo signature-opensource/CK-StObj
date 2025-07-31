@@ -143,7 +143,7 @@ public class CommandTypeTests
         toString.ShouldBe( result.Replace( "\r", "" ).Replace( "\n", "" ).Replace( "\t", "" ).Replace( " ", "" ) );
 
         var batch2 = JsonTestHelper.Roundtrip( directory, batch );
-        Debug.Assert( batch2 != null );
+        Throw.DebugAssert( batch2 != null );
         //
         // There are collections in this IPoco, Shouldly checks the Equals...
         // This cannot work.
@@ -202,7 +202,7 @@ public class CommandTypeTests
         toString.ShouldBe( result.Replace( "\r", "" ).Replace( "\n", "" ).Replace( "\t", "" ).Replace( " ", "" ) );
 
         var holder2 = JsonTestHelper.Roundtrip( directory, holder );
-        Debug.Assert( holder2 != null );
+        Throw.DebugAssert( holder2 != null );
         holder2.ShouldBeEquivalentTo( holder );
     }
 }
