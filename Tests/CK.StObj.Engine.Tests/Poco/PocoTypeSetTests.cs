@@ -173,4 +173,67 @@ public class PocoTypeSetTests
                 ], ignoreOrder: true );
         }
     }
+
+    [CKTypeSuperDefiner]
+    public interface IAbstractCommand : IPoco
+    {
+    }
+
+    public interface ICommand<out TResult> : IAbstractCommand
+    {
+        [AutoImplementationClaim] public static TResult TResultType => default!;
+    }
+
+    public interface IStupidCommand : ICommand<IStupidCommandResult>
+    {
+    }
+
+    public interface IStupidCommandResult : IPoco
+    {
+    }
+
+    public interface IStupidCommandMore : ICommand<IStupidCommandResultMore>
+    {
+    }
+
+    public interface IStupidCommandResultMore : IStupidCommandResult
+    {
+    }
+
+
+    [Test]
+    public void registered_generics_SHOULD_include_the_generic_parameters()
+    {
+        var ts = TestHelper.GetSuccessfulCollectorResult( [typeof( IStupidCommand )] )
+                           .PocoTypeSystemBuilder
+                           .Lock( TestHelper.Monitor );
+        ts.AllNonNullableTypes.Select( t => t.ToString() ).ShouldBe(
+            [
+                "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IStupidCommand",
+                "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ICommand<CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IStupidCommandResult>",
+                "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IAbstractCommand",
+                "[AbstractPoco]CK.Core.IPoco",
+                "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IStupidCommandResult"
+            ], ignoreOrder: true );
+
+        var root = ts.FindByType<IPrimaryPocoType>( typeof( IStupidCommand ) ).ShouldNotBeNull();
+        root.AllAbstractTypes.Select( t => t.ToString() ).ShouldBe(
+            [
+                "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IAbstractCommand?",
+                "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ICommand<CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IStupidCommandResult>?"
+            ], ignoreOrder: true );
+        //
+        // Unfortunately, the AbstractType ICommand<IStupidCommandResult> is ImplementationLess because
+        // IStupidCommandResult was not EXPLICITLY registered.
+        // This is BAD and should be refactored (the culprit is the PocoTypeSystemBuilder.Initialize that
+        // relies on the (too) old PocoDirectory...
+        // The new TypeCache should be able to do a far more better job.
+        // 
+        root.AbstractTypes.Select( t => t.ToString() ).ShouldBe(
+            [
+                "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IAbstractCommand?"
+            ], ignoreOrder: true );
+    }
+
+
 }
