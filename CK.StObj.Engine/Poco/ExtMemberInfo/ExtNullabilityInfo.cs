@@ -16,7 +16,7 @@ sealed class ExtNullabilityInfo : IExtNullabilityInfo
     readonly bool _useReadState;
     readonly bool _homogeneous;
 
-    internal ExtNullabilityInfo( TEMPNullabilityInfo nInfo, bool useReadState, bool singleState )
+    internal ExtNullabilityInfo( NullabilityInfo nInfo, bool useReadState, bool singleState )
     {
         if( (_type = nInfo.Type).IsByRef ) _type = _type.GetElementType()!;
         _useReadState = useReadState;
