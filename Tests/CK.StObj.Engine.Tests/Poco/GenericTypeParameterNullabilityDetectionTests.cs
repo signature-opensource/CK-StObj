@@ -24,7 +24,7 @@ public class GenericTypeParameterNullabilityDetectionTests
         // ICommandNullable has no notnull constraint. 
 
         // For value type it works.
-        var nCtx = new TEMPNullabilityInfoContext();
+        var nCtx = new NullabilityInfoContext();
         {
             var p = typeof( ICommandNullable<int?> ).GetProperty( "TResultType", BindingFlags.Static | BindingFlags.Public )!;
             var nP = nCtx.Create( p );

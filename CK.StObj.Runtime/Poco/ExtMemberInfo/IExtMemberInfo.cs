@@ -6,7 +6,7 @@ using System.Reflection;
 namespace CK.Setup;
 
 /// <summary>
-/// Unifies parameters, properties, fields, events, types (but mot methods)
+/// Unifies parameters, properties, fields, events, types (but not methods)
 /// and caches the custom attributes.
 /// </summary>
 public interface IExtMemberInfo
