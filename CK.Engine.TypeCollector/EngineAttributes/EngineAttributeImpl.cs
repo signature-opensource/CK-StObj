@@ -12,8 +12,8 @@ namespace CK.Engine.TypeCollector;
 /// <summary>
 /// Base class for <see cref="EngineAttribute"/> and <see cref="EngineAttribute{T}"/> implementations.
 /// <para>
-/// This is the non generic base class: there are no constraints on <see cref="Attribute"/>, <see cref="ParentAttribute"/>
-/// and <see cref="ChildrenAttributes"/> types. Use <see cref="EngineAttributeImpl"/>
+/// This is the non generic base class: there are no constraints on <see cref="Attribute"/>, <see cref="ParentImpl"/>
+/// and <see cref="ChildrenImpl"/> types. Use <see cref="EngineAttributeImpl"/>
 /// </para>
 /// </summary>
 public abstract class EngineAttributeImpl : IEngineAttributeImpl
@@ -23,67 +23,7 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
     EngineAttributeImpl? _parentImpl;
     [AllowNull] IReadOnlyCollection<EngineAttributeImpl> _children;
     EngineAttributeImpl? _nextChildImpl;
-
-    internal void SetFields( ICachedItem item,
-                             IEngineAttribute attribute,
-                             EngineAttributeImpl? parentImpl )
-    {
-        _children = ImmutableArray<EngineAttributeImpl>.Empty;
-        _decoratedItem = item;
-        _attribute = attribute;
-        _parentImpl = parentImpl;
-    }
-
-    /// <summary>
-    /// Extension point that must be used to validate item, attribute or parent.
-    /// <para>
-    /// By default, this always returns true.
-    /// </para>
-    /// <para>
-    /// The strongly typed implementation like <see cref="ChildEngineAttributeImpl{TAttr, TParent}"/>
-    /// handle this transparently and offers strongly typed version of this method
-    /// (like <see cref="ChildEngineAttributeImpl{TAttr, TParent}.OnInitFields(IActivityMonitor, ICachedItem, TAttr, TParent)"/>).
-    /// </para>
-    /// </summary>
-    /// <param name="monitor">The monitor to log errors.</param>
-    /// <param name="item">The decorated item.</param>
-    /// <param name="attribute">The attribute.</param>
-    /// <param name="parentImpl">The parent implementation if the attribute is a <see cref="IChildEngineAttribute{T}"/>.</param>
-    /// <returns>True on success, false on error. Errors must be logged.</returns>
-    internal protected virtual bool OnInitFields( IActivityMonitor monitor,
-                                                  ICachedItem item,
-                                                  EngineAttribute attribute,
-                                                  EngineAttributeImpl? parentImpl )
-    {
-        return true;
-    }
-
-    internal bool AddChild( IActivityMonitor monitor, EngineAttributeImpl c )
-    {
-        if( _children is not ChildrenCollection children )
-        {
-            _children = new ChildrenCollection( c );
-        }
-        else
-        {
-            children.Add( c );
-        }
-        return OnAddChild( monitor, c );
-    }
-
-    /// <summary>
-    /// Extension point that must be used to validate children.
-    /// <para>
-    /// By default, this always returns true. 
-    /// </para>
-    /// </summary>
-    /// <param name="monitor">The monitor to log errors.</param>
-    /// <param name="c">The new children.</param>
-    /// <returns>True on success, false on error. Errors must be logged.</returns>
-    protected virtual bool OnAddChild( IActivityMonitor monitor, EngineAttributeImpl c )
-    {
-        return true;
-    }
+    internal ImmutableArray<object> _itemAttributes;
 
     /// <summary>
     /// Gets the decorated item.
@@ -101,9 +41,9 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
     public ReadOnlySpan<char> AttributeName => _attribute.GetType().Name.AsSpan( ..^9 );
 
     /// <summary>
-    /// Gets the parent attribute implementation if <see cref="Attribute"/> is a <see cref="ChildEngineAttribute{T}"/>.
+    /// Gets the parent attribute implementation if <see cref="Attribute"/> is a <see cref="IChildEngineAttribute{T}"/>.
     /// </summary>
-    public IEngineAttributeImpl? ParentAttribute => _parentImpl;
+    public IEngineAttributeImpl? ParentImpl => _parentImpl;
 
     sealed class ChildrenCollection : IReadOnlyCollection<EngineAttributeImpl>
     {
@@ -146,7 +86,7 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
-        /// Strongly typed collection on <see cref="ChildrenAttributes"/>.
+        /// Strongly typed collection on <see cref="ChildrenImpl"/>.
         /// <para>
         /// </para>
         /// <see cref="CheckChildType(IActivityMonitor, EngineAttributeImpl, Type, Type)"/> must
@@ -188,35 +128,50 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
     /// <summary>
     /// Gets the children attribute implementations.
     /// </summary>
-    public IReadOnlyCollection<IEngineAttributeImpl> ChildrenAttributes => _children;
+    public IReadOnlyCollection<EngineAttributeImpl> ChildrenImpl => _children;
 
     /// <summary>
-    /// Internal only.
-    /// Making it internal protected virtual seems to have no real interest and introduces
-    /// a potential bug factory: this calls <see cref="Initialize(IActivityMonitor)"/> on the <see cref="ChildrenAttributes"/>:
-    /// this base method MUST be called or we must add OnBefore/AfterChildrenInitialize methods.
-    /// Moreover, this is called during EngineAttribute initialization which is not bound to any real engine "step".
-    /// An error here would not necessarily occur during the corresponding engine step so it's better to only handle
-    /// type/structure mismatch here.
-    /// In this spirit, the <see cref="OnInitialized(IActivityMonitor)"/> extension point can be questioned, but we leave it
-    /// here as it may be expected by developpers (and at least gives access to fully initialized engine attributes on the type).
+    /// Gets all the attributes of the <see cref="DecoratedItem"/> (including this one).
+    /// <para>
+    /// This is the result of the <see cref="ICachedItem.TryGetAllAttributes(IActivityMonitor, out ImmutableArray{object})"/>
+    /// and is available (in advance) when <see cref="OnInitialized(IActivityMonitor)"/> is called.
     /// </para>
     /// </summary>
-    /// <param name="monitor">The monitor to use.</param>
-    /// <returns>True on success, false on error.</returns>
-    internal bool Initialize( IActivityMonitor monitor )
+    public ImmutableArray<object> AllDecoratedAttributes => _itemAttributes;
+
+    internal void SetFields( ICachedItem item,
+                             IEngineAttribute attribute,
+                             EngineAttributeImpl? parentImpl )
     {
-        bool success = true;
-        foreach( var c in _children )
-        {
-            success &= c.Initialize( monitor );
-        }
-        return success;
+        _children = ImmutableArray<EngineAttributeImpl>.Empty;
+        _decoratedItem = item;
+        _attribute = attribute;
+        _parentImpl = parentImpl;
     }
+
+    internal virtual bool OnInitFields( IActivityMonitor monitor,
+                                        ICachedItem item,
+                                        EngineAttribute attribute,
+                                        EngineAttributeImpl? parentImpl ) => true;
+
+    internal bool AddChild( IActivityMonitor monitor, EngineAttributeImpl c )
+    {
+        if( _children is not ChildrenCollection children )
+        {
+            _children = new ChildrenCollection( c );
+        }
+        else
+        {
+            children.Add( c );
+        }
+        return OnAddChild( monitor, c );
+    }
+
+    internal virtual bool OnAddChild( IActivityMonitor monitor, EngineAttributeImpl c ) => true;
 
     /// <summary>
     /// Extension point called once all attributes implementation on the <see cref="DecoratedItem"/>
-    /// have been successfully initialized.
+    /// have been successfully initialized (<see cref="AllDecoratedAttributes"/> is available).
     /// <para>
     /// Default implementation does nothing and always returns true.
     /// </para>
@@ -247,7 +202,7 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
     }
 
     /// <summary>
-    /// Helper that checks a required <see cref="ParentAttribute"/> type (a null <paramref name="parentImpl"/>
+    /// Helper that checks a required <see cref="ParentImpl"/> type (a null <paramref name="parentImpl"/>
     /// logs an error and returnd false).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -292,8 +247,7 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
 
     internal static IReadOnlyCollection<T> CreateTypedChildrenAdapter<T>( EngineAttributeImpl parent ) where T : class, IEngineAttributeImpl
     {
-        var c = parent._children as ChildrenCollection;
-        return c != null
+        return parent._children is ChildrenCollection c
                 ? new ChildrenCollection.Adapter<T>( c )
                 : ImmutableArray<T>.Empty;
     }

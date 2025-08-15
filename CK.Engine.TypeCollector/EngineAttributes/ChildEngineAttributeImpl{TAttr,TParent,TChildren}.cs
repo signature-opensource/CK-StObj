@@ -24,18 +24,13 @@ public class ChildEngineAttributeImpl<TAttr, TParent, TChildren> : ChildEngineAt
 {
     IReadOnlyCollection<TChildren>? _children;
 
-    [EditorBrowsable( EditorBrowsableState.Never )]
-    protected override sealed bool OnAddChild( IActivityMonitor monitor, EngineAttributeImpl c )
+    internal override sealed bool OnAddChild( IActivityMonitor monitor, EngineAttributeImpl c )
     {
-        return CheckChildType( monitor, this, typeof( TChildren ), c.GetType() )
-               && OnAddChild( monitor, Unsafe.As<TChildren>( c ) );
+        return CheckChildType( monitor, this, typeof( TChildren ), c.GetType() );
     }
 
-    /// <inheritdoc cref="EngineAttributeImpl.OnAddChild(IActivityMonitor, EngineAttributeImpl)"/>
-    protected virtual bool OnAddChild( IActivityMonitor monitor, TChildren c ) => true;
-
     /// <inheritdoc />
-    public new IReadOnlyCollection<TChildren> ChildrenAttributes => _children ??= CreateTypedChildrenAdapter<TChildren>( this );
+    public new IReadOnlyCollection<TChildren> ChildrenImpl => _children ??= CreateTypedChildrenAdapter<TChildren>( this );
 
 
 }

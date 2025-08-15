@@ -16,5 +16,5 @@ public interface IEngineAttributeImpl<TAttr, TChildren> : IEngineAttributeImpl<T
     /// <summary>
     /// Gets the typed children's attribute.
     /// </summary>
-    new IReadOnlyCollection<TChildren> ChildrenAttributes { get; }
+    new IReadOnlyCollection<TChildren> ChildrenImpl { get; }
 }

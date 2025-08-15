@@ -94,7 +94,8 @@ abstract partial class CachedItem
                             }
                         }
                     }
-                    // Always initialize the fields.
+                    // Always initialize the fields (needed to log the
+                    // error on parent binding error).
                     impl.SetFields( decoratedItem, engineAttr, parentImpl );
                     // OnInitFileds is called only on parent binding success.
                     if( parentType != null && parentImpl == null )
@@ -119,24 +120,24 @@ abstract partial class CachedItem
                 // go bottom up so that the linked list keeps the children order.
                 for( int i = result.Length - 1; i >= firstAttrIndex; i-- )
                 {
-                    if( result[i] is EngineAttributeImpl attr && attr.ParentAttribute != null )
+                    if( result[i] is EngineAttributeImpl attr && attr.ParentImpl != null )
                     {
-                        Throw.DebugAssert( attr.ParentAttribute is EngineAttributeImpl );
-                        success &= Unsafe.As<EngineAttributeImpl>( attr.ParentAttribute ).AddChild( monitor, attr );
+                        Throw.DebugAssert( attr.ParentImpl is EngineAttributeImpl );
+                        success &= Unsafe.As<EngineAttributeImpl>( attr.ParentImpl ).AddChild( monitor, attr );
                     }
                 }
                 if( success )
                 {
-                    // On success (parent/child relationships are fine), we call Initialize()
-                    // and OnInitialized().
-                    success &= InitializeAttributes( monitor, decoratedItem, firstAttrIndex, result );
+                    // On success (parent/child relationships are fine), we set the result immutable
+                    // array and call OnInitialized().
+                    attributes = ImmutableCollectionsMarshal.AsImmutableArray( result );
+                    success &= InitializeAttributes( monitor, decoratedItem, firstAttrIndex, attributes );
                 }
             }
             // Finally: build the result and return true or log an error (to secure false success
             // without error log) and return false.
             if( success )
             {
-                attributes = ImmutableCollectionsMarshal.AsImmutableArray( result );
             }
             else
             {
@@ -195,16 +196,14 @@ abstract partial class CachedItem
             static bool InitializeAttributes( IActivityMonitor monitor,
                                               ICachedItem decoratedItem,
                                               int firstAttrIndex,
-                                              object[] result )
+                                              ImmutableArray<object> result )
             {
                 bool success = true;
                 for( int i = firstAttrIndex; i < result.Length; i++ )
                 {
-                    // Calls Initialize on root (parentless) implementations: it's the
-                    // parent that recursively Initialize() its children.
-                    if( result[i] is EngineAttributeImpl attr && attr.ParentAttribute == null )
+                    if( result[i] is EngineAttributeImpl attr )
                     {
-                        success &= attr.Initialize( monitor );
+                        attr._itemAttributes = result;
                     }
                 }
                 if( success )
@@ -219,7 +218,7 @@ abstract partial class CachedItem
                             }
                             catch( Exception ex )
                             {
-                                monitor.Error( $"While calling '{attr:N}.OnInitialized' from {decoratedItem}.", ex );
+                                monitor.Error( $"While calling '{attr:N}.OnInitialized' from '{decoratedItem}'.", ex );
                                 success = false;
                             }
                         }
@@ -244,7 +243,7 @@ abstract partial class CachedItem
                         {
                             ++engineNumber;
                             var parentType = attr.Attribute.ParentEngineAttributeType;
-                            if( parentType != null && attr.ParentAttribute == null )
+                            if( parentType != null && attr.ParentImpl == null )
                             {
                                 WriteBindingError( b, attr, parentType, result, ref lastMissingParentType );
                             }

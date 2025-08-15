@@ -27,12 +27,12 @@ public interface IEngineAttributeImpl
     /// <summary>
     /// Gets the parent attribute implementation if <see cref="Attribute"/> is a <see cref="IChildEngineAttribute{T}"/>.
     /// </summary>
-    IEngineAttributeImpl? ParentAttribute { get; }
+    IEngineAttributeImpl? ParentImpl { get; }
 
     /// <summary>
     /// Gets the children attribute implementations.
     /// </summary>
-    IReadOnlyCollection<IEngineAttributeImpl> ChildrenAttributes { get; }
+    IReadOnlyCollection<EngineAttributeImpl> ChildrenImpl { get; }
 
     internal void LocalImplentationOnly();
 }

@@ -11,7 +11,7 @@ namespace CK.Engine.TypeCollector;
 
 /// <summary>
 /// Base engine implementation with strongly typed <see cref="Attribute"/> and <see cref="ChildrenAttributes"/>.
-/// This base class puts no constraints on <see cref="EngineAttributeImpl.ParentAttribute"/> that is typically null
+/// This base class puts no constraints on <see cref="EngineAttributeImpl.ParentImpl"/> that is typically null
 /// if this is bound to a <see cref="IEngineAttribute"/> and not a <see cref="IChildEngineAttribute{T}"/> but can be used
 /// for child implementation if types parent is useless.
 /// </summary>
@@ -24,17 +24,12 @@ public abstract class EngineAttributeImpl<TAttr, TChildren> : EngineAttributeImp
 {
     IReadOnlyCollection<TChildren>? _children;
 
-    [EditorBrowsable( EditorBrowsableState.Never )]
-    protected override sealed bool OnAddChild( IActivityMonitor monitor, EngineAttributeImpl c )
+    internal override sealed bool OnAddChild( IActivityMonitor monitor, EngineAttributeImpl c )
     {
-        return CheckChildType( monitor, this, typeof( TChildren ), c.GetType() )
-               && OnAddChild( monitor, Unsafe.As<TChildren>( c ) );
+        return CheckChildType( monitor, this, typeof( TChildren ), c.GetType() );
     }
 
-    /// <inheritdoc cref="EngineAttributeImpl.OnAddChild(IActivityMonitor, EngineAttributeImpl)"/>
-    protected virtual bool OnAddChild( IActivityMonitor monitor, TChildren c ) => true;
-
     /// <inheritdoc />
-    public new IReadOnlyCollection<TChildren> ChildrenAttributes => _children ??= CreateTypedChildrenAdapter<TChildren>( this );
+    public new IReadOnlyCollection<TChildren> ChildrenImpl => _children ??= CreateTypedChildrenAdapter<TChildren>( this );
 
 }

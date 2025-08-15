@@ -94,8 +94,8 @@ public class EngineAttributeTests
                       "DemoUnrelated"
                    ] );
         var withTypedChildren = attributes.OfType<OneEngineAttributeImpl>().Single();
-        withTypedChildren.ChildrenAttributes.Count().ShouldBe( 2 );
-        withTypedChildren.ChildrenAttributes.ShouldAllBe( a => a.TheAttributeName.StartsWith( "AnotherDemo-" ) );
+        withTypedChildren.ChildrenImpl.Count().ShouldBe( 2 );
+        withTypedChildren.ChildrenImpl.ShouldAllBe( a => a.TheAttributeName.StartsWith( "AnotherDemo-" ) );
     }
 
     [Test]
@@ -129,8 +129,7 @@ public class EngineAttributeTests
     }
 
 
-    const string BuggyOnIntializedMessage = "While calling 'CK.Engine.TypeCollector.Tests.CanBeBuggyAttributeImpl.OnInitialized' from CK.Engine.TypeCollector.Tests.EngineAttributeTests.IBuggy.";
-    const string BuggyInitializeMessage = "While initializing 'CK.Engine.TypeCollector.Tests.CanBeBuggyAttributeImpl' from CK.Engine.TypeCollector.Tests.EngineAttributeTests.IBuggy.";
+    const string BuggyOnIntializedMessage = "While calling 'CK.Engine.TypeCollector.Tests.CanBeBuggyAttributeImpl.OnInitialized' from 'CK.Engine.TypeCollector.Tests.EngineAttributeTests.IBuggy'.";
 
     [Test]
     public void OnInitialized_exceptions_are_caught()
@@ -144,10 +143,7 @@ public class EngineAttributeTests
             {
                 t.TryGetAllAttributes( TestHelper.Monitor, out var attributes )
                     .ShouldBeFalse();
-
                 logs.ShouldContain( BuggyOnIntializedMessage );
-
-                logs.ShouldNotContain( BuggyInitializeMessage );
             }
         }
         finally
@@ -351,8 +347,8 @@ public class EngineAttributeTests
 
         attributes.Length.ShouldBe( 2 );
         var primary = attributes[0].ShouldBeAssignableTo<EngineAttributeImpl>();
-        primary.ChildrenAttributes.Count.ShouldBe( 1 );
-        primary.ChildrenAttributes.Single().ShouldBeAssignableTo<EngineAttributeImpl>();
+        primary.ChildrenImpl.Count.ShouldBe( 1 );
+        primary.ChildrenImpl.Single().ShouldBeAssignableTo<EngineAttributeImpl>();
 
         var action = attributes.OfType<ISomeEngineSpecBehavior>()
                                .Single()

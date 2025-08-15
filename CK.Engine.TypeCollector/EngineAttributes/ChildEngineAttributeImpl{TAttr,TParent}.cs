@@ -14,25 +14,19 @@ public class ChildEngineAttributeImpl<TAttr, TParent> : EngineAttributeImpl<TAtt
     where TAttr : class, IEngineAttribute
     where TParent : class, IEngineAttributeImpl
 {
-    [EditorBrowsable( EditorBrowsableState.Never )]
-    protected override sealed bool OnInitFields( IActivityMonitor monitor,
-                                                 ICachedItem item,
-                                                 TAttr attribute,
-                                                 EngineAttributeImpl? parentImpl )
+    internal override sealed bool OnInitFields( IActivityMonitor monitor,
+                                                         ICachedItem item,
+                                                         EngineAttribute attribute,
+                                                         EngineAttributeImpl? parentImpl )
     {
-        return CheckParentType( monitor, this, typeof( TParent ), parentImpl )
-               && OnInitFields( monitor, item, attribute, Unsafe.As<TParent>( parentImpl ) );
+        // Use logical and (non short-circuit).
+        return base.OnInitFields( monitor, item, attribute, parentImpl )
+               & CheckParentType( monitor, this, typeof( TParent ), parentImpl );
     }
 
-    /// <inheritdoc cref="EngineAttributeImpl.OnInitFields(IActivityMonitor, ICachedItem, EngineAttribute, EngineAttributeImpl?)"/>
-    protected virtual bool OnInitFields( IActivityMonitor monitor,
-                                         ICachedItem item,
-                                         TAttr attribute,
-                                         TParent parentImpl ) => true;
-
     /// <summary>
-    /// Gets the parent attribute implementation.
+    /// Gets the typed parent attribute implementation.
     /// </summary>
-    public new TParent ParentAttribute => Unsafe.As<TParent>( base.ParentAttribute! );
+    public new TParent ParentImpl => Unsafe.As<TParent>( base.ParentImpl! );
 
 }

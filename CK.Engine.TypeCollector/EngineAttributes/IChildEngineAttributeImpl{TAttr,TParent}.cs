@@ -14,5 +14,5 @@ public interface IChildEngineAttributeImpl<TAttr,TParent> : IEngineAttributeImpl
     /// <summary>
     /// Gets the parent implementation.
     /// </summary>
-    new TParent ParentAttribute { get; }
+    new TParent ParentImpl { get; }
 }
