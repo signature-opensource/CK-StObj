@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -120,7 +121,8 @@ abstract partial class CachedItem
                 {
                     if( result[i] is EngineAttributeImpl attr && attr.ParentAttribute != null )
                     {
-                        success &= attr.ParentAttribute.AddChild( monitor, attr );
+                        Throw.DebugAssert( attr.ParentAttribute is EngineAttributeImpl );
+                        success &= Unsafe.As<EngineAttributeImpl>( attr.ParentAttribute ).AddChild( monitor, attr );
                     }
                 }
                 if( success )
@@ -202,15 +204,7 @@ abstract partial class CachedItem
                     // parent that recursively Initialize() its children.
                     if( result[i] is EngineAttributeImpl attr && attr.ParentAttribute == null )
                     {
-                        try
-                        {
-                            success &= attr.Initialize( monitor );
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( $"While initializing '{attr:N}' from {decoratedItem}.", ex );
-                            success = false;
-                        }
+                        success &= attr.Initialize( monitor );
                     }
                 }
                 if( success )

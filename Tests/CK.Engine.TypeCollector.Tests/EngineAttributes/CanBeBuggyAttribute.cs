@@ -4,14 +4,12 @@ namespace CK.Engine.TypeCollector.Tests;
 
 public sealed class CanBeBuggyAttribute : EngineAttribute
 {
-    public static bool ImplInitializationThrow;
     public static bool ImplOnInitializedThrow;
     public static bool ImplInitializeFalse;
     public static bool ImplOnInitializedFalse;
 
     public static void Reset()
     {
-        ImplInitializationThrow = false;
         ImplOnInitializedThrow = false;
         ImplInitializeFalse = false;
         ImplOnInitializedFalse = false;

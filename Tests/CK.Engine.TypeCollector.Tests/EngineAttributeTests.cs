@@ -156,31 +156,6 @@ public class EngineAttributeTests
         }
     }
 
-    [Test]
-    public void Initialize_exceptions_are_caught_and_OnInitialized_is_not_called()
-    {
-        CanBeBuggyAttribute.ImplInitializationThrow = true;
-        CanBeBuggyAttribute.ImplOnInitializedThrow = true;
-        try
-        {
-            var c = new GlobalTypeCache();
-            var t = c.Get( typeof( IBuggy ) );
-            using( TestHelper.Monitor.CollectTexts( out var logs ) )
-            {
-                t.TryGetAllAttributes( TestHelper.Monitor, out var attributes )
-                    .ShouldBeFalse();
-
-                logs.ShouldContain( BuggyInitializeMessage );
-
-                logs.ShouldNotContain( BuggyOnIntializedMessage );
-            }
-        }
-        finally
-        {
-            CanBeBuggyAttribute.Reset();
-        }
-    }
-
     [OneChildEngine( "Demo-1" )]
     [OneChildEngine( "Demo-2" )]
     public interface IMissingPrimary1

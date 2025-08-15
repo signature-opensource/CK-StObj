@@ -6,17 +6,6 @@ public sealed class CanBeBuggyAttributeImpl : EngineAttributeImpl<CanBeBuggyAttr
 {
     public string TheAttributeName => Attribute.Name;
 
-    protected override bool Initialize( IActivityMonitor monitor )
-    {
-        if( CanBeBuggyAttribute.ImplInitializationThrow )
-        {
-            Throw.CKException( "Expected: CanBeBuggyAttribute.ImplInitializationThrow is true." ); 
-        }
-        return CanBeBuggyAttribute.ImplInitializeFalse
-                ? false
-                : base.Initialize( monitor );
-    }
-
     protected override bool OnInitialized( IActivityMonitor monitor )
     {
         if( CanBeBuggyAttribute.ImplOnInitializedThrow )

@@ -1,25 +1,25 @@
 using CK.Core;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace CK.Engine.TypeCollector;
 
+
 /// <summary>
-/// Base engine implementation with strongly typed <see cref="Attribute"/> and <see cref="ChildrenAttributes"/>.
-/// This base class puts no constraints on <see cref="EngineAttributeImpl.ParentAttribute"/> that is typically null
-/// if this is bound to a <see cref="IEngineAttribute"/> and not a <see cref="IChildEngineAttribute{T}"/> but can be used
-/// for child implementation if types parent is useless.
+/// Full strongly typed <see cref="EngineAttributeImpl"/> with a typed attribute, required <see cref="ParentAttribute"/> 
+/// and typed <see cref="Chil"/>.
+/// <para>
+/// The <typeparamref name="TParent"/> and/or <see cref="TChildren"/> can be <see cref="EngineAttributeImpl"/>.
+/// </para>
 /// </summary>
-/// <typeparam name="TAttr">The attribute's type.</typeparam>
+/// <typeparam name="TAttr">The attribute type.</typeparam>
+/// <typeparam name="TParent">The expected parent's type.</typeparam>
 /// <typeparam name="TChildren">The children's type.</typeparam>
-public abstract class EngineAttributeImpl<TAttr, TChildren> : EngineAttributeImpl<TAttr>,
-                                                              IEngineAttributeImpl<TAttr,TChildren>
+public class ChildEngineAttributeImpl<TAttr, TParent, TChildren> : ChildEngineAttributeImpl<TAttr, TParent>,
+                                                                   IChildEngineAttributeImpl<TAttr, TParent, TChildren>
     where TAttr : class, IEngineAttribute
+    where TParent : class, IEngineAttributeImpl
     where TChildren : class, IEngineAttributeImpl
 {
     IReadOnlyCollection<TChildren>? _children;
@@ -36,5 +36,6 @@ public abstract class EngineAttributeImpl<TAttr, TChildren> : EngineAttributeImp
 
     /// <inheritdoc />
     public new IReadOnlyCollection<TChildren> ChildrenAttributes => _children ??= CreateTypedChildrenAdapter<TChildren>( this );
+
 
 }
