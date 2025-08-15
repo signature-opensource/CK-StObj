@@ -3,7 +3,7 @@ namespace CK.Engine.TypeCollector.Tests;
 /// <summary>
 /// Specializable. The <see cref="SomeEngineAttributeImpl{TAttr}"/> provides a strongly typed Attribute.
 /// </summary>
-public class SomeEngineAttributeImpl : EngineAttributeImpl<SomeEngineAttribute>,
+public class SomeEngineAttributeImpl : EngineAttributeImpl<ICachedItem, SomeEngineAttribute>,
                                        IAttributeHasNameProperty,
                                        ISomeEngineSpecBehavior
 {

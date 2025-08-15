@@ -15,10 +15,12 @@ namespace CK.Engine.TypeCollector;
 /// if this is bound to a <see cref="IEngineAttribute"/> and not a <see cref="IChildEngineAttribute{T}"/> but can be used
 /// for child implementation if types parent is useless.
 /// </summary>
+/// <typeparam name="TItem">The type of the decorated item.</typeparam>
 /// <typeparam name="TAttr">The attribute's type.</typeparam>
 /// <typeparam name="TChildren">The children's type.</typeparam>
-public abstract class EngineAttributeImpl<TAttr, TChildren> : EngineAttributeImpl<TAttr>,
-                                                              IEngineAttributeImpl<TAttr,TChildren>
+public abstract class EngineAttributeImpl<TItem, TAttr, TChildren> : EngineAttributeImpl<TItem, TAttr>,
+                                                                     IEngineAttributeImpl<TItem, TAttr, TChildren>
+    where TItem : class, ICachedItem
     where TAttr : class, IEngineAttribute
     where TChildren : class, IEngineAttributeImpl
 {

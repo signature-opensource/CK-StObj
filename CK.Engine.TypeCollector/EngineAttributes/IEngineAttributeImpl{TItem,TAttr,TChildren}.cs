@@ -5,11 +5,13 @@ namespace CK.Engine.TypeCollector;
 
 
 /// <summary>
-/// Abstraction for <see cref="EngineAttributeImpl{TAttr, TChildren}"/>.
+/// Abstraction for <see cref="EngineAttributeImpl{TItem, TAttr, TChildren}"/>.
 /// </summary>
+/// <typeparam name="TItem">The type of the decorated item.</typeparam>
 /// <typeparam name="TAttr">The attribute's type.</typeparam>
 /// <typeparam name="TChildren">The children's type.</typeparam>
-public interface IEngineAttributeImpl<TAttr, TChildren> : IEngineAttributeImpl<TAttr>
+public interface IEngineAttributeImpl<out TItem, out TAttr, out TChildren> : IEngineAttributeImpl<TItem, TAttr>
+    where TItem : class, ICachedItem
     where TAttr : class, IEngineAttribute
     where TChildren : class, IEngineAttributeImpl
 {

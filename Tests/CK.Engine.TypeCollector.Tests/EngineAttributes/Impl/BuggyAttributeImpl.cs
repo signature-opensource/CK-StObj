@@ -2,7 +2,7 @@ using CK.Core;
 
 namespace CK.Engine.TypeCollector.Tests;
 
-public sealed class CanBeBuggyAttributeImpl : EngineAttributeImpl<CanBeBuggyAttribute>, IAttributeHasNameProperty
+public sealed class CanBeBuggyAttributeImpl : EngineAttributeImpl<ICachedItem, CanBeBuggyAttribute>, IAttributeHasNameProperty
 {
     public string TheAttributeName => Attribute.Name;
 

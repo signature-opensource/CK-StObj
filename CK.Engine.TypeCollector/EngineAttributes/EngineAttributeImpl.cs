@@ -10,10 +10,11 @@ using System.Runtime.CompilerServices;
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
-/// Base class for <see cref="EngineAttribute"/> and <see cref="EngineAttribute{T}"/> implementations.
+/// Base class for all <see cref="EngineAttribute"/> implementations.
 /// <para>
 /// This is the non generic base class: there are no constraints on <see cref="Attribute"/>, <see cref="ParentImpl"/>
-/// and <see cref="ChildrenImpl"/> types. Use <see cref="EngineAttributeImpl"/>
+/// and <see cref="ChildrenImpl"/> types nor on the <see cref="DecoratedItem"/> (that can be any kind of
+/// <see cref="ICachedMember"/> or a <see cref="ICachedType"/>).
 /// </para>
 /// </summary>
 public abstract class EngineAttributeImpl : IEngineAttributeImpl
@@ -139,20 +140,17 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
     /// </summary>
     public ImmutableArray<object> AllDecoratedAttributes => _itemAttributes;
 
-    internal void SetFields( ICachedItem item,
-                             IEngineAttribute attribute,
-                             EngineAttributeImpl? parentImpl )
+    internal virtual bool SetFields( IActivityMonitor monitor,
+                                     ICachedItem item,
+                                     IEngineAttribute attribute,
+                                     EngineAttributeImpl? parentImpl )
     {
         _children = ImmutableArray<EngineAttributeImpl>.Empty;
         _decoratedItem = item;
         _attribute = attribute;
         _parentImpl = parentImpl;
+        return true; 
     }
-
-    internal virtual bool OnInitFields( IActivityMonitor monitor,
-                                        ICachedItem item,
-                                        EngineAttribute attribute,
-                                        EngineAttributeImpl? parentImpl ) => true;
 
     internal bool AddChild( IActivityMonitor monitor, EngineAttributeImpl c )
     {

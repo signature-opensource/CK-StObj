@@ -96,26 +96,20 @@ abstract partial class CachedItem
                     }
                     // Always initialize the fields (needed to log the
                     // error on parent binding error).
-                    impl.SetFields( decoratedItem, engineAttr, parentImpl );
-                    // OnInitFileds is called only on parent binding success.
-                    if( parentType != null && parentImpl == null )
-                    {
-                        parentBindingSuccess = false;
-                    }
-                    else
-                    {
-                        success &= impl.OnInitFields( monitor, decoratedItem, engineAttr, parentImpl );
-                    }
+                    bool bindingSuccess = parentType == null || parentImpl != null;
+                    success &= impl.SetFields( monitor, decoratedItem, engineAttr, parentImpl )
+                               && bindingSuccess;
+                    parentBindingSuccess &= bindingSuccess;
                 }
+            }
+            // If we miss a parent, we log the details and give up.
+            if( !parentBindingSuccess )
+            {
+                LogParentBindingError( monitor, decoratedItem, firstAttrIndex, result );
+                return false;
             }
             if( success )
             {
-                // If we miss a parent, we log the details and give up.
-                if( !parentBindingSuccess )
-                {
-                    LogParentBindingError( monitor, decoratedItem, firstAttrIndex, result );
-                    return false;
-                }
                 // No parent binding error. To add the children to their parents we
                 // go bottom up so that the linked list keeps the children order.
                 for( int i = result.Length - 1; i >= firstAttrIndex; i-- )

@@ -1,11 +1,12 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
-/// Abstrcation for <see cref="EngineAttributeImpl"/>.
+/// Abstraction for <see cref="EngineAttributeImpl"/>.
 /// </summary>
 public interface IEngineAttributeImpl
 {
@@ -36,3 +37,5 @@ public interface IEngineAttributeImpl
 
     internal void LocalImplentationOnly();
 }
+
+
