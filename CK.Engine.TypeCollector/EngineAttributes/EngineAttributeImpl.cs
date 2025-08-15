@@ -298,4 +298,5 @@ public abstract class EngineAttributeImpl : IEngineAttributeImpl
                 : ImmutableArray<T>.Empty;
     }
 
+    void IEngineAttributeImpl.LocalImplentationOnly() {}
 }

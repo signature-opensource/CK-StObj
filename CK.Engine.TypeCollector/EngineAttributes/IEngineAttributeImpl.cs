@@ -34,4 +34,5 @@ public interface IEngineAttributeImpl
     /// </summary>
     IReadOnlyCollection<IEngineAttributeImpl> ChildrenAttributes { get; }
 
+    internal void LocalImplentationOnly();
 }
