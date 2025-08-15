@@ -10,7 +10,7 @@ public class AttributeMustSuffixTheName : EngineAttribute
     }
 }
 
-public class AttributeMustSuffixTheNameT : EngineAttribute<AttributeMustSuffixTheName>
+public class AttributeMustSuffixTheNameT : ChildEngineAttribute<AttributeMustSuffixTheName>
 {
     public AttributeMustSuffixTheNameT()
         : base( "Unused (name check fails)." )
@@ -22,7 +22,7 @@ public class AttributeMustSuffixTheNameT : EngineAttribute<AttributeMustSuffixTh
 // The implementation type is instantiated.
 public class UselessImpl : EngineAttributeImpl { }
 
-public class CorrectlyNamedButBadParentAttribute : EngineAttribute<AttributeMustSuffixTheName>
+public class CorrectlyNamedButBadParentAttribute : ChildEngineAttribute<AttributeMustSuffixTheName>
 {
     public CorrectlyNamedButBadParentAttribute()
         : base( "CK.Engine.TypeCollector.Tests.UselessImpl, CK.Engine.TypeCollector.Tests" )

@@ -9,7 +9,7 @@ namespace CK.Engine.TypeCollector;
 /// </summary>
 /// <typeparam name="TAttr">The attribute's type.</typeparam>
 public abstract class EngineAttributeImpl<TAttr> : EngineAttributeImpl
-    where TAttr : EngineAttribute
+    where TAttr : class, IEngineAttribute
 {
     /// <inheritdoc />
     /// <remarks>
