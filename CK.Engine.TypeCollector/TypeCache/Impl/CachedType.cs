@@ -313,7 +313,7 @@ partial class CachedType : CachedItem, ICachedType
         {
             if( _declaredMembers.IsDefault )
             {
-                var members = Type.GetMembers( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly );
+                var members = Type.GetMembers( BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly );
                 var b = ImmutableArray.CreateBuilder<ICachedMember>( members.Length );
                 foreach( var m in members )
                 {

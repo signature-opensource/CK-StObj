@@ -111,11 +111,13 @@ public interface ICachedType : ICachedItem
     ImmutableArray<ICachedType> GenericArguments { get; }
 
     /// <summary>
-    /// Get the members declared by this type. Binding flags are <c>Public|NonPublic|Instance|Static|DeclaredOnly</c>
-    /// and nested types (that appear in <see cref="Type.GetMembers(BindingFlags)"/>) are filtered out.
+    /// Get the <see cref="ICachedMember"/> declared by this type.
     /// <para>
-    /// Non public members are collected mainly to be able to emit warnings since only public methods are actually
-    /// considered by the engine.
+    /// Non public members are not collected. Only public members are actually considered by the engine.
+    /// </para>
+    /// <para>
+    /// Binding flags are <c>Public|Instance|Static|DeclaredOnly</c> and nested
+    /// types (that are returned by <see cref="Type.GetMembers(BindingFlags)"/>) are filtered out.
     /// </para>
     /// </summary>
     ImmutableArray<ICachedMember> DeclaredMembers { get; }
