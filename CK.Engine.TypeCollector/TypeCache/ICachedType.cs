@@ -14,11 +14,6 @@ namespace CK.Engine.TypeCollector;
 public interface ICachedType : ICachedItem
 {
     /// <summary>
-    /// Gets the <see cref="TypeCache"/>.
-    /// </summary>
-    GlobalTypeCache TypeCache { get; }
-
-    /// <summary>
     /// Gets the Type.
     /// On a <see cref="ICachedType"/>, when the type is a value type and <see cref="ICachedType.IsNullable"/> is true,
     /// this is a <see cref="Nullable{T}"/>.

@@ -47,5 +47,7 @@ abstract partial class CachedItem : ICachedItem
         }
     }
 
+    public abstract GlobalTypeCache TypeCache { get; }
+
     public abstract StringBuilder Write( StringBuilder b );
 }

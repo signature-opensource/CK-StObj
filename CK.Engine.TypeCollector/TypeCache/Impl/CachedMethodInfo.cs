@@ -19,6 +19,35 @@ sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
 
     public CachedParameterInfo ReturnParameterInfo => _returnParameterInfo ??= new CachedParameterInfo( this, MethodInfo.ReturnParameter );
 
+    public bool IsAsynchronous
+    {
+        get
+        {
+            var r = ReturnParameterInfo.ParameterType;
+            var knownTypes = TypeCache.KnownTypes;
+            return r == knownTypes.Task
+                   || r == knownTypes.ValueTask
+                   || (r.IsGenericType && (r.GenericTypeDefinition == knownTypes.GenericTaskDefinition
+                                           || r.GenericTypeDefinition == knownTypes.GenericValueTaskDefinition));
+        }
+    }
+
+    public ICachedType? GetAsynchronousReturnedType()
+    {
+        var r = ReturnParameterInfo.ParameterType;
+        var knownTypes = TypeCache.KnownTypes;
+        if( r == knownTypes.Task || r == knownTypes.ValueTask )
+        {
+            return knownTypes.Void;
+        }
+        if( r.IsGenericType && (r.GenericTypeDefinition == knownTypes.GenericTaskDefinition
+                                || r.GenericTypeDefinition == knownTypes.GenericValueTaskDefinition) )
+        {
+            return r.GenericArguments[0];
+        }
+        return null;
+    }
+
     public override StringBuilder Write( StringBuilder b )
     {
         if( MethodInfo.IsStatic ) b.Append( "static " );

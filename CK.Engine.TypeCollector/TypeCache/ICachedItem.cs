@@ -50,6 +50,11 @@ public interface ICachedItem
     bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes );
 
     /// <summary>
+    /// Gets the <see cref="GlobalTypeCache"/>.
+    /// </summary>
+    GlobalTypeCache TypeCache { get; }
+
+    /// <summary>
     /// Writes the C# name of this item. 
     /// </summary>
     /// <param name="b">The target builder.</param>

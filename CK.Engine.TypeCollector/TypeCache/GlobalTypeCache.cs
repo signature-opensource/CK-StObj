@@ -19,9 +19,7 @@ public sealed partial class GlobalTypeCache
 {
     readonly Dictionary<Type, ICachedType> _types;
     readonly AssemblyCache _assemblies;
-    readonly ICachedType _iRealObject;
-    readonly ICachedType _iPoco;
-    readonly ICachedType _iAutoService;
+    readonly WellKnownTypes _knownTypes;
 
     /// <summary>
     /// Initializes a new empty cache for types.
@@ -39,16 +37,13 @@ public sealed partial class GlobalTypeCache
     {
         _types = new Dictionary<Type, ICachedType>();
         _assemblies = assemblies;
-        _iRealObject = Get( typeof( IRealObject ) );
-        _iPoco = Get( typeof( IPoco ) );
-        _iAutoService = Get( typeof( IAutoService ) );
+        _knownTypes = new WellKnownTypes( this );
     }
 
-    public ICachedType IRealObject => _iRealObject;
-
-    public ICachedType IPoco => _iPoco;
-
-    public ICachedType IAutoService => _iAutoService;
+    /// <summary>
+    /// Gets well-known types.
+    /// </summary>
+    public WellKnownTypes KnownTypes => _knownTypes;
 
     /// <summary>
     /// Gets a cached type.
@@ -127,8 +122,8 @@ public sealed partial class GlobalTypeCache
                 }
             }
             // Weird case checks.
-            var isRealObject = interfaces.Contains( _iRealObject );
-            var isPoco = interfaces.Contains( _iPoco );
+            var isRealObject = interfaces.Contains( _knownTypes.IRealObject );
+            var isPoco = interfaces.Contains( _knownTypes.IPoco );
             if( isRealObject || isPoco )
             {
                 if( isRealObject && isPoco )

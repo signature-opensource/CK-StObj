@@ -16,6 +16,6 @@ abstract class CachedMemberInfo : CachedItem, ICachedMember
 
     public MemberInfo Member => _member;
 
-    internal GlobalTypeCache TypeCache => _declaringType.TypeCache;
+    public override sealed GlobalTypeCache TypeCache => _declaringType.TypeCache;
 
 }

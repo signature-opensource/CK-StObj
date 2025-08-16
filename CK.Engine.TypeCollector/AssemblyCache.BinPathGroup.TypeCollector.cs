@@ -189,7 +189,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
             if( kind != ConfigurableAutoServiceKind.None )
             {
                 string? k = null;
-                if( type.Interfaces.Contains( typeCache.IAutoService ) )
+                if( type.Interfaces.Contains( typeCache.KnownTypes.IAutoService ) )
                 {
                     k = nameof( IAutoService );
                 }

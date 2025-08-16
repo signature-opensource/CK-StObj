@@ -140,7 +140,7 @@ partial class CachedType : CachedItem, ICachedType
                     : this;
     }
 
-    public GlobalTypeCache TypeCache => _cache;
+    public override sealed GlobalTypeCache TypeCache => _cache;
 
     public Type Type => Unsafe.As<Type>( _member );
 
