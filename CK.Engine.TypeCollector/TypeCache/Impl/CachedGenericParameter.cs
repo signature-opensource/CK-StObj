@@ -33,7 +33,7 @@ class CachedGenericParameter : ICachedType
 
     public CachedAssembly Assembly => _assembly;
 
-    public bool IsNullable => false;
+    public bool? IsNullable => null;
 
     public ICachedType Nullable => this;
 

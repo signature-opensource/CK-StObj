@@ -22,7 +22,7 @@ partial class CachedType
 
         public CachedAssembly Assembly => throw new NotImplementedException();
 
-        public bool IsNullable => throw new NotImplementedException();
+        public bool? IsNullable => throw new NotImplementedException();
 
         public ICachedType Nullable => throw new NotImplementedException();
 

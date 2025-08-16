@@ -47,16 +47,18 @@ public interface ICachedType : ICachedItem
 
     /// <summary>
     /// Gets whether this type is nullable.
+    /// This is <c>null</c> for reference type. Only value types have a <see cref="Nullable"/>
+    /// that is not the same as their <see cref="NonNullable"/>.
     /// </summary>
-    bool IsNullable { get; }
+    bool? IsNullable { get; }
 
     /// <summary>
-    /// Gets the nullable associated type (this if <see cref="IsNullable"/> is true).
+    /// Gets the nullable associated type (this if <see cref="IsNullable"/> is null or true).
     /// </summary>
     ICachedType Nullable { get; }
 
     /// <summary>
-    /// Gets the non nullable associated type (this if <see cref="IsNullable"/> is false).
+    /// Gets the non nullable associated type (this if <see cref="IsNullable"/> is null or false).
     /// </summary>
     ICachedType NonNullable { get; }
 

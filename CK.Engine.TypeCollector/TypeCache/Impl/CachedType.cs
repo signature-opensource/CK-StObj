@@ -31,68 +31,6 @@ partial class CachedType : CachedItem, ICachedType
     readonly bool _isGenericType;
     readonly bool _isGenericTypeDefinition;
 
-    sealed class NullReferenceType : ICachedType
-    {
-        readonly CachedType _nonNullable;
-        string? _name;
-
-        public NullReferenceType( CachedType nonNullable )
-        {
-            _nonNullable = nonNullable;
-        }
-
-        public Type Type => _nonNullable.Type;
-
-        public bool IsTypeDefinition => _nonNullable.IsTypeDefinition;
-
-        public bool IsGenericType => _nonNullable.IsGenericType;
-
-        public int TypeDepth => _nonNullable.TypeDepth;
-
-        public CachedAssembly Assembly => _nonNullable.Assembly;
-
-        public bool IsNullable => true;
-
-        public ICachedType Nullable => this;
-
-        public ICachedType NonNullable => _nonNullable;
-
-        public string CSharpName => _name ??= _nonNullable.CSharpName + "?";
-
-        public string Name => _nonNullable.Name;
-
-        public ImmutableArray<ICachedType> Interfaces => _nonNullable.Interfaces;
-
-        public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.Interfaces;
-
-        public ICachedType? BaseType => _nonNullable.BaseType?.Nullable;
-
-        public ICachedType? DeclaringType => _nonNullable.DeclaringType;
-
-        public ICachedType? GenericTypeDefinition => _nonNullable.GenericTypeDefinition;
-
-        public ImmutableArray<ICachedType> GenericArguments => _nonNullable.GenericArguments;
-
-        public ImmutableArray<CustomAttributeData> AttributesData => _nonNullable.AttributesData;
-
-        public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
-
-        public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
-
-        public ICachedType? ElementType => _nonNullable.ElementType;
-
-        public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
-
-        public ImmutableArray<object> RawAttributes => _nonNullable.RawAttributes;
-
-        public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
-           => _nonNullable.TryGetAllAttributes( monitor, out attributes );
-
-        public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
-
-        public override string ToString() => CSharpName;
-    }
-
     sealed class NullValueType : ICachedType
     {
         readonly CachedType _nonNullable;
@@ -116,7 +54,7 @@ partial class CachedType : CachedItem, ICachedType
 
         public CachedAssembly Assembly => _nonNullable.Assembly;
 
-        public bool IsNullable => true;
+        public bool? IsNullable => true;
 
         public ICachedType Nullable => this;
 
@@ -185,7 +123,7 @@ partial class CachedType : CachedItem, ICachedType
         : this( cache, type, typeDepth, assembly, interfaces )
     {
         _baseType = baseType;
-        _nullable = new NullReferenceType( this );
+        _nullable = this;
     }
 
     // Value type.
@@ -280,7 +218,7 @@ partial class CachedType : CachedItem, ICachedType
 
     public string CSharpName => _csharpName ??= Type.ToCSharpName();
 
-    public bool IsNullable => false;
+    public bool? IsNullable => _nullable == this ? null : false;
 
     public ICachedType Nullable => _nullable;
 

@@ -9,7 +9,10 @@ namespace CK.Engine.TypeCollector;
 /// <summary>
 /// Global type cache.
 /// <para>
-/// This currently doesn't handle Nullable Reference Type.
+/// This doesn't handle Nullable Reference Type.
+/// <see cref="ICachedType.Nullable"/> and <see cref="ICachedType.NonNullable"/> applies to value types only,
+/// for reference types both returns the unique <see cref="ICachedType"/> for their <see cref="Type"/> and
+/// for coherency <see cref="ICachedType.IsNullable"/> is null.
 /// </para>
 /// </summary>
 public sealed partial class GlobalTypeCache
@@ -22,7 +25,6 @@ public sealed partial class GlobalTypeCache
 
     /// <summary>
     /// Initializes a new empty cache for types.
-    /// 
     /// </summary>
     public GlobalTypeCache()
         : this( new AssemblyCache() )
