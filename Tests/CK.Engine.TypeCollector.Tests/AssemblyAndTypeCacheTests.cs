@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using static CK.Testing.MonitorTestHelper;
+using System.Xml.Serialization;
 
 namespace CK.Engine.TypeCollector.Tests;
 
@@ -84,11 +85,7 @@ public class AssemblyAndTypeCacheTests
     [Test]
     public void TypeCache_on_open_constructed_generic()
     {
-        var config = new EngineConfiguration();
-        config.FirstBinPath.Path = TestHelper.BinFolder;
-        config.FirstBinPath.Assemblies.Add( "CK.Engine.TypeCollector.Tests" );
-        var typeCache = AssemblyCache.Run( TestHelper.Monitor, config ).TypeCache;
-
+        var typeCache = new GlobalTypeCache();
         {
             Type t = typeof( SemiOpen<> );
             Type? tBase = t.BaseType;
@@ -113,6 +110,24 @@ public class AssemblyAndTypeCacheTests
             Throw.DebugAssert( cBase.GenericTypeDefinition != null );
             cBase.GenericTypeDefinition.ToString().ShouldBe( "CK.Engine.TypeCollector.Tests.AssemblyAndTypeCacheTests.Outer<TOuter>.XClass<T,U>" );
         }
+    }
+
+    [AttributeUsage( AttributeTargets.GenericParameter )]
+    class MyAttribute : Attribute { }
+
+    interface ISome<[My]T> { }
+
+    [Test]
+    public void TypeCache_handles_attributes_on_generic_parameters()
+    {
+        var typeCache = new GlobalTypeCache();
+        var t = typeCache.Get( typeof(ISome<>) );
+        var tParam = t.GenericArguments[0];
+        tParam.AttributesData.ShouldNotBeEmpty();
+        tParam.AttributesData[0].AttributeType.ShouldBe( typeof( MyAttribute ) );
+        tParam.RawAttributes.ShouldNotBeEmpty();
+        tParam.RawAttributes[0].ShouldBeOfType<MyAttribute>();
+
     }
 
 }

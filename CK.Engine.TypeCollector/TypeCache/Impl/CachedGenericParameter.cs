@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CK.Engine.TypeCollector;
@@ -11,6 +12,8 @@ class CachedGenericParameter : ICachedType
     readonly Type _parameter;
     readonly GlobalTypeCache _typeCache;
     readonly CachedAssembly _assembly;
+    ImmutableArray<CustomAttributeData> _customAttributes;
+    ImmutableArray<object> _attributes;
     ICachedType? _declaringType;
 
     public CachedGenericParameter( GlobalTypeCache typeCache, Type type, CachedAssembly assembly )
@@ -53,7 +56,17 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedType> GenericArguments => ImmutableArray<ICachedType>.Empty;
 
-    public ImmutableArray<CustomAttributeData> AttributesData => ImmutableArray<CustomAttributeData>.Empty;
+    public ImmutableArray<CustomAttributeData> AttributesData
+    {
+        get
+        {
+            if( _customAttributes.IsDefault )
+            {
+                _customAttributes = _parameter.CustomAttributes.ToImmutableArray();
+            }
+            return _customAttributes;
+        }
+    }
 
     public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
 
@@ -67,7 +80,17 @@ class CachedGenericParameter : ICachedType
 
     public EngineUnhandledType EngineUnhandledType => EngineUnhandledType.NullFullName;
 
-    public ImmutableArray<object> RawAttributes => ImmutableArray<object>.Empty;
+    public ImmutableArray<object> RawAttributes
+    {
+        get
+        {
+            if( _attributes.IsDefault )
+            {
+                _attributes = ImmutableCollectionsMarshal.AsImmutableArray( _parameter.GetCustomAttributes( inherit: false ) );
+            }
+            return _attributes;
+        }
+    }
 
     public ImmutableArray<object> GetAttributes( IActivityMonitor monitor ) => ImmutableArray<object>.Empty;
 
@@ -75,7 +98,7 @@ class CachedGenericParameter : ICachedType
 
     public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
     {
-        attributes = ImmutableArray<object>.Empty;
+        attributes = RawAttributes;
         return true;
     }
 
