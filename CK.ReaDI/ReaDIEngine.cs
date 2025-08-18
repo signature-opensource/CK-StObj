@@ -8,22 +8,24 @@ namespace CK.Core;
 public sealed partial class ReaDIEngine
 {
     readonly GlobalTypeCache _typeCache;
-    readonly Dictionary<ICachedType, ReaDIParameter> _reaDIParameters;
+    readonly Dictionary<ICachedType, ParameterType> _reaDIParameters;
     readonly Dictionary<object, ICachedType> _objects;
     readonly LoopContext _rootContext;
     // Using a FIFO offers determinism.
+    readonly Queue<OldCallable> _oldReadyToRun;
     readonly Queue<Callable> _readyToRun;
     LoopContext _currentContext;
-    ReaDIParameter? _firstActiveDescriptor;
+    ParameterType? _firstActiveDescriptor;
     bool _hasError;
 
     public ReaDIEngine( GlobalTypeCache typeCache )
     {
         _typeCache = typeCache;
-        _reaDIParameters = new Dictionary<ICachedType, ReaDIParameter>();
+        _reaDIParameters = new Dictionary<ICachedType, ParameterType>();
         _objects = new Dictionary<object, ICachedType>();
         _rootContext = new LoopContext( this, null );
         _currentContext = _rootContext;
+        _oldReadyToRun = new Queue<OldCallable>( 128 );
         _readyToRun = new Queue<Callable>( 128 );
     }
 
@@ -69,7 +71,7 @@ public sealed partial class ReaDIEngine
         return true;
     }
 
-    void Deactivate( ReaDIParameter d )
+    void Deactivate( ParameterType d )
     {
         if( d._prevActiveDescriptor == null )
         {
@@ -99,7 +101,7 @@ public sealed partial class ReaDIEngine
         d._nextActiveDescriptor = null;
     }
 
-    void Activate( ReaDIParameter d )
+    void Activate( ParameterType d )
     {
         Throw.DebugAssert( d._nextActiveDescriptor == null && d._prevActiveDescriptor == null );
         if( _firstActiveDescriptor == null )
@@ -129,13 +131,18 @@ public sealed partial class ReaDIEngine
         return !_hasError;
     }
 
-    public bool CanRun => !_hasError && _readyToRun.Count > 0;
+    public bool CanRun => !_hasError && _oldReadyToRun.Count > 0;
 
     public bool RunOne( IActivityMonitor monitor )
     {
         Throw.CheckState( CanRun );
-        var c = _readyToRun.Dequeue();
+        var c = _oldReadyToRun.Dequeue();
         return c.Run( monitor, this );
+    }
+
+    void AddReadyToRun( OldCallable callable )
+    {
+        _oldReadyToRun.Enqueue( callable );
     }
 
     void AddReadyToRun( Callable callable )

@@ -6,15 +6,15 @@ namespace CK.Core;
 
 public sealed partial class ReaDIEngine
 {
-    sealed class Callable
+    sealed class OldCallable
     {
         readonly CallableHost _host;
         readonly ICachedMethodInfo _method;
         readonly object?[] _args;
-        Callable? _nextInHost;
+        OldCallable? _nextInHost;
         int _missingCount;
 
-        internal Callable( CallableHost host, ICachedMethodInfo method )
+        internal OldCallable( CallableHost host, ICachedMethodInfo method )
         {
             _host = host;
             _nextInHost = host.Head;

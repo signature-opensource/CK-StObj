@@ -1,98 +1,74 @@
 using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace CK.Core;
 
 public sealed partial class ReaDIEngine
 {
-    abstract class ReaDIParameter
+    abstract class ParameterType
     {
         readonly ICachedType _type;
-        object? _value;
 
-        CachedParameterInfo _loopDefiner;
-        ICachedType? _loopStateType;
-        object? _loopState;
+        // This can be updated when a ReaDILoop<,> appears
+        // when a stateless [ReaDI] parameter was registered.
+        CachedParameterInfo _definer;
+        LoopParameterType? _loopParameter;
+        object? _currentValue;
 
         // Should we optimize this naïve implementation?
         readonly record struct Slot( Callable C, int Index );
         readonly List<Slot> _slots;
 
-        internal ReaDIParameter? _nextActiveDescriptor;
-        internal ReaDIParameter? _prevActiveDescriptor;
+        internal ParameterType? _nextActiveDescriptor;
+        internal ParameterType? _prevActiveDescriptor;
 
-        ReaDIParameter( ICachedType type, ICachedType? loopStateType, CachedParameterInfo loopDefiner )
+        ParameterType( ICachedType type, ICachedType? loopStateType, CachedParameterInfo definer )
         {
             _type = type;
-            _loopStateType = loopStateType;
-            _loopDefiner = loopDefiner;
+            _definer = definer;
+            if( loopStateType != null )
+            {
+                _loopParameter = new LoopParameterType( this, loopStateType );
+            }
             _slots = [];
         }
 
-        internal object? Value => _value;
+        public ICachedType? Type => _type;
 
-        public ICachedType? LoopStateType => _loopStateType;
+        [MemberNotNullWhen( true, nameof( LoopParameter ) )]
+        public bool IsLoopParameter => _loopParameter != null;
 
-        internal bool OnObjectAppear( IActivityMonitor monitor, ReaDIEngine engine, ICachedType oT, object o, out bool matched )
+        public LoopParameterType? LoopParameter => _loopParameter;
+
+        public bool Match( ICachedType oT ) => _type == oT || ContravariantMatch( oT );
+
+        public bool OnObjectAppear( IActivityMonitor monitor, ReaDIEngine engine, ICachedType oT, object o )
         {
-            bool exactType = _type == oT;
-            if( exactType || ContravariantMatch( oT ) )
+            Throw.DebugAssert( Match( oT ) );
+            if( _currentValue != null )
             {
-                matched = true;
-                if( _loopStateType != null )
-                {
-                }
-                else
-                {
-                    if( _value != null )
-                    {
-                        monitor.Error( exactType
-                                        ? $"Duplicate '{oT}' object added. This object is not a loop, at most one can exist at the same time."
-                                        : $"Duplicate '{oT}' object added. This object is not a loop, at most one '{_type}' can exist at the same time.");
-                        return false;
-                    }
-                    _value = o;
-                    foreach( var (callable, index) in _slots )
-                    {
-                        callable.SetArgument( engine, index, o );
-                    }
-                }
-                return true;
+                monitor.Error( _type == oT
+                                ? $"Duplicate '{oT}' object added. This object is not a loop, at most one can exist at the same time."
+                                : $"Duplicate '{oT}' object added. This object is not a loop, at most one '{_type}' can exist at the same time.");
+                return false;
             }
-            matched = false;
+            _currentValue = o;
+            foreach( var (callable, index) in _slots )
+            {
+                callable.SetArgument( engine, index, o );
+            }
             return true;
         }
 
-        internal protected abstract bool ContravariantMatch( ICachedType o );
+        protected abstract bool ContravariantMatch( ICachedType o );
 
-        public void AddCallableParameter( ReaDIEngine engine, Callable c, int idx )
-        {
-            _slots.Add( new Slot( c, idx ) );
-            if( _slots.Count == 1 )
-            {
-                engine.Activate( this );
-            }
-        }
-
-        internal void OnRemoveHost( ReaDIEngine engine, CallableHost host )
-        {
-            Throw.DebugAssert( host.Loop != null );
-            for( int i = 0; i < _slots.Count; i++ )
-            {
-                if( _slots[i].C.Host == host )
-                {
-                    _slots.RemoveAt( i-- );
-                }
-            }
-            if( _slots.Count == 0 )
-            {
-                engine.Deactivate( this );
-            }
-        }
-
-        sealed class Exact : ReaDIParameter
+        sealed class Exact : ParameterType
         {
             public Exact( ICachedType type, ICachedType? loopStateType, CachedParameterInfo loopDefiner )
                 : base( type, loopStateType, loopDefiner )
@@ -100,10 +76,10 @@ public sealed partial class ReaDIEngine
                 Throw.DebugAssert( type.Type.IsValueType || type.Type.IsSealed );
             }
 
-            protected internal override bool ContravariantMatch( ICachedType o ) => Throw.NotSupportedException<bool>();
+            protected override bool ContravariantMatch( ICachedType o ) => Throw.NotSupportedException<bool>();
         }
 
-        sealed class VariantClass : ReaDIParameter
+        sealed class VariantClass : ParameterType
         {
             public VariantClass( ICachedType type, ICachedType? loopStateType, CachedParameterInfo loopDefiner )
                 : base( type, loopStateType, loopDefiner )
@@ -111,7 +87,7 @@ public sealed partial class ReaDIEngine
                 Throw.DebugAssert( !type.Type.IsValueType && !type.Type.IsSealed && !type.Type.IsInterface );
             }
 
-            protected internal override bool ContravariantMatch( ICachedType o )
+            protected override bool ContravariantMatch( ICachedType o )
             {
                 var b = o.BaseType;
                 while( b != null )
@@ -123,7 +99,7 @@ public sealed partial class ReaDIEngine
             }
         }
 
-        sealed class VariantInterface : ReaDIParameter
+        sealed class VariantInterface : ParameterType
         {
             public VariantInterface( ICachedType type, ICachedType? loopStateType, CachedParameterInfo loopDefiner )
                 : base( type, loopStateType, loopDefiner )
@@ -131,22 +107,23 @@ public sealed partial class ReaDIEngine
                 Throw.DebugAssert( type.Type.IsInterface );
             }
 
-            protected internal override bool ContravariantMatch( ICachedType o ) => o.Interfaces.Contains( _type );
+            protected override bool ContravariantMatch( ICachedType o ) => o.Interfaces.Contains( _type );
         }
 
-        internal bool CheckLoopStateType( IActivityMonitor monitor,
-                                          GlobalTypeCache typeCache,
-                                          ICachedType? loopStateType,
-                                          CachedParameterInfo p )
+        public bool CheckLoopStateType( IActivityMonitor monitor,
+                                        GlobalTypeCache typeCache,
+                                        ICachedType? loopStateType,
+                                        CachedParameterInfo p )
         {
+            var thisLoopStateType = _loopParameter?.LoopStateType;
             // Same (including null-null). No question ask.
-            if( loopStateType == _loopStateType )
+            if( loopStateType == thisLoopStateType )
             {
                 return true;
             }
-            if( _loopStateType == null || loopStateType == null )
+            if( thisLoopStateType == null || loopStateType == null )
             {
-                var pReg = _loopDefiner;
+                var pReg = _definer;
                 // Switch the regular and the loop.
                 if( loopStateType == null ) (p, pReg) = (pReg, p);
                 monitor.Error( $"""
@@ -156,10 +133,11 @@ public sealed partial class ReaDIEngine
                 return false;
             }
             // The current one was a stateless [ReaDI]. Types the state.
-            if( _loopStateType == typeCache.KnownTypes.Void )
+            if( thisLoopStateType == typeCache.KnownTypes.Void )
             {
-                _loopDefiner = p;
-                _loopState = loopStateType;
+                Throw.DebugAssert( _loopParameter != null );
+                _definer = p;
+                _loopParameter.SetLoopStateType( loopStateType );
                 return true;
             }
             // The new one is stateless. It's fine.
@@ -169,16 +147,21 @@ public sealed partial class ReaDIEngine
             }
             // The two states differ. We don't play any variance game here:
             // the state types must be exactly the same.
-            if( _loopStateType != loopStateType )
+            if( thisLoopStateType != loopStateType )
             {
                 monitor.Error( $"""
-                    Method '{_loopDefiner.Method}' defines its '{_loopDefiner.Name}' parameter as loop parameter with a '{_loopStateType}' state but method
+                    Method '{_definer.Method}' defines its '{_definer.Name}' parameter as loop parameter with a '{thisLoopStateType}' state but method
                     '{p.Method.ToStringWithDeclaringType()}' defines its '{p.Name}' as a loop parameter with a '{loopStateType}' state.
-                    Loop state must be exactly the same (or, if not used, a stateless [ReaDILoop] attribute can be used on one of them).
+                    Loop state must be exactly the same (or, if th state is not used, a stateless [ReaDILoop] attribute can be used by any of them).
                     """ );
                 return false;
             }
             return true;
+        }
+
+        public void AddCallableParameter( Callable c, int idx )
+        {
+            _slots.Add( new Slot( c, idx ) );
         }
 
         /// <summary>
@@ -200,7 +183,7 @@ public sealed partial class ReaDIEngine
             return (parameterType, loopStateType);
         }
 
-        internal static ReaDIParameter? Create( IActivityMonitor monitor,
+        internal static ParameterType? Create( IActivityMonitor monitor,
                                                 GlobalTypeCache typeCache,
                                                 ICachedType actualParameterType,
                                                 ICachedType? loopStateType,
@@ -209,7 +192,7 @@ public sealed partial class ReaDIEngine
             var t = actualParameterType.Type;
             if( actualParameterType.EngineUnhandledType != EngineUnhandledType.None
                 || actualParameterType == typeCache.KnownTypes.Object
-                || t.IsEnum
+                || t.IsValueType
                 || !(t.IsInterface || t.IsClass)
                 || t.IsByRef
                 || t.IsByRefLike
@@ -220,20 +203,20 @@ public sealed partial class ReaDIEngine
                 if( p.ParameterType == actualParameterType )
                 {
                     monitor.Error( $"""
-                        Invalid [ReaDI] method parameter '{actualParameterType}' in '{p.Method.DeclaringType}': '{p.Method}'.
+                        Invalid [ReaDI] method parameter '{actualParameterType.Name} {p.Name}' in '{p.Method.ToStringWithDeclaringType()}'.
                         Parameter can only be interfaces or regular classes (and not object).
                         """ );
                 }
                 else
                 {
                     monitor.Error( $"""
-                        Invalid [ReaDI] method parameter '{p.ParameterType}' in '{p.Method.DeclaringType}': '{p.Method}'.
+                        Invalid [ReaDI] method parameter '{p.ParameterType.Name} {p.Name}' in '{p.Method.ToStringWithDeclaringType()}'.
                         Type '{actualParameterType}' must be an interface or a regular classes (and not object).
                         """ );
                 }
                 return null;
             }
-            return t.IsValueType || t.IsSealed
+            return t.IsSealed
                     ? new Exact( actualParameterType, loopStateType, p )
                     : t.IsInterface
                         ? new VariantInterface( actualParameterType, loopStateType, p )
@@ -242,4 +225,282 @@ public sealed partial class ReaDIEngine
 
     }
 
+    sealed class Callable
+    {
+        readonly HandlerType _handler;
+        readonly ICachedMethodInfo _method;
+        readonly ImmutableArray<ParameterType> _parameters;
+        readonly object?[] _args;
+        internal Callable? _next;
+        int _missingCount;
+
+        internal Callable( HandlerType handler,
+                           ICachedMethodInfo method,
+                           ParameterType[] parameters )
+        {
+            _handler = handler;
+            _method = method;
+            _parameters = ImmutableCollectionsMarshal.AsImmutableArray( parameters );
+            _args = new object[_missingCount = method.ParameterInfos.Length];
+        }
+
+        public HandlerType Handler => _handler;
+
+        public bool IsWaiting => _missingCount != 0;
+
+        public ICachedMethodInfo Method => _method;
+
+        public Callable? NextCallable => _next;
+
+        public ImmutableArray<ParameterType> Parameters => _parameters;
+
+        internal void SetArgument( ReaDIEngine engine, int idxAttr, object o )
+        {
+            Throw.DebugAssert( o != null );
+            ref var instance = ref _args[idxAttr];
+            if( instance == null ) --_missingCount;
+            instance = o;
+            if( _missingCount == 0 )
+            {
+                engine.AddReadyToRun( this );
+            }
+        }
+
+        internal bool Run( IActivityMonitor monitor, ReaDIEngine engine )
+        {
+            try
+            {
+                _method.MethodInfo.Invoke( _handler.CurrentHandler, BindingFlags.DoNotWrapExceptions, null, _args, null );
+                return true;
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While calling '{_method.ToStringWithDeclaringType()}'.", ex );
+                return engine.SetError( monitor );
+            }
+        }
+
+        public override string ToString() => _method.ToStringWithDeclaringType();
+    }
+
+
+    sealed class HandlerType
+    {
+        readonly ICachedType _type;
+        Callable? _firstLoopCallable;
+        Callable? _firstRegularCallable;
+        IReaDIHandler? _currentHandler;
+
+        HandlerType( ICachedType type )
+        {
+            _type = type;
+        }
+
+        public IReaDIHandler? CurrentHandler => _currentHandler;
+
+        public ICachedType Type => _type;
+
+        public Callable? FirstLoopCallable => _firstLoopCallable;
+
+        public Callable? FirstRegularCallable => _firstRegularCallable;
+
+        void AddCallable( Callable c, bool isLoopCallable )
+        {
+            if( isLoopCallable )
+            {
+                c._next = _firstLoopCallable;
+                _firstLoopCallable = c;
+            }
+            else
+            {
+                c._next = _firstRegularCallable;
+                _firstRegularCallable = c;
+            }
+        }
+
+        internal static HandlerType? Create( IActivityMonitor monitor,
+                                             GlobalTypeCache typeCache,
+                                             Dictionary<ICachedType, ParameterType> parameters,
+                                             ICachedType type )
+        {
+            bool success = true;
+            var handlerType = new HandlerType( type );
+            foreach( var m in type.DeclaredMembers.OfType<ICachedMethodInfo>() )
+            {
+                if( m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )
+                {
+                    if( m.MethodInfo.IsGenericMethodDefinition )
+                    {
+                        monitor.Error( $"[ReaDI] cannot be set on method '{m}' because it is a generic method definition." );
+                        success = false;
+                    }
+                    else if( m.IsAsynchronous )
+                    {
+                        monitor.Error( $"[ReaDI] cannot be set on method '{m}' because it is an asynchronous method." );
+                        success = false;
+                    }
+                    else
+                    {
+                        var parameterTypes = new ParameterType[m.ParameterInfos.Length];
+                        var callable = new Callable( handlerType, m, parameterTypes );
+                        success &= FindOrCreateParameters( monitor, typeCache, parameters, callable, parameterTypes, out var isLoopCallable );
+                        if( success )
+                        {
+                            handlerType.AddCallable( callable, isLoopCallable );
+                        }
+                    }
+                }
+            }
+            return success ? handlerType : null;
+
+            static bool FindOrCreateParameters( IActivityMonitor monitor,
+                                                GlobalTypeCache typeCache,
+                                                Dictionary<ICachedType, ParameterType> parameters,
+                                                Callable callable,
+                                                ParameterType[] parameterTypes,
+                                                out bool isLoopCallable )
+            {
+                isLoopCallable = false;
+                bool success = true;
+                var parameterInfos = callable.Method.ParameterInfos;
+                for( int i = 0; i < parameterInfos.Length; i++ )
+                {
+                    CachedParameterInfo paramInfo = parameterInfos[i];
+                    var (parameterType, loopStateType) = ParameterType.GetLoopTypes( typeCache, paramInfo );
+                    if( parameters.TryGetValue( parameterType, out var p ) )
+                    {
+                        if( !p.CheckLoopStateType( monitor, typeCache, loopStateType, paramInfo ) )
+                        {
+                            success = false;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        p = ParameterType.Create( monitor, typeCache, parameterType, loopStateType, paramInfo );
+                        if( p == null )
+                        {
+                            success = false;
+                            continue;
+                        }
+                    }
+                    isLoopCallable = p.IsLoopParameter;
+                    parameters.Add( parameterType, p );
+                    parameterTypes[i] = p;
+                    p.AddCallableParameter( callable, i );
+                }
+                return success;
+            }
+        }
+    }
+
+    /// <summary>
+    /// This structure is additive but internally mutable.
+    /// </summary>
+    sealed class ReaDITypeRegistrar
+    {
+        readonly Dictionary<ICachedType, HandlerType> _handlers;
+        readonly Dictionary<ICachedType, ParameterType> _parameters;
+        readonly LoopTree _loopTree;
+
+        public ReaDITypeRegistrar()
+        {
+            _handlers = new Dictionary<ICachedType, HandlerType>();
+            _parameters = new Dictionary<ICachedType, ParameterType>();
+            _loopTree = new LoopTree();
+        }
+
+        public bool RegisterHandlerType( IActivityMonitor monitor,
+                                         GlobalTypeCache typeCache,
+                                         ICachedType type,
+                                         [NotNullWhen(true)]out HandlerType? handler )
+        {
+            if( !_handlers.TryGetValue( type, out handler ) )
+            {
+                handler = HandlerType.Create( monitor, typeCache, _parameters, type );
+                if( handler == null )
+                {
+                    return false;
+                }
+                if( handler.FirstLoopCallable != null
+                    && !HandleLoopCallable( monitor, handler ) )
+                {
+                    return false;
+                }
+                _handlers.Add( type, handler );
+            }
+            return true;
+
+            bool HandleLoopCallable( IActivityMonitor monitor, HandlerType handler )
+            {
+                bool success = true;
+                var loopParameters = new List<LoopParameterType>();
+                var c = handler.FirstLoopCallable;
+                Throw.DebugAssert( c != null );
+                do
+                {
+                    foreach( var p in c.Parameters )
+                    {
+                        if( p.IsLoopParameter ) loopParameters.Add( p.LoopParameter );
+                    }
+                    if( loopParameters.Count > 0 )
+                    {
+                        success &= _loopTree.HandleNewLoopParameters( monitor, loopParameters );
+                        loopParameters.Clear();
+                    }
+                    c = c.NextCallable;
+                }
+                while( c != null );
+                return success;
+            }
+        }
+    }
+
+    sealed class LoopTree
+    {
+        readonly List<LoopParameterType> _roots;
+
+        public LoopTree()
+        {
+            _roots = new List<LoopParameterType>();
+        }
+
+        internal bool HandleNewLoopParameters( IActivityMonitor monitor, List<LoopParameterType> loopParameters )
+        {
+            
+        }
+
+    }
+
+    sealed class LoopParameterType
+    {
+        readonly ParameterType _parameter;
+        ICachedType _loopStateType;
+
+        LoopTree? _tree;
+        LoopParameterType? _parent;
+        List<LoopParameterType>? _children;
+
+        public LoopParameterType( ParameterType parameter, ICachedType loopStateType )
+        {
+            Throw.DebugAssert( parameter.IsLoopParameter );
+            _parameter = parameter;
+            _loopStateType = loopStateType;
+        }
+
+        public LoopParameterType? Parent => _parent;
+
+        public IReadOnlyList<LoopParameterType> Children => _children ?? [];
+
+        public ParameterType Parameter => _parameter;
+
+        public ICachedType LoopStateType => _loopStateType;
+
+        internal void SetLoopStateType( ICachedType loopStateType )
+        {
+            Throw.DebugAssert( "Can only transition from a void to a typed state.", _loopStateType.Type == typeof(void) );
+            _loopStateType = loopStateType;
+        }
+    }
 }
+

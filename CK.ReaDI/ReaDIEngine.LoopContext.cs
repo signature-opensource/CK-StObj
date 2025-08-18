@@ -63,7 +63,7 @@ public sealed partial class ReaDIEngine
                         for( int i = 0; i < m.ParameterInfos.Length; i++ )
                         {
                             CachedParameterInfo p = m.ParameterInfos[i];
-                            var (parameterType, loopStateType) = ReaDIParameter.GetLoopTypes( _typeCache, p );
+                            var (parameterType, loopStateType) = ParameterType.GetLoopTypes( _typeCache, p );
                             if( _reaDIParameters.TryGetValue( parameterType, out var pDesc ) )
                             {
                                 if( !pDesc.CheckLoopStateType( monitor, _typeCache, loopStateType, p ) )
@@ -79,7 +79,7 @@ public sealed partial class ReaDIEngine
                             }
                             else
                             {
-                                pDesc = ReaDIParameter.Create( monitor, _typeCache, parameterType, loopStateType, p );
+                                pDesc = ParameterType.Create( monitor, _typeCache, parameterType, loopStateType, p );
                                 if( pDesc == null )
                                 {
                                     success = false;

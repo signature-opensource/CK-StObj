@@ -8,7 +8,7 @@ public sealed partial class ReaDIEngine
     sealed class CallableHost
     {
         readonly IReaDIHandler _handler;
-        Callable? _head;
+        OldCallable? _head;
 
         public CallableHost( IReaDIHandler handler )
         {
@@ -17,11 +17,11 @@ public sealed partial class ReaDIEngine
 
         internal IReaDIHandler Handler => _handler;
 
-        internal Callable? Head => _head; 
+        internal OldCallable? Head => _head; 
 
-        public Callable AddCallable( ICachedMethodInfo method )
+        public OldCallable AddCallable( ICachedMethodInfo method )
         {
-            var c = new Callable( this, method );
+            var c = new OldCallable( this, method );
             return _head = c;
         }
     }

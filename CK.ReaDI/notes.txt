@@ -1,0 +1,62 @@
+
+- LoopContext should be totally invisible.
+  - ReaDIEngine.AddObject (and Run methods) should be the only
+     exposed API.
+
+- Loop types are discovered by the ReaDIParameter ([ReaDILoop] or ReadyLoop<T,TState>).
+- A "loop type" cannot be variant. 2 loop types must be unrelated.
+  - If loop types can be interfaces or non sealed classes then 2 loop ReaDIParameters 
+    can be satisfied by the same object.
+    This must not happen. We can (only) check this at runtime (when adding object).
+- A LoopContext exist because there are handlers where methods have one or more loop ReaDIParameter.
+  A LoopContext is "defined" by the existence of such methods.
+- Parameter order matters when dealing with loops. From left to right, loop parameters order 
+  defines the parent/child relationships.
+  - Loops can be loosely defined:
+	void M1( [ReaDILoop]A )
+	void M2( [ReaDILoop]B )
+    Here we don't know the order until A or B is added.
+  - A new handler with a void M3( ..., [ReaDILoop]A, ..., [ReaDILoop]B, ... ) defines the ordering.
+    A "LoopPath" is created. Any conflict with an existing LoopPath is an error.
+    A "LoopTree" is maintained dynamically. Methods are attached to their most precise loop parameter 
+    and are "sleeping" (deactivated) until all their loop params are satisified.
+	Here we have:
+		A - M1
+		  B - M2, M3  
+    When a new M4( [ReaDILoop]C ) pops:    
+		A - M1
+		  B - M2, M3
+		C - M4
+    1 - Object A appears.
+        LoopContext for A is created.
+        M1 is executed.
+        We have no B: M2 and M3 cannot be executed. 
+	The LoopContext is closed.
+    2 - Object B appears. It's an error: the path A - B exists.
+    3 - Object A appears. M1 is executed.
+        If M1 returns a B, then M2 and M3 are executed.
+
+
+
+
+  - Methods that have loop parameters are "sleeping" (deactivated) until all their loop params are satisified.
+  - If an order has been detected, all the parameters of the "order" (a LoopPath ?) must be satisfied.
+  - How do we know that a loop is over?
+    - When A is added, a LoopContext is created.
+    - All the methods that have A. 
+      This context inherits the current objects of its parent context.
+      Should the current handlers/methods still be active?
+	- The current handlers of its parent context.
+     
+
+- When an added object is recognized as loop parameter, 
+
+- Object pops at runtime, objects can be handlers. A handler can be consumed by methods
+  on another handler.
+
+- At runtime, adding an object that specializes an existing object 
+   should not be allowed.
+   -  If yes it means that a ReaDIParameter can be bound to a 
+      generalization and the specialization  will be ignored. But new 
+      handlers will use it instead of the generalization.
+   - It seems that ReaDIParameters forms families.
