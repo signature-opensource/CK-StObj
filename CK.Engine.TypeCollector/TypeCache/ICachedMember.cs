@@ -22,4 +22,16 @@ public interface ICachedMember : ICachedItem
     /// Gets the cached <see cref="MemberInfo"/>.
     /// </summary>
     MemberInfo Member { get; }
+
+    /// <summary>
+    /// Returns a readable name with the declaring type.
+    /// </summary>
+    /// <returns>The readable member name.</returns>
+    string ToStringWithDeclaringType();
+
+    /// <summary>
+    /// Returns a readable name without the declaring type.
+    /// </summary>
+    /// <returns>The readable member name.</returns>
+    string ToString();
 }

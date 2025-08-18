@@ -18,12 +18,12 @@ sealed class CachedPropertyInfo : CachedMemberInfo, ICachedPropertyInfo
 
     public PropertyInfo PropertyInfo => Unsafe.As<PropertyInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b )
+    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
-        PropertyType.Write(  b );
-        b.Append( ' ' ).Append( Name );
+        PropertyType.Write( b );
+        b.Append( ' ' );
+        if( withDeclaringType ) b.Append( DeclaringType.CSharpName ).Append( '.' );
+        b.Append( Name );
         return b;
     }
-
-    public override string ToString() => Write( new StringBuilder() ).ToString();
 }

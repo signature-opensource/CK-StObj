@@ -18,12 +18,12 @@ sealed class CachedFieldInfo : CachedMemberInfo, ICachedFieldInfo
 
     public FieldInfo FieldInfo => Unsafe.As<FieldInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b )
+    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         FieldType.Write(  b );
-        b.Append( ' ' ).Append( Name );
+        b.Append( ' ' );
+        if( withDeclaringType ) b.Append( DeclaringType.CSharpName ).Append( '.' );
+        b.Append( Name );
         return b;
     }
-
-    public override string ToString() => Write( new StringBuilder() ).ToString();
 }

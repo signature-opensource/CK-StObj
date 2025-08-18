@@ -94,8 +94,6 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<object> GetAttributes( IActivityMonitor monitor ) => ImmutableArray<object>.Empty;
 
-    public override string ToString() => _parameter.Name;
-
     public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
     {
         attributes = RawAttributes;
@@ -103,4 +101,7 @@ class CachedGenericParameter : ICachedType
     }
 
     public StringBuilder Write( StringBuilder b ) => b.Append( _parameter.Name );
+
+    public override string ToString() => _parameter.Name;
+
 }

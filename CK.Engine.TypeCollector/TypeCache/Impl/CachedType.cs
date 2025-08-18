@@ -8,7 +8,7 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-partial class CachedType : CachedItem, ICachedType
+sealed partial class CachedType : CachedItem, ICachedType
 {
     readonly GlobalTypeCache _cache;
     readonly CachedAssembly _assembly;

@@ -121,27 +121,9 @@ public sealed partial class GlobalTypeCache
                     baseType = b;
                 }
             }
-            // Weird case checks.
-            var isRealObject = interfaces.Contains( _knownTypes.IRealObject );
-            var isPoco = interfaces.Contains( _knownTypes.IPoco );
-            if( isRealObject || isPoco )
-            {
-                if( isRealObject && isPoco )
-                {
-                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco and a IRealObject at the same time." );
-                }
-                if( !type.IsClass && !type.IsInterface )
-                {
-                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco or a IRealObject. It must be a class or an interface." );
-                }
-            }
-            c = isRealObject
-                    ? new RealObjectCachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType )
-                    : isPoco
-                        ? new PocoCachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType )
-                        : isValueType
-                            ? new CachedType( this, type, maxDepth + 1, nullableValueType, knownAssembly, interfaces )
-                            : new CachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType );
+            c = isValueType
+                    ? new CachedType( this, type, maxDepth + 1, nullableValueType, knownAssembly, interfaces )
+                    : new CachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType );
             _types.Add( type, c );
             if( nullableValueType != null )
             {

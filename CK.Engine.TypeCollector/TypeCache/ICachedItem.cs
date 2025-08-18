@@ -28,13 +28,13 @@ public interface ICachedItem
     /// <summary>
     /// Gets the [<see cref="System.Attribute"/>] instantiated attribute objects.
     /// <para>
-    /// 
+    /// This doesn't contain the resolved Engine side "AttributeImpl".
     /// </para>
     /// </summary>
     ImmutableArray<object> RawAttributes { get; }
 
     /// <summary>
-    /// Gets the attributes where any <see cref="EngineAttribute"/>, <see cref="EngineAttribute{T}"/> have been
+    /// Gets the attributes where any <see cref="EngineAttribute"/>, <see cref="ChildEngineAttribute{T}"/> have been
     /// replaced with their initialized Engine side "AttributeImpl" peers.
     /// <para>
     /// This array has the same length and is in the same order as <see cref="RawAttributes"/>: the orignal Engine

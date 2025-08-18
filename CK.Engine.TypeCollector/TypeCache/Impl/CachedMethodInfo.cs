@@ -48,11 +48,13 @@ sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
         return null;
     }
 
-    public override StringBuilder Write( StringBuilder b )
+    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         if( MethodInfo.IsStatic ) b.Append( "static " );
         ReturnParameterInfo.Write( b );
-        b.Append(' ').Append( Name ).Append('(');
+        b.Append( ' ' );
+        if( withDeclaringType ) b.Append( DeclaringType.CSharpName ).Append( '.' );
+        b.Append( Name ).Append('(');
         int i = 0;
         foreach( var p in ParameterInfos )
         {
@@ -64,6 +66,4 @@ sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
         b.Append( ')' );
         return b;
     }
-
-    public override string ToString() => Write( new StringBuilder() ).ToString();
 }

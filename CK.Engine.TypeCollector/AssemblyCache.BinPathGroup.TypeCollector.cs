@@ -193,11 +193,11 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 {
                     k = nameof( IAutoService );
                 }
-                else if( type is IRealObjectCachedType )
+                else if( type.Interfaces.Contains( typeCache.KnownTypes.IRealObject ) )
                 {
                     k = nameof( IRealObject );
                 }
-                else if( type is IPocoCachedType )
+                else if( type.Interfaces.Contains( typeCache.KnownTypes.IPoco ) )
                 {
                     k = nameof( IPoco );
                 }

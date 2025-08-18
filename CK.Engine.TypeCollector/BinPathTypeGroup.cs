@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using CommunityToolkit.HighPerformance;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -245,8 +246,10 @@ public sealed partial class BinPathTypeGroup
             // We have no choice here. We must compute the set of IRealObject and IPoco types only for each group
             // to be able to find the covering one (if it exists) and we cannot know if the covering one is needed
             // until we check that a unified group is required.
+
             var uSets = result.Select( g => new HashSet<ICachedType>( g.ConfiguredTypes.AllTypes
-                                                                        .Where( t => t is IPocoCachedType or IRealObjectCachedType ) ) )
+                                                                        .Where( t => t.Interfaces.Contains( typeCache.KnownTypes.IPoco )
+                                                                                     || t.Interfaces.Contains( typeCache.KnownTypes.IRealObject ) ) ) )
                               .ToArray();
             // The covering one is necessarily the biggest one if a unification is not required.
             // And an unification is required when the biggest set is still smaller than the union

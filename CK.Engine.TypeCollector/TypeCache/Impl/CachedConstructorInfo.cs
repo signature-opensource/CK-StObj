@@ -13,9 +13,9 @@ sealed class CachedConstructorInfo : CachedMethodBase, ICachedConstructorInfo
 
     public ConstructorInfo ConstructorInfo => Unsafe.As<ConstructorInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b )
+    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
-        b.Append( DeclaringType.Name ).Append( '(' );
+        b.Append( withDeclaringType ? DeclaringType.CSharpName : DeclaringType.Name ).Append( '(' );
         int i = 0;
         foreach( var p in ParameterInfos )
         {
@@ -27,6 +27,4 @@ sealed class CachedConstructorInfo : CachedMethodBase, ICachedConstructorInfo
         b.Append( ')' );
         return b;
     }
-
-    public override string ToString() => Write( new StringBuilder() ).ToString();
 }
