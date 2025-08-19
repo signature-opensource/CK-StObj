@@ -1,5 +1,7 @@
 using CK.Engine.TypeCollector;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.Core;
@@ -9,12 +11,15 @@ public sealed partial class ReaDIEngine
     sealed class HandlerType
     {
         readonly ICachedType _type;
+        readonly LoopParameterType? _loopParameter;
         internal Callable? _firstCallable;
         IReaDIHandler? _currentHandler;
 
-        HandlerType( ICachedType type )
+        HandlerType( ICachedType type, IReaDIHandler handler, LoopParameterType? loopParameter )
         {
             _type = type;
+            _currentHandler = handler;
+            _loopParameter = loopParameter;
         }
 
         public IReaDIHandler? CurrentHandler => _currentHandler;
@@ -23,13 +28,23 @@ public sealed partial class ReaDIEngine
 
         public Callable? FirstCallable => _firstCallable;
 
+        [MemberNotNullWhen( true, nameof( LoopParameter ) )]
+        public bool IsAlsoLoopParameter => _loopParameter != null;
+
+        public LoopParameterType? LoopParameter => _loopParameter;
+
         internal static HandlerType? Create( IActivityMonitor monitor,
                                              LoopTree loopTree,
                                              Dictionary<ICachedType, ParameterType> parameters,
-                                             ICachedType type )
+                                             ICachedType type,
+                                             IReaDIHandler initialHandler )
         {
+            if( !loopTree.TryFindOrCreateFromHandlerType( monitor, type, out var loopParameter ) )
+            {
+                return null;
+            }
             bool success = true;
-            var handlerType = new HandlerType( type );
+            var handlerType = new HandlerType( type, initialHandler, loopParameter );
             foreach( var m in type.DeclaredMembers.OfType<ICachedMethodInfo>() )
             {
                 if( m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )

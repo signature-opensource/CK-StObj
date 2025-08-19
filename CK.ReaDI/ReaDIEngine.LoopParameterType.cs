@@ -1,5 +1,6 @@
 using CK.Engine.TypeCollector;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -55,16 +56,11 @@ public sealed partial class ReaDIEngine
             _loopStateType = loopStateType;
         }
 
-        internal bool IsBelow( LoopParameterType root )
+        internal static void GetLoopParameterAttributeValues( ICachedType type, out bool isRoot, out System.Type? parentType )
         {
-            Throw.DebugAssert( root != this );
-            var p = _parent;
-            while( p != null )
-            {
-                if( p == this ) return true;
-                p = p._parent;
-            }
-            return false;
+            var attributes = type.AttributesData;
+            isRoot = attributes.Any( a => a.AttributeType == typeof( ReaDILoopRootParameterAttribute ) );
+            parentType = attributes.FirstOrDefault( a => a.AttributeType == typeof( ReaDILoopParameterAttribute<> ) )?.AttributeType.GetGenericArguments()[0];
         }
 
     }

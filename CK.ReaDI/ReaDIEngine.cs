@@ -37,12 +37,28 @@ public sealed partial class ReaDIEngine
         Throw.CheckState( HasError is false );
         var oT = _typeCache.Get( o.GetType() );
 
-        if( o is IReaDIHandler h )
+        ParameterType? parameterType = null;
+        if( o is IReaDIHandler handler )
         {
-            if( !_typeRegistrar.RegisterHandlerType( monitor, oT, out var handler ) )
+            if( !_typeRegistrar.RegisterHandlerType( monitor, oT, handler, out var handlerType ) )
             {
                 return SetError( monitor );
             }
+            if( handlerType.CurrentHandler == handler )
+            {
+                // We just created the handlerType or we are on a duplicate
+                // AddObject instance (not a "Duplicate Activation error"):
+                // nothing change, it is useless to continue.
+                return true;
+            }
+            // This handler is also a LoopParameterType or this is a "Duplicate Activation error"
+            // that will be handled below.
+            // If the handler is a loop parameter, avoid the parameter type lookup.
+            parameterType = handlerType.LoopParameter?.Parameter;
+        }
+        if( parameterType == null )
+        {
+            parameterType = _typeRegistrar.FindParameter( oT );
         }
         return true;
     }

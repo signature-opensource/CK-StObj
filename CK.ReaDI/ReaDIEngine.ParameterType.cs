@@ -7,7 +7,7 @@ namespace CK.Core;
 
 public sealed partial class ReaDIEngine
 {
-    abstract class ParameterType
+    sealed class ParameterType
     {
         readonly ICachedType _type;
 
@@ -20,9 +20,6 @@ public sealed partial class ReaDIEngine
         // Should we optimize this naïve implementation?
         readonly record struct Slot( Callable C, int Index );
         readonly List<Slot> _slots;
-
-        internal ParameterType? _nextActiveDescriptor;
-        internal ParameterType? _prevActiveDescriptor;
 
         ParameterType( ICachedType type, CachedParameterInfo definer )
         {
@@ -38,16 +35,10 @@ public sealed partial class ReaDIEngine
 
         public LoopParameterType? LoopParameter => _loopParameter;
 
-        public bool Match( ICachedType oT ) => _type == oT || ContravariantMatch( oT );
-
-        public bool OnObjectAppear( IActivityMonitor monitor, ReaDIEngine engine, ICachedType oT, object o )
+        public bool SetCurrentValue( ReaDIEngine engine, object o )
         {
-            Throw.DebugAssert( Match( oT ) );
             if( _currentValue != null )
             {
-                monitor.Error( _type == oT
-                                ? $"Duplicate '{oT}' object added. This object is not a loop, at most one can exist at the same time."
-                                : $"Duplicate '{oT}' object added. This object is not a loop, at most one '{_type}' can exist at the same time.");
                 return false;
             }
             _currentValue = o;
@@ -56,53 +47,6 @@ public sealed partial class ReaDIEngine
                 callable.SetArgument( engine, index, o );
             }
             return true;
-        }
-
-        protected abstract bool ContravariantMatch( ICachedType o );
-
-        sealed class Exact : ParameterType
-        {
-            public Exact( ICachedType type, CachedParameterInfo loopDefiner )
-                : base( type, loopDefiner )
-            {
-                Throw.DebugAssert( type.Type.IsSealed );
-            }
-
-            protected override bool ContravariantMatch( ICachedType o ) => Throw.NotSupportedException<bool>();
-        }
-
-        sealed class VariantClass : ParameterType
-        {
-            public VariantClass( ICachedType type, CachedParameterInfo loopDefiner )
-                : base( type, loopDefiner )
-            {
-                Throw.DebugAssert( !type.Type.IsValueType && !type.Type.IsSealed && !type.Type.IsInterface );
-            }
-
-            protected override bool ContravariantMatch( ICachedType o )
-            {
-                if( _type.TypeDepth < o.TypeDepth )
-                {
-                    var b = o.BaseType;
-                    while( b != null )
-                    {
-                        if( _type == b ) return true;
-                        b = b.BaseType;
-                    }
-                }
-                return false;
-            }
-        }
-
-        sealed class VariantInterface : ParameterType
-        {
-            public VariantInterface( ICachedType type, CachedParameterInfo loopDefiner )
-                : base( type, loopDefiner )
-            {
-                Throw.DebugAssert( type.Type.IsInterface );
-            }
-
-            protected override bool ContravariantMatch( ICachedType o ) => _type.TypeDepth < o.TypeDepth && o.Interfaces.Contains( _type );
         }
 
         public bool CheckLoopStateType( IActivityMonitor monitor,
@@ -210,11 +154,7 @@ public sealed partial class ReaDIEngine
                 }
                 return null;
             }
-            return t.IsSealed
-                    ? new Exact( parameterType, p )
-                    : t.IsInterface
-                        ? new VariantInterface( parameterType, p )
-                        : new VariantClass( parameterType, p );
+            return new ParameterType( parameterType, p );
         }
 
         public override string ToString() => $"'{_definer.Name}' in '{_definer.Method}'";

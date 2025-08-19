@@ -1,4 +1,5 @@
 using CK.Engine.TypeCollector;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -25,7 +26,7 @@ public sealed partial class ReaDIEngine
         internal LoopParameterType? FindOrCreateFromNewParameter( IActivityMonitor monitor, ParameterType p, ICachedType loopStateType )
         {
             var result = _firstChild != null ? FindByType( _firstChild, p.Type ) : null;
-            result ??= Create( monitor, p.Type, p );
+            result ??= Create( monitor, p.Type, creator: p );
             if( result != null )
             {
                 Throw.DebugAssert( "Just created or created via a child.", !result.HasParameter );
@@ -33,6 +34,24 @@ public sealed partial class ReaDIEngine
                 result.SetFirstParameter( p, loopStateType );
             }
             return result;
+        }
+
+        internal bool TryFindOrCreateFromHandlerType( IActivityMonitor monitor, ICachedType type, out LoopParameterType? loopParameter )
+        {
+            loopParameter = _firstChild != null ? FindByType( _firstChild, type ) : null;
+            if( loopParameter == null )
+            {
+                LoopParameterType.GetLoopParameterAttributeValues( type, out bool isRoot, out Type? parentType );
+                if( isRoot || parentType != null )
+                {
+                    loopParameter = DoCreateLoopParameterType( monitor, type, creator: null, isRoot, parentType );
+                    if( loopParameter == null )
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         static LoopParameterType? FindByType( [DisallowNull]LoopParameterType? first, ICachedType type )
@@ -157,12 +176,15 @@ public sealed partial class ReaDIEngine
         //    }
         //}
 
-        internal LoopParameterType? Create( IActivityMonitor monitor, ICachedType type, object creator )
+        LoopParameterType? Create( IActivityMonitor monitor, ICachedType type, object creator )
         {
             Throw.DebugAssert( creator is ParameterType or ICachedType );
-            var attributes = type.AttributesData;
-            var isRoot = attributes.Any( a => a.AttributeType == typeof( ReaDILoopRootParameterAttribute ) );
-            var parentType = attributes.FirstOrDefault( a => a.AttributeType == typeof( ReaDILoopParameterAttribute<> ) )?.AttributeType.GetGenericArguments()[0];
+            LoopParameterType.GetLoopParameterAttributeValues( type, out bool isRoot, out System.Type? parentType );
+            return DoCreateLoopParameterType( monitor, type, creator, isRoot, parentType );
+        }
+
+        LoopParameterType? DoCreateLoopParameterType( IActivityMonitor monitor, ICachedType type, object? creator, bool isRoot, Type? parentType )
+        {
             if( isRoot )
             {
                 if( parentType != null )
@@ -170,7 +192,7 @@ public sealed partial class ReaDIEngine
                     monitor.Error( $"Type '{type}' cannot have both [ReaDILoopRootParameter] and [ReaDILoopParameter<>]." );
                     return null;
                 }
-                var newRoot = new LoopParameterType( this, type, null );
+                var newRoot = new LoopParameterType( this, type, parent: null );
                 newRoot._next = _firstChild;
                 _firstChild = newRoot;
                 return newRoot;
@@ -184,6 +206,8 @@ public sealed partial class ReaDIEngine
                 }
                 else
                 {
+                    Throw.DebugAssert( "When creating from a new HandlerType, isRoot is true or parentType is not null.",
+                                       creator is ICachedType );
                     monitor.Error( $"Type '{type}' must be decorated with [ReaDILoopRootParameter] or [ReaDILoopParameter<>] because " +
                                    $"it is referenced by [ReaDILoopParameter<{type.Name}>] of {creator}." );
                 }
@@ -191,11 +215,12 @@ public sealed partial class ReaDIEngine
             }
             var tParent = _typeCache.Get( parentType );
             var nParent = _firstChild != null ? FindByType( _firstChild, tParent ) : null;
-            nParent ??= Create( monitor, tParent, type );
+            nParent ??= Create( monitor, tParent, creator: type );
             return nParent == null
                     ? null
                     : new LoopParameterType( this, type, nParent );
         }
+
     }
 }
 

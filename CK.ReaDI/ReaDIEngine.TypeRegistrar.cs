@@ -1,4 +1,5 @@
 using CK.Engine.TypeCollector;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
@@ -19,21 +20,28 @@ public sealed partial class ReaDIEngine
             _loopTree = new LoopTree( typeCache );
         }
 
+        public ParameterType? FindParameter( ICachedType type )
+        {
+            return _parameters.GetValueOrDefault( type );
+        }
+
         public bool RegisterHandlerType( IActivityMonitor monitor,
                                          ICachedType type,
-                                         [NotNullWhen(true)]out HandlerType? handler )
+                                         IReaDIHandler handler,
+                                         [NotNullWhen(true)]out HandlerType? handlerType )
         {
-            if( !_handlers.TryGetValue( type, out handler ) )
+            if( !_handlers.TryGetValue( type, out handlerType ) )
             {
-                handler = HandlerType.Create( monitor, _loopTree, _parameters, type );
-                if( handler == null )
+                handlerType = HandlerType.Create( monitor, _loopTree, _parameters, type, handler );
+                if( handlerType == null )
                 {
                     return false;
                 }
-                _handlers.Add( type, handler );
+                _handlers.Add( type, handlerType );
             }
             return true;
         }
+
     }
 }
 
