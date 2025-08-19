@@ -1,8 +1,5 @@
 using CK.Engine.TypeCollector;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Security.Cryptography;
 
 namespace CK.Core;
 
@@ -10,6 +7,8 @@ public sealed partial class ReaDIEngine
 {
     readonly GlobalTypeCache _typeCache;
     readonly TypeRegistrar _typeRegistrar;
+
+    Dictionary<ICachedType, object> _waitingObjects;
     // Using a FIFO offers determinism.
     readonly Queue<Callable> _readyToRun;
     bool _hasError;
@@ -18,6 +17,7 @@ public sealed partial class ReaDIEngine
     {
         _typeCache = typeCache;
         _typeRegistrar = new TypeRegistrar( typeCache );
+        _waitingObjects = new Dictionary<ICachedType, object>();
         _readyToRun = new Queue<Callable>( 128 );
     }
 
@@ -40,25 +40,28 @@ public sealed partial class ReaDIEngine
         ParameterType? parameterType = null;
         if( o is IReaDIHandler handler )
         {
-            if( !_typeRegistrar.RegisterHandlerType( monitor, oT, handler, out var handlerType ) )
+            if( !_typeRegistrar.RegisterHandlerType( monitor, this, oT, handler, out var handlerType ) )
             {
                 return SetError( monitor );
             }
-            if( handlerType.CurrentHandler == handler )
-            {
-                // We just created the handlerType or we are on a duplicate
-                // AddObject instance (not a "Duplicate Activation error"):
-                // nothing change, it is useless to continue.
-                return true;
-            }
-            // This handler is also a LoopParameterType or this is a "Duplicate Activation error"
-            // that will be handled below.
             // If the handler is a loop parameter, avoid the parameter type lookup.
             parameterType = handlerType.LoopParameter?.Parameter;
         }
+        // No contravariant handling for the moment.
+        parameterType ??= _typeRegistrar.FindParameter( oT );
+
+        // If this type of object has currently no parameter type,
+        // we register it in the waiting list.
         if( parameterType == null )
         {
-            parameterType = _typeRegistrar.FindParameter( oT );
+            _waitingObjects.Add( oT, o );
+        }
+        else
+        {
+            if( !parameterType.SetCurrentValue( monitor, this, o ) )
+            {
+                return SetError( monitor );
+            }
         }
         return true;
     }

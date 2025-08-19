@@ -26,13 +26,14 @@ public sealed partial class ReaDIEngine
         }
 
         public bool RegisterHandlerType( IActivityMonitor monitor,
+                                         ReaDIEngine engine,
                                          ICachedType type,
                                          IReaDIHandler handler,
-                                         [NotNullWhen(true)]out HandlerType? handlerType )
+                                         [NotNullWhen( true )] out HandlerType? handlerType )
         {
             if( !_handlers.TryGetValue( type, out handlerType ) )
             {
-                handlerType = HandlerType.Create( monitor, _loopTree, _parameters, type, handler );
+                handlerType = HandlerType.Create( monitor, engine, _loopTree, _parameters, type, handler );
                 if( handlerType == null )
                 {
                     return false;

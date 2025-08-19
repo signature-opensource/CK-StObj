@@ -11,17 +11,25 @@ public sealed partial class ReaDIEngine
     {
         readonly GlobalTypeCache _typeCache;
         readonly ICachedType _voidType;
+        readonly ICachedType _iActivityMonitorType;
+        readonly ICachedType _reaDIEngineType;
         LoopParameterType? _firstChild;
 
         public LoopTree( GlobalTypeCache typeCache )
         {
             _typeCache = typeCache;
             _voidType = typeCache.KnownTypes.Void;
+            _iActivityMonitorType = typeCache.KnownTypes.IActivityMonitor;
+            _reaDIEngineType = typeCache.Get( typeof( ReaDIEngine ) );
         }
 
         public GlobalTypeCache TypeCache => _typeCache;
 
         public ICachedType VoidType => _voidType;
+
+        public ICachedType IActivityMonitorType => _iActivityMonitorType;
+
+        public ICachedType ReaDIEngineType => _reaDIEngineType;
 
         internal LoopParameterType? FindOrCreateFromNewParameter( IActivityMonitor monitor, ParameterType p, ICachedType loopStateType )
         {

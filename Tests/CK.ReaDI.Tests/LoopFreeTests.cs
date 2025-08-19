@@ -26,7 +26,7 @@ public class LoopFreeTests
     {
         var e = new ReaDIEngine( new GlobalTypeCache() );
         var h = new MostBasicHandler();
-        e.Context.AddGlobalHandler( TestHelper.Monitor, h ).ShouldBeTrue();
+        e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
         e.CanRun.ShouldBeTrue();
         e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
         h.NakedDone.ShouldBeTrue();
@@ -40,12 +40,12 @@ public class LoopFreeTests
         {
             var e = new ReaDIEngine( new GlobalTypeCache() );
             var h = new MostBasicHandler();
-            e.Context.AddGlobalHandler( TestHelper.Monitor, h ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
             e.CanRun.ShouldBeTrue();
             e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
             h.NakedDone.ShouldBeTrue();
             e.CanRun.ShouldBeFalse();
-            e.Context.AddObject( TestHelper.Monitor, this );
+            e.AddObject( TestHelper.Monitor, this );
             e.CanRun.ShouldBeTrue();
             e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
             h.WithParamDone.ShouldBeTrue();
@@ -57,8 +57,8 @@ public class LoopFreeTests
             var h = new MostBasicHandler();
             // We can know here that the naked method is the first callable
             // only because of the ordering of the DeclaredMembers...
-            e.Context.AddObject( TestHelper.Monitor, this );
-            e.Context.AddGlobalHandler( TestHelper.Monitor, h ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, this );
+            e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
             e.CanRun.ShouldBeTrue();
             e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
             h.NakedDone.ShouldBeTrue();

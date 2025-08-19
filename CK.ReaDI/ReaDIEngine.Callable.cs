@@ -15,6 +15,7 @@ public sealed partial class ReaDIEngine
         readonly ImmutableArray<ParameterType> _parameters;
         readonly object?[] _args;
         internal Callable? _next;
+        int _monitorIdx;
         int _missingCount;
 
         internal Callable( HandlerType handler,
@@ -25,7 +26,7 @@ public sealed partial class ReaDIEngine
             _method = method;
             _parameters = ImmutableCollectionsMarshal.AsImmutableArray( parameters );
             _args = new object[_missingCount = method.ParameterInfos.Length];
-            _next = handler._firstCallable;
+            _next = handler.FirstCallable;
             handler._firstCallable = this;
         }
 
@@ -39,9 +40,37 @@ public sealed partial class ReaDIEngine
 
         public ImmutableArray<ParameterType> Parameters => _parameters;
 
+        internal void Initialize( ReaDIEngine engine, int idxMonitor, int idxEngine )
+        {
+            _monitorIdx = idxMonitor;
+            if( idxMonitor >= 0 )
+            {
+                --_missingCount;
+            }
+            if( idxEngine >= 0 )
+            {
+                _args[idxEngine] = engine;
+                --_missingCount;
+            }
+            for( int i = 0; i < _parameters.Length; i++ )
+            {
+                ParameterType param = _parameters[i];
+                if( param.CurrentValue != null )
+                {
+                    _args[i] = param.CurrentValue;
+                    --_missingCount;
+                }
+            }
+            Throw.DebugAssert( _missingCount >= 0 );
+            if( _missingCount == 0 )
+            {
+                engine.AddReadyToRun( this );
+            }
+        }
+
         internal void SetArgument( ReaDIEngine engine, int idxAttr, object o )
         {
-            Throw.DebugAssert( o != null );
+            Throw.DebugAssert( o != null && _missingCount > 0 );
             ref var instance = ref _args[idxAttr];
             if( instance == null ) --_missingCount;
             instance = o;
@@ -55,6 +84,7 @@ public sealed partial class ReaDIEngine
         {
             try
             {
+                if( _monitorIdx >= 0 ) _args[_monitorIdx] = monitor; 
                 _method.MethodInfo.Invoke( _handler.CurrentHandler, BindingFlags.DoNotWrapExceptions, null, _args, null );
                 return true;
             }

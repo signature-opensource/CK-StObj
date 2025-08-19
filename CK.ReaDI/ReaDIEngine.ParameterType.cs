@@ -21,11 +21,12 @@ public sealed partial class ReaDIEngine
         readonly record struct Slot( Callable C, int Index );
         readonly List<Slot> _slots;
 
-        ParameterType( ICachedType type, CachedParameterInfo definer )
+        ParameterType( ICachedType type, CachedParameterInfo definer, object? waitingObject )
         {
             _type = type;
             _definer = definer;
             _slots = [];
+            _currentValue = waitingObject;
         }
 
         public ICachedType Type => _type;
@@ -35,10 +36,20 @@ public sealed partial class ReaDIEngine
 
         public LoopParameterType? LoopParameter => _loopParameter;
 
-        public bool SetCurrentValue( ReaDIEngine engine, object o )
+        public object? CurrentValue => _currentValue;
+
+        public bool SetCurrentValue( IActivityMonitor monitor, ReaDIEngine engine, object o )
         {
+            // Duplicate AddObject with the same instance is fine.
+            if( _currentValue == o ) return true;
             if( _currentValue != null )
             {
+                //if( engine.ActiveLoopParameter == _loopParameter )
+                //{
+                //    _loopParameter.PushNext( o );
+                //    return true;
+                //}
+                monitor.Error( $"Duplicate Activation error: an instance of type '{_type}' is already available in the ReaDI engine." );
                 return false;
             }
             _currentValue = o;
@@ -123,20 +134,21 @@ public sealed partial class ReaDIEngine
         }
 
         internal static ParameterType? Create( IActivityMonitor monitor,
-                                                LoopTree loopTree,
-                                                ICachedType parameterType,
-                                                CachedParameterInfo p )
+                                               GlobalTypeCache.WellKnownTypes wellknownTypes,
+                                               ICachedType parameterType,
+                                               CachedParameterInfo p,
+                                               IReadOnlyDictionary<ICachedType, object> waitingObjects )
         {
             var t = parameterType.Type;
             if( parameterType.EngineUnhandledType != EngineUnhandledType.None
-                || parameterType == loopTree.TypeCache.KnownTypes.Object
+                || parameterType == wellknownTypes.Object
                 || t.IsValueType
                 || !(t.IsInterface || t.IsClass)
                 || t.IsByRef
                 || t.IsByRefLike
                 || t.IsArray
                 || t.IsVariableBoundArray
-                || parameterType.GenericTypeDefinition == loopTree.TypeCache.KnownTypes.GenericIEnumerableDefinition )
+                || parameterType.GenericTypeDefinition == wellknownTypes.GenericIEnumerableDefinition )
             {
                 if( p.ParameterType == parameterType )
                 {
@@ -154,7 +166,8 @@ public sealed partial class ReaDIEngine
                 }
                 return null;
             }
-            return new ParameterType( parameterType, p );
+            // No contravariance for the moment.
+            return new ParameterType( parameterType, p, waitingObjects.GetValueOrDefault( parameterType ) );
         }
 
         public override string ToString() => $"'{_definer.Name}' in '{_definer.Method}'";
