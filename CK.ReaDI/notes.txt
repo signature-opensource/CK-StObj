@@ -60,3 +60,14 @@
       generalization and the specialization  will be ignored. But new 
       handlers will use it instead of the generalization.
    - It seems that ReaDIParameters forms families.
+
+Static type checking is limited. Two loop parameters for instance MUST not be satisfied
+by the same instance. The static type check is that they must have no common generalization
+at all (Generalizations are Interfaces + BaseTypes as we only handle classes and interfaces).
+This check is too strong: this prevents any template method pattern or unrelated useful interface
+in loop parameter (even our own IReaDIHandler would be forbidden).
+One may think that they must have no ""instantiable"" common generalization
+is right but unfortunately, "instantiable" cannot be computed for an interface and even an abstract
+class may eventually be implemented by code. Introducing an [Abstract] marker (the current [CKTypeDefiner])
+may solve the issue, but even with this we must check the unicity at runtime: considering only the first
+matching lopp parameter will introduce a possible random behavior.

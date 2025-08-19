@@ -5,7 +5,11 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using static CK.Core.ActivityMonitorErrorCounter;
+using static Microsoft.IO.RecyclableMemoryStreamManager;
 
 namespace CK.Core;
 
@@ -39,7 +43,7 @@ public sealed partial class ReaDIEngine
             _slots = [];
         }
 
-        public ICachedType? Type => _type;
+        public ICachedType Type => _type;
 
         [MemberNotNullWhen( true, nameof( LoopParameter ) )]
         public bool IsLoopParameter => _loopParameter != null;
@@ -223,6 +227,7 @@ public sealed partial class ReaDIEngine
                         : new VariantClass( actualParameterType, loopStateType, p );
         }
 
+        public override string ToString() => $"'{_definer.Name}' in '{_definer.Method}'";
     }
 
     sealed class Callable
@@ -282,7 +287,6 @@ public sealed partial class ReaDIEngine
 
         public override string ToString() => _method.ToStringWithDeclaringType();
     }
-
 
     sealed class HandlerType
     {
@@ -394,9 +398,6 @@ public sealed partial class ReaDIEngine
         }
     }
 
-    /// <summary>
-    /// This structure is additive but internally mutable.
-    /// </summary>
     sealed class ReaDITypeRegistrar
     {
         readonly Dictionary<ICachedType, HandlerType> _handlers;
@@ -467,8 +468,110 @@ public sealed partial class ReaDIEngine
 
         internal bool HandleNewLoopParameters( IActivityMonitor monitor, List<LoopParameterType> loopParameters )
         {
-            
+            var root = loopParameters[0];
+            if( root._tree == null )
+            {
+                // New root loop parameter type. 
+                if( !LimitedStaticCheck( monitor, root.Parameter, _roots ) )
+                {
+                    return false;
+                }
+                _roots.Add( root );
+                root._tree = this;
+            }
+            // The first parameter type is located.
+            // We must now process the remaining parameters to order
+            // the loop parameters.
+            for( int i = 0; i < loopParameters.Count; i++ )
+            {
+                LoopParameterType? p = loopParameters[i];
+                if( p._tree != null )
+                {
+                    // It must be below root.
+                    if( !p.IsBelow( root ) )
+                    {
+                        if( root.IsBelow( p ) )
+                        {
+                            monitor.Error( "" );
+                            return false;
+                        }
+
+                    }
+                }
+            }
+
+
+
+            // Static type checking is limited. Two loop parameters MUST not be satisfied
+            // by the same instance.The static type check is that they must have no common generalization
+            // at all (Generalizations are Interfaces + BaseTypes as we only handle classes and interfaces).
+            // This check is too strong: this prevents any template method pattern or unrelated useful interface
+            // in loop parameter (even our own IReaDIHandler would be forbidden).
+            // One may think that they must have no "instantiable" common generalization
+            // is right but unfortunately, "instantiable" cannot be computed for an interface and even an abstract
+            // class may eventually be implemented by code.Introducing an [Abstract] marker (the current [CKTypeDefiner])
+            // may solve the issue, but even with this we must check the unicity at runtime: considering only the first
+            // matching lopp parameter will introduce a possible random behavior.
+            static bool LimitedStaticCheck( IActivityMonitor monitor, ParameterType p, IReadOnlyList<LoopParameterType> nodes )
+            {
+                bool success = true;
+                var t = p.Type;
+                foreach( var n in nodes )
+                {
+                    var nT = n.Parameter.Type;
+                    if( AreRelated( t, nT, out var tFromN ) )
+                    {
+                        monitor.Error( $"""
+                            Loop parameters' type must be independent:
+                            parameter {n.Parameter} is assignable {(tFromN ? "from" : "to")}"
+                            parameter {p} type. 
+                            """ );
+                        success = false;
+                    }
+                    if( n.HasChildren )
+                    {
+                        success &= LimitedStaticCheck( monitor, p, n.Children );
+                    }
+                }
+                return success;
+
+                static bool AreRelated( ICachedType tA, ICachedType tB, out bool aFromB )
+                {
+                    Throw.DebugAssert( tB != tA );
+                    aFromB = false;
+                    int cmp = tA.TypeDepth - tB.TypeDepth;
+                    if( cmp > 0 )
+                    {
+                        return IsAbove( tA, tB );
+                    }
+                    else if( cmp < 0 )
+                    {
+                        aFromB = true;
+                        return IsAbove( tB, tA );
+                    }
+                    return false;
+
+                    static bool IsAbove( ICachedType t, ICachedType below )
+                    {
+                        if( t.Type.IsInterface )
+                        {
+                            return below.Interfaces.Contains( t );
+                        }
+                        Throw.DebugAssert( t.Type.IsClass );
+                        var b = below.BaseType;
+                        while( b != null )
+                        {
+                            if( b == t ) return true;
+                            b = b.BaseType;
+                        }
+                        return false;
+                    }
+
+                }
+
+            }
         }
+
 
     }
 
@@ -477,7 +580,7 @@ public sealed partial class ReaDIEngine
         readonly ParameterType _parameter;
         ICachedType _loopStateType;
 
-        LoopTree? _tree;
+        internal LoopTree? _tree;
         LoopParameterType? _parent;
         List<LoopParameterType>? _children;
 
@@ -490,7 +593,10 @@ public sealed partial class ReaDIEngine
 
         public LoopParameterType? Parent => _parent;
 
-        public IReadOnlyList<LoopParameterType> Children => _children ?? [];
+        [MemberNotNullWhen(true,nameof(Children))]
+        public bool HasChildren => _children != null;
+
+        public IReadOnlyList<LoopParameterType>? Children => _children;
 
         public ParameterType Parameter => _parameter;
 
@@ -500,6 +606,18 @@ public sealed partial class ReaDIEngine
         {
             Throw.DebugAssert( "Can only transition from a void to a typed state.", _loopStateType.Type == typeof(void) );
             _loopStateType = loopStateType;
+        }
+
+        internal bool IsBelow( LoopParameterType root )
+        {
+            Throw.DebugAssert( root != this );
+            var p = _parent;
+            while( p != null )
+            {
+                if( p == this ) return true;
+                p = p._parent;
+            }
+            return false;
         }
     }
 }
