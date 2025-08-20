@@ -1,7 +1,9 @@
 using CK.Core;
 using CK.Engine.TypeCollector;
+using CK.Monitoring;
 using NUnit.Framework;
 using Shouldly;
+using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.ReaDI.Tests;
@@ -30,6 +32,7 @@ public class LoopFreeTests
         e.CanRun.ShouldBeTrue();
         e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
         h.NakedDone.ShouldBeTrue();
+        h.WithParamDone.ShouldBeFalse();
         e.CanRun.ShouldBeFalse();
     }
 
@@ -69,5 +72,108 @@ public class LoopFreeTests
         }
     }
 
+    class MonitorEngineHandler : IReaDIHandler
+    {
+        [ReaDI]
+        public void WithMonitor( IActivityMonitor monitor ) => monitor.Trace( nameof( WithMonitor ) );
 
+        [ReaDI]
+        public void WithEngine( ReaDIEngine engine )
+        {
+            engine.ShouldNotBeNull();
+            ActivityMonitor.StaticLogger.Trace( nameof( WithEngine ) );
+        }
+
+        [ReaDI]
+        public void WithMonitorAndEngine( IActivityMonitor monitor, ReaDIEngine engine )
+        {
+            engine.ShouldNotBeNull();
+            monitor.Trace( nameof( WithMonitorAndEngine ) );
+        }
+
+        [ReaDI]
+        public void WithMonitor( LoopFreeTests test, IActivityMonitor monitor )
+        {
+            test.ShouldNotBeNull();
+            monitor.Trace( nameof( WithMonitor ) + " + LoopFreeTests" );
+        }
+
+        [ReaDI]
+        public void WithEngine( ReaDIEngine engine, LoopFreeTests test )
+        {
+            engine.ShouldNotBeNull();
+            ActivityMonitor.StaticLogger.Trace( nameof( WithEngine ) + " + LoopFreeTests" );
+        }
+
+        [ReaDI]
+        public void WithMonitorAndEngine( LoopFreeTests test, IActivityMonitor monitor, ReaDIEngine engine )
+        {
+            engine.ShouldNotBeNull();
+            monitor.Trace( nameof( WithMonitorAndEngine ) + " + LoopFreeTests" );
+        }
+
+    }
+
+    [Test]
+    public void with_monitor_and_ReaDIEngine()
+    {
+        using( var logs = GrandOutput.Default!.CreateMemoryCollector( 200 ) )
+        {
+            var e = new ReaDIEngine( new GlobalTypeCache() );
+            var h = new MonitorEngineHandler();
+
+            e.AddObject( TestHelper.Monitor, this ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
+
+            e.CanRun.ShouldBeTrue();
+            e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
+
+            logs.ExtractCurrentTexts().Where( t => t.StartsWith( "With" ) ).ShouldBe( [
+                    "WithMonitor",
+                    "WithEngine",
+                    "WithMonitorAndEngine",
+                    "WithMonitor + LoopFreeTests",
+                    "WithEngine + LoopFreeTests",
+                    "WithMonitorAndEngine + LoopFreeTests"
+                ], ignoreOrder: true );
+
+            e.CanRun.ShouldBeFalse();
+        }
+    }
+
+    [Test]
+    public void with_monitor_and_ReaDIEngine_deferred_object()
+    {
+        using( var logs = GrandOutput.Default!.CreateMemoryCollector( 200 ) )
+        {
+            var e = new ReaDIEngine( new GlobalTypeCache() );
+            var h = new MonitorEngineHandler();
+
+            e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
+
+            e.CanRun.ShouldBeTrue();
+            e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
+
+            logs.ExtractCurrentTexts().Where( t => t.StartsWith( "With" ) ).ShouldBe( [
+                    "WithMonitor",
+                    "WithEngine",
+                    "WithMonitorAndEngine"
+                ], ignoreOrder: true );
+
+            e.CanRun.ShouldBeFalse();
+
+            e.AddObject( TestHelper.Monitor, this ).ShouldBeTrue();
+
+            e.CanRun.ShouldBeTrue();
+            e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
+
+            logs.ExtractCurrentTexts().Where( t => t.StartsWith( "With" ) ).ShouldBe( [
+                    "WithMonitor + LoopFreeTests",
+                    "WithEngine + LoopFreeTests",
+                    "WithMonitorAndEngine + LoopFreeTests"
+                ], ignoreOrder: true );
+
+            e.CanRun.ShouldBeFalse();
+        }
+    }
 }

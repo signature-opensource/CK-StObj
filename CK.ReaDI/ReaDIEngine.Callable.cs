@@ -54,11 +54,14 @@ public sealed partial class ReaDIEngine
             }
             for( int i = 0; i < _parameters.Length; i++ )
             {
-                ParameterType param = _parameters[i];
-                if( param.CurrentValue != null )
+                if( i != idxMonitor && i != idxEngine )
                 {
-                    _args[i] = param.CurrentValue;
-                    --_missingCount;
+                    ParameterType param = _parameters[i];
+                    if( param.CurrentValue != null )
+                    {
+                        _args[i] = param.CurrentValue;
+                        --_missingCount;
+                    }
                 }
             }
             Throw.DebugAssert( _missingCount >= 0 );

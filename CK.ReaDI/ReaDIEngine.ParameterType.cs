@@ -137,7 +137,7 @@ public sealed partial class ReaDIEngine
                                                GlobalTypeCache.WellKnownTypes wellknownTypes,
                                                ICachedType parameterType,
                                                CachedParameterInfo p,
-                                               IReadOnlyDictionary<ICachedType, object> waitingObjects )
+                                               object? initialValue )
         {
             var t = parameterType.Type;
             if( parameterType.EngineUnhandledType != EngineUnhandledType.None
@@ -166,8 +166,7 @@ public sealed partial class ReaDIEngine
                 }
                 return null;
             }
-            // No contravariance for the moment.
-            return new ParameterType( parameterType, p, waitingObjects.GetValueOrDefault( parameterType ) );
+            return new ParameterType( parameterType, p, initialValue );
         }
 
         public override string ToString() => $"'{_definer.Name}' in '{_definer.Method}'";

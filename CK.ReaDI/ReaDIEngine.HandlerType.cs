@@ -65,7 +65,7 @@ public sealed partial class ReaDIEngine
                         var parameterTypes = new ParameterType[m.ParameterInfos.Length];
                         var callable = new Callable( handlerType, m, parameterTypes );
                         success &= FindOrCreateParameters( monitor,
-                                                           engine._waitingObjects,
+                                                           engine,
                                                            loopTree,
                                                            parameters,
                                                            callable,
@@ -83,7 +83,7 @@ public sealed partial class ReaDIEngine
             return success ? handlerType : null;
 
             static bool FindOrCreateParameters( IActivityMonitor monitor,
-                                                IReadOnlyDictionary<ICachedType, object> waitingObjects,
+                                                ReaDIEngine engine,
                                                 LoopTree loopTree,
                                                 Dictionary<ICachedType, ParameterType> parameters,
                                                 Callable callable,
@@ -106,10 +106,10 @@ public sealed partial class ReaDIEngine
                     bool isLoopParam = loopStateType != null;
 
                     if( (parameterType == loopTree.IActivityMonitorType
-                         && !CheckKnownParameterType( monitor, callable, ref monitorIdx, i, isLoopParam, loopTree.IActivityMonitorType ))
-                         ||
-                         (parameterType == loopTree.ReaDIEngineType
-                         && !CheckKnownParameterType( monitor, callable, ref engineIdx, i, isLoopParam, loopTree.ReaDIEngineType )) )
+                            && !CheckKnownParameterType( monitor, callable, ref monitorIdx, i, isLoopParam, loopTree.IActivityMonitorType ))
+                            ||
+                            (parameterType == loopTree.ReaDIEngineType
+                            && !CheckKnownParameterType( monitor, callable, ref engineIdx, i, isLoopParam, loopTree.ReaDIEngineType )) )
                     {
                         success = false;
                         continue;
@@ -117,34 +117,44 @@ public sealed partial class ReaDIEngine
 
                     if( parameters.TryGetValue( parameterType, out var p ) )
                     {
-                        if( p.CheckLoopStateType( monitor, loopTree, loopStateType, paramInfo ) )
+                        if( !p.CheckLoopStateType( monitor, loopTree, loopStateType, paramInfo ) )
                         {
                             success = false;
                         }
                     }
                     else
                     {
-                        p = ParameterType.Create( monitor, loopTree.TypeCache.KnownTypes, parameterType, paramInfo, waitingObjects );
+                        var initialValue = i == monitorIdx
+                                           ? loopTree.IActivityMonitorType
+                                           : i == engineIdx
+                                           ? engine
+                                           // No contravariance for the moment.
+                                           : engine._waitingObjects.GetValueOrDefault( parameterType );
+
+                        p = ParameterType.Create( monitor, loopTree.TypeCache.KnownTypes, parameterType, paramInfo, initialValue );
                         if( p == null )
                         {
                             success = false;
                         }
-                        else if( isLoopParam )
+                        else
                         {
-                            Throw.DebugAssert( loopStateType != null );
-                            var loopParam = loopTree.FindOrCreateFromNewParameter( monitor, p, loopStateType );
-                            if( loopParam == null )
+                            parameters.Add( parameterType, p );
+                            if( isLoopParam )
                             {
-                                success = false;
+                                Throw.DebugAssert( loopStateType != null );
+                                var loopParam = loopTree.FindOrCreateFromNewParameter( monitor, p, loopStateType );
+                                if( loopParam == null )
+                                {
+                                    success = false;
+                                }
+                                p._loopParameter = loopParam;
                             }
-                            p._loopParameter = loopParam;
                         }
                     }
                     if( success )
                     {
                         Throw.DebugAssert( p != null );
                         isLoopCallable = p.IsLoopParameter;
-                        parameters.Add( parameterType, p );
                         parameterTypes[i] = p;
                         p.AddCallableParameter( callable, i );
                     }

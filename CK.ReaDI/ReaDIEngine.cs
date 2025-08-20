@@ -32,6 +32,21 @@ public sealed partial class ReaDIEngine
         return c.Run( monitor, this );
     }
 
+    public bool RunAll( IActivityMonitor monitor )
+    {
+        Throw.CheckState( CanRun );
+        do
+        {
+            var c = _readyToRun.Dequeue();
+            if( !c.Run( monitor, this ) )
+            {
+                return false;
+            }
+        }
+        while( CanRun );
+        return true;
+    }
+
     public bool AddObject( IActivityMonitor monitor, object o )
     {
         Throw.CheckState( HasError is false );
