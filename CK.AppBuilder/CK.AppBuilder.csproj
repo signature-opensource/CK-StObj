@@ -14,7 +14,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Monitoring" Version="24.0.1--0017-develop" />
+    <PackageReference Include="CK.Monitoring" Version="24.0.1--0021-develop" />
     <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
   </ItemGroup>
 </Project>
