@@ -29,11 +29,19 @@ public class LoopFreeTests
         var e = new ReaDIEngine( new GlobalTypeCache() );
         var h = new MostBasicHandler();
         e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
+        e.IsCompleted.ShouldBeFalse();
         e.CanRun.ShouldBeTrue();
         e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
         h.NakedDone.ShouldBeTrue();
         h.WithParamDone.ShouldBeFalse();
+
         e.CanRun.ShouldBeFalse();
+        e.HasError.ShouldBeFalse();
+        e.IsCompleted.ShouldBeFalse( "DoSomethingWith has not been called." );
+
+        var state = e.GetState();
+        state.UnsuccessfulCompletedReason.ShouldBe( ReaDIEngineState.UncompletedReason.HasWaitingMethods );
+        state.WaitingMethods.ShouldHaveSingleItem().ShouldMatch( m => m.IsWaiting && m.Method.Name == "DoSomethingWith" );
     }
 
     [Test]
@@ -43,16 +51,26 @@ public class LoopFreeTests
         {
             var e = new ReaDIEngine( new GlobalTypeCache() );
             var h = new MostBasicHandler();
+
             e.AddObject( TestHelper.Monitor, h ).ShouldBeTrue();
+
             e.CanRun.ShouldBeTrue();
+            e.IsCompleted.ShouldBeFalse();
+
             e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
             h.NakedDone.ShouldBeTrue();
+
             e.CanRun.ShouldBeFalse();
+            e.IsCompleted.ShouldBeFalse();
+
             e.AddObject( TestHelper.Monitor, this );
             e.CanRun.ShouldBeTrue();
             e.RunOne( TestHelper.Monitor ).ShouldBeTrue();
             h.WithParamDone.ShouldBeTrue();
+
             e.CanRun.ShouldBeFalse();
+            e.IsSuccessfullyCompleted.ShouldBeTrue();
+            e.GetState().UnsuccessfulCompletedReason.ShouldBe( ReaDIEngineState.UncompletedReason.None );
         }
         // Adding the required parameter object before the handler.
         {

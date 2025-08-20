@@ -2,6 +2,7 @@
 - LoopContext should be totally invisible.
   - ReaDIEngine.AddObject (and Run methods) should be the only
      exposed API.
+==> Done.
 
 - Loop types are discovered by the ReaDIParameter ([ReaDILoop] or ReadyLoop<T,TState>).
 - A "loop type" cannot be variant. 2 loop types must be unrelated.
@@ -36,38 +37,79 @@
     3 - Object A appears. M1 is executed.
         If M1 returns a B, then M2 and M3 are executed.
 
-
-
-
   - Methods that have loop parameters are "sleeping" (deactivated) until all their loop params are satisified.
   - If an order has been detected, all the parameters of the "order" (a LoopPath ?) must be satisfied.
+==> This doesn't work. We cannot infer the "LoopTree" from the parameters without introducing
+    ambiguities in the path. Loop parameters must be defined as such.
+    [ReaDILoopRootParameter] and [ReaDILoopParameter<TParent>] has been introduced.
+
   - How do we know that a loop is over?
     - When A is added, a LoopContext is created.
     - All the methods that have A. 
       This context inherits the current objects of its parent context.
       Should the current handlers/methods still be active?
 	- The current handlers of its parent context.
-     
+    => Not clear. Should a "loop context" contains "local objects"?
 
-- When an added object is recognized as loop parameter, 
+  - Better (first) question: How do we know that the Engine is done?
+    - There is no more Callable waiting for any of their arguments.
+    - As simple as that IF we don't reset the LoopParameterType's CurrentValue once the loop is over.
+      But it seems that we need to reset otherwise we need a state that knows that... This state may well be
+      required to handle the loop anyway.
+  ==> The ReaDIEngineState captures this.
 
 - Object pops at runtime, objects can be handlers. A handler can be consumed by methods
   on another handler.
 
-- At runtime, adding an object that specializes an existing object 
+- At runtime, adding an object that specializes an existing (added) object 
    should not be allowed.
    -  If yes it means that a ReaDIParameter can be bound to a 
-      generalization and the specialization  will be ignored. But new 
+      generalization and the specialization will be ignored. But new 
       handlers will use it instead of the generalization.
-   - It seems that ReaDIParameters forms families.
+   - It seems that ReaDIParameters defines families.
+     Considering that the formal parameters are unrelated may seem a strong constraint
+     but the more I think to this the more it seems obvious: with this rule, the contravariance
+     (at runtime) can be efficiently implemented:
+     - In AddObject if oT is not found, it searches the generalizations: (Generalizations are Interfaces + BaseTypes
+       as we only handle classes and interfaces).
+     - When creating a new ParameterType, we check that it is independent from all the existing ParameterTypes:
+       this means thet their current values have no chance to satisfy the new ParameterType, that any future added object
+       won't satisfy 2 Parameter types and that any waiting object can be assigned to at most one future ParameterType.
+       The waiting objects can then be used by trying them in the same way (oT + BaseType + Interfaces) and if a waiting object
+       satisfies the satisfies the ParameterType, it is removed from the waiting list.
+       If no matching waiting object is found, then Handlers should be tried: they are available objects that
+       can perfectly satisfy a method's parameter of another handler.
+       This guaranties the soundess of the system... But:
 
-Static type checking is limited. Two loop parameters for instance MUST not be satisfied
-by the same instance. The static type check is that they must have no common generalization
-at all (Generalizations are Interfaces + BaseTypes as we only handle classes and interfaces).
-This check is too strong: this prevents any template method pattern or unrelated useful interface
-in loop parameter (even our own IReaDIHandler would be forbidden).
+Static type checking is limited. If 2 parameters MUST not be satisfied by the same instance.
+The static type check is that they must have no common generalization at all.
+This check is VERY strong: this prevents any template method pattern or unrelated useful interface
+in parameters (even our own IReaDIHandler would be forbidden).
 One may think that they must have no ""instantiable"" common generalization
 is right but unfortunately, "instantiable" cannot be computed for an interface and even an abstract
-class may eventually be implemented by code. Introducing an [Abstract] marker (the current [CKTypeDefiner])
-may solve the issue, but even with this we must check the unicity at runtime: considering only the first
-matching lopp parameter will introduce a possible random behavior.
+class may eventually be implemented by code.
+
+Introducing a [CKAbstract] marker (the current [CKTypeDefiner]) can solve the issue. A ParameterType cannot
+be a [CKAbstract] type and [CKAbstract] types are excluded from the Generalizations (BaseTypes + Interfaces).
+But even with this we must check the unicity at runtime: considering only the first matching parameter will introduce
+a possible random (order dependent) behavior. This is costly: once a matching has been found (from an ParameterType on a new object
+or from a waiting object or a Handler on a new ParameterType), the lookup must continue and be executed for ALL the candidates until
+a second match is found (and an error is raised). An index may be built and maintained...
+
+I've just introduced a DebugMode on the ReaDIEngine: this can be used to trigger this "deep check"...
+
+What if we don't support contravariance?
+It would mean that we must stick to concrete classes on both side of the system: one would not be able
+to have a consumer like `void DoSomething( IThing t )` with a producer that instantiate the different concrete thing
+(based on configuration or any other state of the system).
+This is unbearable.
+
+What if we support contravariance only for abstract classes (not interfaces)?
+This will allow a consumer like `void DoSomething( ThingBase t )` with a producer that instantiate the concrete thing.
+This is the only approach without the CKomposable [Abstract] attribute. Forbidding interfaces is too surprising and
+too limited.
+
+
+
+
+

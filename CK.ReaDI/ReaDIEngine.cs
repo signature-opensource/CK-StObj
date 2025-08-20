@@ -28,9 +28,9 @@ public sealed partial class ReaDIEngine
 
     public bool HasError => _hasError;
 
-    public bool IsCompleted => _hasError || (_waitingCallableCount == 0 && _readyToRun.Count == 0);
+    public bool IsCompleted => _hasError || (_waitingCallableCount == 0 && _readyToRun.Count == 0 && _waitingObjects.Count == 0);
 
-    public bool IsSuccessfullyCompleted => !_hasError && _waitingCallableCount == 0 && _readyToRun.Count == 0;
+    public bool IsSuccessfullyCompleted => !_hasError && _waitingCallableCount == 0 && _readyToRun.Count == 0 && _waitingObjects.Count == 0;
 
     public bool CanRun => !_hasError && _readyToRun.Count > 0;
 
@@ -61,6 +61,7 @@ public sealed partial class ReaDIEngine
         Throw.CheckState( HasError is false );
         var oT = _typeCache.Get( o.GetType() );
 
+        bool isHandler = false;
         ParameterType? parameterType = null;
         if( o is IReaDIHandler handler )
         {
@@ -68,6 +69,7 @@ public sealed partial class ReaDIEngine
             {
                 return SetError( monitor );
             }
+            isHandler = true;
             // If the handler is a loop parameter, avoid the parameter type lookup.
             parameterType = handlerType.LoopParameter?.Parameter;
         }
@@ -91,7 +93,9 @@ public sealed partial class ReaDIEngine
         // we register it in the waiting list.
         if( parameterType == null )
         {
-            _waitingObjects.Add( oT, o );
+            // Don't store the handlers in the waiting object list: we have them
+            // and if they are not consumed, this is "normal", they act as "optional objects".
+            if( !isHandler ) _waitingObjects.Add( oT, o );
         }
         else
         {
