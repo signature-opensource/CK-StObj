@@ -1,5 +1,4 @@
 using CK.Engine.TypeCollector;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -75,7 +74,7 @@ public sealed partial class ReaDIEngine
                                                            out var engineIdx );
                         if( success )
                         {
-                            callable.Initialize( engine, monitorIdx, engineIdx );
+                            callable.Initialize( engine, monitorIdx, engineIdx, isLoopCallable );
                         }
                     }
                 }

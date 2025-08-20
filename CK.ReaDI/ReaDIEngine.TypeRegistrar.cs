@@ -2,6 +2,7 @@ using CK.Engine.TypeCollector;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -18,6 +19,22 @@ public sealed partial class ReaDIEngine
             _handlers = new Dictionary<ICachedType, HandlerType>();
             _parameters = new Dictionary<ICachedType, ParameterType>();
             _loopTree = new LoopTree( typeCache );
+        }
+
+        public IEnumerable<Callable> AllCallables
+        {
+            get
+            {
+                foreach( var handler in _handlers.Values )
+                {
+                    var c = handler.FirstCallable;
+                    while( c != null )
+                    {
+                        yield return c;
+                        c = c._next;
+                    }
+                }
+            }
         }
 
         public ParameterType? FindParameter( ICachedType type )

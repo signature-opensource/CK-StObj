@@ -8,7 +8,7 @@ namespace CK.Core;
 
 public sealed partial class ReaDIEngine
 {
-    sealed class Callable
+    sealed class Callable : IReaDIMethod
     {
         readonly HandlerType _handler;
         readonly ICachedMethodInfo _method;
@@ -17,6 +17,17 @@ public sealed partial class ReaDIEngine
         internal Callable? _next;
         int _monitorIdx;
         int _missingCount;
+        Flags _flags;
+
+        [Flags]
+        enum Flags
+        {
+            IsLoopCallable = 1,
+            IsWaiting = 2,
+            IsRunning = 4,
+            IsCompleted = 8,
+            IsError = 16
+        }
 
         internal Callable( HandlerType handler,
                            ICachedMethodInfo method,
@@ -30,18 +41,31 @@ public sealed partial class ReaDIEngine
             handler._firstCallable = this;
         }
 
-        public HandlerType Handler => _handler;
-
-        public bool IsWaiting => _missingCount != 0;
+        ICachedType IReaDIMethod.Handler => _handler.Type;
 
         public ICachedMethodInfo Method => _method;
+
+        public bool IsLoopCallable => (_flags & Flags.IsLoopCallable) != 0;
+
+        public bool IsWaiting => (_flags & Flags.IsWaiting) != 0;
+
+        public bool IsRunning => (_flags & Flags.IsRunning) != 0;
+
+        public bool IsCompleted => (_flags & Flags.IsCompleted) != 0;
+
+        public bool IsError => (_flags & Flags.IsError) != 0;
 
         public Callable? NextCallable => _next;
 
         public ImmutableArray<ParameterType> Parameters => _parameters;
 
-        internal void Initialize( ReaDIEngine engine, int idxMonitor, int idxEngine )
+        internal void Initialize( ReaDIEngine engine, int idxMonitor, int idxEngine, bool isLoopCallable )
         {
+            engine._waitingCallableCount++;
+            if( isLoopCallable )
+            {
+                _flags |= Flags.IsLoopCallable;
+            }
             _monitorIdx = idxMonitor;
             if( idxMonitor >= 0 )
             {
@@ -65,9 +89,10 @@ public sealed partial class ReaDIEngine
                 }
             }
             Throw.DebugAssert( _missingCount >= 0 );
+            _flags |= Flags.IsWaiting;
             if( _missingCount == 0 )
             {
-                engine.AddReadyToRun( this );
+                WaitToRun( engine );
             }
         }
 
@@ -79,21 +104,33 @@ public sealed partial class ReaDIEngine
             instance = o;
             if( _missingCount == 0 )
             {
-                engine.AddReadyToRun( this );
+                WaitToRun( engine );
             }
+        }
+
+        void WaitToRun( ReaDIEngine engine )
+        {
+            Throw.DebugAssert( (_flags & Flags.IsWaiting) != 0 );
+            _flags &= ~Flags.IsWaiting;
+            _flags |= Flags.IsRunning;
+            engine._waitingCallableCount--;
+            engine.AddReadyToRun( this );
         }
 
         internal bool Run( IActivityMonitor monitor, ReaDIEngine engine )
         {
+            Throw.DebugAssert( (_flags & Flags.IsRunning) != 0 );
             try
             {
                 if( _monitorIdx >= 0 ) _args[_monitorIdx] = monitor; 
                 _method.MethodInfo.Invoke( _handler.CurrentHandler, BindingFlags.DoNotWrapExceptions, null, _args, null );
+                _flags |= Flags.IsCompleted;
                 return true;
             }
             catch( Exception ex )
             {
                 monitor.Error( $"While calling '{_method.ToStringWithDeclaringType()}'.", ex );
+                _flags |= Flags.IsError;
                 return engine.SetError( monitor );
             }
         }

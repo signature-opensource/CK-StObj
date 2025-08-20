@@ -1,5 +1,7 @@
 using CK.Engine.TypeCollector;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -11,17 +13,24 @@ public sealed partial class ReaDIEngine
     Dictionary<ICachedType, object> _waitingObjects;
     // Using a FIFO offers determinism.
     readonly Queue<Callable> _readyToRun;
+    int _waitingCallableCount;
+    readonly bool _debugMode;
     bool _hasError;
 
-    public ReaDIEngine( GlobalTypeCache typeCache )
+    public ReaDIEngine( GlobalTypeCache typeCache, bool debugMode = false )
     {
         _typeCache = typeCache;
+        _debugMode = debugMode;
         _typeRegistrar = new TypeRegistrar( typeCache );
         _waitingObjects = new Dictionary<ICachedType, object>();
         _readyToRun = new Queue<Callable>( 128 );
     }
 
     public bool HasError => _hasError;
+
+    public bool IsCompleted => _hasError || (_waitingCallableCount == 0 && _readyToRun.Count == 0);
+
+    public bool IsSuccessfullyCompleted => !_hasError && _waitingCallableCount == 0 && _readyToRun.Count == 0;
 
     public bool CanRun => !_hasError && _readyToRun.Count > 0;
 
@@ -62,6 +71,19 @@ public sealed partial class ReaDIEngine
             // If the handler is a loop parameter, avoid the parameter type lookup.
             parameterType = handlerType.LoopParameter?.Parameter;
         }
+        else if( _debugMode )
+        {
+            var reaDIMethods = oT.DeclaredMembers.Where( m => m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) );
+            if( reaDIMethods.Any() )
+            {
+                monitor.Error( $"""
+                    Type '{oT}' has [ReaDI] methods, it must implement the '{nameof(IReaDIHandler)}' interface:
+                    {reaDIMethods.Select( m => m.ToString() ).Concatenate( Environment.NewLine)}
+                    """ );
+                return false;
+            }
+        }
+
         // No contravariant handling for the moment.
         parameterType ??= _typeRegistrar.FindParameter( oT );
 
@@ -81,6 +103,10 @@ public sealed partial class ReaDIEngine
         return true;
     }
 
+    internal IReadOnlyDictionary<ICachedType, object> WaitingObjects => _waitingObjects;
+
+    internal IEnumerable<IReaDIMethod> AllCallables => _typeRegistrar.AllCallables;
+
     void AddReadyToRun( Callable callable )
     {
         _readyToRun.Enqueue( callable );
@@ -95,6 +121,5 @@ public sealed partial class ReaDIEngine
         }
         return false;
     }
-
 
 }
