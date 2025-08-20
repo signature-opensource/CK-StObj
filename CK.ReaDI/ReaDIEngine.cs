@@ -103,6 +103,8 @@ public sealed partial class ReaDIEngine
         return true;
     }
 
+    public ReaDIEngineState GetState() => CanRun ? ReaDIEngineState._canRunState : new ReaDIEngineState( this );
+
     internal IReadOnlyDictionary<ICachedType, object> WaitingObjects => _waitingObjects;
 
     internal IEnumerable<IReaDIMethod> AllCallables => _typeRegistrar.AllCallables;
