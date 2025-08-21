@@ -26,12 +26,6 @@ class CachedGenericParameter : ICachedType
 
     public Type Type => _parameter;
 
-    public bool IsGenericType => false;
-
-    public bool IsTypeDefinition => false;
-
-    public bool IsPublic => Type.IsVisible;
-
     public string CSharpName => _parameter.Name;
 
     public CachedAssembly Assembly => _assembly;
@@ -101,6 +95,14 @@ class CachedGenericParameter : ICachedType
     }
 
     public StringBuilder Write( StringBuilder b ) => b.Append( _parameter.Name );
+
+    public bool IsGenericType => false;
+
+    public bool IsTypeDefinition => false;
+
+    public bool IsSuperTypeDefiner => false;
+
+    public bool IsTypeDefiner => false;
 
     public override string ToString() => _parameter.Name;
 

@@ -76,7 +76,7 @@
        this means thet their current values have no chance to satisfy the new ParameterType, that any future added object
        won't satisfy 2 Parameter types and that any waiting object can be assigned to at most one future ParameterType.
        The waiting objects can then be used by trying them in the same way (oT + BaseType + Interfaces) and if a waiting object
-       satisfies the satisfies the ParameterType, it is removed from the waiting list.
+       satisfies the ParameterType, it is removed from the waiting list.
        If no matching waiting object is found, then Handlers should be tried: they are available objects that
        can perfectly satisfy a method's parameter of another handler.
        This guaranties the soundess of the system... But:
@@ -108,7 +108,8 @@ What if we support contravariance only for abstract classes (not interfaces)?
 This will allow a consumer like `void DoSomething( ThingBase t )` with a producer that instantiate the concrete thing.
 This is the only approach without the CKomposable [Abstract] attribute. Forbidding interfaces is too surprising and
 too limited.
-
+==> ICachedType.IsTypeDefiner and ICachedType.IsSuperTypeDefiner are implemented. They use CKTypeDefiner and CKSuperTypeDefiner.
+    We should decide the definitive naming asap. 
 
 
 

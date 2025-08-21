@@ -14,10 +14,6 @@ partial class CachedType
     {
         public Type Type => throw new NotImplementedException();
 
-        public bool IsGenericType => throw new NotImplementedException();
-
-        public bool IsTypeDefinition => throw new NotImplementedException();
-
         public string CSharpName => throw new NotImplementedException();
 
         public CachedAssembly Assembly => throw new NotImplementedException();
@@ -55,6 +51,14 @@ partial class CachedType
         public EngineUnhandledType EngineUnhandledType => throw new NotImplementedException();
 
         public ImmutableArray<object> RawAttributes => throw new NotImplementedException();
+
+        public bool IsGenericType => throw new NotImplementedException();
+
+        public bool IsTypeDefinition => throw new NotImplementedException();
+
+        public bool IsSuperTypeDefiner => throw new NotImplementedException();
+
+        public bool IsTypeDefiner => throw new NotImplementedException();
 
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 

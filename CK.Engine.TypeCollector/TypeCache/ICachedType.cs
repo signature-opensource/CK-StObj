@@ -31,6 +31,19 @@ public interface ICachedType : ICachedItem
     bool IsTypeDefinition { get; }
 
     /// <summary>
+    /// Gets whether this is a super definer type: its direct specializations are definer,
+    /// only the direct specializations of its direct specializations must be considered
+    /// (unless they also are marked as definer or super definer).
+    /// </summary>
+    bool IsSuperTypeDefiner { get; }
+
+    /// <summary>
+    /// Gets whether this type is definer: it cannot exist by itself, only its direct specializations
+    /// must be considered (unless <see cref="IsSuperTypeDefiner"/> is also true).
+    /// </summary>
+    bool IsTypeDefiner { get; }
+
+    /// <summary>
     /// Gets the C# name with namespaces that ends with a '?' if <see cref="ICachedType.IsNullable"/> is true.
     /// </summary>
     string CSharpName { get; }
@@ -128,7 +141,6 @@ public interface ICachedType : ICachedItem
     /// Gets whether this type is not a regular visible type and should almost always be ignored.
     /// </summary>
     EngineUnhandledType EngineUnhandledType { get; }
-
     /// <summary>
     /// Returns the <see cref="CSharpName"/>.
     /// </summary>

@@ -28,8 +28,25 @@ sealed partial class CachedType : CachedItem, ICachedType
     const EngineUnhandledType _uninitialized = (EngineUnhandledType)0xFF;
     EngineUnhandledType _unhandledType;
 
+    // These should be Flags.
+    // 32 flags may be enough but they should not be exposed. The following properties
+    // and combination of properties are often needed:
+    //
+    // IsClass, IsInterface, IsValueType, IsEnum, IsStruct, IsGenericType, IsGenericTypeDefinition, IsClassOrInterface,
+    // IsTypeDefiner, IsSuperTypeDefiner, IsCKMultiple, IsCKSingle
+    // IsPoco, IsAbstractPoco, IsVirtualPoco, IsPrimaryPoco, IsSecondaryPoco,
+    // IsAutoService, IsScopedAutoService, IsSingletonAutoService, IsContainerConfiguredScopedService, IsContainerConfiguredSingletonService,
+    // IsRealObject.
+    //
+    // This requires more thoughts.
+    // In a first time, we naïvely implement these properties when we actually need them with bool or bool?.
+    // A bool CheckValid( IActivityMonitor monitor ) should be implemented OR we may use the static logger
+    // to detect incoherencies.
+    // 
     readonly bool _isGenericType;
     readonly bool _isGenericTypeDefinition;
+    bool? _isSuperTypeDefiner;
+    bool? _isTypeDefiner;
 
     sealed class NullValueType : ICachedType
     {
@@ -49,6 +66,10 @@ sealed partial class CachedType : CachedItem, ICachedType
         public bool IsTypeDefinition => _nonNullable.IsTypeDefinition;
 
         public bool IsGenericType => _nonNullable.IsGenericType;
+
+        public bool IsSuperTypeDefiner => false;
+
+        public bool IsTypeDefiner => false;
 
         public int TypeDepth => _nonNullable.TypeDepth;
 
@@ -138,15 +159,13 @@ sealed partial class CachedType : CachedItem, ICachedType
         _nullable = nullableValueType != null
                     ? new NullValueType( this, nullableValueType )
                     : this;
+        _isSuperTypeDefiner = false;
+        _isTypeDefiner = false;
     }
 
     public override sealed GlobalTypeCache TypeCache => _cache;
 
     public Type Type => Unsafe.As<Type>( _member );
-
-    public bool IsTypeDefinition => _isGenericTypeDefinition;
-
-    public bool IsGenericType => _isGenericType;
 
     public int TypeDepth => _typeDepth;
 
