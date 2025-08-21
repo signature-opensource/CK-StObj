@@ -1,7 +1,10 @@
 using CK.Engine.TypeCollector;
+using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using static CK.Core.CompletionSource;
 
 namespace CK.Core;
 
@@ -85,9 +88,19 @@ public sealed partial class ReaDIEngine
                 return false;
             }
         }
-
-        // No contravariant handling for the moment.
-        parameterType ??= _typeRegistrar.FindParameter( oT );
+        if( parameterType == null )
+        {
+            if( !_typeRegistrar.ParameterTypes.TryGetValue( oT, out parameterType ) )
+            {
+                foreach( var p in _typeRegistrar.ParameterTypes.Values )
+                {
+                    if( TypeMatch( oT, p.Type ) )
+                    {
+                        parameterType = p;
+                    }
+                }
+            }
+        }
 
         // If this type of object has currently no parameter type,
         // we register it in the waiting list.
@@ -99,6 +112,11 @@ public sealed partial class ReaDIEngine
         }
         else
         {
+            if( _debugMode
+                && !CheckSingleParameterTypeMatch( monitor, oT, parameterType.Type,  parameterType.Definer ) )
+            {
+                return false;
+            }
             if( !parameterType.SetCurrentValue( monitor, this, o ) )
             {
                 return SetError( monitor );
@@ -116,6 +134,64 @@ public sealed partial class ReaDIEngine
     void AddReadyToRun( Callable callable )
     {
         _readyToRun.Enqueue( callable );
+    }
+
+    bool FindWaitingObjectFor( IActivityMonitor monitor, ICachedType parameterType, CachedParameterInfo definer, out object? initialValue )
+    {
+        ICachedType? foundInputType = parameterType;
+        // A waiting object with the exact type may he available.
+        // If not, it can be a handler (if the handler has a current value).
+        if( !_waitingObjects.TryGetValue( parameterType, out initialValue )
+            && (!_typeRegistrar.Handlers.TryGetValue( parameterType, out var h )
+                || (initialValue = h.CurrentHandler) == null) )
+        {
+            // If not, we challenge all the waiting objects and the handlers.
+            foreach( var (oT,o) in _waitingObjects.Concat( _typeRegistrar.HandlersAsWaitingObjects ) )
+            {
+                if( TypeMatch( oT, parameterType ) )
+                {
+                    initialValue = o;
+                    foundInputType = oT;
+                    break;
+                }
+            }
+        }
+        return !_debugMode
+               || initialValue == null
+               || CheckSingleParameterTypeMatch( monitor, foundInputType, parameterType, definer );
+    }
+
+    bool TypeMatch( ICachedType inputType, ICachedType parameterType )
+    {
+        return inputType == parameterType
+               || inputType.ConcreteGeneralizations.Contains( parameterType );
+    }
+
+    bool CheckSingleParameterTypeMatch( IActivityMonitor monitor,
+                                        ICachedType inputType,
+                                        ICachedType alreadyMatchedType,
+                                        CachedParameterInfo alreadyMatchedDefiner )
+    {
+        List<ParameterType>? onError = null;
+        foreach( var p in _typeRegistrar.ParameterTypes.Values )
+        {
+            if( alreadyMatchedType != p.Type && TypeMatch( inputType, p.Type ) )
+            {
+                onError ??= new List<ParameterType>();
+                onError.Add( p );
+            }
+        }
+        if( onError != null )
+        {
+            var conflicts = onError.Select( p => $"'{p.Type}' of {p}" );
+            monitor.Error( $"""
+                    Ambiguous added object. Its type '{inputType}' can satisify more than one [ReaDI] parameters:
+                    {alreadyMatchedDefiner} of '{alreadyMatchedDefiner.Name}' in '{alreadyMatchedDefiner.Method}'
+                    {conflicts.Concatenate( Environment.NewLine )}
+                    """ );
+            return false;
+        }
+        return true;
     }
 
     bool SetError( IActivityMonitor monitor )

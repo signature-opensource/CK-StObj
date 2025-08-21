@@ -1,4 +1,5 @@
 using CK.Engine.TypeCollector;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -123,30 +124,50 @@ public sealed partial class ReaDIEngine
                     }
                     else
                     {
-                        var initialValue = i == monitorIdx
+                        // "Family unicity" check.
+                        foreach( var other in parameters.Values )
+                        {
+                            if( other.Type.ConcreteGeneralizations.Overlaps( parameterType.ConcreteGeneralizations ) )
+                            {
+                                var common = other.Type.ConcreteGeneralizations.Intersect( parameterType.ConcreteGeneralizations )
+                                                  .Select( c => c.CSharpName );
+                                monitor.Error( $"""
+                                    Conflicting parameter '{paramInfo.Name}' in {callable.Method}: existing parameter type '{other.Type}' intersects it.
+                                    [ReaDI] parameter types must be independent from each others. Common abstractions are:
+                                    '{common.Concatenate( "', '")}'.
+                                    """ );
+                                success = false;
+                            }
+                        }
+                        if( success )
+                        {
+                            var initialValue = i == monitorIdx
                                            ? loopTree.IActivityMonitorType
                                            : i == engineIdx
                                            ? engine
-                                           // No contravariance for the moment.
-                                           : engine._waitingObjects.GetValueOrDefault( parameterType );
-
-                        p = ParameterType.Create( monitor, loopTree.TypeCache.KnownTypes, parameterType, paramInfo, initialValue );
-                        if( p == null )
-                        {
-                            success = false;
-                        }
-                        else
-                        {
-                            parameters.Add( parameterType, p );
-                            if( isLoopParam )
+                                           : (object?)null;
+                            if( initialValue == null )
                             {
-                                Throw.DebugAssert( loopStateType != null );
-                                var loopParam = loopTree.FindOrCreateFromNewParameter( monitor, p, loopStateType );
-                                if( loopParam == null )
+                                success &= engine.FindWaitingObjectFor( monitor, parameterType, paramInfo, out initialValue );
+                            }
+                            p = ParameterType.Create( monitor, loopTree.TypeCache.KnownTypes, parameterType, paramInfo, initialValue );
+                            if( p == null )
+                            {
+                                success = false;
+                            }
+                            else
+                            {
+                                parameters.Add( parameterType, p );
+                                if( isLoopParam )
                                 {
-                                    success = false;
+                                    Throw.DebugAssert( loopStateType != null );
+                                    var loopParam = loopTree.FindOrCreateFromNewParameter( monitor, p, loopStateType );
+                                    if( loopParam == null )
+                                    {
+                                        success = false;
+                                    }
+                                    p._loopParameter = loopParam;
                                 }
-                                p._loopParameter = loopParam;
                             }
                         }
                     }
@@ -183,5 +204,6 @@ public sealed partial class ReaDIEngine
             }
         }
     }
+
 }
 

@@ -37,9 +37,22 @@ public sealed partial class ReaDIEngine
             }
         }
 
-        public ParameterType? FindParameter( ICachedType type )
+        internal Dictionary<ICachedType, ParameterType> ParameterTypes => _parameters;
+
+        internal Dictionary<ICachedType, HandlerType> Handlers => _handlers;
+
+        internal IEnumerable<KeyValuePair<ICachedType, object>> HandlersAsWaitingObjects
         {
-            return _parameters.GetValueOrDefault( type );
+            get
+            {
+                foreach( var h in _handlers.Values )
+                {
+                    if( h.CurrentHandler != null )
+                    {
+                        yield return KeyValuePair.Create( h.Type, (object)h.CurrentHandler );
+                    }
+                }
+            }
         }
 
         public bool RegisterHandlerType( IActivityMonitor monitor,

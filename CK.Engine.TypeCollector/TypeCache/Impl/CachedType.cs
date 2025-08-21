@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -17,12 +18,13 @@ sealed partial class CachedType : CachedItem, ICachedType
     [AllowNull]readonly ICachedType _nullable;
 
     ImmutableArray<ICachedType> _directInterfaces;
-    ICachedType? _genericTypeDefinition;
-    string? _csharpName;
+    IReadOnlySet<ICachedType>? _concreteGeneralizations;
     ICachedType? _declaringType;
     ICachedType? _elementType;
     ImmutableArray<ICachedMember> _declaredMembers;
+    ICachedType? _genericTypeDefinition;
     ImmutableArray<ICachedType> _genericArguments;
+    string? _csharpName;
     readonly ushort _typeDepth;
 
     const EngineUnhandledType _uninitialized = (EngineUnhandledType)0xFF;
@@ -90,6 +92,8 @@ sealed partial class CachedType : CachedItem, ICachedType
         public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.Interfaces;
 
         public ICachedType? BaseType => null;
+
+        public IReadOnlySet<ICachedType> ConcreteGeneralizations => _nonNullable.ConcreteGeneralizations;
 
         public ICachedType? DeclaringType => _nonNullable.DeclaringType;
 
@@ -202,6 +206,26 @@ sealed partial class CachedType : CachedItem, ICachedType
     }
 
     public ICachedType? BaseType => _baseType;
+
+    public IReadOnlySet<ICachedType> ConcreteGeneralizations => _concreteGeneralizations ??= ComputeConcreteGeneralizations();
+
+    IReadOnlySet<ICachedType> ComputeConcreteGeneralizations()
+    {
+        HashSet<ICachedType> set = new HashSet<ICachedType>();
+        foreach( var i in Interfaces )
+        {
+            if( !i.IsTypeDefiner )
+            {
+                set.Add( i );
+            }
+        }
+        var b = _baseType;
+        while( b != null )
+        {
+            if( !b.IsTypeDefiner ) set.Add( b );
+        }
+        return set.Count > 0 ? set : ImmutableHashSet<ICachedType>.Empty;
+    }
 
     public ICachedType? DeclaringType
     {

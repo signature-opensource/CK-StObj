@@ -1,5 +1,6 @@
 using CK.Engine.TypeCollector;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -37,6 +38,8 @@ public sealed partial class ReaDIEngine
         public LoopParameterType? LoopParameter => _loopParameter;
 
         public object? CurrentValue => _currentValue;
+
+        public CachedParameterInfo Definer => _definer;
 
         public bool SetCurrentValue( IActivityMonitor monitor, ReaDIEngine engine, object o )
         {
@@ -166,10 +169,21 @@ public sealed partial class ReaDIEngine
                 }
                 return null;
             }
+            
             return new ParameterType( parameterType, p, initialValue );
         }
 
-        public override string ToString() => $"'{_definer.Name}' in '{_definer.Method}'";
+        public override string ToString() => ToString( _slots.Count - 1, _definer );
+
+        static string ToString( int moreCallableCount, CachedParameterInfo definer )
+        {
+            var s = $"'{definer.Name}' in '{definer.Method}'";
+            if( moreCallableCount > 0 )
+            {
+                s += $" (and {moreCallableCount} other methods)";
+            }
+            return s;
+        }
     }
 }
 

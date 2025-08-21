@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
@@ -29,6 +30,8 @@ partial class CachedType
         public ImmutableArray<ICachedType> DirectInterfaces => throw new NotImplementedException();
 
         public ICachedType? BaseType => throw new NotImplementedException();
+
+        public IReadOnlySet<ICachedType> ConcreteGeneralizations => throw new NotImplementedException();
 
         public int TypeDepth => throw new NotImplementedException();
 

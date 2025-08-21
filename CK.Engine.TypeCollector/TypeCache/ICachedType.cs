@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 
@@ -95,6 +96,15 @@ public interface ICachedType : ICachedItem
     /// </para>
     /// </summary>
     ICachedType? BaseType { get; }
+
+    /// <summary>
+    /// Gets the <see cref="Interfaces"/> and all the <see cref="BaseType"/> excluding types that are <see cref="IsTypeDefiner"/>.
+    /// <para>
+    /// No specific check is done here: a base type or interface appears here even if it comes from a Type Definer.
+    /// Type Definer trait si not propagated up to their generalizations.
+    /// </para>
+    /// </summary>
+    IReadOnlySet<ICachedType> ConcreteGeneralizations { get; }
 
     /// <summary>
     /// Gets the unified depth of this type based on its <see cref="Interfaces"/> and <see cref="BaseType"/>.

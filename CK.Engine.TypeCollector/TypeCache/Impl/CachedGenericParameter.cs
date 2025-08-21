@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -41,6 +42,8 @@ class CachedGenericParameter : ICachedType
     public ImmutableArray<ICachedType> DirectInterfaces => ImmutableArray<ICachedType>.Empty;
 
     public ICachedType? BaseType => null;
+
+    public IReadOnlySet<ICachedType> ConcreteGeneralizations => ImmutableHashSet<ICachedType>.Empty;
 
     public ICachedType? DeclaringType => _declaringType ??= _typeCache.Get( _parameter.DeclaringType! );
 
@@ -103,6 +106,7 @@ class CachedGenericParameter : ICachedType
     public bool IsSuperTypeDefiner => false;
 
     public bool IsTypeDefiner => false;
+
 
     public override string ToString() => _parameter.Name;
 
