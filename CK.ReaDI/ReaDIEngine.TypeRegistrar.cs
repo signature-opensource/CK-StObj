@@ -74,7 +74,16 @@ public sealed partial class ReaDIEngine
         {
             if( !_handlers.TryGetValue( type, out handlerType ) )
             {
-                handlerType = HandlerType.Create( monitor, engine, _loopTree, _parameters, type, handler );
+                var baseHandler = type.BaseType != null && type.Interfaces.Contains( _loopTree.IReaDIHandler )
+                                    ? type.BaseType
+                                    : null;
+                HandlerType? baseHandlerType = null;
+                if( baseHandler != null
+                    && !RegisterHandlerType( monitor, engine, baseHandler, handler, out baseHandlerType ) )
+                {
+                    return false;
+                }
+                handlerType = HandlerType.Create( monitor, engine, _loopTree, baseHandlerType, _parameters, type, handler );
                 if( handlerType == null )
                 {
                     return false;

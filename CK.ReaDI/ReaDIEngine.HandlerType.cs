@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.AccessControl;
 
 namespace CK.Core;
 
@@ -36,6 +37,7 @@ public sealed partial class ReaDIEngine
         internal static HandlerType? Create( IActivityMonitor monitor,
                                              ReaDIEngine engine,
                                              LoopTree loopTree,
+                                             HandlerType? baseHandlerType,
                                              Dictionary<ICachedType, ParameterType> parameters,
                                              ICachedType type,
                                              IReaDIHandler initialHandler )
@@ -45,37 +47,16 @@ public sealed partial class ReaDIEngine
                 return null;
             }
             var handlerType = new HandlerType( type, initialHandler, loopParameter );
-
-            return DiscoverReaDIMethodsTopDown( monitor, engine, loopTree, parameters, type, handlerType )
-                    ? handlerType
-                    : null;
-
-            static bool DiscoverReaDIMethodsTopDown( IActivityMonitor monitor,
-                                                     ReaDIEngine engine,
-                                                     LoopTree loopTree,
-                                                     Dictionary<ICachedType, ParameterType> parameters,
-                                                     ICachedType type,
-                                                     HandlerType handlerType )
+            if( !DiscoverReaDIMethods( monitor,
+                                       engine,
+                                       loopTree,
+                                       parameters,
+                                       type,
+                                       handlerType ) )
             {
-                bool success = true;
-                var baseType = type.BaseType;
-                if( baseType != null && baseType.Interfaces.Contains( loopTree.IReaDIHandler ) )
-                {
-                    success &= DiscoverReaDIMethodsTopDown( monitor,
-                                                            engine,
-                                                            loopTree,
-                                                            parameters,
-                                                            baseType,
-                                                            handlerType );
-                }
-                success &= DiscoverReaDIMethods( monitor,
-                                                 engine,
-                                                 loopTree,
-                                                 parameters,
-                                                 type,
-                                                 handlerType );
-                return success;
+                return null;
             }
+            return handlerType;
 
             static bool DiscoverReaDIMethods( IActivityMonitor monitor,
                                               ReaDIEngine engine,

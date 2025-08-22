@@ -7,17 +7,23 @@ namespace CK.Engine.TypeCollector;
 sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
 {
     CachedParameterInfo? _returnParameterInfo;
+    MethodInfo? _baseMethodDefinition;
 
     internal CachedMethodInfo( ICachedType declaringType, MethodInfo method )
         : base( declaringType, method )
     {
     }
 
+
     public bool IsStatic => MethodInfo.IsStatic;
 
     public MethodInfo MethodInfo => Unsafe.As<MethodInfo>( _member );
 
     public CachedParameterInfo ReturnParameterInfo => _returnParameterInfo ??= new CachedParameterInfo( this, MethodInfo.ReturnParameter );
+
+    MethodInfo? BaseMethodDefinition => _baseMethodDefinition ??= MethodInfo.GetBaseDefinition();
+
+    public bool IsOverride => BaseMethodDefinition != _member;
 
     public bool IsAsynchronous
     {
