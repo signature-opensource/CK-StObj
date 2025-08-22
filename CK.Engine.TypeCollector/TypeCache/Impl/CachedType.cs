@@ -223,6 +223,7 @@ sealed partial class CachedType : CachedItem, ICachedType
         while( b != null )
         {
             if( !b.IsTypeDefiner ) set.Add( b );
+            b = b.BaseType;
         }
         return set.Count > 0 ? set : ImmutableHashSet<ICachedType>.Empty;
     }

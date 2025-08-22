@@ -6,10 +6,16 @@ using Shouldly;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.ReaDI.Tests;
+namespace CK.ReaDI.LoopFree.Tests;
 
 [TestFixture]
-public class LoopFreeTests
+public class ContravarianceTests
+{
+
+}
+
+[TestFixture]
+public class BasicTests
 {
     class MostBasicHandler : IReaDIHandler
     {
@@ -20,7 +26,7 @@ public class LoopFreeTests
         public void DoSomething() => NakedDone = true;
 
         [ReaDI]
-        public void DoSomethingWith( LoopFreeTests o ) => WithParamDone = true;
+        public void DoSomethingWith( BasicTests o ) => WithParamDone = true;
     }
 
     [Test]
@@ -110,21 +116,21 @@ public class LoopFreeTests
         }
 
         [ReaDI]
-        public void WithMonitor( LoopFreeTests test, IActivityMonitor monitor )
+        public void WithMonitor( BasicTests test, IActivityMonitor monitor )
         {
             test.ShouldNotBeNull();
             monitor.Trace( nameof( WithMonitor ) + " + LoopFreeTests" );
         }
 
         [ReaDI]
-        public void WithEngine( ReaDIEngine engine, LoopFreeTests test )
+        public void WithEngine( ReaDIEngine engine, BasicTests test )
         {
             engine.ShouldNotBeNull();
             ActivityMonitor.StaticLogger.Trace( nameof( WithEngine ) + " + LoopFreeTests" );
         }
 
         [ReaDI]
-        public void WithMonitorAndEngine( LoopFreeTests test, IActivityMonitor monitor, ReaDIEngine engine )
+        public void WithMonitorAndEngine( BasicTests test, IActivityMonitor monitor, ReaDIEngine engine )
         {
             engine.ShouldNotBeNull();
             monitor.Trace( nameof( WithMonitorAndEngine ) + " + LoopFreeTests" );
@@ -194,4 +200,116 @@ public class LoopFreeTests
             e.CanRun.ShouldBeFalse();
         }
     }
+
+
+    class BaseHandler : IReaDIHandler
+    {
+        [ReaDI]
+        public void BaseAction( IActivityMonitor monitor )
+        {
+            monitor.Trace( $"BaseAction from {GetType().Name}" );
+        }
+    }
+
+    class HandlerA : BaseHandler
+    {
+        [ReaDI]
+        public void MoreAction( IActivityMonitor monitor )
+        {
+            monitor.Trace( "MoreAction from A" );
+        }
+    }
+
+    class HandlerB : BaseHandler
+    {
+        [ReaDI]
+        public void MoreAction( IActivityMonitor monitor )
+        {
+            monitor.Trace( "MoreAction from B" );
+        }
+    }
+
+    [Test]
+    public void handlers_can_be_specialized()
+    {
+        var e = new ReaDIEngine( new GlobalTypeCache() );
+        var common = new BaseHandler();
+        var hA = new HandlerA();
+        var hB = new HandlerB();
+
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            e.AddObject( TestHelper.Monitor, this ).ShouldBeTrue();
+
+            e.AddObject( TestHelper.Monitor, common ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, hA ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, hB ).ShouldBeTrue();
+
+            e.CanRun.ShouldBeTrue();
+            e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
+
+            // "Logical ordering" from base to specialization is enforced.
+            logs.ShouldBe( [ "BaseAction from BaseHandler",
+                             "BaseAction from HandlerA",
+                             "MoreAction from A",
+                             "BaseAction from HandlerB",
+                             "MoreAction from B" ] );
+        }
+    }
+
+
+    class VBaseHandler : IReaDIHandler
+    {
+        [ReaDI]
+        public virtual void BaseAction( IActivityMonitor monitor )
+        {
+            monitor.Trace( $"BaseAction from {GetType().Name}." );
+        }
+    }
+
+    class VHandlerA : VBaseHandler
+    {
+        [ReaDI]
+        public override void BaseAction( IActivityMonitor monitor )
+        {
+            monitor.Trace( $"BaseAction in VHandlerA (regular override of the BaseAction)." );
+        }
+    }
+
+    class VHandlerB : VBaseHandler
+    {
+        [ReaDI]
+        public new void BaseAction( IActivityMonitor monitor )
+        {
+            monitor.Trace( $"new BaseAction in VHandlerB (BaseAction has been called)." );
+        }
+    }
+
+    [Test]
+    public void handlers_can_be_specialized_and_virtual_or_not_are_handled()
+    {
+        var e = new ReaDIEngine( new GlobalTypeCache() );
+        var common = new VBaseHandler();
+        var hA = new VHandlerA();
+        var hB = new VHandlerB();
+
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            e.AddObject( TestHelper.Monitor, this ).ShouldBeTrue();
+
+            e.AddObject( TestHelper.Monitor, common ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, hA ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, hB ).ShouldBeTrue();
+
+            e.CanRun.ShouldBeTrue();
+            e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
+
+            // "Logical ordering" from base to specialization is enforced.
+            logs.ShouldBe( [ "BaseAction in VHandlerA (regular override of the BaseAction).",
+                             "BaseAction from VHandlerB.",
+                             "new BaseAction in VHandlerB (BaseAction has been called)." ] );
+        }
+    }
+
+
 }

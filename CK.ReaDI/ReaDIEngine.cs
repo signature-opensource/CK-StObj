@@ -62,8 +62,12 @@ public sealed partial class ReaDIEngine
     public bool AddObject( IActivityMonitor monitor, object o )
     {
         Throw.CheckState( HasError is false );
+        Throw.CheckNotNullArgument( o );
         var oT = _typeCache.Get( o.GetType() );
-
+        if( !_typeRegistrar.CheckIntrinsicType( monitor, oT ) )
+        {
+            return false;
+        }
         bool isHandler = false;
         ParameterType? parameterType = null;
         if( o is IReaDIHandler handler )

@@ -44,43 +44,84 @@ public sealed partial class ReaDIEngine
             {
                 return null;
             }
-            bool success = true;
             var handlerType = new HandlerType( type, initialHandler, loopParameter );
-            foreach( var m in type.DeclaredMembers.OfType<ICachedMethodInfo>() )
+
+            return DiscoverReaDIMethodsTopDown( monitor, engine, loopTree, parameters, type, handlerType )
+                    ? handlerType
+                    : null;
+
+            static bool DiscoverReaDIMethodsTopDown( IActivityMonitor monitor,
+                                                     ReaDIEngine engine,
+                                                     LoopTree loopTree,
+                                                     Dictionary<ICachedType, ParameterType> parameters,
+                                                     ICachedType type,
+                                                     HandlerType handlerType )
             {
-                if( m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )
+                bool success = true;
+                var baseType = type.BaseType;
+                if( baseType != null && baseType.Interfaces.Contains( loopTree.IReaDIHandler ) )
                 {
-                    if( m.MethodInfo.IsGenericMethodDefinition )
+                    success &= DiscoverReaDIMethodsTopDown( monitor,
+                                                            engine,
+                                                            loopTree,
+                                                            parameters,
+                                                            baseType,
+                                                            handlerType );
+                }
+                success &= DiscoverReaDIMethods( monitor,
+                                                 engine,
+                                                 loopTree,
+                                                 parameters,
+                                                 type,
+                                                 handlerType );
+                return success;
+            }
+
+            static bool DiscoverReaDIMethods( IActivityMonitor monitor,
+                                              ReaDIEngine engine,
+                                              LoopTree loopTree,
+                                              Dictionary<ICachedType, ParameterType> parameters,
+                                              ICachedType type,
+                                              HandlerType handlerType )
+            {
+                bool success = true;
+                foreach( var m in type.DeclaredMembers.OfType<ICachedMethodInfo>() )
+                {
+                    if( m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )
                     {
-                        monitor.Error( $"[ReaDI] cannot be set on method '{m}' because it is a generic method definition." );
-                        success = false;
-                    }
-                    else if( m.IsAsynchronous )
-                    {
-                        monitor.Error( $"[ReaDI] cannot be set on method '{m}' because it is an asynchronous method." );
-                        success = false;
-                    }
-                    else
-                    {
-                        var parameterTypes = new ParameterType[m.ParameterInfos.Length];
-                        var callable = new Callable( handlerType, m, parameterTypes );
-                        success &= FindOrCreateParameters( monitor,
-                                                           engine,
-                                                           loopTree,
-                                                           parameters,
-                                                           callable,
-                                                           parameterTypes,
-                                                           out var isLoopCallable,
-                                                           out var monitorIdx,
-                                                           out var engineIdx );
-                        if( success )
+                        if( m.MethodInfo.IsGenericMethodDefinition )
                         {
-                            callable.Initialize( engine, monitorIdx, engineIdx, isLoopCallable );
+                            monitor.Error( $"[ReaDI] cannot be set on method '{m}' because it is a generic method definition." );
+                            success = false;
+                        }
+                        else if( m.IsAsynchronous )
+                        {
+                            monitor.Error( $"[ReaDI] cannot be set on method '{m}' because it is an asynchronous method." );
+                            success = false;
+                        }
+                        else
+                        {
+                            var parameterTypes = new ParameterType[m.ParameterInfos.Length];
+                            var callable = new Callable( handlerType, m, parameterTypes );
+                            success &= FindOrCreateParameters( monitor,
+                                                               engine,
+                                                               loopTree,
+                                                               parameters,
+                                                               callable,
+                                                               parameterTypes,
+                                                               out var isLoopCallable,
+                                                               out var monitorIdx,
+                                                               out var engineIdx );
+                            if( success )
+                            {
+                                callable.Initialize( engine, monitorIdx, engineIdx, isLoopCallable );
+                            }
                         }
                     }
                 }
+
+                return success;
             }
-            return success ? handlerType : null;
 
             static bool FindOrCreateParameters( IActivityMonitor monitor,
                                                 ReaDIEngine engine,
@@ -106,82 +147,87 @@ public sealed partial class ReaDIEngine
                     bool isLoopParam = loopStateType != null;
 
                     if( (parameterType == loopTree.IActivityMonitorType
-                            && !CheckKnownParameterType( monitor, callable, ref monitorIdx, i, isLoopParam, loopTree.IActivityMonitorType ))
+                            && !CheckIntrinsicParameterType( monitor, callable, ref monitorIdx, i, isLoopParam, loopTree.IActivityMonitorType ))
                             ||
                             (parameterType == loopTree.ReaDIEngineType
-                            && !CheckKnownParameterType( monitor, callable, ref engineIdx, i, isLoopParam, loopTree.ReaDIEngineType )) )
+                            && !CheckIntrinsicParameterType( monitor, callable, ref engineIdx, i, isLoopParam, loopTree.ReaDIEngineType )) )
                     {
                         success = false;
                         continue;
                     }
-
-                    if( parameters.TryGetValue( parameterType, out var p ) )
+                    // If it's one of the intrinsic parameter type, it is useless to create a ParameterType for them.
+                    // Note that IActivityMonitor contravariance is useless (it is the provided IActivityMonitor instance
+                    // that is used) and that initrinsic types are errors in AddObject.
+                    if( monitorIdx + engineIdx == -2 )
                     {
-                        if( !p.CheckLoopStateType( monitor, loopTree, loopStateType, paramInfo ) )
+                        if( parameters.TryGetValue( parameterType, out var p ) )
                         {
-                            success = false;
-                        }
-                    }
-                    else
-                    {
-                        // "Family unicity" check.
-                        foreach( var other in parameters.Values )
-                        {
-                            if( other.Type.ConcreteGeneralizations.Overlaps( parameterType.ConcreteGeneralizations ) )
+                            if( !p.CheckLoopStateType( monitor, loopTree, loopStateType, paramInfo ) )
                             {
-                                var common = other.Type.ConcreteGeneralizations.Intersect( parameterType.ConcreteGeneralizations )
-                                                  .Select( c => c.CSharpName );
-                                monitor.Error( $"""
-                                    Conflicting parameter '{paramInfo.Name}' in {callable.Method}: existing parameter type '{other.Type}' intersects it.
-                                    [ReaDI] parameter types must be independent from each others. Common abstractions are:
-                                    '{common.Concatenate( "', '")}'.
-                                    """ );
                                 success = false;
+                            }
+                        }
+                        else
+                        {
+                            // "Family unicity" check.
+                            foreach( var other in parameters.Values )
+                            {
+                                if( other.Type.ConcreteGeneralizations.Overlaps( parameterType.ConcreteGeneralizations ) )
+                                {
+                                    var common = other.Type.ConcreteGeneralizations.Intersect( parameterType.ConcreteGeneralizations )
+                                                      .Select( c => c.CSharpName );
+                                    monitor.Error( $"""
+                                        Conflicting parameter '{paramInfo.Name}' in {callable.Method}: existing parameter type '{other.Type}' intersects it.
+                                        [ReaDI] parameter types must be independent from each others. Common abstractions are:
+                                        '{common.Concatenate( "', '" )}'.
+                                        """ );
+                                    success = false;
+                                }
+                            }
+                            if( success )
+                            {
+                                var initialValue = i == monitorIdx
+                                               ? loopTree.IActivityMonitorType
+                                               : i == engineIdx
+                                               ? engine
+                                               : (object?)null;
+                                if( initialValue == null )
+                                {
+                                    success &= engine.FindWaitingObjectFor( monitor, parameterType, paramInfo, out initialValue );
+                                }
+                                p = ParameterType.Create( monitor, loopTree.TypeCache.KnownTypes, parameterType, paramInfo, initialValue );
+                                if( p == null )
+                                {
+                                    success = false;
+                                }
+                                else
+                                {
+                                    parameters.Add( parameterType, p );
+                                    if( isLoopParam )
+                                    {
+                                        Throw.DebugAssert( loopStateType != null );
+                                        var loopParam = loopTree.FindOrCreateFromNewParameter( monitor, p, loopStateType );
+                                        if( loopParam == null )
+                                        {
+                                            success = false;
+                                        }
+                                        p._loopParameter = loopParam;
+                                    }
+                                }
                             }
                         }
                         if( success )
                         {
-                            var initialValue = i == monitorIdx
-                                           ? loopTree.IActivityMonitorType
-                                           : i == engineIdx
-                                           ? engine
-                                           : (object?)null;
-                            if( initialValue == null )
-                            {
-                                success &= engine.FindWaitingObjectFor( monitor, parameterType, paramInfo, out initialValue );
-                            }
-                            p = ParameterType.Create( monitor, loopTree.TypeCache.KnownTypes, parameterType, paramInfo, initialValue );
-                            if( p == null )
-                            {
-                                success = false;
-                            }
-                            else
-                            {
-                                parameters.Add( parameterType, p );
-                                if( isLoopParam )
-                                {
-                                    Throw.DebugAssert( loopStateType != null );
-                                    var loopParam = loopTree.FindOrCreateFromNewParameter( monitor, p, loopStateType );
-                                    if( loopParam == null )
-                                    {
-                                        success = false;
-                                    }
-                                    p._loopParameter = loopParam;
-                                }
-                            }
+                            Throw.DebugAssert( p != null );
+                            isLoopCallable = p.IsLoopParameter;
+                            parameterTypes[i] = p;
+                            p.AddCallableParameter( callable, i );
                         }
-                    }
-                    if( success )
-                    {
-                        Throw.DebugAssert( p != null );
-                        isLoopCallable = p.IsLoopParameter;
-                        parameterTypes[i] = p;
-                        p.AddCallableParameter( callable, i );
                     }
                 }
                 return success;
 
-                static bool CheckKnownParameterType( IActivityMonitor monitor,
+                static bool CheckIntrinsicParameterType( IActivityMonitor monitor,
                                                      Callable callable,
                                                      ref int knownIdx,
                                                      int idx,
@@ -202,6 +248,7 @@ public sealed partial class ReaDIEngine
                     return true;
                 }
             }
+
         }
     }
 

@@ -21,6 +21,17 @@ public sealed partial class ReaDIEngine
             _loopTree = new LoopTree( typeCache );
         }
 
+        internal bool CheckIntrinsicType( IActivityMonitor monitor, ICachedType oT )
+        {
+            if( oT.Interfaces.Contains( _loopTree.IActivityMonitorType )
+                || oT == _loopTree.ReaDIEngineType )
+            {
+                monitor.Error( $"Invalid added object '{oT}'. This type is a ReaDIEngine intrinsic type and must not be explicitly added." );
+                return false;
+            }
+            return true;
+        }
+
         public IEnumerable<Callable> AllCallables
         {
             get
@@ -72,7 +83,6 @@ public sealed partial class ReaDIEngine
             }
             return true;
         }
-
     }
 }
 
