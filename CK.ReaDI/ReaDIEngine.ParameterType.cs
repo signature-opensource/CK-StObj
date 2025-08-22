@@ -14,7 +14,7 @@ public sealed partial class ReaDIEngine
 
         // This can be updated when a ReaDILoop<,> appears
         // and a stateless [ReaDI] parameter was registered.
-        CachedParameterInfo _definer;
+        CachedParameter _definer;
         internal LoopParameterType? _loopParameter;
         object? _currentValue;
 
@@ -22,7 +22,7 @@ public sealed partial class ReaDIEngine
         readonly record struct Slot( Callable C, int Index );
         readonly List<Slot> _slots;
 
-        ParameterType( ICachedType type, CachedParameterInfo definer, object? waitingObject )
+        ParameterType( ICachedType type, CachedParameter definer, object? waitingObject )
         {
             _type = type;
             _definer = definer;
@@ -39,7 +39,7 @@ public sealed partial class ReaDIEngine
 
         public object? CurrentValue => _currentValue;
 
-        public CachedParameterInfo Definer => _definer;
+        public CachedParameter Definer => _definer;
 
         public bool SetCurrentValue( IActivityMonitor monitor, ReaDIEngine engine, object o )
         {
@@ -66,7 +66,7 @@ public sealed partial class ReaDIEngine
         public bool CheckLoopStateType( IActivityMonitor monitor,
                                         LoopTree loopTree,
                                         ICachedType? loopStateType,
-                                        CachedParameterInfo p )
+                                        CachedParameter p )
         {
             var thisLoopStateType = _loopParameter?.LoopStateType;
             // Same (including null-null). No question ask.
@@ -120,7 +120,7 @@ public sealed partial class ReaDIEngine
         /// <summary>
         /// Handles a [ReaDILoop] attribute and/or a <see cref="ReaDILoop{T, TState}"/> parameter.
         /// </summary>
-        internal static (ICachedType ParameterType, ICachedType? loopStateType) GetLoopTypes( GlobalTypeCache typeCache, CachedParameterInfo p )
+        internal static (ICachedType ParameterType, ICachedType? loopStateType) GetLoopTypes( GlobalTypeCache typeCache, CachedParameter p )
         {
             ICachedType? loopStateType = null;
             if( p.AttributesData.Any( a => a.AttributeType == typeof( ReaDILoopAttribute ) ) )
@@ -139,7 +139,7 @@ public sealed partial class ReaDIEngine
         internal static ParameterType? Create( IActivityMonitor monitor,
                                                GlobalTypeCache.WellKnownTypes wellknownTypes,
                                                ICachedType parameterType,
-                                               CachedParameterInfo p,
+                                               CachedParameter p,
                                                object? initialValue )
         {
             var t = parameterType.Type;
@@ -175,7 +175,7 @@ public sealed partial class ReaDIEngine
 
         public override string ToString() => ToString( _slots.Count - 1, _definer );
 
-        static string ToString( int moreCallableCount, CachedParameterInfo definer )
+        static string ToString( int moreCallableCount, CachedParameter definer )
         {
             var s = $"'{definer.Name}' in '{definer.Method}'";
             if( moreCallableCount > 0 )

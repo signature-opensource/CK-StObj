@@ -131,7 +131,7 @@ public interface ICachedType : ICachedItem
     ImmutableArray<ICachedType> GenericArguments { get; }
 
     /// <summary>
-    /// Get the <see cref="ICachedMember"/> declared by this type.
+    /// Get the <see cref="CachedMember"/> declared by this type.
     /// <para>
     /// Non public members are not collected. Only public members are actually considered by the engine.
     /// </para>
@@ -140,7 +140,7 @@ public interface ICachedType : ICachedItem
     /// types (that are returned by <see cref="Type.GetMembers(BindingFlags)"/>) are filtered out.
     /// </para>
     /// </summary>
-    ImmutableArray<ICachedMember> DeclaredMembers { get; }
+    ImmutableArray<CachedMember> DeclaredMembers { get; }
 
     /// <summary>
     /// Gets the element type of array, pointer, etc. See <see cref="Type.GetElementType()"/>.

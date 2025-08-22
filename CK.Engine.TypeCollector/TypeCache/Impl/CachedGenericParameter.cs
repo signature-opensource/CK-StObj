@@ -8,7 +8,7 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-class CachedGenericParameter : ICachedType
+sealed class CachedGenericParameter : ICachedType
 {
     readonly Type _parameter;
     readonly GlobalTypeCache _typeCache;
@@ -65,11 +65,11 @@ class CachedGenericParameter : ICachedType
         }
     }
 
-    public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
+    public ImmutableArray<CachedMethod> DeclaredMethodInfos => ImmutableArray<CachedMethod>.Empty;
 
     public GlobalTypeCache TypeCache => _typeCache;
 
-    public ImmutableArray<ICachedMember> DeclaredMembers => ImmutableArray<ICachedMember>.Empty;
+    public ImmutableArray<CachedMember> DeclaredMembers => ImmutableArray<CachedMember>.Empty;
 
     public string Name => _parameter.Name;
 

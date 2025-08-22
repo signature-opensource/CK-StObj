@@ -140,7 +140,7 @@ public sealed partial class ReaDIEngine
         _readyToRun.Enqueue( callable );
     }
 
-    bool FindWaitingObjectFor( IActivityMonitor monitor, ICachedType parameterType, CachedParameterInfo definer, out object? initialValue )
+    bool FindWaitingObjectFor( IActivityMonitor monitor, ICachedType parameterType, CachedParameter definer, out object? initialValue )
     {
         ICachedType? foundInputType = parameterType;
         // A waiting object with the exact type may he available.
@@ -174,7 +174,7 @@ public sealed partial class ReaDIEngine
     bool CheckSingleParameterTypeMatch( IActivityMonitor monitor,
                                         ICachedType inputType,
                                         ICachedType alreadyMatchedType,
-                                        CachedParameterInfo alreadyMatchedDefiner )
+                                        CachedParameter alreadyMatchedDefiner )
     {
         List<ParameterType>? onError = null;
         foreach( var p in _typeRegistrar.ParameterTypes.Values )

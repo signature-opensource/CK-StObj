@@ -4,27 +4,55 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
+public sealed class CachedMethod : CachedMethodBase
 {
-    CachedParameterInfo? _returnParameterInfo;
+    CachedParameter? _returnParameterInfo;
     MethodInfo? _baseMethodDefinition;
 
-    internal CachedMethodInfo( ICachedType declaringType, MethodInfo method )
+    internal CachedMethod( ICachedType declaringType, MethodInfo method )
         : base( declaringType, method )
     {
     }
 
-
+    /// <summary>
+    /// Gets whether this is a static method.
+    /// </summary>
     public bool IsStatic => MethodInfo.IsStatic;
 
+    /// <summary>
+    /// Gets the cached info. Should rarely be used directly.
+    /// </summary>
     public MethodInfo MethodInfo => Unsafe.As<MethodInfo>( _member );
 
-    public CachedParameterInfo ReturnParameterInfo => _returnParameterInfo ??= new CachedParameterInfo( this, MethodInfo.ReturnParameter );
+    /// <summary>
+    /// Gets the return parameter.
+    /// </summary>
+    public CachedParameter ReturnParameterInfo => _returnParameterInfo ??= new CachedParameter( this, MethodInfo.ReturnParameter );
 
     MethodInfo? BaseMethodDefinition => _baseMethodDefinition ??= MethodInfo.GetBaseDefinition();
 
+    /// <summary>
+    /// Gets whether this method is virtual and overrides a base method.
+    /// </summary>
     public bool IsOverride => BaseMethodDefinition != _member;
 
+    /// <summary>
+    /// Gets whether this method is overridden by the <paramref name="candidate"/>.
+    /// </summary>
+    /// <param name="candidate">The potential override </param>
+    /// <returns>Whether this method is overridden by the candidate.</returns>
+    public bool IsOverriddenBy( CachedMethod candidate )
+    {
+        return candidate.DeclaringType.TypeDepth > DeclaringType.TypeDepth
+                && BaseMethodDefinition == candidate.BaseMethodDefinition;
+    }
+
+
+    /// <summary>
+    /// Gets whether this method returns a <see cref="GlobalTypeCache.WellKnownTypes.Task"/>,
+    /// <see cref="GlobalTypeCache.WellKnownTypes.GenericTaskDefinition"/>, <see cref="GlobalTypeCache.WellKnownTypes.ValueTask"/>
+    /// or a <see cref="GlobalTypeCache.WellKnownTypes.GenericValueTaskDefinition"/>.
+    /// </summary>
     public bool IsAsynchronous
     {
         get
@@ -38,6 +66,14 @@ sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
         }
     }
 
+    /// <summary>
+    /// Unwraps the type T from the Task&lt;T&gt; or ValueTask&lt;T&gt; or returns <see cref="GlobalTypeCache.WellKnownTypes.Void"/>
+    /// for non generic Task and ValueTask.
+    /// <para>
+    /// This is null if this method is not an asynchronous method.
+    /// </para>
+    /// </summary>
+    /// <returns>The unwrapped type or null for a synchronous method.</returns>
     public ICachedType? GetAsynchronousReturnedType()
     {
         var r = ReturnParameterInfo.ParameterType;
@@ -54,7 +90,7 @@ sealed class CachedMethodInfo : CachedMethodBase, ICachedMethodInfo
         return null;
     }
 
-    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
+    internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         if( MethodInfo.IsStatic ) b.Append( "static " );
         ReturnParameterInfo.Write( b );

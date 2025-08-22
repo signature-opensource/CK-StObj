@@ -6,7 +6,7 @@ using System.Text;
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
-/// Generalizes <see cref="ICachedType"/> and <see cref="ICachedMember"/>.
+/// Generalizes <see cref="ICachedType"/> and <see cref="CachedMember"/>.
 /// </summary>
 public interface ICachedItem
 {

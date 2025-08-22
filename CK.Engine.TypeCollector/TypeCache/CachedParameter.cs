@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-public sealed class CachedParameterInfo
+public sealed class CachedParameter
 {
     readonly CachedMethodBase _method;
     readonly ParameterInfo _parameterInfo;
@@ -14,7 +14,7 @@ public sealed class CachedParameterInfo
     ICachedType? _parameterType;
     string? _toString;
 
-    internal CachedParameterInfo( CachedMethodBase method, ParameterInfo parameterInfo )
+    internal CachedParameter( CachedMethodBase method, ParameterInfo parameterInfo )
     {
         _method = method;
         _parameterInfo = parameterInfo;
@@ -23,12 +23,12 @@ public sealed class CachedParameterInfo
     /// <summary>
     /// Gets the method that contains this parameter.
     /// </summary>
-    public ICachedMethodBase Method => _method;
+    public CachedMethodBase Method => _method;
 
     /// <summary>
     /// Gets the parameter name.
     /// <para>
-    /// This is null if this parameter is the <see cref="CachedMethodInfo.ReturnParameter"/>.
+    /// This is null if this parameter is the <see cref="CachedMethod.ReturnParameter"/>.
     /// </para>
     /// </summary>
     public string? Name => _parameterInfo.Name;

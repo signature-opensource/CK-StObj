@@ -14,7 +14,7 @@ namespace CK.Engine.TypeCollector;
 /// <para>
 /// This is the non generic base class: there are no constraints on <see cref="Attribute"/>, <see cref="ParentImpl"/>
 /// and <see cref="ChildrenImpl"/> types nor on the <see cref="DecoratedItem"/> (that can be any kind of
-/// <see cref="ICachedMember"/> or a <see cref="ICachedType"/>).
+/// <see cref="CachedMember"/> or a <see cref="ICachedType"/>).
 /// </para>
 /// </summary>
 public abstract class EngineAttributeImpl : IEngineAttributeImpl

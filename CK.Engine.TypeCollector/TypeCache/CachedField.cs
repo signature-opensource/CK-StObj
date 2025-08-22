@@ -5,11 +5,11 @@ using System.Text;
 namespace CK.Engine.TypeCollector;
 
 
-sealed class CachedFieldInfo : CachedMemberInfo, ICachedFieldInfo
+public sealed class CachedField : CachedMember
 {
     ICachedType? _type;
 
-    internal CachedFieldInfo( ICachedType declaringType, FieldInfo prop )
+    internal CachedField( ICachedType declaringType, FieldInfo prop )
         : base( declaringType, prop )
     {
     }
@@ -18,7 +18,7 @@ sealed class CachedFieldInfo : CachedMemberInfo, ICachedFieldInfo
 
     public FieldInfo FieldInfo => Unsafe.As<FieldInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
+    internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         FieldType.Write(  b );
         b.Append( ' ' );

@@ -21,7 +21,7 @@ sealed partial class CachedType : CachedItem, ICachedType
     IReadOnlySet<ICachedType>? _concreteGeneralizations;
     ICachedType? _declaringType;
     ICachedType? _elementType;
-    ImmutableArray<ICachedMember> _declaredMembers;
+    ImmutableArray<CachedMember> _declaredMembers;
     ICachedType? _genericTypeDefinition;
     ImmutableArray<ICachedType> _genericArguments;
     string? _csharpName;
@@ -103,7 +103,7 @@ sealed partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<CustomAttributeData> AttributesData => _nonNullable.AttributesData;
 
-        public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
+        public ImmutableArray<CachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
 
         public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
@@ -289,25 +289,25 @@ sealed partial class CachedType : CachedItem, ICachedType
         }
     }
 
-    public ImmutableArray<ICachedMember> DeclaredMembers
+    public ImmutableArray<CachedMember> DeclaredMembers
     {
         get
         {
             if( _declaredMembers.IsDefault )
             {
                 var members = Type.GetMembers( BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly );
-                var b = ImmutableArray.CreateBuilder<ICachedMember>( members.Length );
+                var b = ImmutableArray.CreateBuilder<CachedMember>( members.Length );
                 foreach( var m in members )
                 {
                     var map = m switch
                     {
-                        MethodInfo method => new CachedMethodInfo( this, method ),
-                        ConstructorInfo ctor => new CachedConstructorInfo( this, ctor ),
-                        PropertyInfo prop => new CachedPropertyInfo( this, prop ),
-                        EventInfo ev => new CachedEventInfo( this, ev ),
-                        FieldInfo f => new CachedFieldInfo( this, f ),
+                        MethodInfo method => new CachedMethod( this, method ),
+                        ConstructorInfo ctor => new CachedConstructor( this, ctor ),
+                        PropertyInfo prop => new CachedProperty( this, prop ),
+                        EventInfo ev => new CachedEvent( this, ev ),
+                        FieldInfo f => new CachedField( this, f ),
                         Type nested => null,
-                        _ => Throw.NotSupportedException<ICachedMember>( m.ToString() )
+                        _ => Throw.NotSupportedException<CachedMember>( m.ToString() )
                     };
                     if( map != null ) b.Add( map );
                 }

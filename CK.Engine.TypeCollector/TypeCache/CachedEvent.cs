@@ -7,11 +7,11 @@ using System.Text;
 namespace CK.Engine.TypeCollector;
 
 
-sealed class CachedEventInfo : CachedMemberInfo, ICachedEventInfo
+public sealed class CachedEvent : CachedMember
 {
     ICachedType? _handlerType;
 
-    internal CachedEventInfo( ICachedType declaringType, EventInfo ev )
+    internal CachedEvent( ICachedType declaringType, EventInfo ev )
         : base( declaringType, ev )
     {
     }
@@ -43,7 +43,7 @@ sealed class CachedEventInfo : CachedMemberInfo, ICachedEventInfo
 
     public EventInfo EventInfo => Unsafe.As<EventInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
+    internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         EventHandlerType.Write(  b );
         b.Append( ' ' );

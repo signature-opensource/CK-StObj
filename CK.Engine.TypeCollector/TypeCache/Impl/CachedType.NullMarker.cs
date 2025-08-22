@@ -41,7 +41,7 @@ partial class CachedType
 
         public ImmutableArray<ICachedType> GenericArguments => throw new NotImplementedException();
 
-        public ImmutableArray<ICachedMember> DeclaredMembers => throw new NotImplementedException();
+        public ImmutableArray<CachedMember> DeclaredMembers => throw new NotImplementedException();
 
         public GlobalTypeCache TypeCache => throw new NotImplementedException();
 

@@ -5,9 +5,12 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-abstract class CachedMethodBase : CachedMemberInfo, ICachedMethodBase
+/// <summary>
+/// Generalizes <see cref="CachedMethod"/> and <see cref="CachedConstructor"/>.
+/// </summary>
+public abstract class CachedMethodBase : CachedMember
 {
-    ImmutableArray<CachedParameterInfo> _parameterInfos;
+    ImmutableArray<CachedParameter> _parameterInfos;
 
     internal CachedMethodBase( ICachedType declaringType, MethodBase method )
         : base( declaringType, method )
@@ -19,27 +22,30 @@ abstract class CachedMethodBase : CachedMemberInfo, ICachedMethodBase
     /// </summary>
     public MethodBase MethodBase => Unsafe.As<MethodBase>( _member );
 
+    /// <summary>
+    /// Gets whether this is a public method.
+    /// </summary>
     public bool IsPublic => MethodBase.IsPublic;
 
     /// <summary>
     /// Gets the parameters.
     /// </summary>
-    public ImmutableArray<CachedParameterInfo> ParameterInfos
+    public ImmutableArray<CachedParameter> ParameterInfos
     {
         get
         {
             if( _parameterInfos.IsDefault )
             {
                 var parameters = MethodBase.GetParameters();
-                var b = ImmutableArray.CreateBuilder<CachedParameterInfo>( parameters.Length );
-                foreach( var p in parameters ) b.Add( new CachedParameterInfo( this, p ) );
+                var b = ImmutableArray.CreateBuilder<CachedParameter>( parameters.Length );
+                foreach( var p in parameters ) b.Add( new CachedParameter( this, p ) );
                 _parameterInfos = b.MoveToImmutable();
             }
             return _parameterInfos;
         }
     }
 
-    public void WriteParameters( StringBuilder b )
+    internal void WriteParameters( StringBuilder b )
     {
         b.Append( '(' );
         int i = 0;

@@ -4,16 +4,16 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-sealed class CachedConstructorInfo : CachedMethodBase, ICachedConstructorInfo
+public sealed class CachedConstructor : CachedMethodBase
 {
-    internal CachedConstructorInfo( ICachedType declaringType, ConstructorInfo ctor )
+    internal CachedConstructor( ICachedType declaringType, ConstructorInfo ctor )
         : base( declaringType, ctor )
     {
     }
 
     public ConstructorInfo ConstructorInfo => Unsafe.As<ConstructorInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
+    internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         b.Append( withDeclaringType ? DeclaringType.CSharpName : DeclaringType.Name ).Append( '(' );
         int i = 0;

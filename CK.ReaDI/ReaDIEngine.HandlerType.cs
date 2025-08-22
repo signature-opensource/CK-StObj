@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Security.AccessControl;
 
 namespace CK.Core;
 
@@ -66,9 +65,9 @@ public sealed partial class ReaDIEngine
                                               HandlerType handlerType )
             {
                 bool success = true;
-                foreach( var m in type.DeclaredMembers.OfType<ICachedMethodInfo>() )
+                foreach( var m in type.DeclaredMembers.OfType<CachedMethod>() )
                 {
-                    if( m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )
+                    if( !m.MethodInfo.IsSpecialName && m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )
                     {
                         if( m.MethodInfo.IsGenericMethodDefinition )
                         {
@@ -121,25 +120,35 @@ public sealed partial class ReaDIEngine
                 var parameterInfos = callable.Method.ParameterInfos;
                 for( int i = 0; i < parameterInfos.Length; i++ )
                 {
-                    CachedParameterInfo paramInfo = parameterInfos[i];
+                    CachedParameter paramInfo = parameterInfos[i];
 
                     var (parameterType, loopStateType) = ParameterType.GetLoopTypes( loopTree.TypeCache, paramInfo );
 
                     bool isLoopParam = loopStateType != null;
 
-                    if( (parameterType == loopTree.IActivityMonitorType
-                            && !CheckIntrinsicParameterType( monitor, callable, ref monitorIdx, i, isLoopParam, loopTree.IActivityMonitorType ))
-                            ||
-                            (parameterType == loopTree.ReaDIEngineType
-                            && !CheckIntrinsicParameterType( monitor, callable, ref engineIdx, i, isLoopParam, loopTree.ReaDIEngineType )) )
+                    bool isIntrinsicParam = false;
+                    if( parameterType == loopTree.IActivityMonitorType )
                     {
-                        success = false;
-                        continue;
+                        if( !CheckIntrinsicParameterType( monitor, callable, ref monitorIdx, i, isLoopParam, loopTree.IActivityMonitorType ) )
+                        {
+                            success = false;
+                            continue;
+                        }
+                        isIntrinsicParam = true;
+                    }
+                    else if( parameterType == loopTree.ReaDIEngineType )
+                    {
+                        if( !CheckIntrinsicParameterType( monitor, callable, ref engineIdx, i, isLoopParam, loopTree.ReaDIEngineType ) )
+                        {
+                            success = false;
+                            continue;
+                        }
+                        isIntrinsicParam = true;
                     }
                     // If it's one of the intrinsic parameter type, it is useless to create a ParameterType for them.
                     // Note that IActivityMonitor contravariance is useless (it is the provided IActivityMonitor instance
                     // that is used) and that initrinsic types are errors in AddObject.
-                    if( monitorIdx + engineIdx == -2 )
+                    if( !isIntrinsicParam )
                     {
                         if( parameters.TryGetValue( parameterType, out var p ) )
                         {

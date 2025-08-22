@@ -11,7 +11,7 @@ public sealed partial class ReaDIEngine
     sealed class Callable : IReaDIMethod
     {
         readonly HandlerType _handler;
-        readonly ICachedMethodInfo _method;
+        readonly CachedMethod _method;
         readonly ImmutableArray<ParameterType> _parameters;
         readonly object?[] _args;
         internal Callable? _next;
@@ -29,8 +29,9 @@ public sealed partial class ReaDIEngine
             IsError = 16
         }
 
+        // Regular constructor.
         internal Callable( HandlerType handler,
-                           ICachedMethodInfo method,
+                           CachedMethod method,
                            ParameterType[] parameters )
         {
             _handler = handler;
@@ -43,7 +44,7 @@ public sealed partial class ReaDIEngine
 
         ICachedType IReaDIMethod.Handler => _handler.Type;
 
-        public ICachedMethodInfo Method => _method;
+        public CachedMethod Method => _method;
 
         public bool IsLoopCallable => (_flags & Flags.IsLoopCallable) != 0;
 

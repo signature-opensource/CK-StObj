@@ -15,7 +15,7 @@ public interface IReaDIMethod
     /// <summary>
     /// The [ReaDI] method.
     /// </summary>
-    ICachedMethodInfo Method { get; }
+    CachedMethod Method { get; }
 
     /// <summary>
     /// Gets whether this method has at least one [ReaDILoop] parameter.
