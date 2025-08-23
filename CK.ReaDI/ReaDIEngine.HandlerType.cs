@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Core;
 
@@ -33,6 +34,24 @@ public sealed partial class ReaDIEngine
 
         public LoopParameterType? LoopParameter => _loopParameter;
 
+        internal void ReverseCallableList()
+        {
+            var c = _firstCallable;
+            if( c != null && c._next != null )
+            {
+                Callable? previous = null;
+                Callable? next = c;
+                while( c != null )
+                {
+                    next = c._next;
+                    c._next = previous;
+                    previous = c;
+                    c = next;
+                }
+                _firstCallable = previous;
+            }
+        }
+
         internal static HandlerType? Create( IActivityMonitor monitor,
                                              ReaDIEngine engine,
                                              LoopTree loopTree,
@@ -54,6 +73,7 @@ public sealed partial class ReaDIEngine
             {
                 return null;
             }
+            handlerType.ReverseCallableList();
             return handlerType;
 
             static bool DiscoverReaDIMethods( IActivityMonitor monitor,
@@ -93,6 +113,11 @@ public sealed partial class ReaDIEngine
                                                                out var engineIdx );
                             if( success )
                             {
+                                // We call Initialize immediately (because we have the required parameters).
+                                // This pushes the callable if it is ready to run.
+                                // We could not do this here but wait for the revert of the final list.
+                                // Pushing in Initialize avoids an other method on the Callable (and respects
+                                // the final Callable oredering.
                                 callable.Initialize( engine, monitorIdx, engineIdx, isLoopCallable );
                             }
                         }

@@ -29,7 +29,6 @@ public sealed partial class ReaDIEngine
             IsError = 16
         }
 
-        // Regular constructor.
         internal Callable( HandlerType handler,
                            CachedMethod method,
                            ParameterType[] parameters )
@@ -40,22 +39,6 @@ public sealed partial class ReaDIEngine
             _args = new object[_missingCount = method.ParameterInfos.Length];
             _next = handler.FirstCallable;
             handler._firstCallable = this;
-        }
-
-        // Clone constructor for inherited callable.
-        internal Callable( ReaDIEngine engine, Callable c, HandlerType handler )
-        {
-            _handler = handler;
-            _method = c._method;
-            _parameters = c._parameters;
-            _args = (object[])c._args.Clone();
-            _monitorIdx = c._monitorIdx;
-            _missingCount = c._missingCount;
-            _flags = (c._flags & Flags.IsLoopCallable) | Flags.IsWaiting;
-            if( _missingCount == 0 )
-            {
-                WaitToRun( engine );
-            }
         }
 
         ICachedType IReaDIMethod.Handler => _handler.Type;
@@ -76,7 +59,6 @@ public sealed partial class ReaDIEngine
 
         public ImmutableArray<ParameterType> Parameters => _parameters;
 
-        // Regular initialization.
         internal void Initialize( ReaDIEngine engine, int idxMonitor, int idxEngine, bool isLoopCallable )
         {
             engine._waitingCallableCount++;

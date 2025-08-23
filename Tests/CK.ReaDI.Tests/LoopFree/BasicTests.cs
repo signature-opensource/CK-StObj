@@ -254,7 +254,14 @@ public class BasicTests
                              "BaseAction from HandlerA",
                              "MoreAction from B",
                              "BaseAction from HandlerB" ] );
-
+            e.AllCallables.Select( c => c.ToString() )
+                          .ShouldBe( [
+                            "Void CK.ReaDI.LoopFree.Tests.BasicTests.BaseHandler.BaseAction( IActivityMonitor monitor )",
+                            "Void CK.ReaDI.LoopFree.Tests.BasicTests.HandlerA.MoreAction( IActivityMonitor monitor )",
+                            "Void CK.ReaDI.LoopFree.Tests.BasicTests.HandlerA.BaseAction( IActivityMonitor monitor )",
+                            "Void CK.ReaDI.LoopFree.Tests.BasicTests.HandlerB.MoreAction( IActivityMonitor monitor )",
+                            "Void CK.ReaDI.LoopFree.Tests.BasicTests.HandlerB.BaseAction( IActivityMonitor monitor )"
+                            ] );
         }
     }
 
