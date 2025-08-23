@@ -82,7 +82,7 @@ public sealed partial class ReaDIEngine
         }
         else if( _debugMode )
         {
-            var reaDIMethods = oT.DeclaredMembers.Where( m => m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) );
+            var reaDIMethods = oT.Members.Where( m => m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) );
             if( reaDIMethods.Any() )
             {
                 monitor.Error( $"""
@@ -129,11 +129,19 @@ public sealed partial class ReaDIEngine
         return true;
     }
 
+    /// <summary>
+    /// Gets the state of the engine.
+    /// </summary>
+    /// <returns>The engine state.</returns>
     public ReaDIEngineState GetState() => CanRun ? ReaDIEngineState._canRunState : new ReaDIEngineState( this );
 
-    internal IReadOnlyDictionary<ICachedType, object> WaitingObjects => _waitingObjects;
+    /// <summary>
+    /// Gets all the [ReaDI] methods, grouped by the type of their <see cref="IReaDIHandler"/>
+    /// and in the order of declarations (respects the <see cref="Type.GetMembers()"/> ordering).
+    /// </summary>
+    public IEnumerable<IReaDIMethod> AllCallables => _typeRegistrar.AllCallables;
 
-    internal IEnumerable<IReaDIMethod> AllCallables => _typeRegistrar.AllCallables;
+    internal IReadOnlyDictionary<ICachedType, object> WaitingObjects => _waitingObjects;
 
     void AddReadyToRun( Callable callable )
     {

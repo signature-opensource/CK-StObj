@@ -21,6 +21,7 @@ sealed partial class CachedType : CachedItem, ICachedType
     IReadOnlySet<ICachedType>? _concreteGeneralizations;
     ICachedType? _declaringType;
     ICachedType? _elementType;
+    ImmutableArray<CachedMember> _members;
     ImmutableArray<CachedMember> _declaredMembers;
     ICachedType? _genericTypeDefinition;
     ImmutableArray<ICachedType> _genericArguments;
@@ -104,6 +105,8 @@ sealed partial class CachedType : CachedItem, ICachedType
         public ImmutableArray<CustomAttributeData> AttributesData => _nonNullable.AttributesData;
 
         public ImmutableArray<CachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
+
+        public ImmutableArray<CachedMember> Members => _nonNullable.Members;
 
         public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
@@ -293,28 +296,49 @@ sealed partial class CachedType : CachedItem, ICachedType
     {
         get
         {
-            if( _declaredMembers.IsDefault )
-            {
-                var members = Type.GetMembers( BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly );
-                var b = ImmutableArray.CreateBuilder<CachedMember>( members.Length );
-                foreach( var m in members )
-                {
-                    var map = m switch
-                    {
-                        MethodInfo method => new CachedMethod( this, method ),
-                        ConstructorInfo ctor => new CachedConstructor( this, ctor ),
-                        PropertyInfo prop => new CachedProperty( this, prop ),
-                        EventInfo ev => new CachedEvent( this, ev ),
-                        FieldInfo f => new CachedField( this, f ),
-                        Type nested => null,
-                        _ => Throw.NotSupportedException<CachedMember>( m.ToString() )
-                    };
-                    if( map != null ) b.Add( map );
-                }
-                _declaredMembers = b.DrainToImmutable();
-            }
+            if( _declaredMembers.IsDefault ) ComputeMembers();
             return _declaredMembers;
         }
+    }
+
+    public ImmutableArray<CachedMember> Members
+    {
+        get
+        {
+            if( _members.IsDefault ) ComputeMembers();
+            return _members;
+        }
+    }
+
+    void ComputeMembers()
+    {
+        Throw.DebugAssert( _declaredMembers.IsDefault );
+        var members = Type.GetMembers( BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static );
+        var bD = ImmutableArray.CreateBuilder<CachedMember>( members.Length );
+        var bM = ImmutableArray.CreateBuilder<CachedMember>( members.Length );
+        foreach( var m in members )
+        {
+            var map = m switch
+            {
+                MethodInfo method => new CachedMethod( this, method ),
+                ConstructorInfo ctor => new CachedConstructor( this, ctor ),
+                PropertyInfo prop => new CachedProperty( this, prop ),
+                EventInfo ev => new CachedEvent( this, ev ),
+                FieldInfo f => new CachedField( this, f ),
+                Type nested => null,
+                _ => Throw.NotSupportedException<CachedMember>( m.ToString() )
+            };
+            if( map != null )
+            {
+                if( m.DeclaringType == _member )
+                {
+                    bD.Add( map );
+                }
+                bM.Add( map );
+            }
+        }
+        _declaredMembers = bD.DrainToImmutable();
+        _members = bM.DrainToImmutable();
     }
 
     public override StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );

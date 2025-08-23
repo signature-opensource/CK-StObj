@@ -143,6 +143,18 @@ public interface ICachedType : ICachedItem
     ImmutableArray<CachedMember> DeclaredMembers { get; }
 
     /// <summary>
+    /// Get the <see cref="CachedMember"/>.
+    /// <para>
+    /// Non public members are not collected. Only public members are actually considered by the engine.
+    /// </para>
+    /// <para>
+    /// Binding flags are <c>Public|Instance|Static</c> and nested
+    /// types (that are returned by <see cref="Type.GetMembers(BindingFlags)"/>) are filtered out.
+    /// </para>
+    /// </summary>
+    ImmutableArray<CachedMember> Members { get; }
+
+    /// <summary>
     /// Gets the element type of array, pointer, etc. See <see cref="Type.GetElementType()"/>.
     /// </summary>
     ICachedType? ElementType { get; }

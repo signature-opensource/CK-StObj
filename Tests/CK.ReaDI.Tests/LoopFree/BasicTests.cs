@@ -248,12 +248,13 @@ public class BasicTests
             e.CanRun.ShouldBeTrue();
             e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
 
-            // "Logical ordering" from base to specialization is enforced.
+            //Ordering from GetMembers is respected.
             logs.ShouldBe( [ "BaseAction from BaseHandler",
-                             "BaseAction from HandlerA",
                              "MoreAction from A",
-                             "BaseAction from HandlerB",
-                             "MoreAction from B" ] );
+                             "BaseAction from HandlerA",
+                             "MoreAction from B",
+                             "BaseAction from HandlerB" ] );
+
         }
     }
 
@@ -281,7 +282,7 @@ public class BasicTests
         [ReaDI]
         public new void BaseAction( IActivityMonitor monitor )
         {
-            monitor.Trace( $"new BaseAction in VHandlerB (BaseAction has been called)." );
+            monitor.Trace( $"new BaseAction in VHandlerB (BaseAction is also called)." );
         }
     }
 
@@ -304,10 +305,10 @@ public class BasicTests
             e.CanRun.ShouldBeTrue();
             e.RunAll( TestHelper.Monitor ).ShouldBeTrue();
 
-            // "Logical ordering" from base to specialization is enforced.
-            logs.ShouldBe( [ "BaseAction in VHandlerA (regular override of the BaseAction).",
-                             "BaseAction from VHandlerB.",
-                             "new BaseAction in VHandlerB (BaseAction has been called)." ] );
+            logs.ShouldBe( [ "BaseAction from VBaseHandler.",
+                             "BaseAction in VHandlerA (regular override of the BaseAction).",
+                             "new BaseAction in VHandlerB (BaseAction is also called).",
+                             "BaseAction from VHandlerB." ] );
         }
     }
 

@@ -43,6 +43,8 @@ partial class CachedType
 
         public ImmutableArray<CachedMember> DeclaredMembers => throw new NotImplementedException();
 
+        public ImmutableArray<CachedMember> Members => throw new NotImplementedException();
+
         public GlobalTypeCache TypeCache => throw new NotImplementedException();
 
         public string Name => throw new NotImplementedException();

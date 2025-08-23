@@ -71,6 +71,8 @@ sealed class CachedGenericParameter : ICachedType
 
     public ImmutableArray<CachedMember> DeclaredMembers => ImmutableArray<CachedMember>.Empty;
 
+    public ImmutableArray<CachedMember> Members => ImmutableArray<CachedMember>.Empty;
+
     public string Name => _parameter.Name;
 
     public ICachedType? ElementType => null;

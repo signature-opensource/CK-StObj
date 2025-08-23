@@ -12,16 +12,14 @@ public sealed partial class ReaDIEngine
     {
         readonly ICachedType _type;
         readonly LoopParameterType? _loopParameter;
-        readonly HandlerType? _baseHandlerType;
         internal Callable? _firstCallable;
         IReaDIHandler? _currentHandler;
 
-        HandlerType( ICachedType type, IReaDIHandler handler, LoopParameterType? loopParameter, HandlerType? baseHandlerType )
+        HandlerType( ICachedType type, IReaDIHandler handler, LoopParameterType? loopParameter )
         {
             _type = type;
             _currentHandler = handler;
             _loopParameter = loopParameter;
-            _baseHandlerType = baseHandlerType;
         }
 
         public IReaDIHandler? CurrentHandler => _currentHandler;
@@ -35,26 +33,9 @@ public sealed partial class ReaDIEngine
 
         public LoopParameterType? LoopParameter => _loopParameter;
 
-        public HandlerType? BaseHandlerType => _baseHandlerType;
-
-        bool HasOverrideOf( CachedMethod method )
-        {
-            var c = _firstCallable;
-            while( c != null )
-            {
-                if( method.IsOverriddenBy( c.Method ) )
-                {
-                    return true;
-                }
-                c = c._next;
-            }
-            return false;
-        }
-
         internal static HandlerType? Create( IActivityMonitor monitor,
                                              ReaDIEngine engine,
                                              LoopTree loopTree,
-                                             HandlerType? baseHandlerType,
                                              Dictionary<ICachedType, ParameterType> parameters,
                                              ICachedType type,
                                              IReaDIHandler initialHandler )
@@ -63,7 +44,7 @@ public sealed partial class ReaDIEngine
             {
                 return null;
             }
-            var handlerType = new HandlerType( type, initialHandler, loopParameter, baseHandlerType );
+            var handlerType = new HandlerType( type, initialHandler, loopParameter );
             if( !DiscoverReaDIMethods( monitor,
                                        engine,
                                        loopTree,
@@ -72,39 +53,6 @@ public sealed partial class ReaDIEngine
                                        handlerType ) )
             {
                 return null;
-            }
-            if( baseHandlerType != null )
-            {
-                // Non overridden methods from the base handler must come first to be logically ordered.
-                // We clone the Callables and chain them and then insert the linked list
-                // as the first callables.
-                Callable? first = null;
-                Callable? last = null;
-                Callable? c = baseHandlerType.FirstCallable;
-                while( c != null )
-                {
-                    if( !c.Method.MethodInfo.IsVirtual
-                        && !handlerType.HasOverrideOf( c.Method ) )
-                    {
-                        var inherited = new Callable( engine, c, handlerType );
-                        if( last != null )
-                        {
-                            last._next = inherited;
-                        }
-                        else
-                        {
-                            first = inherited;
-                        }
-                        last = inherited;
-                    }
-                    c = c.NextCallable;
-                }
-                if( first != null )
-                {
-                    Throw.DebugAssert( last != null );
-                    last._next = handlerType._firstCallable;
-                    handlerType._firstCallable = first;
-                }
             }
             return handlerType;
 
@@ -116,7 +64,7 @@ public sealed partial class ReaDIEngine
                                               HandlerType handlerType )
             {
                 bool success = true;
-                foreach( var m in type.DeclaredMembers.OfType<CachedMethod>() )
+                foreach( var m in type.Members.OfType<CachedMethod>() )
                 {
                     if( !m.MethodInfo.IsSpecialName && m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) )
                     {
