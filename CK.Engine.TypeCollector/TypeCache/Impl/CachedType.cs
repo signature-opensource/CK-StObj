@@ -25,6 +25,7 @@ sealed partial class CachedType : CachedItem, ICachedType
     ImmutableArray<CachedMember> _declaredMembers;
     ICachedType? _genericTypeDefinition;
     ImmutableArray<ICachedType> _genericArguments;
+    ImmutableArray<ICachedType> _hierarchicalTypePath;
     string? _csharpName;
     readonly ushort _typeDepth;
 
@@ -48,8 +49,10 @@ sealed partial class CachedType : CachedItem, ICachedType
     // 
     readonly bool _isGenericType;
     readonly bool _isGenericTypeDefinition;
+    readonly bool _isDelegate;
     bool? _isSuperTypeDefiner;
     bool? _isTypeDefiner;
+    bool? _isHierarchicalType;
 
     sealed class NullValueType : ICachedType
     {
@@ -73,6 +76,10 @@ sealed partial class CachedType : CachedItem, ICachedType
         public bool IsSuperTypeDefiner => false;
 
         public bool IsTypeDefiner => false;
+
+        public bool IsDelegate => false;
+
+        public bool IsClassOrInterface => false;
 
         public int TypeDepth => _nonNullable.TypeDepth;
 
@@ -116,6 +123,12 @@ sealed partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<object> RawAttributes => _nonNullable.RawAttributes;
 
+        public bool IsHierarchicalType => _nonNullable.IsHierarchicalType;
+
+        public bool IsHierarchicalTypeRoot => _nonNullable.IsHierarchicalTypeRoot;
+
+        public ImmutableArray<ICachedType> HierarchicalTypePath => _nonNullable.HierarchicalTypePath;
+
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
         public override string ToString() => CSharpName;
@@ -152,6 +165,7 @@ sealed partial class CachedType : CachedItem, ICachedType
     {
         _baseType = baseType;
         _nullable = this;
+        _isDelegate = _baseType == cache.KnownTypes.Delegate;
     }
 
     // Value type.

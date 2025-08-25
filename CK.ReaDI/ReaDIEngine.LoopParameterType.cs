@@ -59,8 +59,8 @@ public sealed partial class ReaDIEngine
         internal static void GetLoopParameterAttributeValues( ICachedType type, out bool isRoot, out System.Type? parentType )
         {
             var attributes = type.AttributesData;
-            isRoot = attributes.Any( a => a.AttributeType == typeof( ReaDILoopRootParameterAttribute ) );
-            parentType = attributes.FirstOrDefault( a => a.AttributeType == typeof( ReaDILoopParameterAttribute<> ) )?.AttributeType.GetGenericArguments()[0];
+            isRoot = attributes.Any( a => a.AttributeType == typeof( HierarchicalTypeRootAttribute ) );
+            parentType = attributes.FirstOrDefault( a => a.AttributeType == typeof( HierarchicalTypeAttribute<> ) )?.AttributeType.GetGenericArguments()[0];
         }
 
     }

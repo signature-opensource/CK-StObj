@@ -2,7 +2,7 @@ using CK.Core;
 
 namespace CK.Demo;
 
-[ReaDILoopParameter<EngineConfiguration>]
+[HierarchicalType<EngineConfiguration>]
 public class BinPathConfiguration
 {
 

@@ -65,6 +65,16 @@ partial class CachedType
 
         public bool IsTypeDefiner => throw new NotImplementedException();
 
+        public bool IsHierarchicalType => throw new NotImplementedException();
+
+        public bool IsHierarchicalTypeRoot => throw new NotImplementedException();
+
+        public ImmutableArray<ICachedType> HierarchicalTypePath => throw new NotImplementedException();
+
+        public bool IsClassOrInterface => throw new NotImplementedException();
+
+        public bool IsDelegate => throw new NotImplementedException();
+
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 
         public override string ToString() => throw new NotImplementedException();

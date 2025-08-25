@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -43,6 +44,16 @@ public interface ICachedType : ICachedItem
     /// must be considered (unless <see cref="IsSuperTypeDefiner"/> is also true).
     /// </summary>
     bool IsTypeDefiner { get; }
+
+    /// <summary>
+    /// Gets whether this type is a class or an interface (not a value type nor a Delegate).
+    /// </summary>
+    bool IsClassOrInterface { get; }
+
+    /// <summary>
+    /// Gets whether this type is a <see cref="Delegate"/> (<see cref="Type.IsClass"/> is true).
+    /// </summary>
+    bool IsDelegate { get; }
 
     /// <summary>
     /// Gets the C# name with namespaces that ends with a '?' if <see cref="ICachedType.IsNullable"/> is true.
@@ -141,6 +152,24 @@ public interface ICachedType : ICachedItem
     /// </para>
     /// </summary>
     ImmutableArray<CachedMember> DeclaredMembers { get; }
+
+    /// <summary>
+    /// Gets whether this type is a hierarchy path type: when true, it is either a root or a type path item.
+    /// <para>
+    /// See <see cref="HierarchicalTypeRootAttribute"/> and <see cref="HierarchicalTypeAttribute{TParent}"/>.
+    /// </para>
+    /// </summary>
+    bool IsHierarchicalType { get; }
+
+    /// <summary>
+    /// Gets whether this type is either marked with a <see cref="HierarchicalTypeRootAttribute"/>.
+    /// </summary>
+    bool IsHierarchicalTypeRoot { get; }
+
+    /// <summary>
+    /// Gets the hierarchy path (see <see cref="HierarchicalTypeRootAttribute"/> and <see cref="HierarchicalTypeAttribute{TParent}"/>).
+    /// </summary>
+    ImmutableArray<ICachedType> HierarchicalTypePath { get; }
 
     /// <summary>
     /// Get the <see cref="CachedMember"/>.

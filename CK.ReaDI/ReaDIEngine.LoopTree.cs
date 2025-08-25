@@ -201,7 +201,7 @@ public sealed partial class ReaDIEngine
             {
                 if( parentType != null )
                 {
-                    monitor.Error( $"Type '{type}' cannot have both [ReaDILoopRootParameter] and [ReaDILoopParameter<>]." );
+                    monitor.Error( $"Type '{type}' cannot have both [HierarchicalTypeRoot] and [HierarchicalType<>]." );
                     return null;
                 }
                 var newRoot = new LoopParameterType( this, type, parent: null );
@@ -213,14 +213,14 @@ public sealed partial class ReaDIEngine
             {
                 if( creator is ParameterType p )
                 {
-                    monitor.Error( $"Type '{type}' must be decorated with [ReaDILoopRootParameter] or [ReaDILoopParameter<>] because " +
+                    monitor.Error( $"Type '{type}' must be decorated with [HierarchicalTypeRoot] or [HierarchicalType<>] because " +
                                    $"it is referenced by parameter {p}." );
                 }
                 else
                 {
                     Throw.DebugAssert( "When creating from a new HandlerType, isRoot is true or parentType is not null.",
                                        creator is ICachedType );
-                    monitor.Error( $"Type '{type}' must be decorated with [ReaDILoopRootParameter] or [ReaDILoopParameter<>] because " +
+                    monitor.Error( $"Type '{type}' must be decorated with [HierarchicalTypeRoot] or [HierarchicalType<>] because " +
                                    $"it is referenced by [ReaDILoopParameter<{type.Name}>] of {creator}." );
                 }
                 return null;

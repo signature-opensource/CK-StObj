@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CK.Demo;
 
-[ReaDILoopRootParameter]
+[HierarchicalTypeRoot]
 public class EngineConfiguration
 {
     public bool DebugMode { get; set; }

@@ -53,6 +53,12 @@ sealed class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedType> GenericArguments => ImmutableArray<ICachedType>.Empty;
 
+    public bool IsHierarchicalType => false;
+
+    public bool IsHierarchicalTypeRoot => false;
+
+    public ImmutableArray<ICachedType> HierarchicalTypePath => ImmutableArray<ICachedType>.Empty;
+
     public ImmutableArray<CustomAttributeData> AttributesData
     {
         get
@@ -109,6 +115,11 @@ sealed class CachedGenericParameter : ICachedType
 
     public bool IsTypeDefiner => false;
 
+    // Should handle type constraints!
+    public bool IsDelegate => false;
+
+    // Should handle type constraints!
+    public bool IsClassOrInterface => false;
 
     public override string ToString() => _parameter.Name;
 
