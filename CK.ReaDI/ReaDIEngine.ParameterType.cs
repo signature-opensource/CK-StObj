@@ -69,7 +69,7 @@ public sealed partial class ReaDIEngine
                                         CachedParameter p )
         {
             var thisLoopStateType = _loopParameter?.LoopStateType;
-            // Same (including null-null). No question ask.
+            // Same (including null-null). No questions asked.
             if( loopStateType == thisLoopStateType )
             {
                 return true;
@@ -145,8 +145,7 @@ public sealed partial class ReaDIEngine
             var t = parameterType.Type;
             if( parameterType.EngineUnhandledType != EngineUnhandledType.None
                 || parameterType == wellknownTypes.Object
-                || t.IsValueType
-                || !(t.IsInterface || t.IsClass)
+                || !parameterType.IsClassOrInterface
                 || t.IsByRef
                 || t.IsByRefLike
                 || t.IsArray

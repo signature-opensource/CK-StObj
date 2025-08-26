@@ -170,7 +170,7 @@ public sealed partial class ReaDIEngine
                     }
                     // If it's one of the intrinsic parameter type, it is useless to create a ParameterType for them.
                     // Note that IActivityMonitor contravariance is useless (it is the provided IActivityMonitor instance
-                    // that is used) and that initrinsic types are errors in AddObject.
+                    // that is used) and that intrinsic types are errors in AddObject.
                     if( !isIntrinsicParam )
                     {
                         if( parameters.TryGetValue( parameterType, out var p ) )

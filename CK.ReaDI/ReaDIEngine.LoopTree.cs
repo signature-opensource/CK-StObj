@@ -53,10 +53,9 @@ public sealed partial class ReaDIEngine
             loopParameter = _firstChild != null ? FindByType( _firstChild, type ) : null;
             if( loopParameter == null )
             {
-                LoopParameterType.GetLoopParameterAttributeValues( type, out bool isRoot, out Type? parentType );
-                if( isRoot || parentType != null )
+                if( type.IsHierarchicalType )
                 {
-                    loopParameter = DoCreateLoopParameterType( monitor, type, creator: null, isRoot, parentType );
+                    loopParameter = Create( monitor, type, creator: null );
                     if( loopParameter == null )
                     {
                         return false;
@@ -82,134 +81,9 @@ public sealed partial class ReaDIEngine
             return null;
         }
 
-        //internal bool HandleNewLoopParameters( IActivityMonitor monitor, List<LoopParameterType> loopParameters )
-        //{
-        //    var root = loopParameters[0];
-        //    if( root._tree == null )
-        //    {
-        //        // New root loop parameter type. 
-        //        if( !LimitedStaticCheck( monitor, root.Parameter, _roots ) )
-        //        {
-        //            return false;
-        //        }
-        //        _roots.Add( root );
-        //        root._tree = this;
-        //    }
-        //    // The first parameter type is located.
-        //    // We must now process the remaining parameters to order
-        //    // the loop parameters.
-        //    for( int i = 0; i < loopParameters.Count; i++ )
-        //    {
-        //        LoopParameterType? p = loopParameters[i];
-        //        if( p._tree != null )
-        //        {
-        //            // It must be below root.
-        //            if( !p.IsBelow( root ) )
-        //            {
-        //                if( root.IsBelow( p ) )
-        //                {
-        //                    monitor.Error( "" );
-        //                    return false;
-        //                }
-
-        //            }
-        //        }
-        //    }
-
-
-
-        //    // Static type checking is limited. Two loop parameters MUST not be satisfied
-        //    // by the same instance. The static type check is that they must have no common generalization
-        //    // at all (Generalizations are Interfaces + BaseTypes as we only handle classes and interfaces).
-        //    // This check is too strong: this prevents any template method pattern or unrelated useful interface
-        //    // in loop parameter (even our own IReaDIHandler would be forbidden).
-        //    // One may think that they must have no "instantiable" common generalization
-        //    // is right but unfortunately, "instantiable" cannot be computed for an interface and even an abstract
-        //    // class may eventually be implemented by code.Introducing an [Abstract] marker (the current [CKTypeDefiner])
-        //    // may solve the issue, but even with this we must check the unicity at runtime: considering only the first
-        //    // matching lopp parameter will introduce a possible random behavior.
-        //    static bool LimitedStaticCheck( IActivityMonitor monitor, ParameterType p, IReadOnlyList<LoopParameterType> nodes )
-        //    {
-        //        bool success = true;
-        //        var t = p.Type;
-        //        foreach( var n in nodes )
-        //        {
-        //            var nT = n.Parameter.Type;
-        //            if( AreRelated( t, nT, out var tFromN ) )
-        //            {
-        //                monitor.Error( $"""
-        //                    Loop parameters' type must be independent:
-        //                    parameter {n.Parameter} is assignable {(tFromN ? "from" : "to")}"
-        //                    parameter {p} type. 
-        //                    """ );
-        //                success = false;
-        //            }
-        //            if( n.HasChildren )
-        //            {
-        //                success &= LimitedStaticCheck( monitor, p, n.Children );
-        //            }
-        //        }
-        //        return success;
-
-        //        static bool AreRelated( ICachedType tA, ICachedType tB, out bool aFromB )
-        //        {
-        //            Throw.DebugAssert( tB != tA );
-        //            aFromB = false;
-        //            int cmp = tA.TypeDepth - tB.TypeDepth;
-        //            if( cmp > 0 )
-        //            {
-        //                return IsAbove( tA, tB );
-        //            }
-        //            else if( cmp < 0 )
-        //            {
-        //                aFromB = true;
-        //                return IsAbove( tB, tA );
-        //            }
-        //            return false;
-
-        //            static bool IsAbove( ICachedType t, ICachedType below )
-        //            {
-        //                if( t.Type.IsInterface )
-        //                {
-        //                    return below.Interfaces.Contains( t );
-        //                }
-        //                Throw.DebugAssert( t.Type.IsClass );
-        //                var b = below.BaseType;
-        //                while( b != null )
-        //                {
-        //                    if( b == t ) return true;
-        //                    b = b.BaseType;
-        //                }
-        //                return false;
-        //            }
-
-        //        }
-
-        //    }
-        //}
-
-        LoopParameterType? Create( IActivityMonitor monitor, ICachedType type, object creator )
+        LoopParameterType? Create( IActivityMonitor monitor, ICachedType type, object? creator )
         {
-            Throw.DebugAssert( creator is ParameterType or ICachedType );
-            LoopParameterType.GetLoopParameterAttributeValues( type, out bool isRoot, out System.Type? parentType );
-            return DoCreateLoopParameterType( monitor, type, creator, isRoot, parentType );
-        }
-
-        LoopParameterType? DoCreateLoopParameterType( IActivityMonitor monitor, ICachedType type, object? creator, bool isRoot, Type? parentType )
-        {
-            if( isRoot )
-            {
-                if( parentType != null )
-                {
-                    monitor.Error( $"Type '{type}' cannot have both [HierarchicalTypeRoot] and [HierarchicalType<>]." );
-                    return null;
-                }
-                var newRoot = new LoopParameterType( this, type, parent: null );
-                newRoot._next = _firstChild;
-                _firstChild = newRoot;
-                return newRoot;
-            }
-            else if( parentType == null )
+            if( !type.IsHierarchicalType )
             {
                 if( creator is ParameterType p )
                 {
@@ -218,14 +92,20 @@ public sealed partial class ReaDIEngine
                 }
                 else
                 {
-                    Throw.DebugAssert( "When creating from a new HandlerType, isRoot is true or parentType is not null.",
-                                       creator is ICachedType );
+                    Throw.DebugAssert( creator is ICachedType );
                     monitor.Error( $"Type '{type}' must be decorated with [HierarchicalTypeRoot] or [HierarchicalType<>] because " +
                                    $"it is referenced by [ReaDILoopParameter<{type.Name}>] of {creator}." );
                 }
                 return null;
             }
-            var tParent = _typeCache.Get( parentType );
+            if( type.IsHierarchicalTypeRoot )
+            {
+                var newRoot = new LoopParameterType( this, type, parent: null );
+                newRoot._next = _firstChild;
+                _firstChild = newRoot;
+                return newRoot;
+            }
+            var tParent = type.HierarchicalTypePath[^2];
             var nParent = _firstChild != null ? FindByType( _firstChild, tParent ) : null;
             nParent ??= Create( monitor, tParent, creator: type );
             return nParent == null

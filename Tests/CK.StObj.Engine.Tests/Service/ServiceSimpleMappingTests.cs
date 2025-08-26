@@ -70,7 +70,7 @@ public class ServiceSimpleMappingTests
     // "SetRealObjectKind" method and offer external configuration support like the one for AutoService.
     // Tedious and hardly feasible...
     // 
-    // Excluding a [CKTypeSuperTypeDefiner] condemns is specializations in the same manner.
+    // Excluding a [CKTypeSuperTypeDefiner] condemns its specializations in the same manner.
     //
     // Propagation through inheritance can be handled (but, still, the type appear in the hierarchy). For attributes, it's
     // more problematic. Should the attributes that drives auto-implementation of abstract methods for instance be skipped?
