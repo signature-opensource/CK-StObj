@@ -1,4 +1,5 @@
 using CK.Engine.TypeCollector;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -108,7 +109,7 @@ public sealed partial class ReaDIEngine
                                                                parameters,
                                                                callable,
                                                                parameterTypes,
-                                                               out var isLoopCallable,
+                                                               out var deepestLoop,
                                                                out var monitorIdx,
                                                                out var engineIdx );
                             if( success )
@@ -117,8 +118,8 @@ public sealed partial class ReaDIEngine
                                 // This pushes the callable if it is ready to run.
                                 // We could not do this here but wait for the revert of the final list.
                                 // Pushing in Initialize avoids an other method on the Callable (and respects
-                                // the final Callable oredering.
-                                callable.Initialize( engine, monitorIdx, engineIdx, isLoopCallable );
+                                // the final Callable ordering.
+                                callable.Initialize( engine, monitorIdx, engineIdx, deepestLoop );
                             }
                         }
                     }
@@ -133,11 +134,11 @@ public sealed partial class ReaDIEngine
                                                 Dictionary<ICachedType, ParameterType> parameters,
                                                 Callable callable,
                                                 ParameterType[] parameterTypes,
-                                                out bool isLoopCallable,
+                                                out LoopParameterType? deepestLoop,
                                                 out int monitorIdx,
                                                 out int engineIdx )
             {
-                isLoopCallable = false;
+                deepestLoop = null;
                 monitorIdx = -1;
                 engineIdx = -1;
                 bool success = true;
@@ -177,6 +178,12 @@ public sealed partial class ReaDIEngine
                         {
                             if( !p.CheckLoopStateType( monitor, loopTree, loopStateType, paramInfo ) )
                             {
+                                success = false;
+                            }
+                            var idx = Array.IndexOf( parameterTypes, p, 0, i );
+                            if( idx >= 0 )
+                            {
+                                monitor.Error( $"Duplicate parameter types in '{callable.Method}': '{paramInfo.Name}' and '{parameterInfos[idx].Name}' are both '{parameterType}'." );
                                 success = false;
                             }
                         }
@@ -232,7 +239,30 @@ public sealed partial class ReaDIEngine
                         if( success )
                         {
                             Throw.DebugAssert( p != null );
-                            isLoopCallable = p.IsLoopParameter;
+                            if( p.IsLoopParameter )
+                            {
+                                if( deepestLoop == null )
+                                {
+                                    deepestLoop = p.LoopParameter;
+                                }
+                                else
+                                {
+                                    if( deepestLoop.Type.HierarchicalTypePath[0] != parameterType.HierarchicalTypePath[0] )
+                                    {
+                                        monitor.Error( $"""
+                                            Invalid loop parameters:
+                                            {deepestLoop} is subordinated to root type '{deepestLoop.Type.HierarchicalTypePath[0]}',
+                                            and '{paramInfo.Name}' is subordinated to root type '{parameterType.HierarchicalTypePath[0]}'.
+                                            Cross-product looping is not supported.
+                                            """ );
+                                        success = false;
+                                    }
+                                    if( parameterType.HierarchicalTypePath.Length > deepestLoop.Type.HierarchicalTypePath.Length )
+                                    {
+                                        deepestLoop = p.LoopParameter;
+                                    }
+                                }
+                            }
                             parameterTypes[i] = p;
                             p.AddCallableParameter( callable, i );
                         }

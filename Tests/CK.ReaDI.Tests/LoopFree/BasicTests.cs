@@ -4,6 +4,7 @@ using CK.Monitoring;
 using NUnit.Framework;
 using Shouldly;
 using System.Linq;
+using System.Reflection.Metadata;
 using static CK.Testing.MonitorTestHelper;
 
 namespace CK.ReaDI.LoopFree.Tests;
@@ -316,6 +317,31 @@ public class BasicTests
                              "BaseAction in VHandlerA (regular override of the BaseAction).",
                              "new BaseAction in VHandlerB (BaseAction is also called).",
                              "BaseAction from VHandlerB." ] );
+        }
+    }
+
+    class BadHandler : IReaDIHandler
+    {
+        [ReaDI]
+        public virtual void BaseAction( BasicTests p1, BasicTests p2 )
+        {
+        }
+    }
+
+
+    [Test]
+    public void duplicate_parameters_are_forbidden()
+    {
+        var e = new ReaDIEngine( new GlobalTypeCache() );
+        var bad = new BadHandler();
+
+        using( TestHelper.Monitor.CollectTexts( out var logs ) )
+        {
+            // Adding the object (or not) is irrelevant: the handler will be rejected.
+            e.AddObject( TestHelper.Monitor, this ).ShouldBeTrue();
+            e.AddObject( TestHelper.Monitor, bad ).ShouldBeFalse();
+
+            logs.ShouldContain( "Duplicate parameter types in 'Void BaseAction( BasicTests p1, BasicTests p2 )': 'p2' and 'p1' are both 'CK.ReaDI.LoopFree.Tests.BasicTests'." );
         }
     }
 

@@ -33,7 +33,10 @@ public sealed partial class ReaDIEngine
 
     public bool IsCompleted => _hasError || (_waitingCallableCount == 0 && _readyToRun.Count == 0 && _waitingObjects.Count == 0);
 
-    public bool IsSuccessfullyCompleted => !_hasError && _waitingCallableCount == 0 && _readyToRun.Count == 0 && _waitingObjects.Count == 0;
+    public bool IsSuccessfullyCompleted => !_hasError
+                                            && _waitingCallableCount == 0
+                                            && _readyToRun.Count == 0
+                                            && _waitingObjects.Count == 0;
 
     public bool CanRun => !_hasError && _readyToRun.Count > 0;
 
@@ -87,7 +90,7 @@ public sealed partial class ReaDIEngine
             {
                 monitor.Error( $"""
                     Type '{oT}' has [ReaDI] methods, it must implement the '{nameof(IReaDIHandler)}' interface:
-                    {reaDIMethods.Select( m => m.ToString() ).Concatenate( Environment.NewLine)}
+                    {reaDIMethods.Select( m => m.ToString() ).Concatenate( Environment.NewLine )}
                     """ );
                 return false;
             }

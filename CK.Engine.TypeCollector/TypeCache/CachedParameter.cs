@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -100,7 +101,7 @@ public sealed class CachedParameter
             for( int i = 0; i < AttributesDataType.Length; i++ )
             {
                 if( i != 0 ) b.Append( ", " );
-                b.Append( AttributesDataType[i].Name );
+                b.Append( WithoutAttributeSuffix( AttributesDataType[i].Name ) );
             }
             b.Append( ']' );
         }
@@ -111,6 +112,13 @@ public sealed class CachedParameter
             b.Append( ' ' ).Append( n );
         }
         return b;
+    }
+
+    static ReadOnlySpan<char> WithoutAttributeSuffix( string n )
+    {
+        // This doesn't handle generic attributes.
+        var s = n.AsSpan();
+        return s.Length > 9 && s.EndsWith( "Attribute" ) ? s[..^9] : s;
     }
 
     public override string ToString() => _toString ??= Write( new StringBuilder() ).ToString();

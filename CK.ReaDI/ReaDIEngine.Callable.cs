@@ -15,6 +15,7 @@ public sealed partial class ReaDIEngine
         readonly ImmutableArray<ParameterType> _parameters;
         readonly object?[] _args;
         internal Callable? _next;
+        LoopParameterType? _deepestLoop;
         int _monitorIdx;
         int _missingCount;
         Flags _flags;
@@ -59,11 +60,12 @@ public sealed partial class ReaDIEngine
 
         public ImmutableArray<ParameterType> Parameters => _parameters;
 
-        internal void Initialize( ReaDIEngine engine, int idxMonitor, int idxEngine, bool isLoopCallable )
+        internal void Initialize( ReaDIEngine engine, int idxMonitor, int idxEngine, LoopParameterType? deepestLoop )
         {
             engine._waitingCallableCount++;
-            if( isLoopCallable )
+            if( deepestLoop != null )
             {
+                _deepestLoop = deepestLoop;
                 _flags |= Flags.IsLoopCallable;
             }
             _monitorIdx = idxMonitor;

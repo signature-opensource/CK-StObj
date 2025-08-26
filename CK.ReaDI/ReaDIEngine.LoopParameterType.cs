@@ -63,6 +63,7 @@ public sealed partial class ReaDIEngine
             parentType = attributes.FirstOrDefault( a => a.AttributeType == typeof( HierarchicalTypeAttribute<> ) )?.AttributeType.GetGenericArguments()[0];
         }
 
+        public override string ToString() => _parameter?.ToString() ?? "<not yet bound>";
     }
 }
 
