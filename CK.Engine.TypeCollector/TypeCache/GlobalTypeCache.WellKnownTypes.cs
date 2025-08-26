@@ -1,5 +1,6 @@
 using CK.Core;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Engine.TypeCollector;
 
@@ -10,7 +11,8 @@ public sealed partial class GlobalTypeCache
         readonly GlobalTypeCache _cache;
         ICachedType? _void;
         ICachedType? _object;
-        ICachedType? _delegate;
+        ICachedType _delegate;
+        ICachedType? _multiCastDelegate;
         ICachedType? _iActivityMonitor;
         ICachedType? _iParallelLogger;
         ICachedType? _iRealObject;
@@ -29,14 +31,16 @@ public sealed partial class GlobalTypeCache
         ICachedType? _genericIDictionaryDefinition;
         ICachedType? _genericIReadOnlyDictionaryDefinition;
 
-        internal WellKnownTypes( GlobalTypeCache cache )
+        internal WellKnownTypes( GlobalTypeCache cache, CachedType del )
         {
             _cache = cache;
+            _delegate = del;
         }
 
         public ICachedType Void => _void ??= _cache.Get( typeof( void ) );
         public ICachedType Object => _object ??= _cache.Get( typeof( object ) );
-        public ICachedType Delegate => _delegate ??= _cache.Get( typeof( System.Delegate ) );
+        public ICachedType Delegate => _delegate;
+        public ICachedType MulticastDelegate => _multiCastDelegate ??= _cache.Get( typeof( System.MulticastDelegate ) );
         public ICachedType IActivityMonitor => _iActivityMonitor ??= _cache.Get( typeof( IActivityMonitor ) );
         public ICachedType IParallelLogger => _iParallelLogger ??= _cache.Get( typeof( IParallelLogger ) );
         public ICachedType IRealObject => _iRealObject ??= _cache.Get( typeof( IRealObject ) );

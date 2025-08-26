@@ -75,11 +75,11 @@ sealed partial class CachedType
                 if( parentType is not CachedType parent
                     || (!parentType.Type.IsValueType && !parentType.IsClassOrInterface) )
                 {
-                    return Throw.ArgumentException<bool>( "TParent", $"Invalid type in [HierarchicalType<{Name}>] on '{CSharpName}'. A hierachical type must be a struct or a class." );
+                    return Throw.ArgumentException<bool>( "TParent", $"Invalid type in [HierarchicalType<{parentType.Name}>] on '{CSharpName}'. A hierachical type must be a struct or a class." );
                 }
                 if( !parent.ComputeHierarchyTypeInfo( subordinates ) )
                 {
-                    Throw.ArgumentException( "TParent", $"Invalid [HierarchicalType<{Name}>] on '{CSharpName}': type '{Name}' is not marked as a hierarchical type." );
+                    Throw.ArgumentException( "TParent", $"Invalid [HierarchicalType<{parent.Name}>] on '{CSharpName}': type '{parent.CSharpName}' is not marked as a hierarchical type." );
                 }
                 _hierarchicalTypePath = parentType.HierarchicalTypePath.Add( this );
                 _isHierarchicalType = true;

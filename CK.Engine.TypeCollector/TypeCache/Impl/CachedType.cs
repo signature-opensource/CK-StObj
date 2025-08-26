@@ -49,7 +49,9 @@ sealed partial class CachedType : CachedItem, ICachedType
     // 
     readonly bool _isGenericType;
     readonly bool _isGenericTypeDefinition;
-    readonly bool _isDelegate;
+    // Initialized by the cache for Delegate base class
+    // to avoid deferred resolution.
+    internal bool _isDelegate;
     bool? _isSuperTypeDefiner;
     bool? _isTypeDefiner;
     bool? _isHierarchicalType;
@@ -165,7 +167,7 @@ sealed partial class CachedType : CachedItem, ICachedType
     {
         _baseType = baseType;
         _nullable = this;
-        _isDelegate = _baseType == cache.KnownTypes.Delegate;
+        _isDelegate = baseType != null && baseType.IsDelegate;
     }
 
     // Value type.

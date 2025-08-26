@@ -51,7 +51,7 @@ public interface ICachedType : ICachedItem
     bool IsClassOrInterface { get; }
 
     /// <summary>
-    /// Gets whether this type is a <see cref="Delegate"/> (<see cref="Type.IsClass"/> is true).
+    /// Gets whether this type is a <see cref="Delegate"/> or a <see cref="MulticastDelegate"/> (<see cref="Type.IsClass"/> is true).
     /// </summary>
     bool IsDelegate { get; }
 
