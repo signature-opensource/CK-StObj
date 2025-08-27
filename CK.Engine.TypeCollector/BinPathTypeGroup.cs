@@ -12,42 +12,34 @@ namespace CK.Engine.TypeCollector;
 /// </summary>
 public sealed partial class BinPathTypeGroup
 {
+    static readonly string _pureName = "(Unified)";
+
     readonly ImmutableArray<BinPathConfiguration> _configurations;
     readonly string _groupName;
     readonly IConfiguredTypeSet _configuredTypes;
     // Regular groups have a BinPathGroup.
     readonly AssemblyCache.BinPathGroup? _assemblyGroup;
-    readonly GlobalTypeCache _typeCache;
-
-    // Unified has the AssemblyCache.
-    readonly AssemblyCache? _assemblyCache;
-    SHA1Value _signature;
+    readonly SHA1Value _signature;
 
     // Regular group.
     BinPathTypeGroup( ImmutableArray<BinPathConfiguration> configurations,
                       string groupName,
                       AssemblyCache.BinPathGroup assemblyGroup,
-                      GlobalTypeCache typeCache,
                       IConfiguredTypeSet configuredTypes,
                       SHA1Value signature )
     {
         _configurations = configurations;
         _groupName = groupName;
         _assemblyGroup = assemblyGroup;
-        _typeCache = typeCache;
         _configuredTypes = configuredTypes;
         _signature = signature;
     }
 
     // Unified group (Signature is Zero).
-    BinPathTypeGroup( AssemblyCache assemblyCache,
-                      GlobalTypeCache typeCache,
-                      HashSet<ICachedType> allTypes )
+    BinPathTypeGroup( HashSet<ICachedType> allTypes )
     {
         _configurations = ImmutableArray<BinPathConfiguration>.Empty;
-        _groupName = "(Unified)";
-        _assemblyCache = assemblyCache;
-        _typeCache = typeCache;
+        _groupName = _pureName;
         _configuredTypes = new ImmutableConfiguredTypeSet( allTypes );
     }
 
@@ -72,11 +64,6 @@ public sealed partial class BinPathTypeGroup
     public ImmutableArray<BinPathConfiguration> Configurations => _configurations;
 
     /// <summary>
-    /// Gets the global type cache.
-    /// </summary>
-    public GlobalTypeCache TypeCache => _typeCache;
-
-    /// <summary>
     /// Gets the types to consider in the group.
     /// </summary>
     public IConfiguredTypeSet ConfiguredTypes => _configuredTypes;
@@ -91,7 +78,7 @@ public sealed partial class BinPathTypeGroup
     /// during the code generation but this code will never be used.
     /// </para>
     /// </summary>
-    public bool IsUnifiedPure => _assemblyCache != null;
+    public bool IsUnifiedPure => ReferenceEquals( _groupName, _pureName );
 
     /// <summary>
     /// Gets the assembly level information for this group or null if this
@@ -102,11 +89,6 @@ public sealed partial class BinPathTypeGroup
     /// </para>
     /// </summary>
     public AssemblyCache.BinPathGroup? AssemblyGroup => _assemblyGroup;
-
-    /// <summary>
-    /// Gets the assembly cache.
-    /// </summary>
-    public AssemblyCache AssemblyCache => _assemblyGroup?.AssemblyCache ?? _assemblyCache!;
 
     /// <summary>
     /// Gets this BinPathTypeGroup digital signature. Based on <see cref="AssemblyCache.BinPathGroup.Signature"/>
@@ -216,7 +198,6 @@ public sealed partial class BinPathTypeGroup
             var g = new BinPathTypeGroup( configurations,
                                           groupName,
                                           assemblyGroup,
-                                          typeCache,
                                           types,
                                           new SHA1Value( hasher, resetHasher: true ) );
             groups.Add( g );
@@ -225,7 +206,7 @@ public sealed partial class BinPathTypeGroup
         if( assemblyResult.Success )
         {
             HandleUnifiedBinPath( monitor, groups, typeCache );
-            // ...but why not waiting the unification and accounting the existenc of the UnifiedPure
+            // ...but why not waiting the unification and accounting the existence of the UnifiedPure
             // or the reordering of the groups (with the most covering one at the start)?
             foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
         }
@@ -279,7 +260,7 @@ public sealed partial class BinPathTypeGroup
             else
             {
                 monitor.Info( $"Unification is required for {uTypes.Count} IRealObject and IPoco." );
-                var unified = new BinPathTypeGroup( result[0].AssemblyCache, typeCache, uTypes );
+                var unified = new BinPathTypeGroup( uTypes );
                 result.Insert( 0, unified );
             }
         }

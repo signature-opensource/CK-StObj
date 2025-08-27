@@ -14,6 +14,7 @@ namespace CK.Setup;
 sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
 {
     readonly List<RunningBinPathGroup> _binPathGroups;
+    readonly GlobalTypeCache _typeCache;
 
     /// <inheritdoc />
     public EngineConfiguration Configuration { get; }
@@ -24,10 +25,11 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
     IReadOnlyList<IRunningBinPathGroup> IRunningEngineConfiguration.Groups => _binPathGroups;
 
     // New way
-    public RunningEngineConfiguration( EngineConfiguration configuration, IReadOnlyList<BinPathTypeGroup> groups )
+    public RunningEngineConfiguration( EngineConfiguration configuration, GlobalTypeCache typeCache, IReadOnlyList<BinPathTypeGroup> groups )
     {
         Configuration = configuration;
-        _binPathGroups = groups.Select( g => new RunningBinPathGroup( configuration, g ) ).ToList();
+        _typeCache = typeCache;
+        _binPathGroups = groups.Select( g => new RunningBinPathGroup( configuration, typeCache, g ) ).ToList();
     }
 
 
@@ -44,7 +46,7 @@ sealed partial class RunningEngineConfiguration : IRunningEngineConfiguration
     }
 
     #region Legacy
-    public RunningEngineConfiguration( EngineConfiguration configuration )
+    public RunningEngineConfiguration( EngineConfiguration configuration, GlobalTypeCache typeCache )
     {
         _binPathGroups = new List<RunningBinPathGroup>();
         Configuration = configuration;

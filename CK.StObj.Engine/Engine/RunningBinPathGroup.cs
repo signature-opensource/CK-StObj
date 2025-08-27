@@ -18,6 +18,7 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
     readonly string _generatedDllName;
     readonly string _names;
     readonly EngineConfiguration _engineConfiguration;
+    readonly GlobalTypeCache _typeCache;
     readonly BinPathConfiguration _configuration;
     readonly IReadOnlyCollection<BinPathConfiguration> _similarConfigurations;
     readonly GeneratedFileArtifactWithTextSignature? _generatedAssembly;
@@ -37,10 +38,11 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
 
     internal IConfiguredTypeSet ConfiguredTypes => _typeGroup.ConfiguredTypes;
 
-    internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
+    internal RunningBinPathGroup( EngineConfiguration engineConfiguration, GlobalTypeCache typeCache, BinPathTypeGroup typeGroup )
     {
         _typeGroup = typeGroup;
         _engineConfiguration = engineConfiguration;
+        _typeCache = typeCache;
         _names = typeGroup.GroupName;
         if( typeGroup.IsUnifiedPure )
         {
@@ -156,7 +158,7 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
     /// <inheritdoc />
     public IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations => _similarConfigurations;
 
-    public GlobalTypeCache TypeCache => _typeGroup.TypeCache;
+    public GlobalTypeCache TypeCache => _typeCache;
 
     public IReadOnlySet<ICachedType> TypeSet => _typeGroup.ConfiguredTypes.AllTypes;
 

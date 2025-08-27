@@ -48,6 +48,11 @@ public sealed partial class GlobalTypeCache
     public WellKnownTypes KnownTypes => _knownTypes;
 
     /// <summary>
+    /// Gets the assembly cache.
+    /// </summary>
+    public AssemblyCache AssemblyCache => _assemblies;
+
+    /// <summary>
     /// Gets a cached type.
     /// <para>
     /// If the type is not yet known, it will be registered.

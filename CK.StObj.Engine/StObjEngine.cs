@@ -59,7 +59,7 @@ public sealed class StObjEngine
         _monitor = monitor;
         _typeCache = typeCache;
         _groups = groups;
-        _config = new RunningEngineConfiguration( config, groups );
+        _config = new RunningEngineConfiguration( config, typeCache, groups );
     }
 
     public StObjEngineResult NewRun()
