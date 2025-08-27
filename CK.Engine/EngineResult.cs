@@ -23,7 +23,7 @@ public sealed partial class EngineResult
     }
 
     /// <summary>
-    /// Gets whether the run global run status.
+    /// Gets the global run status.
     /// </summary>
     public RunStatus Status => _runStatus;
 

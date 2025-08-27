@@ -88,7 +88,7 @@ public sealed partial class EngineConfiguration
     ///     </item>
     /// </list>
     /// </summary>
-    /// <returns>True on success, false is something's wrong in the configuration.</returns>
+    /// <returns>True on success, false if something's wrong in the configuration.</returns>
     public bool NormalizeConfiguration( IActivityMonitor monitor )
     {
         using( monitor.OpenInfo( $"Normalizing engine configuration:{Environment.NewLine}{ToXml()}" ) )
