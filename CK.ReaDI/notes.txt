@@ -112,5 +112,40 @@ too limited.
     We should decide the definitive naming asap. 
 
 
+While trying to handle the root loop: [AlsoRegisterType] is an issue.
+From an initial set of type, we consider all the EngineAttribute that are IReaDIHandler but any
+[AlsoRegisterType] must extend the set (recursively).
+Any previously added IReaDIHandler must not be "active" when the set changes (different BinPath).
+This is like a "super loop" because the handlers themselves are impacted.
+Tried a [HierarchicalTypeRoot] public sealed class PreRunningGroup that would allow registering new types
+(and handles the EngineAttribute that are IReaDIHandler on new types) BUT this will not handle
+optional packages (in TypeScript). TypeScriptPackages (from the initial TypeSet) must be able to
+interact with the ResSpaceConfiguration & ResSpaceCollector (to register the package in the ResSpace)
+but if the package is optional, it must NOT interact with the ResSpaceData anymore (it must not interact
+whith anything). The solution seems to support the "Type Set" notion at the ReaDIEngine level.
+Following the current bet that HandlerType and ParameterType can hold their "CurrentValue" (this has yet
+to be proved), Activating/Deactivating a Type from the "AvailableTypes" (or the "TypeWorkingSet"... this
+originally is the BinPathTypeGroup "AllTypes" set but AllTypes will be ambiguous - this is not the engine
+types but types that can have IReaDIHandler though their EngineAttributes...).
+
+"SourceTypeSet" may be better.
+
+A Dictionary<ICachedType,HandlerType?> should be wrapped in a IReadOnlySet<ICachedType> and the HandlerType
+must have a HandlerType? _nextSourceType (single linked list).
+It must also have a bool _inactive (that defaults to false and that Callables should check before pushing themselves).
+When _inactive is true, a satisfied callable should not push and enter a new final state ("Skipped"?).
+When a SourceType is added to the SourceTypeSet, it should reactivate its handlers if it was already known.
+This Dictionary, once again, is in append only. This new SourceTypeSet doesn't change anything else in the current
+code base. It integrates the Type => EngineAttribute : IReaDIHandler association.
+
+Note: an optional package SHOULD NOT have a [AlsoRegisterType]. TODO: implement this check.
+
+Member's EngineAttribute should also be registered here and be also bound to the source type. To avoid
+a systematic lookup on the members and following the "primary attribute philosophy", we'll introduce
+a guard: members will be handled only if at least one type engine attribute has been found.
+
+
+
+
 
 
