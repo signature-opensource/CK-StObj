@@ -36,7 +36,7 @@ public sealed partial class ReaDIEngine
 
         public bool HasChildren => _firstChild != null;
 
-        [MemberNotNullWhen(true,nameof(Parameter))]
+        [MemberNotNullWhen( true, nameof( Parameter ) )]
         public bool HasParameter => _parameter != null;
 
         public ParameterType? Parameter => _parameter;

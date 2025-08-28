@@ -1,10 +1,7 @@
 using CK.Engine.TypeCollector;
-using Microsoft.Extensions.Primitives;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
-using static CK.Core.CompletionSource;
 
 namespace CK.Core;
 
@@ -75,7 +72,7 @@ public sealed partial class ReaDIEngine
         ParameterType? parameterType = null;
         if( o is IReaDIHandler handler )
         {
-            if( !_typeRegistrar.RegisterHandlerType( monitor, this, oT, handler, out var handlerType ) )
+            if( !_typeRegistrar.RegisterHandlerTypeFromObject( monitor, this, oT, handler, out var handlerType ) )
             {
                 return SetError( monitor );
             }
@@ -83,17 +80,9 @@ public sealed partial class ReaDIEngine
             // If the handler is a loop parameter, avoid the parameter type lookup.
             parameterType = handlerType.LoopParameter?.Parameter;
         }
-        else if( _debugMode )
+        else if( _debugMode && !CheckNoReaDIMethodsOnNonReaDIHandler( monitor, oT ) )
         {
-            var reaDIMethods = oT.Members.Where( m => m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) );
-            if( reaDIMethods.Any() )
-            {
-                monitor.Error( $"""
-                    Type '{oT}' has [ReaDI] methods, it must implement the '{nameof(IReaDIHandler)}' interface:
-                    {reaDIMethods.Select( m => m.ToString() ).Concatenate( Environment.NewLine )}
-                    """ );
-                return false;
-            }
+            return false;
         }
         if( parameterType == null )
         {
@@ -128,6 +117,20 @@ public sealed partial class ReaDIEngine
             {
                 return SetError( monitor );
             }
+        }
+        return true;
+    }
+
+    static bool CheckNoReaDIMethodsOnNonReaDIHandler( IActivityMonitor monitor, ICachedType oT )
+    {
+        var reaDIMethods = oT.Members.Where( m => m.AttributesData.Any( a => a.AttributeType == typeof( ReaDIAttribute ) ) );
+        if( reaDIMethods.Any() )
+        {
+            monitor.Error( $"""
+                    Type '{oT}' has [ReaDI] methods, it must implement the '{nameof( IReaDIHandler )}' interface:
+                    {reaDIMethods.Select( m => m.ToString() ).Concatenate( Environment.NewLine )}
+                    """ );
+            return false;
         }
         return true;
     }

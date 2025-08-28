@@ -3,20 +3,22 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.AccessControl;
 
 namespace CK.Core;
 
 public sealed partial class ReaDIEngine
 {
+
     sealed class TypeRegistrar
     {
-        readonly Dictionary<ICachedType, HandlerType> _handlers;
+        readonly Dictionary<ICachedType, HandlerType> _handlerTypes;
         readonly Dictionary<ICachedType, ParameterType> _parameters;
         readonly LoopTree _loopTree;
 
         public TypeRegistrar( GlobalTypeCache typeCache )
         {
-            _handlers = new Dictionary<ICachedType, HandlerType>();
+            _handlerTypes = new Dictionary<ICachedType, HandlerType>();
             _parameters = new Dictionary<ICachedType, ParameterType>();
             _loopTree = new LoopTree( typeCache );
         }
@@ -36,7 +38,7 @@ public sealed partial class ReaDIEngine
         {
             get
             {
-                foreach( var handler in _handlers.Values )
+                foreach( var handler in _handlerTypes.Values )
                 {
                     var c = handler.FirstCallable;
                     while( c != null )
@@ -50,37 +52,71 @@ public sealed partial class ReaDIEngine
 
         internal Dictionary<ICachedType, ParameterType> ParameterTypes => _parameters;
 
-        internal Dictionary<ICachedType, HandlerType> Handlers => _handlers;
+        internal Dictionary<ICachedType, HandlerType> Handlers => _handlerTypes;
 
         internal IEnumerable<KeyValuePair<ICachedType, object>> HandlersAsWaitingObjects
         {
             get
             {
-                foreach( var h in _handlers.Values )
+                foreach( var h in _handlerTypes.Values )
                 {
-                    if( h.CurrentHandler != null )
+                    var c = h.CurrentHandler;
+                    if( c != null )
                     {
-                        yield return KeyValuePair.Create( h.Type, (object)h.CurrentHandler );
+                        yield return KeyValuePair.Create( h.Type, (object)c );
                     }
                 }
             }
         }
 
-        public bool RegisterHandlerType( IActivityMonitor monitor,
-                                         ReaDIEngine engine,
-                                         ICachedType type,
-                                         IReaDIHandler handler,
-                                         [NotNullWhen( true )] out HandlerType? handlerType )
+        public bool RegisterHandlerTypeFromObject( IActivityMonitor monitor,
+                                                   ReaDIEngine engine,
+                                                   ICachedType type,
+                                                   IReaDIHandler handler,
+                                                   [NotNullWhen( true )] out HandlerType? handlerType )
         {
-            if( !_handlers.TryGetValue( type, out handlerType ) )
+            if( _handlerTypes.TryGetValue( type, out handlerType ) )
             {
-                handlerType = HandlerType.Create( monitor, engine, _loopTree, _parameters, type, handler );
-                if( handlerType == null )
+                if( handlerType.IsFromSourceType )
                 {
+                    monitor.Error( $"ReaDIHandler '{type}' registered from engine attributes (at least from type '{handlerType.InitialSourceType}') cannot be explicitly added." );
                     return false;
                 }
-                _handlers.Add( type, handlerType );
+                return true;
             }
+            handlerType = HandlerType.Create( monitor, engine, _loopTree, _parameters, type, sourceType: null, handler );
+            if( handlerType == null )
+            {
+                return false;
+            }
+            _handlerTypes.Add( type, handlerType );
+            return true;
+        }
+
+        public bool RegisterHandlerTypeForSourceType( IActivityMonitor monitor,
+                                                      ReaDIEngine engine,
+                                                      ICachedType type,
+                                                      SourcedType sourcedType,
+                                                      IReaDIHandler handler )
+        {
+            if( _handlerTypes.TryGetValue( type, out var handlerType ) )
+            {
+                if( !handlerType.IsFromSourceType )
+                {
+                    monitor.Error( $"A ReaDIHandler '{type}' instance registered from engine attributes (from type '{sourcedType}') has been previously explicitly added." );
+                    return false;
+                }
+                handlerType.AddSourceInstance( sourcedType, handler );
+                return true;
+            }
+
+            handlerType = HandlerType.Create( monitor, engine, _loopTree, _parameters, type, sourcedType, handler );
+            if( handlerType == null )
+            {
+                return false;
+            }
+            Throw.DebugAssert( handlerType.FirstSourcedHandler != null );
+            _handlerTypes.Add( type, handlerType );
             return true;
         }
     }

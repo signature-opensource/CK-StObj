@@ -23,11 +23,12 @@ public sealed partial class ReaDIEngine
         [Flags]
         enum Flags
         {
-            IsLoopCallable = 1,
+            IsInactiveSource = 1,
             IsWaiting = 2,
             IsRunning = 4,
             IsCompleted = 8,
-            IsError = 16
+            IsError = 32,
+            IsLoopCallable = 64,
         }
 
         internal Callable( HandlerType handler,
@@ -113,10 +114,17 @@ public sealed partial class ReaDIEngine
         void WaitToRun( ReaDIEngine engine )
         {
             Throw.DebugAssert( (_flags & Flags.IsWaiting) != 0 );
-            _flags &= ~Flags.IsWaiting;
-            _flags |= Flags.IsRunning;
             engine._waitingCallableCount--;
-            engine.AddReadyToRun( this );
+            _flags &= ~Flags.IsWaiting;
+            if( _handler._sourceDisabled )
+            {
+                _flags |= Flags.IsCompleted;
+            }
+            else
+            {
+                _flags |= Flags.IsRunning;
+                engine.AddReadyToRun( this );
+            }
         }
 
         internal bool Run( IActivityMonitor monitor, ReaDIEngine engine )

@@ -1,30 +1,40 @@
 using CK.Engine.TypeCollector;
-using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CK.Core;
 
 public sealed partial class ReaDIEngine
 {
+
     sealed class HandlerType
     {
         readonly ICachedType _type;
         readonly LoopParameterType? _loopParameter;
+        readonly SourcedType? _initialSourcedType;
         internal Callable? _firstCallable;
-        IReaDIHandler? _currentHandler;
+        object? _currentHandler;
 
-        HandlerType( ICachedType type, IReaDIHandler handler, LoopParameterType? loopParameter )
+        HandlerType( ICachedType type, IReaDIHandler handler, SourcedType? sourcedType, LoopParameterType? loopParameter )
         {
             _type = type;
-            _currentHandler = handler;
+            _initialSourcedType = sourcedType;
             _loopParameter = loopParameter;
+            if( sourcedType == null )
+            {
+                _currentHandler = handler;
+            }
+            else
+            {
+                _currentHandler = new SourcedHandlerInstance( handler, sourcedType, null );
+            }
         }
 
-        public IReaDIHandler? CurrentHandler => _currentHandler;
+        public IReaDIHandler? CurrentHandler => _currentHandler as IReaDIHandler;
+
+        public SourcedHandlerInstance? FirstSourcedHandler => _currentHandler as SourcedHandlerInstance;
 
         public ICachedType Type => _type;
 
@@ -34,6 +44,20 @@ public sealed partial class ReaDIEngine
         public bool IsAlsoLoopParameter => _loopParameter != null;
 
         public LoopParameterType? LoopParameter => _loopParameter;
+
+        [MemberNotNullWhen( true, nameof( InitialSourceType ) )]
+        public bool IsFromSourceType => _initialSourcedType != null;
+
+        public ICachedType? InitialSourceType => _initialSourcedType?.SourceType;
+
+        public SourcedHandlerInstance AddSourceInstance( SourcedType sourcedType, IReaDIHandler handler )
+        {
+            Throw.DebugAssert( _initialSourcedType != null );
+            Throw.DebugAssert( _currentHandler is SourcedHandlerInstance );
+            var h = new SourcedHandlerInstance( handler, sourcedType, FirstSourcedHandler );
+            _currentHandler = h;
+            return h;
+        }
 
         internal void ReverseCallableList()
         {
@@ -58,13 +82,25 @@ public sealed partial class ReaDIEngine
                                              LoopTree loopTree,
                                              Dictionary<ICachedType, ParameterType> parameters,
                                              ICachedType type,
+                                             SourcedType? sourceType,
                                              IReaDIHandler initialHandler )
         {
             if( !loopTree.TryFindOrCreateFromHandlerType( monitor, type, out var loopParameter ) )
             {
                 return null;
             }
-            var handlerType = new HandlerType( type, initialHandler, loopParameter );
+            if( loopParameter != null && sourceType != null )
+            {
+                var msg = loopParameter.HasParameter
+                            ? $"Type '{type.Name}' is declared by {loopParameter.Parameter}."
+                            : $"Type '{type.Name}' is considered a loop parameter because it is decorated with [HierarchicalTypeRoot] or [HierarchicalType<>].";
+                monitor.Error( $"""
+                    ReaDIHandler '{type}' registered from engine attributes on type '{sourceType}' cannot be a loop parameter type.
+                    {msg}
+                    """ );
+                return null;
+            }
+            var handlerType = new HandlerType( type, initialHandler, sourceType, loopParameter );
             if( !DiscoverReaDIMethods( monitor,
                                        engine,
                                        loopTree,
