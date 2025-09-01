@@ -6,7 +6,7 @@ namespace CK.Engine.TypeCollector;
 
 public sealed class CachedMethod : CachedMethodBase
 {
-    CachedParameter? _returnParameterInfo;
+    CachedParameter? _returnParameter;
     MethodInfo? _baseMethodDefinition;
 
     internal CachedMethod( ICachedType declaringType, MethodInfo method )
@@ -27,7 +27,7 @@ public sealed class CachedMethod : CachedMethodBase
     /// <summary>
     /// Gets the return parameter.
     /// </summary>
-    public CachedParameter ReturnParameterInfo => _returnParameterInfo ??= new CachedParameter( this, MethodInfo.ReturnParameter );
+    public CachedParameter ReturnParameter => _returnParameter ??= new CachedParameter( this, MethodInfo.ReturnParameter );
 
     MethodInfo? BaseMethodDefinition => _baseMethodDefinition ??= MethodInfo.GetBaseDefinition();
 
@@ -57,7 +57,7 @@ public sealed class CachedMethod : CachedMethodBase
     {
         get
         {
-            var r = ReturnParameterInfo.ParameterType;
+            var r = ReturnParameter.ParameterType;
             var knownTypes = TypeCache.KnownTypes;
             return r == knownTypes.Task
                    || r == knownTypes.ValueTask
@@ -76,7 +76,7 @@ public sealed class CachedMethod : CachedMethodBase
     /// <returns>The unwrapped type or null for a synchronous method.</returns>
     public ICachedType? GetAsynchronousReturnedType()
     {
-        var r = ReturnParameterInfo.ParameterType;
+        var r = ReturnParameter.ParameterType;
         var knownTypes = TypeCache.KnownTypes;
         if( r == knownTypes.Task || r == knownTypes.ValueTask )
         {
@@ -93,7 +93,7 @@ public sealed class CachedMethod : CachedMethodBase
     internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         if( MethodInfo.IsStatic ) b.Append( "static " );
-        ReturnParameterInfo.Write( b );
+        ReturnParameter.Write( b );
         b.Append( ' ' );
         if( withDeclaringType ) b.Append( DeclaringType.CSharpName ).Append( '.' );
         b.Append( Name ).Append('(');
