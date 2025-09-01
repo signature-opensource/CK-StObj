@@ -145,7 +145,221 @@ a systematic lookup on the members and following the "primary attribute philosop
 a guard: members will be handled only if at least one type engine attribute has been found.
 
 
+Yesterday's work led to this commit:
+Date: 28/08/2025 15:50:45
+WIP. Is it time for the FinalTypeSet?
+- Will replace the CKTypeDetector.
+- Must handle most specialized type.
+- IsEventuallyConcrete with abstract stubbed by "ImplementedClaim".
+- [AlsoRegisterType] handling.
+- GeneratedType fake dynamic generation ?
+- Abstract/Virtual/Concrete/Sealed handling?
+- IsMultiple/Single handling?
+- IsOptional handling?
+
+But... I'm wondering if this search for a unified, global, vision is the better path to follow.
+ResSpace has been developped as a tool, it is controlled externally, packages are
+registered explicitly and this is easy to use and understand. We just need ReaDI to
+ease the orchestration of the TypeScript related packages (and only them: auto services,
+real objects are useless there).
+CK.ReaDI may better also be a "local tool". The SourcedTypeSet seems to allow this usage.
+"Source Types" are "activated" as needed under the control of a "primary controller", a
+root orchestrator that selects the types to consider and apply its own semantics (attributes,
+type interfaces, etc.). For instance, TypeScriptPackage don't inherit by design (unlike Real Objects
+and Auto Services). The issue to solve is that these are not truly independent "islands". The TypeScript
+aspect needs to consume the IPocoTypeSystem (once the IPocoTypeSystemBuilder is locked) and optionally
+the IPocoJsonSerializationServiceEngine that is currenly done with:
+- a PFeature lookup to know if it is the IPocoJsonSerializationServiceEngine or the IPocoTypeSystem
+  that must be awaited.
+- the [WaitFor] parameter attribute.
+
+If ReaDIEngine is a just tool, it could be split in two:
+- A ReaDIEngineCache that handles static type aspects.
+- A ReaDIEngine that handles runtime states.
+
+From the start of the design, the ReaDIEngine is "dual": it handles both statically typed information
+that are cached and runtime information (added objects, current values and handlers). This should be
+kept if possible: "shared objects" are guaranteed to be the same instance accross the whole system.
+The introduction of the "SourcedType" has shown that "loops" as they have been imagined so far are
+not enough. Handlers themselves must be able to appear and disappear and this has a deep impact
+on the engine state.
+
+Moreover there IS a kind of "layers". The root CKEngine is in charge of:
+- Instantiating the Aspects.
+- Iterating on the BinPath.
+
+Aspects should be IReaDIHandler. Ideally, Poco, Real Objects and AutoServices are handled
+by aspects.
+The first one should be the PocoAspect with something like:
+    [ReaDI]
+    public IPocoTypeSystemBuilder CreateBuilder( [ReaDILoop]RunningBinPath binPath );
+
+And something like:
+    [ReaDI(Builder?)]
+    public IPocoTypeSystem FinalBuild( IPocoTypeSystemBuilder builder );
+
+Note: the ""ReaDI Builder" notion has not been introduced here (they are discussed in the current CK-Ready
+repository). They are Callables that are called once all other Callables have been called with their parameters.
+Here, the PocoTypeSystemBuilder should be a IReaDIHandler and its Lock() method should be the [ReaDIBuilder].
+
+Instead of introducing [ReaDIBuilder] methods, we model the builder as an abstract ReaDIBuilder<T>:
+
+public abstract class ReaDIBuilder<T> where T : class
+{
+    [MemberNotNullWhen( true, nameof( Result ) )]
+    bool HasRun { get; }
+
+    T? Result { get; }
+
+    internal protected abstract T? Build( IActivityMonitor monitor );
+}
+
+Even if this IPocoTypeSystemBuilder/IPocoTypeSystem is questionable (this builder may be internalized), it
+illustrates the time (or step) issue: once a Builder has produced its result, it must not be used anymore and if
+a new handler that have a [ReaDI] method that uses it appears, this should be a "Too late!" error.
+If we want "local/subordinated orchestrators" to be able to interact with it then the ReaDIEngine state
+must be "global". it can no more be seen as "loops" with "throwable" intermediate contexts but more like
+a set of hierachical contexts that coexist and evolve together.
+In this "flat" world, Aspects should create all the contexts, activating the source types they need in the
+context of the different BinPathGroups. But in this world, all BinPathGroups contexts also coexist in the
+root context.
+Are these "contexts" really hierarchical? It seems not. What ultimately matters are the Callables and their
+parameters. The hieracrchical vision comes from the "loops", the "for each" imperative paradigm. We may
+start to "think relational".
+- On one side we have a set of Callables that have parameters that must be satisified and can produce
+a result (a produced result is functionnally dependent of the parameters).
+- On the other side we have a set of tuples that can satisfy the Callables.
+
+In this world, it seems that every parameter type is a potential loop parameter type.
+In a way, functional dependencies supersede hierarchies.
+
+The seed of the CKEngine is the EngineConfiguration. This is currently implemented as the RunAsync
+extension method on the EngineConfiguration.
+Let's have a dream and see what it should look like (without validation and error management).
+
+EngineResult? Run( EngineConfiguration c )
+{
+    var engine = new ReaDIEngine();
+    var b = new EngineResultBuilder();
+    engine.AddObject( b );
+    engine.AddObject( c );
+    return b.Result;
+}
+
+The ReaDIBuilder<T>.Build() method is called once no more Callables can be satisfied.
+It has 2 responsibilities: creating the EngineAspect and the RunningBinPath.
+
+EngineAspect is an abstract class, RunningBinPath is concrete but we could choose to hide the implementation
+and expose a IRunningBinPath. They are both "abstract" and multiple.
+
+sealed class EngineResultBuilder : ReaDIBuilder<EngineResult>
+{
+    [ReaDI]
+    public IEnumerable<EngineAspect> RegisterAspects( ReaDIEngine engine, EngineConfiguration c )
+    {
+        return c.Aspects.Select( aspectConfig => CreateAspect( aspectConfig ) );
+    }
+
+    [ReaDI]
+    public IEnumerable<RunningBinPath> CreateRunningBinPaths( ReaDIEngine engine, EngineConfiguration c )
+    {
+        return c.BinPaths.Select( b => CreateRunning( b ) );
+    }
+
+    public override EngineResult Build( EngineConfiguration c ) => ?
+}
+
+This handler produces the logical implications:
+- EngineConfiguration => [EngineAspect]
+- EngineConfiguration => [RunningBinPath]
+
+The produced result may capture their origin (properties EngineAspect.EngineConfiguration and RunningBinPath.EngineConfiguration
+return the configuration). This captures the logical implications. This can always be done when it makes sense but should not
+be a requirement (this potentially leads to the long call chain code smell and enventually hides dependencies of a [ReaDI] methods).
+Instead CK-ReaDI should reason on the logical implications, regardless of the object implementations. 
+
+An EngineResult has a list of BinPathResult (one for each RunningBinPath).
+How are each BinPathResult built?
+Before trying to answer this question, let's have a look at Aspects.
+
+Aspects are IReaDIHandler with any number of [ReaDI] methods.
+The very first one we need is the CSharpCodeGenerator aspect. Like any aspect, it is available
+to any [ReaDI] methods however, a CSharpCodeGenerator is for each BinPath, it is not global,
+so the aspect, if it can offer global helpers, must produce a CSharpCodeGenerator dedicated to each BinPath.
+
+sealed class CSharpCodeGeneratorAspect : EngineAspect
+{
+    [ReaDI]
+    public CSharpCodeGenerator CreateGenerator( RunningBinPath binPath ) => new CSharpCodeGenerator( binPath );
+}
+
+This handler produces the logical implication:
+- RunningBinPath => CSharpCodeGenerator
+
+sealed class PocoAspect : EngineAspect
+{
+    [ReaDI]
+    public IPocoTypeSystemBuilder CreateBuilder( RunningBinPath binPath ) => new PocoTypeSystemBuilder( binPath );
+
+    [ReaDI]
+    public void GeneratePocoCode( CSharpCodeGenerator code, IPocoTypeSystem poco ) => ...
+}
+
+We now have:
+- EngineConfiguration => [EngineAspect]
+- EngineConfiguration => [RunningBinPath]
+- RunningBinPath => CSharpCodeGenerator
+- RunningBinPath => IPocoTypeSystemBuilder
+- IPocoTypeSystemBuilder => IPocoTypeSystem (because IPocoTypeSystemBuilder is a ReaDIBuilder<T>)
+
+It seems obvious that the intent of the GeneratePocoCode is to generate code of the Pocos for the RunningBinPath.
+This method must not be called with the cross-product of the CSharpCodeGenerator and IPocoTypeSystem.
+How can we "magically" understand this intent?
+Written like this, this is a cross-product (or this is ambiguous).
+Accepting the cross-product means that it is up to the implementation to consider only the right associations
+(this requires the IPocoTypeSystem.RunningBinPath and CSharpCodeGenerator.RunningBinPath properties to be exposed).
+If we don't magically infer the intent and exploit the logical implications, the developper must simply be more explicit:
+
+sealed class PocoAspect : EngineAspect
+{
+    [ReaDI]
+    public IPocoTypeSystemBuilder CreateBuilder( RunningBinPath binPath ) => new PocoTypeSystemBuilder( binPath );
+
+    [ReaDI]
+    public void GeneratePocoCode( RunningBinPath binPath, CSharpCodeGenerator code, IPocoTypeSystem poco ) => ...
+}
+
+Instead of maintaining the set of logical implications and exploit it, let's be more aggressive: when a Callable
+is created we capture the whole set of instances from which it "depends", it is the set of instances that the
+handler that defines the callable could have captured (like the CSharpCodeGenerator.RunningBinPath).
+
+This implicitly provides us with the set of arguments that can satisfy the parameters of new Callables: when
+creating a Callable, each parameter is either bound to an argument or free.
+Free parameters are the "loop parameters". No need to define them. No need for the HierarchicalType.
+
+This "closure" approach shows that the current implementation that ties a "current instance" to its type
+must be forgotten: this was a consequence of the "loop" vision as this supported a cursor-based approach.
+The ReaDIEngine must be split in two: a ReaDICache and a ReaDIEngine. The ReaDICahe accumulates the
+HandlerTypes, CallableTypes and ParameterTypes. A ReaDIEngine is bound to a ReaDICache that can be shared by
+multiple ReaDIEngine. This split may have been done earlier so it is somehow risk-free.
+The new ReaDIEngine will concentrate its work on the instances, using the ReaDICache as a helper regarding
+types aspects.
 
 
+But this aspect has another huge responsibility: it must guaranty that all the types that need code generation
+can generate code.
+What are those types? There are a lot of them: any type that is (or one of its member) decorated whith an
+EngineAttribute that has a method that consumes a CSharpCodeGenerator must eventually be considered.
 
+Those types are a subset of the RunningBinPath.AllTypes (that result from the configuration and assemblies/types
+discovery). Can this aspect select all the appropriate types? Hardly not. But it can introduce a [CKodeGenerated]
+attribute for instance that express this in the source code and can, at least, ensure that these types will
+be SourcedTypes for the BinPath (others will be because they are IPoco or RealObjects, etc.).
+A RunningBinPath requires its own "active type set".
+A RunningBinPath has a ReaDIContext. A ReaDIContext inherits the objects of its parent context (but not
+its handlers?). Here again, we are creating a hierarchy :-(.
+Before handling this, the "instance set" approach must be investigated: the good news would be that the
+Engine/Cache split and the focus on the "instance set" provide everything needed to handle the "SourcedType"
+requirements, that this "Type activation" can eventually be implemented by playing with ReaDIEngine instances
+(or part of them).
 
