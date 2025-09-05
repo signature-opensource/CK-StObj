@@ -15,8 +15,8 @@ namespace CK.Testing;
 /// The basic usage is simply to get the <see cref="AutomaticServices"/> property (or the <see cref="Map"/>).
 /// </para>
 /// <para>
-/// The <see cref="AutoConfigure"/> can be used to alter a brand new configuration: this should be
-/// used from <see cref="System.Runtime.CompilerServices.ModuleInitializerAttribute"/>.
+/// The <see cref="AutoConfigure"/> and <see cref="AutoConfigureServices"/> callbacks can be used to alter a brand
+/// new configuration.
 /// </para>
 /// </summary>
 public static class SharedEngine

@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
@@ -13,10 +14,6 @@ partial class CachedType
     sealed class NullMarker : ICachedType
     {
         public Type Type => throw new NotImplementedException();
-
-        public bool IsGenericType => throw new NotImplementedException();
-
-        public bool IsTypeDefinition => throw new NotImplementedException();
 
         public string CSharpName => throw new NotImplementedException();
 
@@ -34,6 +31,10 @@ partial class CachedType
 
         public ICachedType? BaseType => throw new NotImplementedException();
 
+        public ImmutableArray<ICachedType> AlsoRegisterTypes => throw new NotImplementedException();
+
+        public IReadOnlySet<ICachedType> ConcreteGeneralizations => throw new NotImplementedException();
+
         public int TypeDepth => throw new NotImplementedException();
 
         public ICachedType? GenericTypeDefinition => throw new NotImplementedException();
@@ -42,7 +43,9 @@ partial class CachedType
 
         public ImmutableArray<ICachedType> GenericArguments => throw new NotImplementedException();
 
-        public ImmutableArray<ICachedMember> DeclaredMembers => throw new NotImplementedException();
+        public ImmutableArray<CachedMember> DeclaredMembers => throw new NotImplementedException();
+
+        public ImmutableArray<CachedMember> Members => throw new NotImplementedException();
 
         public GlobalTypeCache TypeCache => throw new NotImplementedException();
 
@@ -55,6 +58,18 @@ partial class CachedType
         public EngineUnhandledType EngineUnhandledType => throw new NotImplementedException();
 
         public ImmutableArray<object> RawAttributes => throw new NotImplementedException();
+
+        public bool IsGenericType => throw new NotImplementedException();
+
+        public bool IsTypeDefinition => throw new NotImplementedException();
+
+        public bool IsSuperTypeDefiner => throw new NotImplementedException();
+
+        public bool IsTypeDefiner => throw new NotImplementedException();
+
+        public bool IsClassOrInterface => throw new NotImplementedException();
+
+        public bool IsDelegate => throw new NotImplementedException();
 
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 

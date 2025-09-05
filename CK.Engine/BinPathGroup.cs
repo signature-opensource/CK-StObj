@@ -3,6 +3,9 @@ using CK.Engine.TypeCollector;
 
 namespace CK.Setup;
 
+// Temporary adapter.
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 public sealed class BinPathGroup
 {
     readonly BinPathTypeGroup _typeGroup;

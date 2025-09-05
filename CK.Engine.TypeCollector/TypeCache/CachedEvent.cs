@@ -6,16 +6,21 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-
-sealed class CachedEventInfo : CachedMemberInfo, ICachedEventInfo
+/// <summary>
+/// Cached <see cref="EventInfo"/>.
+/// </summary>
+public sealed class CachedEvent : CachedMember
 {
     ICachedType? _handlerType;
 
-    internal CachedEventInfo( ICachedType declaringType, EventInfo ev )
+    internal CachedEvent( ICachedType declaringType, EventInfo ev )
         : base( declaringType, ev )
     {
     }
 
+    /// <summary>
+    /// Gets the handler type (the delegate type).
+    /// </summary>
     public ICachedType EventHandlerType
     {
         get
@@ -41,9 +46,12 @@ sealed class CachedEventInfo : CachedMemberInfo, ICachedEventInfo
         }
     }
 
+    /// <summary>
+    /// Gets the <see cref="EventInfo"/>.
+    /// </summary>
     public EventInfo EventInfo => Unsafe.As<EventInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
+    internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         EventHandlerType.Write(  b );
         b.Append( ' ' );

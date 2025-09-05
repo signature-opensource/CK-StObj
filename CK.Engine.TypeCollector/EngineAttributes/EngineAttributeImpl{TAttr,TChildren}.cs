@@ -10,7 +10,8 @@ using System.Runtime.CompilerServices;
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
-/// Base engine implementation with strongly typed <see cref="Attribute"/> and <see cref="ChildrenAttributes"/>.
+/// Base engine implementation with strongly typed <see cref="EngineAttributeImpl{TItem, TAttr}.Attribute"/> and
+/// <see cref="ChildrenImpl"/>.
 /// This base class puts no constraints on <see cref="EngineAttributeImpl.ParentImpl"/> that is typically null
 /// if this is bound to a <see cref="IEngineAttribute"/> and not a <see cref="IChildEngineAttribute{T}"/> but can be used
 /// for child implementation if types parent is useless.

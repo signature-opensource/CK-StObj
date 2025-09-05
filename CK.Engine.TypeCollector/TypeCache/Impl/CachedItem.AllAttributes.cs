@@ -8,8 +8,9 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-abstract partial class CachedItem
+public abstract partial class CachedItem
 {
+    /// <inheritdoc />
     public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
     {
         return _finalAttributesInitialized

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -5,7 +6,10 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-public sealed class CachedParameterInfo
+/// <summary>
+/// Cached <see cref="ParameterInfo"/>.
+/// </summary>
+public sealed class CachedParameter
 {
     readonly CachedMethodBase _method;
     readonly ParameterInfo _parameterInfo;
@@ -14,7 +18,7 @@ public sealed class CachedParameterInfo
     ICachedType? _parameterType;
     string? _toString;
 
-    internal CachedParameterInfo( CachedMethodBase method, ParameterInfo parameterInfo )
+    internal CachedParameter( CachedMethodBase method, ParameterInfo parameterInfo )
     {
         _method = method;
         _parameterInfo = parameterInfo;
@@ -23,12 +27,12 @@ public sealed class CachedParameterInfo
     /// <summary>
     /// Gets the method that contains this parameter.
     /// </summary>
-    public ICachedMethodBase Method => _method;
+    public CachedMethodBase Method => _method;
 
     /// <summary>
     /// Gets the parameter name.
     /// <para>
-    /// This is null if this parameter is the <see cref="CachedMethodInfo.ReturnParameter"/>.
+    /// This is null if this parameter is the <see cref="CachedMethod.ReturnParameter"/>.
     /// </para>
     /// </summary>
     public string? Name => _parameterInfo.Name;
@@ -100,7 +104,7 @@ public sealed class CachedParameterInfo
             for( int i = 0; i < AttributesDataType.Length; i++ )
             {
                 if( i != 0 ) b.Append( ", " );
-                b.Append( AttributesDataType[i].Name );
+                b.Append( WithoutAttributeSuffix( AttributesDataType[i].Name ) );
             }
             b.Append( ']' );
         }
@@ -113,5 +117,16 @@ public sealed class CachedParameterInfo
         return b;
     }
 
+    static ReadOnlySpan<char> WithoutAttributeSuffix( string n )
+    {
+        // This doesn't handle generic attributes.
+        var s = n.AsSpan();
+        return s.Length > 9 && s.EndsWith( "Attribute" ) ? s[..^9] : s;
+    }
+
+    /// <summary>
+    /// Returns the parameter name and type.
+    /// </summary>
+    /// <returns>This parameter and type.</returns>
     public override string ToString() => _toString ??= Write( new StringBuilder() ).ToString();
 }

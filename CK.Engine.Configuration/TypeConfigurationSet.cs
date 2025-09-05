@@ -144,6 +144,7 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
         return false;
     }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
     public struct Enumerator : IEnumerator<TypeConfiguration>
     {
@@ -169,3 +170,5 @@ public sealed class TypeConfigurationSet : IReadOnlyCollection<TypeConfiguration
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

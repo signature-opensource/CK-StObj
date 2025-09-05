@@ -5,7 +5,14 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-abstract partial class CachedItem : ICachedItem
+/// <summary>
+/// Base cached item implementation. Applies to all <see cref="CachedMember"/> but
+/// not to all <see cref="ICachedType"/> implementations.
+/// <para>
+/// Should not be used directly: use <see cref="ICachedItem"/> instead.
+/// </para>
+/// </summary>
+public abstract partial class CachedItem : ICachedItem
 {
     private protected readonly MemberInfo _member;
     ImmutableArray<CustomAttributeData> _customAttributes;
@@ -18,8 +25,10 @@ abstract partial class CachedItem : ICachedItem
         _member = member;
     }
 
+    /// <inheritdoc />
     public string Name => _member.Name;
 
+    /// <inheritdoc />
     public ImmutableArray<CustomAttributeData> AttributesData
     {
         get
@@ -35,6 +44,7 @@ abstract partial class CachedItem : ICachedItem
     }
 
 
+    /// <inheritdoc />
     public ImmutableArray<object> RawAttributes
     {
         get
@@ -47,7 +57,9 @@ abstract partial class CachedItem : ICachedItem
         }
     }
 
+    /// <inheritdoc />
     public abstract GlobalTypeCache TypeCache { get; }
 
+    /// <inheritdoc />
     public abstract StringBuilder Write( StringBuilder b );
 }

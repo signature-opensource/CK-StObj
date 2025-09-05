@@ -1,4 +1,6 @@
+using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 
@@ -29,6 +31,29 @@ public interface ICachedType : ICachedItem
     /// Gets whether this is a generic type definition.
     /// </summary>
     bool IsTypeDefinition { get; }
+
+    /// <summary>
+    /// Gets whether this is a super definer type: its direct specializations are definer,
+    /// only the direct specializations of its direct specializations must be considered
+    /// (unless they also are marked as definer or super definer).
+    /// </summary>
+    bool IsSuperTypeDefiner { get; }
+
+    /// <summary>
+    /// Gets whether this type is definer: it cannot exist by itself, only its direct specializations
+    /// must be considered (unless <see cref="IsSuperTypeDefiner"/> is also true).
+    /// </summary>
+    bool IsTypeDefiner { get; }
+
+    /// <summary>
+    /// Gets whether this type is a class or an interface (not a value type nor a Delegate).
+    /// </summary>
+    bool IsClassOrInterface { get; }
+
+    /// <summary>
+    /// Gets whether this type is a <see cref="Delegate"/> or a <see cref="MulticastDelegate"/> (<see cref="Type.IsClass"/> is true).
+    /// </summary>
+    bool IsDelegate { get; }
 
     /// <summary>
     /// Gets the C# name with namespaces that ends with a '?' if <see cref="ICachedType.IsNullable"/> is true.
@@ -84,6 +109,20 @@ public interface ICachedType : ICachedItem
     ICachedType? BaseType { get; }
 
     /// <summary>
+    /// Gets the types that must be considered when this one is considered.
+    /// <para>
+    /// This is used every time a type is included in a type set (whatever it is).
+    /// See <see cref="AlsoRegisterTypeAttribute{T}"/>.
+    /// </para>
+    /// </summary>
+    ImmutableArray<ICachedType> AlsoRegisterTypes { get; }
+
+    /// <summary>
+    /// Gets the <see cref="Interfaces"/> and all the <see cref="BaseType"/> excluding types that are <see cref="IsTypeDefiner"/>.
+    /// </summary>
+    IReadOnlySet<ICachedType> ConcreteGeneralizations { get; }
+
+    /// <summary>
     /// Gets the unified depth of this type based on its <see cref="Interfaces"/> and <see cref="BaseType"/>.
     /// </summary>
     int TypeDepth { get; }
@@ -108,7 +147,7 @@ public interface ICachedType : ICachedItem
     ImmutableArray<ICachedType> GenericArguments { get; }
 
     /// <summary>
-    /// Get the <see cref="ICachedMember"/> declared by this type.
+    /// Get the <see cref="CachedMember"/> declared by this type.
     /// <para>
     /// Non public members are not collected. Only public members are actually considered by the engine.
     /// </para>
@@ -117,7 +156,19 @@ public interface ICachedType : ICachedItem
     /// types (that are returned by <see cref="Type.GetMembers(BindingFlags)"/>) are filtered out.
     /// </para>
     /// </summary>
-    ImmutableArray<ICachedMember> DeclaredMembers { get; }
+    ImmutableArray<CachedMember> DeclaredMembers { get; }
+
+    /// <summary>
+    /// Get the <see cref="CachedMember"/>.
+    /// <para>
+    /// Non public members are not collected. Only public members are actually considered by the engine.
+    /// </para>
+    /// <para>
+    /// Binding flags are <c>Public|Instance|Static</c> and nested
+    /// types (that are returned by <see cref="Type.GetMembers(BindingFlags)"/>) are filtered out.
+    /// </para>
+    /// </summary>
+    ImmutableArray<CachedMember> Members { get; }
 
     /// <summary>
     /// Gets the element type of array, pointer, etc. See <see cref="Type.GetElementType()"/>.

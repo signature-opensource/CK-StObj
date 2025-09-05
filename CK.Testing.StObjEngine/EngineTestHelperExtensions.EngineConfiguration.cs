@@ -69,6 +69,7 @@ public static partial class EngineTestHelperExtensions
     /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
     /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
     /// <param name="configureServices">Optional services configuration.</param>
+    /// <param name="startupServices">Optional startup services. Should not be used if possible.</param>
     /// <param name="binPathName">The <see cref="BinPathConfiguration.Name"/>. Must be an existing BinPath or a <see cref="ArgumentException"/> is thrown.</param>
     public static async Task GetFailedAutomaticServicesAsync( this EngineConfiguration configuration,
                                                               string message,

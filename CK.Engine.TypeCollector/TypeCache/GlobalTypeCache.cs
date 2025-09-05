@@ -37,13 +37,20 @@ public sealed partial class GlobalTypeCache
     {
         _types = new Dictionary<Type, ICachedType>();
         _assemblies = assemblies;
-        _knownTypes = new WellKnownTypes( this );
+        var del = (CachedType)Get( typeof(Delegate) );
+        del._isDelegate = true;
+        _knownTypes = new WellKnownTypes( this, del );
     }
 
     /// <summary>
     /// Gets well-known types.
     /// </summary>
     public WellKnownTypes KnownTypes => _knownTypes;
+
+    /// <summary>
+    /// Gets the assembly cache.
+    /// </summary>
+    public AssemblyCache AssemblyCache => _assemblies;
 
     /// <summary>
     /// Gets a cached type.

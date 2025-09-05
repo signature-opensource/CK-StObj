@@ -15,7 +15,7 @@ public static class CKEngine
     /// <summary>
     /// Runs this <see cref="EngineConfiguration"/>.
     /// This configuration is first normalized and should have no error: if <see cref="EngineConfiguration.NormalizeConfiguration(IActivityMonitor)"/>
-    /// fails, a null result is returned, otherwise a non null result is always returned (<see cref="EngineResult.Success"/> may be false).
+    /// fails, a null result is returned, otherwise a non null result is always returned (<see cref="EngineResult.Status"/> may be <see cref="RunStatus.Failed"/>).
     /// </summary>
     /// <param name="configuration">This configuration.</param>
     /// <param name="monitor">The monitor to use.</param>

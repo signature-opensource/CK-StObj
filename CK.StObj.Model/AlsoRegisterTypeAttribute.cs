@@ -5,6 +5,7 @@ namespace CK.Setup;
 /// <summary>
 /// Enables any registered type to register another type.
 /// </summary>
+[Obsolete( "Use CK.Core.AlsoRegisterTypeAttribute<T1,...> instead." )]
 [AttributeUsage( AttributeTargets.All, AllowMultiple = true, Inherited = false )]
 public class AlsoRegisterTypeAttribute : ContextBoundDelegationAttribute
 {

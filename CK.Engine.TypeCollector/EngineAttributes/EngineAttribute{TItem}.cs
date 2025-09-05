@@ -11,7 +11,7 @@ namespace CK.Engine.TypeCollector;
 
 /// <summary>
 /// Base class for all <see cref="EngineAttribute"/> implementations that expect the <see cref="DecoratedItem"/>
-/// to be a <see cref="TItem"/> (may be the base <see cref="ICachedItem"/> if this implementation can work
+/// to be a <typeparamref name="TItem"/> (may be the base <see cref="ICachedItem"/> if this implementation can work
 /// with any kind of decorated item).
 /// </summary>
 /// <typeparam name="TItem">The type of the decorated item.</typeparam>

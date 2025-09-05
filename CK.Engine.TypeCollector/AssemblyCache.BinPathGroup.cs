@@ -467,6 +467,10 @@ public sealed partial class AssemblyCache // BinPathGroup
             }
         }
 
+        /// <summary>
+        /// Overridden to return "AssemblyBinPathGoup 'GroupName'".
+        /// </summary>
+        /// <returns>A readable string.</returns>
         public override string ToString() => $"AssemblyBinPathGoup '{_groupName}'";
     }
 

@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -7,7 +8,7 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-class CachedGenericParameter : ICachedType
+sealed class CachedGenericParameter : ICachedType
 {
     readonly Type _parameter;
     readonly GlobalTypeCache _typeCache;
@@ -26,12 +27,6 @@ class CachedGenericParameter : ICachedType
 
     public Type Type => _parameter;
 
-    public bool IsGenericType => false;
-
-    public bool IsTypeDefinition => false;
-
-    public bool IsPublic => Type.IsVisible;
-
     public string CSharpName => _parameter.Name;
 
     public CachedAssembly Assembly => _assembly;
@@ -47,6 +42,10 @@ class CachedGenericParameter : ICachedType
     public ImmutableArray<ICachedType> DirectInterfaces => ImmutableArray<ICachedType>.Empty;
 
     public ICachedType? BaseType => null;
+
+    public ImmutableArray<ICachedType> AlsoRegisterTypes => ImmutableArray<ICachedType>.Empty;
+
+    public IReadOnlySet<ICachedType> ConcreteGeneralizations => ImmutableHashSet<ICachedType>.Empty;
 
     public ICachedType? DeclaringType => _declaringType ??= _typeCache.Get( _parameter.DeclaringType! );
 
@@ -68,11 +67,13 @@ class CachedGenericParameter : ICachedType
         }
     }
 
-    public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
+    public ImmutableArray<CachedMethod> DeclaredMethodInfos => ImmutableArray<CachedMethod>.Empty;
 
     public GlobalTypeCache TypeCache => _typeCache;
 
-    public ImmutableArray<ICachedMember> DeclaredMembers => ImmutableArray<ICachedMember>.Empty;
+    public ImmutableArray<CachedMember> DeclaredMembers => ImmutableArray<CachedMember>.Empty;
+
+    public ImmutableArray<CachedMember> Members => ImmutableArray<CachedMember>.Empty;
 
     public string Name => _parameter.Name;
 
@@ -101,6 +102,20 @@ class CachedGenericParameter : ICachedType
     }
 
     public StringBuilder Write( StringBuilder b ) => b.Append( _parameter.Name );
+
+    public bool IsGenericType => false;
+
+    public bool IsTypeDefinition => false;
+
+    public bool IsSuperTypeDefiner => false;
+
+    public bool IsTypeDefiner => false;
+
+    // Should handle type constraints!
+    public bool IsDelegate => false;
+
+    // Should handle type constraints!
+    public bool IsClassOrInterface => false;
 
     public override string ToString() => _parameter.Name;
 

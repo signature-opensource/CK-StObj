@@ -7,10 +7,10 @@ namespace CK.Engine.TypeCollector;
 
 
 /// <summary>
-/// Full strongly typed <see cref="EngineAttributeImpl"/> with a typed attribute, required <see cref="ParentImpl"/> 
+/// Full strongly typed <see cref="EngineAttributeImpl"/> with a typed attribute, required <see cref="ChildEngineAttributeImpl{TItem, TAttr, TParent}.ParentImpl"/> 
 /// and typed <see cref="ChildrenImpl"/>.
 /// <para>
-/// The <typeparamref name="TParent"/> and/or <see cref="TChildren"/> can be <see cref="EngineAttributeImpl"/>.
+/// The <typeparamref name="TParent"/> and/or <typeparamref name="TChildren"/> can be <see cref="EngineAttributeImpl"/>.
 /// </para>
 /// </summary>
 /// <typeparam name="TItem">The type of the decorated item.</typeparam>

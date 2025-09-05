@@ -4,21 +4,29 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-
-sealed class CachedFieldInfo : CachedMemberInfo, ICachedFieldInfo
+/// <summary>
+/// Cached <see cref="FieldInfo"/>.
+/// </summary>
+public sealed class CachedField : CachedMember
 {
     ICachedType? _type;
 
-    internal CachedFieldInfo( ICachedType declaringType, FieldInfo prop )
+    internal CachedField( ICachedType declaringType, FieldInfo prop )
         : base( declaringType, prop )
     {
     }
 
+    /// <summary>
+    /// Gets the type of the field.
+    /// </summary>
     public ICachedType FieldType => _type ??= TypeCache.Get( FieldInfo.FieldType );
 
+    /// <summary>
+    /// Gets the <see cref="FieldInfo"/>.
+    /// </summary>
     public FieldInfo FieldInfo => Unsafe.As<FieldInfo>( _member );
 
-    public override StringBuilder Write( StringBuilder b, bool withDeclaringType )
+    internal override StringBuilder Write( StringBuilder b, bool withDeclaringType )
     {
         FieldType.Write(  b );
         b.Append( ' ' );

@@ -286,5 +286,9 @@ public sealed partial class BinPathTypeGroup
         }
     }
 
+    /// <summary>
+    /// Overridden to return "BinTypePathGoup 'GroupName'".
+    /// </summary>
+    /// <returns>A readable string.</returns>
     public override string ToString() => $"BinTypePathGoup '{_groupName}'";
 }

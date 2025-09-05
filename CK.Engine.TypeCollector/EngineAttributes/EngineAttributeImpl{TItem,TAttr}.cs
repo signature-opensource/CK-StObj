@@ -7,8 +7,9 @@ using System.Threading;
 namespace CK.Engine.TypeCollector;
 
 /// <summary>
-/// Engine attribute implementation with strongly typed <see cref="Attribute"/>.
+/// Engine attribute implementation with strongly typed <see cref="Attribute"/> and <see cref="EngineAttributeImpl{TItem}.DecoratedItem"/>.
 /// </summary>
+/// <typeparam name="TItem">The decorated item's type.</typeparam>
 /// <typeparam name="TAttr">The attribute's type.</typeparam>
 public abstract class EngineAttributeImpl<TItem, TAttr> : EngineAttributeImpl<TItem>,
                                                           IEngineAttributeImpl<TItem, TAttr>
