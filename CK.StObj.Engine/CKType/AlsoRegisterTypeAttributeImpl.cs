@@ -7,6 +7,7 @@ namespace CK.Setup;
 /// <summary>
 /// Implements <see cref="AlsoRegisterTypeAttribute"/>.
 /// </summary>
+[Obsolete( "Should no more be used: the AlsoRegisterTypeAttribute ContextBoundAttribute is obsolete." )]
 public sealed class AlsoRegisterTypeAttributeImpl : IAttributeContextBoundInitializer
 {
     readonly Type _type;

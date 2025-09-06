@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 
@@ -121,16 +122,25 @@ public sealed partial class BinPathTypeGroup
 
     /// <summary>
     /// Creates one or more <see cref="BinPathTypeGroup"/> from a configuration.
+    /// <list type="number">
+    ///     <item><see cref="EngineConfiguration.NormalizeConfiguration(IActivityMonitor)"/> is called. On failure, null is returned.</item>
+    ///     <item>Assemblies or types are discovered. This may fail: <see cref="Result.Success"/> can be false.</item>
+    /// </list>
     /// <para>
-    /// This step cannot fail: A false <see cref="Result.Success"/> comes from the assembly level.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configuration">The normalized configuration to handle.</param>
-    /// <returns>The result (<see cref="Result.Success"/> can be false).</returns>
-    public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
+    /// <returns>The result (<see cref="Result.Success"/> can be false) or null on configuration error.</returns>
+    public static Result? Run( IActivityMonitor monitor, EngineConfiguration configuration )
     {
+        Throw.CheckNotNullArgument( monitor );
+        Throw.CheckNotNullArgument( configuration );
         using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
+        if( !configuration.NormalizeConfiguration( monitor ) )
+        {
+            return null;
+        }
         var assemblyResult = AssemblyCache.Run( monitor, configuration );
 
         // Always produce the groups even if assemblyResult.Success is false.
@@ -200,19 +210,34 @@ public sealed partial class BinPathTypeGroup
             var includedByConfiguration = c.Types.Select( tc => (Type: assemblyResult.TypeCache.Get( tc.Type ), tc.Kind) )
                                                  .OrderBy( cT => cT.Type.CSharpName );
 
-            foreach( var tc in includedByConfiguration )
+            foreach( var (type, kind) in includedByConfiguration )
             {
-                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, tc.Type, tc.Kind );
+                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, type, kind );
                 if( msg != null )
                 {
-                    monitor.Error( $"Invalid Type in configuration for: '{tc.Type.CSharpName}' {msg}." );
+                    monitor.Error( $"Invalid Type in configuration for: '{type.CSharpName}' {msg}." );
                     success = false;
                 }
                 else
                 {
-                    types.Add( monitor, sourceName, tc.Type, tc.Kind );
+                    types.Add( monitor, sourceName, type, kind );
                 }
-                hasher.Append( tc.Type.CSharpName ).Append( tc.Kind );
+                hasher.Append( type.CSharpName ).Append( kind );
+            }
+            // The set of types is ready. We finally extend the set with the [AlsoRegisterType] of the
+            // selected types: AlsoRegisterType is the last step that must be applied to any type selection,
+            // it ignores any potential exclusion.
+            Dictionary<ICachedType, ICachedType>? alsoTypes = types.AllTypes.GetRegisterAlsoTypesClosure();
+            if( alsoTypes != null )
+            {
+                foreach( var (also,source) in alsoTypes )
+                {
+                    if( !types.AllTypes.Contains( also ) )
+                    {
+                        types.Add( also );
+                        monitor.Debug( $"Type '{also}' will be considered because of [AlsoRegisterType<{also.Name}>] on '{source}'." );
+                    }
+                }
             }
             var g = new BinPathTypeGroup( configurations,
                                           groupName,
@@ -226,7 +251,7 @@ public sealed partial class BinPathTypeGroup
         if( assemblyResult.Success )
         {
             HandleUnifiedBinPath( monitor, groups, typeCache );
-            // ...but why not waiting the unification and accounting the existenc of the UnifiedPure
+            // ...but why not waiting the unification and accounting the existence of the UnifiedPure
             // or the reordering of the groups (with the most covering one at the start)?
             foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
         }

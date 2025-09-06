@@ -22,12 +22,11 @@ public static class CKEngine
     /// <returns>A <see cref="EngineResult"/> or null if this configuration is invalid.</returns>
     public static Task<EngineResult?> RunAsync( this EngineConfiguration configuration, IActivityMonitor monitor )
     {
-        Throw.CheckNotNullArgument( monitor );
-        if( !configuration.NormalizeConfiguration( monitor ) )
+        var typeGroups = BinPathTypeGroup.Run( monitor, configuration );
+        if( typeGroups == null )
         {
             return Task.FromResult<EngineResult?>( null );
         }
-        var typeGroups = BinPathTypeGroup.Run( monitor, configuration );
         var groups = typeGroups.Groups.Select( tG => new BinPathGroup( tG ) ).ToImmutableArray();
         if( typeGroups.Success )
         {

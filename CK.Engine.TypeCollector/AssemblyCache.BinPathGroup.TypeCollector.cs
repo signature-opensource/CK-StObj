@@ -61,9 +61,10 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                     success &= CollectTypes( monitor, typeCache, sub, out var subC );
                     c.Add( monitor, subC, assemblySourceName );
                 }
+                // Type selection for this assembly.
                 // Consider the visible classes, interfaces, value types and enums excluding any generic type definitions.
                 // These are the only kind of types that we need to start a CKomposable setup.
-                c.AddRange( assembly.Assembly.GetExportedTypes()
+                c.Add( assembly.Assembly.GetExportedTypes()
                                              .Where( t => (t.IsClass || t.IsInterface || t.IsValueType || t.IsEnum) && !t.IsGenericTypeDefinition )
                                              .Select( typeCache.Get ) );
                 // Don't merge the 2 loops here!
