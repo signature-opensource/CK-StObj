@@ -6,7 +6,7 @@ namespace CK.Core;
 /// Triggers the common implementation of Json import and export code generation.
 /// </summary>
 [ContextBoundDelegation( "CK.Setup.PocoJson.CommonImpl, CK.Poco.Exc.Json.Engine" )]
-[AlsoRegisterType( typeof( PocoExchangeService ) )]
+[AlsoRegisterType<PocoExchangeService>]
 public static class CommonPocoJsonSupport
 {
 }
