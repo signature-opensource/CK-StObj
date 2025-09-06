@@ -58,8 +58,8 @@ public class FrontEndpointTests
     public async Task Front_endpoint_default_for_Ambient_services_Async()
     {
         var configuration = TestHelper.CreateDefaultEngineConfiguration();
-        configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService|Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService|Setup.ConfigurableAutoServiceKind.IsScoped );
-        configuration.FirstBinPath.Types.Add( typeof( ExternalCultureInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
+        configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), ConfigurableAutoServiceKind.IsAmbientService|ConfigurableAutoServiceKind.IsContainerConfiguredService|ConfigurableAutoServiceKind.IsScoped );
+        configuration.FirstBinPath.Types.Add( typeof( ExternalCultureInfo ), ConfigurableAutoServiceKind.IsAmbientService | ConfigurableAutoServiceKind.IsContainerConfiguredService | ConfigurableAutoServiceKind.IsScoped );
         configuration.FirstBinPath.Types.Add( typeof( SomeFrontDIContainerDefinition ),
                                               typeof( FakeTenantInfo ),
                                               typeof( DefaultTenantProvider ),
@@ -112,7 +112,7 @@ public class FrontEndpointTests
                                "Type 'ExternalAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
+            configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), ConfigurableAutoServiceKind.IsAmbientService | ConfigurableAutoServiceKind.IsContainerConfiguredService | ConfigurableAutoServiceKind.IsScoped );
             configuration.FirstBinPath.Types.Add( [typeof( ExternalAuthenticationInfo ), typeof( NotEnoughDefaultAuthenticationInfoProvider1 )] );
 
             await configuration.GetFailedAutomaticServicesAsync( msg );
@@ -122,7 +122,7 @@ public class FrontEndpointTests
                                "Type 'IExternalAuthenticationInfo' is not a valid Ambient service, all ambient services must have a default value provider.";
 
             var configuration = TestHelper.CreateDefaultEngineConfiguration();
-            configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), Setup.ConfigurableAutoServiceKind.IsAmbientService | Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService | Setup.ConfigurableAutoServiceKind.IsScoped );
+            configuration.FirstBinPath.Types.Add( typeof( IExternalAuthenticationInfo ), ConfigurableAutoServiceKind.IsAmbientService | ConfigurableAutoServiceKind.IsContainerConfiguredService | ConfigurableAutoServiceKind.IsScoped );
             configuration.FirstBinPath.Types.Add( [typeof( ExternalAuthenticationInfo ), typeof( NotEnoughDefaultAuthenticationInfoProvider2 )] );
 
             await configuration.GetFailedAutomaticServicesAsync( msg );

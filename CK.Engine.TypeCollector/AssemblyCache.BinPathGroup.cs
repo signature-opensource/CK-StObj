@@ -389,12 +389,11 @@ public sealed partial class AssemblyCache // BinPathGroup
             // Here we just warn if a non PFeature defines [RegisterCKType] or [ExcludeCKType] attributes.
             if( !cached._kind.IsPFeature() )
             {
-                // ExcludeCKTypeAttribute on Type is in CK.Core namespace, ExcludeCKTypeAttribute on Asssembly is in CK.Setup namespace.
-                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( CK.Setup.RegisterCKTypeAttribute ) || a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) ) )
+                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( IncludeCKTypeAttribute ) || a.AttributeType == typeof( ExcludeCKTypeAttribute ) ) )
                 {
                     monitor.Warn( $"""
-                              Assembly '{cached.Name}' is '{cached.Kind}' and defines [RegisterCKType] or [ExcludeCKType] attributes, they are ignored.
-                              Only PFeature assemblies can register/exclude types.
+                              Assembly '{cached.Name}' is '{cached.Kind}' and defines [IncludeCKType] or [ExcludeCKType] attributes, they are ignored.
+                              Only PFeature assemblies can include/exclude types.
                               """ );
                 }
             }

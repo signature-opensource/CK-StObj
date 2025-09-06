@@ -257,7 +257,7 @@ public class CKTypeKindDetector
                 if( k == CKTypeKind.None && !isInternalInterface )
                 {
                     Throw.DebugAssert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                    Throw.DebugAssert( typeof( Core.ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                    Throw.DebugAssert( typeof( ExcludedCKTypeAttribute ).Name == "ExcludedCKTypeAttribute" );
                     Throw.DebugAssert( typeof( ScopedContainerConfiguredServiceAttribute ).Name == "ScopedContainerConfiguredServiceAttribute" );
                     Throw.DebugAssert( typeof( SingletonContainerConfiguredServiceAttribute ).Name == "SingletonContainerConfiguredServiceAttribute" );
                     Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
@@ -290,7 +290,7 @@ public class CKTypeKindDetector
                         }
                         switch( n )
                         {
-                            case "ExcludeCKTypeAttribute":
+                            case "ExcludedCKTypeAttribute":
                                 isExcludedType = true;
                                 break;
                             case "ScopedContainerConfiguredServiceAttribute":
