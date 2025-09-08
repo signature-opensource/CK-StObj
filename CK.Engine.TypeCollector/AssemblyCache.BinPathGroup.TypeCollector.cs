@@ -73,7 +73,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 List<ICachedType>? changed = null;
                 foreach( var a in assembly.CustomAttributes )
                 {
-                    if( a.AttributeType == typeof( IncludeCKTypeAttribute ) )
+                    if( a.AttributeType == typeof( AddTypeAttribute ) )
                     {
                         var ctorArgs = a.ConstructorArguments;
                         // Constructor (Type, Type[] others):
@@ -103,13 +103,13 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 }
                 if( success && changed != null )
                 {
-                    monitor.Info( $"Assembly '{assembly.Name}' explicitly registers {changed.Count} types: '{changed.Select( t => t.CSharpName ).Concatenate( "', '" )}'." );
+                    monitor.Info( $"Assembly '{assembly.Name}' explicitly adds {changed.Count} types: '{changed.Select( t => t.CSharpName ).Concatenate( "', '" )}'." );
                     changed.Clear();
                 }
                 // 2 - Remove types.
                 foreach( var a in assembly.CustomAttributes )
                 {
-                    if( a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) )
+                    if( a.AttributeType == typeof( CK.Setup.RemoveTypeAttribute ) )
                     {
                         var ctorArgs = a.ConstructorArguments;
                         if( ctorArgs[0].Value is Type t )
@@ -161,7 +161,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                     var error = GetConfiguredTypeErrorMessage( typeCache, cT, kind );
                     if( error != null )
                     {
-                        monitor.Error( $"Invalid [assembly:{(add ? "Register" : "Exclude")}CKTypeAttribute] in {sourceAssemblyName}: type '{t:N}' {error}." );
+                        monitor.Error( $"Invalid [assembly:{(add ? "Add" : "Remove")}TypeAttribute] in {sourceAssemblyName}: type '{t:N}' {error}." );
                         return false;
                     }
                     if( add ? c.Add( monitor, sourceAssemblyName, cT, kind ) : c.Remove( cT ) )

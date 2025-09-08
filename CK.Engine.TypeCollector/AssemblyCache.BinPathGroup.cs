@@ -386,10 +386,10 @@ public sealed partial class AssemblyCache // BinPathGroup
             Throw.DebugAssert( cached._kind.IsNone() || cached._kind.IsEngine() || cached._kind.IsPFeature() );
             ProcessExcludePFeatures( monitor, cached, allPFeatures, pFeatures );
             // Types are handled later and only for PFeatures.
-            // Here we just warn if a non PFeature defines [RegisterCKType] or [ExcludeCKType] attributes.
+            // Here we just warn if a non PFeature defines [AddType] or [RemoveType] attributes.
             if( !cached._kind.IsPFeature() )
             {
-                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( IncludeCKTypeAttribute ) || a.AttributeType == typeof( ExcludeCKTypeAttribute ) ) )
+                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( AddTypeAttribute ) || a.AttributeType == typeof( RemoveTypeAttribute ) ) )
                 {
                     monitor.Warn( $"""
                               Assembly '{cached.Name}' is '{cached.Kind}' and defines [IncludeCKType] or [ExcludeCKType] attributes, they are ignored.
@@ -411,8 +411,8 @@ public sealed partial class AssemblyCache // BinPathGroup
                                       HashSet<CachedAssembly>? allPFeatures,
                                       SortedSet<CachedAssembly>? pFeatures )
         {
-            // The excluded tuple keeps the "name" but can have a null (never seen) CachedAssembly.
-            var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( ExcludePFeatureAttribute ) )
+            // The removed tuple keeps the "name" but can have a null (never seen) CachedAssembly.
+            var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( RemovePFeatureAttribute ) )
                                  .Select( a => (string?)a.ConstructorArguments[0].Value )
                                  .Select( name => (N: name, A: name != null ? _assemblyCache.Find( name ) : null) );
             foreach( var (name, a) in excluded )
