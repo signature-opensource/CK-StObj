@@ -1,3 +1,5 @@
+using CK.Core;
+using System;
 using System.Collections.Generic;
 
 namespace CK.Engine.TypeCollector;
@@ -18,15 +20,29 @@ public static class CachedTypeExtensions
     /// <returns>A set of (AlsoType, SourceType) or null if this set is complete.</returns>
     public static Dictionary<ICachedType, ICachedType>? GetRegisterAlsoTypesClosure( this IReadOnlySet<ICachedType> typeSet )
     {
+        return GetRegisterAlsoTypesClosure( typeSet, typeSet.Contains );
+    }
+
+    /// <summary>
+    /// Implementation of <see cref="GetRegisterAlsoTypesClosure(IReadOnlySet{ICachedType})"/> that decomposes the set and
+    /// the contains predicate so this can be used on any set implementations.
+    /// </summary>
+    /// <param name="types">The set of types to consider.</param>
+    /// <param name="contains">The predicate that checks the type inclusion in the <paramref name="types"/>.</param>
+    /// <returns>A set of (AlsoType, SourceType) or null if this set is complete.</returns>
+    public static Dictionary<ICachedType, ICachedType>? GetRegisterAlsoTypesClosure( IEnumerable<ICachedType> types, Func<ICachedType,bool> contains )
+    {
+        Throw.CheckNotNullArgument( types );
+        Throw.CheckNotNullArgument( contains );
         Dictionary<ICachedType, ICachedType>? result = null;
-        foreach( var type in typeSet )
+        foreach( var type in types )
         {
             foreach( var a in type.AlsoRegisterTypes )
             {
                 // If the type set already contains the also type, it has been or will be handled by the enumeration.
                 // This avoids creating a useless result on an already complete set and kindly
                 // handle stupid auto references.
-                if( !typeSet.Contains( a ) )
+                if( !contains( a ) )
                 {
                     result ??= new Dictionary<ICachedType, ICachedType>();
                     if( result.TryAdd( a, type ) )
