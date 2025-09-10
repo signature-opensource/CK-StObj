@@ -4,7 +4,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Abstractions" Version="27.0.1--0027-develop" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="24.0.1--0016-develop" />
+    <PackageReference Include="CK.Abstractions" Version="27.0.1--0028-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="24.0.1--0017-develop" />
   </ItemGroup>
 </Project>
