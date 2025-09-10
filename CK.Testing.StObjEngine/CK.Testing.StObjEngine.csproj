@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageReference Include="CK.AppIdentity" Version="0.10.1--0019-develop" />
     <PackageReference Include="CK.Testing.Monitoring" Version="13.0.1--0016-develop" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
     <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
   </ItemGroup>
 </Project>
