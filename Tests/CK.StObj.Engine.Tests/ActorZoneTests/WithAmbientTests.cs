@@ -257,7 +257,7 @@ public class WithAmbientTests
         static void ConfigureByStObjConstruct( IActivityMonitor monitor, IStObjMutableItem o, SqlDatabase db )
         {
             var fromAbove = o.ConstructParametersAboveRoot;
-            Debug.Assert( fromAbove != null, "Since we are on the root of the specializations path." );
+            Throw.DebugAssert(  "Since we are on the root of the specializations path.", fromAbove != null );
             fromAbove.ShouldHaveSingleItem( "We have only one base class with a StObjConstruct method." );
             var (t, parameters) = fromAbove.Single();
             t.ShouldBe( typeof( SqlDatabase ) );
@@ -323,29 +323,29 @@ public class WithAmbientTests
         CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser,AuthenticationDetail" );
 
         var basicPackage = map.StObjs.Obtain<BasicPackage>();
-        Debug.Assert( basicPackage != null );
+        Throw.DebugAssert( basicPackage != null );
         basicPackage.ShouldBeAssignableTo<ZonePackage>();
         basicPackage.GroupHome.ShouldBeAssignableTo<ZoneGroup>();
         basicPackage.Schema.ShouldBe( "CK" );
 
         var authenticationUser = map.StObjs.Obtain<AuthenticationUser>();
-        Debug.Assert( authenticationUser != null );
+        Throw.DebugAssert( authenticationUser != null );
         authenticationUser.Schema.ShouldBe( "CK" );
 
         var authenticationDetail = map.StObjs.Obtain<AuthenticationDetail>();
-        Debug.Assert( authenticationDetail != null );
+        Throw.DebugAssert( authenticationDetail != null );
         authenticationDetail.Schema.ShouldBe( "CKAuth" );
 
         var db = map.StObjs.Obtain<SqlDefaultDatabase>();
-        Debug.Assert( db != null );
+        Throw.DebugAssert( db != null );
         db.ConnectionString.ShouldBe( "The default connection string." );
 
         var histo = map.StObjs.Obtain<SqlHistoDatabase>();
-        Debug.Assert( histo != null );
+        Throw.DebugAssert( histo != null );
         histo.ConnectionString.ShouldBe( "The histo connection string." );
 
         var alien = map.StObjs.Obtain<SqlAlienDatabase>();
-        Debug.Assert( alien != null );
+        Throw.DebugAssert( alien != null );
         alien.ConnectionString.ShouldBeNull();
     }
 }

@@ -87,7 +87,7 @@ public class CKTypeCollectorResult
                         .Where( i => i != null )
                         .Select( i => i! );
 
-            Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+            Throw.DebugAssert( "No duplicates.", all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false );
             return all;
         }
     }
@@ -104,15 +104,15 @@ public class CKTypeCollectorResult
         // This is a mess. This cache must be replaced by a truly reflection central cache.
         // One should not need any update like this one that bind this SetFinalOrderedResults
         // to the AutoService resolution!
-        Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
-        Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
+        Throw.DebugAssert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
+        Throw.DebugAssert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
 
         var all = ordered.Select( o => o.Attributes )
                       .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
                       .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
                       .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
 
-        Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+        Throw.DebugAssert( "No duplicates.", all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false );
 
         RealObjects.EngineMap.SetFinalOrderedResults( ordered, orderedAfterContent, all.ToDictionary( c => c.Type ), endpointResult, multipleMappings );
     }

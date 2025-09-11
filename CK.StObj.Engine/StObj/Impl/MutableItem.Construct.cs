@@ -16,14 +16,14 @@ partial class MutableItem
 
     void AddPostBuildProperty( PropertyInfo p, object o, BuildValueCollector valueCollector )
     {
-        Debug.Assert( Specialization == null, "Called on leaf only." );
+        Throw.DebugAssert( "Called on leaf only.", Specialization == null );
         if( _leafData.PostBuildProperties == null ) _leafData.PostBuildProperties = new List<PropertySetter>();
         _leafData.PostBuildProperties.Add( new PropertySetter( p, o, valueCollector ) );
     }
 
     internal void CallConstruct( IActivityMonitor monitor, BuildValueCollector valueCollector, IStObjValueResolver? valueResolver )
     {
-        Debug.Assert( _constructParameterEx != null, "Always allocated." );
+        Throw.DebugAssert( "Always allocated.", _constructParameterEx != null );
         if( _preConstruct != null )
         {
             foreach( var p in _preConstruct )
@@ -40,7 +40,7 @@ partial class MutableItem
         }
         if( RealObjectType.StObjConstruct != null )
         {
-            Debug.Assert( _constructParameterEx != null );
+            Throw.DebugAssert( _constructParameterEx != null );
             DoCallStObjConstruct( monitor, valueCollector, valueResolver, RealObjectType.StObjConstruct, _constructParameterEx );
         }
     }
@@ -67,7 +67,7 @@ partial class MutableItem
                     resolved = t.CachedResolvedStObj;
                     if( resolved != null )
                     {
-                        Debug.Assert( resolved.InitialObject != System.Type.Missing );
+                        Throw.DebugAssert( resolved.InitialObject != System.Type.Missing );
                         t.SetParameterValue( resolved.InitialObject );
                     }
                 }
@@ -81,7 +81,7 @@ partial class MutableItem
                         // This behavior (FailFastOnFailureToResolve) may be an option once. For the moment: log the error.
                         monitor.Fatal( $"{t}: Unable to resolve non optional. Attempting to use a default value to continue the setup process in order to detect other errors." );
                     }
-                    Debug.Assert( t.Type != null );
+                    Throw.DebugAssert( t.Type != null );
                     t.SetParameterValue( t.Type.IsValueType ? Activator.CreateInstance( t.Type ) : null );
                 }
                 if( resolved != null && t.Value == resolved.InitialObject )
@@ -100,7 +100,7 @@ partial class MutableItem
 
     internal void SetPostBuildProperties( IActivityMonitor monitor )
     {
-        Debug.Assert( Specialization == null, "Called on leaves only." );
+        Throw.DebugAssert( "Called on leaves only.", Specialization == null );
         if( _leafData.PostBuildProperties != null )
         {
             foreach( var p in _leafData.PostBuildProperties )

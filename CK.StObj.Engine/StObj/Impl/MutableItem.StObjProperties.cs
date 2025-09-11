@@ -30,7 +30,7 @@ partial class MutableItem
 
         public StObjProperty( StObjPropertyInfo infoOnType )
         {
-            Debug.Assert( infoOnType.Type != null );
+            Throw.DebugAssert( infoOnType.Type != null );
             InfoOnType = infoOnType;
             Name = infoOnType.Name;
             _value = _unsetValue;
@@ -111,7 +111,7 @@ partial class MutableItem
                 }
                 if( setIt )
                 {
-                    Debug.Assert( p.InfoOnType != null );
+                    Throw.DebugAssert( p.InfoOnType != null );
                     AddPreConstructProperty( p.InfoOnType.PropertyInfo, v, valueCollector );
                 }
             }

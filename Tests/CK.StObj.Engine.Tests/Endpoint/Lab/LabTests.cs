@@ -66,7 +66,7 @@ public partial class LabTests
 
 
         IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
-        Debug.Assert( e != null && g != null );
+        Throw.DebugAssert( e != null && g != null );
 
         using var scopedG = g.CreateScope();
         // From the global, obtains a AmbientServiceHub:
@@ -221,7 +221,7 @@ public partial class LabTests
         global.AddScoped<IMulti, Scop2>( sp => sp.GetRequiredService<Scop2>() );
 
         IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
-        Debug.Assert( e != null && g != null );
+        Throw.DebugAssert( e != null && g != null );
 
         using var scopedG = g.CreateScope();
         var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
@@ -322,7 +322,7 @@ public partial class LabTests
         }
 
         IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
-        Debug.Assert( e != null && g != null );
+        Throw.DebugAssert( e != null && g != null );
 
         using var scopedG = g.CreateScope();
         var ubiq = scopedG.ServiceProvider.GetRequiredService<AmbientServiceHub>();
@@ -379,7 +379,7 @@ public partial class LabTests
         global.AddScoped<AmbientServiceConsumer>();
 
         IDIContainerServiceProvider<FakeBackDIContainerDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
-        Debug.Assert( e != null && g != null );
+        Throw.DebugAssert( e != null && g != null );
 
         using var scopedG = g.CreateScope();
         var fromGlobal = scopedG.ServiceProvider.GetRequiredService<AmbientServiceConsumer>();

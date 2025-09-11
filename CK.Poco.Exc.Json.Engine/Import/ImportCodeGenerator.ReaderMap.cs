@@ -353,7 +353,7 @@ sealed partial class ImportCodeGenerator
 
         static CodeReader GetRecordCodeReader( IPocoType type )
         {
-            Debug.Assert( type.Kind == PocoTypeKind.Record || type.Kind == PocoTypeKind.AnonymousRecord );
+            Throw.DebugAssert( type.Kind == PocoTypeKind.Record || type.Kind == PocoTypeKind.AnonymousRecord );
             return ( w, v ) => w.Append( "CK.Poco.Exc.JsonGen.Importer.Read_" )
                                 .Append( type.Index )
                                 .Append( "(ref r,ref " )

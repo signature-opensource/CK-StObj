@@ -2,7 +2,6 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Text;

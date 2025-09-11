@@ -1,7 +1,6 @@
 using CK.Core;
 using CK.Setup;
 using CK.Testing;
-using Shouldly;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading.Tasks;

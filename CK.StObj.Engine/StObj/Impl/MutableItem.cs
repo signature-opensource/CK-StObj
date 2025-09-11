@@ -83,7 +83,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
             Type toInstantiate = ImplementableTypeInfo?.StubType != null
                                     ? ImplementableTypeInfo.StubType
                                     : typeIfNotImplementable;
-            Debug.Assert( toInstantiate != null );
+            Throw.DebugAssert( toInstantiate != null );
             StructuredObject = Activator.CreateInstance( toInstantiate )!;
             return StructuredObject;
         }
@@ -185,7 +185,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
     {
         if( specialization != null )
         {
-            Debug.Assert( specialization.Generalization == this );
+            Throw.DebugAssert( specialization.Generalization == this );
             Specialization = specialization;
             _leafData = specialization._leafData;
         }
@@ -205,8 +205,8 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     internal void ConfigureTopDown( IActivityMonitor monitor, MutableItem rootGeneralization )
     {
-        Debug.Assert( _leafData.RootGeneralization == null || _leafData.RootGeneralization == rootGeneralization );
-        Debug.Assert( (rootGeneralization == this) == (Generalization == null) );
+        Throw.DebugAssert( _leafData.RootGeneralization == null || _leafData.RootGeneralization == rootGeneralization );
+        Throw.DebugAssert( (rootGeneralization == this) == (Generalization == null) );
 
         _leafData.RootGeneralization = rootGeneralization;
         ApplyTypeInformation( monitor );
@@ -216,7 +216,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     void ApplyTypeInformation( IActivityMonitor monitor )
     {
-        Debug.Assert( _container == null, "Called only once right after object instanciation." );
+        Throw.DebugAssert( "Called only once right after object instanciation.", _container == null );
 
         _container = new MutableReference( this, StObjMutableReferenceKind.Container );
         _container.Type = RealObjectType.Container;
@@ -252,8 +252,8 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     void AnalyzeConstruct( IActivityMonitor monitor )
     {
-        Debug.Assert( _constructParameterEx == null, "Called only once right after object instantiation..." );
-        Debug.Assert( _container != null, "...and after ApplyTypeInformation." );
+        Throw.DebugAssert( "Called only once right after object instantiation...", _constructParameterEx == null );
+        Throw.DebugAssert( "...and after ApplyTypeInformation.", _container != null );
 
         // _constructParametersAbove is not null only for the root of the specialization path.
         var baseTypeInfo = RealObjectType.BaseTypeInfo;
@@ -274,7 +274,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
         if( RealObjectType.StObjConstruct != null )
         {
-            Debug.Assert( RealObjectType.ConstructParameters.Length > 0, "Parameterless StObjConstruct are skipped." );
+            Throw.DebugAssert( "Parameterless StObjConstruct are skipped.", RealObjectType.ConstructParameters.Length > 0 );
             var parameters = new MutableParameter[RealObjectType.ConstructParameters.Length];
             for( int idx = 0; idx < parameters.Length; ++idx )
             {
@@ -350,7 +350,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
     {
         get
         {
-            Debug.Assert( !RealObjectType.IsExcluded );
+            Throw.DebugAssert( !RealObjectType.IsExcluded );
             return RealObjectType.Attributes!;
         }
     }
@@ -521,7 +521,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
                     if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.Unknown ) _trackAmbientPropertiesMode = TrackAmbientPropertiesMode.None;
 
                     // Allocates Ambient Properties tracking now that we know the final configuration for it.
-                    Debug.Assert( _trackAmbientPropertiesMode != TrackAmbientPropertiesMode.Unknown );
+                    Throw.DebugAssert( _trackAmbientPropertiesMode != TrackAmbientPropertiesMode.Unknown );
                     if( _trackAmbientPropertiesMode != TrackAmbientPropertiesMode.None )
                     {
                         _trackedAmbientProperties = new List<TrackedAmbientPropertyInfo>();
@@ -547,7 +547,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
 
     bool ResolveDirectReferences( IActivityMonitor monitor )
     {
-        Debug.Assert( _container != null && _constructParameterEx != null );
+        Throw.DebugAssert( _container != null && _constructParameterEx != null );
         bool result = true;
         _dFullName = RealObjectType.Type.FullName!;
         _dContainer = _container.ResolveToStObj( monitor, EngineMap );
@@ -700,7 +700,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
     /// 
     internal void SetSorterData( int idx, IEnumerable<ISortedItem> requiresFromSorter, IEnumerable<ISortedItem> childrenFromSorter, IEnumerable<ISortedItem> groupsFromSorter )
     {
-        Debug.Assert( IndexOrdered == 0 );
+        Throw.DebugAssert( IndexOrdered == 0 );
         IndexOrdered = idx;
         _dRequires = requiresFromSorter.Select( s => (MutableItem)s.Item ).ToArray();
         _dChildren = childrenFromSorter.Select( s => (MutableItem)s.Item ).ToArray();
@@ -736,7 +736,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
             IEnumerable<IDependentItemRef> r = _dChildren;
             if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.AddPropertyHolderAsChildren )
             {
-                Debug.Assert( _trackedAmbientProperties != null );
+                Throw.DebugAssert( _trackedAmbientProperties != null );
                 var t = _trackedAmbientProperties.Select( a => a.Owner );
                 r = r != null ? r.Concat( r ) : t;
             }
@@ -753,7 +753,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
             IEnumerable<IDependentItemGroupRef> r = _dGroups;
             if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.AddThisToPropertyHolderItems )
             {
-                Debug.Assert( _trackedAmbientProperties != null );
+                Throw.DebugAssert( _trackedAmbientProperties != null );
                 var t = _trackedAmbientProperties.Select( a => a.Owner );
                 r = r != null ? r.Concat( r ) : t;
             }
@@ -765,11 +765,11 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
     {
         get
         {
-            Debug.Assert( _dRequires != null, "Built from the HashSet in PrepareDependentItem." );
+            Throw.DebugAssert( "Built from the HashSet in PrepareDependentItem.", _dRequires != null );
             IEnumerable<IDependentItemRef> r = _dRequires;
             if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiresThis )
             {
-                Debug.Assert( _trackedAmbientProperties != null );
+                Throw.DebugAssert( _trackedAmbientProperties != null );
                 r = r.Concat( _trackedAmbientProperties.Select( a => a.Owner ) );
             }
             return r;
@@ -783,7 +783,7 @@ partial class MutableItem : IStObjResult, IStObjFinalImplementationResult, IStOb
             IEnumerable<IDependentItemRef>? r = _dRequiredBy;
             if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiredByThis )
             {
-                Debug.Assert( _trackedAmbientProperties != null );
+                Throw.DebugAssert( _trackedAmbientProperties != null );
                 var t = _trackedAmbientProperties.Select( a => a.Owner );
                 r = r != null ? r.Concat( r ) : t;
             }

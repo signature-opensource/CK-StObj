@@ -14,7 +14,7 @@ public sealed partial class EngineResult
     readonly EngineConfiguration _configuration;
     readonly RunStatus _runStatus;
 
-    public EngineResult( RunStatus runStatus, EngineConfiguration configuration, ImmutableArray<BinPathGroup> groups )
+    internal EngineResult( RunStatus runStatus, EngineConfiguration configuration, ImmutableArray<BinPathGroup> groups )
     {
         _runStatus = runStatus;
         _configuration = configuration;

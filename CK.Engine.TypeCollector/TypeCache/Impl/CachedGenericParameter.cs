@@ -1,16 +1,20 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-class CachedGenericParameter : ICachedType
+sealed class CachedGenericParameter : ICachedType
 {
     readonly Type _parameter;
     readonly GlobalTypeCache _typeCache;
     readonly CachedAssembly _assembly;
+    ImmutableArray<CustomAttributeData> _customAttributes;
+    ImmutableArray<object> _attributes;
     ICachedType? _declaringType;
 
     public CachedGenericParameter( GlobalTypeCache typeCache, Type type, CachedAssembly assembly )
@@ -23,17 +27,11 @@ class CachedGenericParameter : ICachedType
 
     public Type Type => _parameter;
 
-    public bool IsGenericType => false;
-
-    public bool IsTypeDefinition => false;
-
-    public bool IsPublic => Type.IsVisible;
-
     public string CSharpName => _parameter.Name;
 
     public CachedAssembly Assembly => _assembly;
 
-    public bool IsNullable => false;
+    public bool? IsNullable => null;
 
     public ICachedType Nullable => this;
 
@@ -41,7 +39,13 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedType> Interfaces => ImmutableArray<ICachedType>.Empty;
 
+    public ImmutableArray<ICachedType> DirectInterfaces => ImmutableArray<ICachedType>.Empty;
+
     public ICachedType? BaseType => null;
+
+    public ImmutableArray<ICachedType> AlsoRegisterTypes => ImmutableArray<ICachedType>.Empty;
+
+    public IReadOnlySet<ICachedType> ConcreteGeneralizations => ImmutableHashSet<ICachedType>.Empty;
 
     public ICachedType? DeclaringType => _declaringType ??= _typeCache.Get( _parameter.DeclaringType! );
 
@@ -51,13 +55,25 @@ class CachedGenericParameter : ICachedType
 
     public ImmutableArray<ICachedType> GenericArguments => ImmutableArray<ICachedType>.Empty;
 
-    public ImmutableArray<CustomAttributeData> CustomAttributes => ImmutableArray<CustomAttributeData>.Empty;
+    public ImmutableArray<CustomAttributeData> AttributesData
+    {
+        get
+        {
+            if( _customAttributes.IsDefault )
+            {
+                _customAttributes = _parameter.CustomAttributes.ToImmutableArray();
+            }
+            return _customAttributes;
+        }
+    }
 
-    public ImmutableArray<CachedMethodInfo> DeclaredMethodInfos => ImmutableArray<CachedMethodInfo>.Empty;
+    public ImmutableArray<CachedMethod> DeclaredMethodInfos => ImmutableArray<CachedMethod>.Empty;
 
     public GlobalTypeCache TypeCache => _typeCache;
 
-    public ImmutableArray<ICachedMember> DeclaredMembers => ImmutableArray<ICachedMember>.Empty;
+    public ImmutableArray<CachedMember> DeclaredMembers => ImmutableArray<CachedMember>.Empty;
+
+    public ImmutableArray<CachedMember> Members => ImmutableArray<CachedMember>.Empty;
 
     public string Name => _parameter.Name;
 
@@ -65,7 +81,42 @@ class CachedGenericParameter : ICachedType
 
     public EngineUnhandledType EngineUnhandledType => EngineUnhandledType.NullFullName;
 
-    public override string ToString() => _parameter.Name;
+    public ImmutableArray<object> RawAttributes
+    {
+        get
+        {
+            if( _attributes.IsDefault )
+            {
+                _attributes = ImmutableCollectionsMarshal.AsImmutableArray( _parameter.GetCustomAttributes( inherit: false ) );
+            }
+            return _attributes;
+        }
+    }
+
+    public ImmutableArray<object> GetAttributes( IActivityMonitor monitor ) => ImmutableArray<object>.Empty;
+
+    public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+    {
+        attributes = RawAttributes;
+        return true;
+    }
 
     public StringBuilder Write( StringBuilder b ) => b.Append( _parameter.Name );
+
+    public bool IsGenericType => false;
+
+    public bool IsTypeDefinition => false;
+
+    public bool IsSuperTypeDefiner => false;
+
+    public bool IsTypeDefiner => false;
+
+    // Should handle type constraints!
+    public bool IsDelegate => false;
+
+    // Should handle type constraints!
+    public bool IsClassOrInterface => false;
+
+    public override string ToString() => _parameter.Name;
+
 }

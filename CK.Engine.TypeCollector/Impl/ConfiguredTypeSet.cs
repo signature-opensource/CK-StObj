@@ -30,9 +30,9 @@ sealed class ConfiguredTypeSet : IConfiguredTypeSet
 
     public IReadOnlyCollection<TypeConfiguration> ConfiguredTypes => _configuredTypes;
 
-    public void Add( ISet<ICachedType> types ) => _allTypes.UnionWith( types );
+    public void Add( IEnumerable<ICachedType> types ) => _allTypes.UnionWith( types );
 
-    public void AddRange( IEnumerable<ICachedType> types ) => _allTypes.AddRange( types );
+    public bool Add( ICachedType type ) => _allTypes.Add( type );
 
     // Beware! Only one | here, we want to remove from both of them.
     public bool Remove( ICachedType type ) => _allTypes.Remove( type ) | _configuredTypes.Remove( type.Type );

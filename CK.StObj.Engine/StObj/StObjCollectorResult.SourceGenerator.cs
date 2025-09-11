@@ -43,11 +43,11 @@ public partial class StObjCollectorResult
                                       List<MultiPassCodeGeneration> secondPassCollector,
                                       List<ICSCodeGeneratorWithFinalization> finalGen )
     {
-        Debug.Assert( EngineMap != null );
-        Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
+        Throw.DebugAssert( EngineMap != null );
+        Throw.DebugAssert( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
         try
         {
-            Debug.Assert( _valueCollector != null );
+            Throw.DebugAssert( _valueCollector != null );
             using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.ConfigurationGroup.Names}." ) )
             using( monitor.CollectEntries( out var entries ) )
             {
@@ -227,7 +227,7 @@ public partial class StObjCollectorResult
             // Code generation itself succeeds.
             if( configurationGroup.IsUnifiedPure )
             {
-                Debug.Assert( runSignature.IsZero );
+                Throw.DebugAssert( runSignature.IsZero );
                 monitor.Info( "Purely unified group: source code generation skipped." );
                 return (true, runSignature);
             }
@@ -283,7 +283,7 @@ public partial class StObjCollectorResult
                 return (true, runSignature);
             }
             code ??= ws.GetGlobalSource();
-            Debug.Assert( code != null );
+            Throw.DebugAssert( code != null );
 
             var targetPath = codeGenContext.CompileOption == CompileOption.Compile
                                                         ? configurationGroup.GeneratedAssembly.Path
@@ -390,7 +390,7 @@ public partial class StObjCollectorResult
 
     void CreateGeneratedRootContext( IActivityMonitor monitor, INamespaceScope ns, IReadOnlyList<IStObjResult> orderedStObjs )
     {
-        Debug.Assert( EngineMap != null );
+        Throw.DebugAssert( EngineMap != null );
 
         using var rootRegion = ns.Region();
         ns.Append( _gStObj ).NewLine()
@@ -461,7 +461,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         int iImplStObj = 0;
         foreach( var m in orderedStObjs )
         {
-            Debug.Assert( (m.Specialization != null) == (m != m.FinalImplementation) );
+            Throw.DebugAssert( (m.Specialization != null) == (m != m.FinalImplementation) );
             string generalization = m.Generalization == null ? "null" : $"_stObjs[{m.Generalization.IndexOrdered}]";
             rootStaticCtor.Append( $"_stObjs[{iStObj++}] = " );
             if( m.Specialization == null )
@@ -534,7 +534,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
             {
                 foreach( var setter in m.PreConstructProperties )
                 {
-                    Debug.Assert( setter.Property.DeclaringType != null );
+                    Throw.DebugAssert( setter.Property.DeclaringType != null );
                     Type decl = setter.Property.DeclaringType;
                     var key = ValueTuple.Create( decl, setter.Property.Name );
                     if( !propertyCache.TryGetValue( key, out string? varName ) )
@@ -563,14 +563,14 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
             {
                 foreach( var mp in m.ConstructParametersAboveRoot )
                 {
-                    Debug.Assert( mp.Item2.Count > 0 );
+                    Throw.DebugAssert( mp.Item2.Count > 0 );
                     rootCtor.AppendTypeOf( mp.Item1 );
                     CallConstructMethod( rootCtor, m, mp.Item2 );
                 }
             }
             if( m.RealObjectType.StObjConstruct != null )
             {
-                Debug.Assert( m.ConstructParameters.Count > 0 );
+                Throw.DebugAssert( m.ConstructParameters.Count > 0 );
                 rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
                 CallConstructMethod( rootCtor, m, m.ConstructParameters );
             }
@@ -607,7 +607,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
             {
                 foreach( var p in m.PostBuildProperties )
                 {
-                    Debug.Assert( p.Property.DeclaringType != null );
+                    Throw.DebugAssert( p.Property.DeclaringType != null );
                     Type decl = p.Property.DeclaringType;
                     rootCtor.AppendTypeOf( decl )
                            .Append( $".GetProperty( \"{p.Property.Name}\", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic )" )

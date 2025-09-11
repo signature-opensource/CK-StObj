@@ -55,7 +55,7 @@ public class DefaultValueTests
         var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
         var t = ts.RegisterOblivious( TestHelper.Monitor, typeof( TypeDefaultIsUnsignedMinimalValue ) );
 
-        Debug.Assert( t != null && t.DefaultValueInfo.DefaultValue != null );
+        Throw.DebugAssert( t != null && t.DefaultValueInfo.DefaultValue != null );
         t.DefaultValueInfo.DefaultValue.SimpleValue.ShouldBe( TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault );
         t.DefaultValueInfo.DefaultValue.ValueCSharpSource.ShouldBe( "CK.StObj.Engine.Tests.Poco.DefaultValueTests.TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault" );
 

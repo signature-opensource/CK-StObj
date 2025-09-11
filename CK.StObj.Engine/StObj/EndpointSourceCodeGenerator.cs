@@ -36,9 +36,9 @@ static class EndpointSourceCodeGenerator
 
             public static TypedServiceDescriptor Create( ServiceDescriptor o, Type implementationType )
             {
-                Debug.Assert( o.ImplementationInstance == null, "Instance singleton doesn't need this." );
-                Debug.Assert( o.ImplementationType == null, "Mapped type descriptor doesn't need this." );
-                Debug.Assert( o.ImplementationFactory != null );
+                Throw.DebugAssert( "Instance singleton doesn't need this.", o.ImplementationInstance == null );
+                Throw.DebugAssert( "Mapped type descriptor doesn't need this.", o.ImplementationType == null );
+                Throw.DebugAssert( o.ImplementationFactory != null );
                 return new TypedServiceDescriptor( o.ServiceType, o.ImplementationFactory, o.Lifetime, implementationType );
             }
         }
@@ -67,7 +67,7 @@ static class EndpointSourceCodeGenerator
 
             public void AddGlobal( ServiceDescriptor d )
             {
-                Debug.Assert( _global != null );
+                Throw.DebugAssert( _global != null );
                 if( _global is List<ServiceDescriptor> l ) l.Add( d );
                 else _global = new List<ServiceDescriptor>() { (ServiceDescriptor)_global, d };
                 _lastGlobal = d;
@@ -561,7 +561,7 @@ static class EndpointSourceCodeGenerator
                     if( _services == null )
                     {
                         if( !_initializationSuccess ) Throw.InvalidOperationException( "Endpoint initialization failed. It cannot be used." );
-                        Debug.Assert( _configuration != null );
+                        Throw.DebugAssert( _configuration != null );
                         _services = new Provider( _configuration.BuildServiceProvider() );
                         // Release the configuration now that the endpoint container is built.
                         _configuration = null;
@@ -774,7 +774,7 @@ static class EndpointSourceCodeGenerator
                 {
                     if( m.IsAutoDI )
                     {
-                        Debug.Assert( m.Global != null && m.Endpoint == null );
+                        Throw.DebugAssert( m.Global != null && m.Endpoint == null );
                         var reg = m.Global;
                         if( reg is List<ServiceDescriptor> list )
                         {

@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,9 +22,9 @@ partial class PocoType
                                                  bool isPolymorphic,
                                                  IBasicRefPocoType? baseType )
     {
-        Debug.Assert( !type.IsValueType );
-        Debug.Assert( type != typeof( object ) );
-        Debug.Assert( defaultValue != null );
+        Throw.DebugAssert( !type.IsValueType );
+        Throw.DebugAssert( type != typeof( object ) );
+        Throw.DebugAssert( defaultValue != null );
         return new BasicRefType( s, type, csharpName, defaultValue, isHashSafe, isPolymorphic, baseType );
     }
 
@@ -32,7 +33,7 @@ partial class PocoType
                                                 Type nullable,
                                                 string csharpName )
     {
-        Debug.Assert( notNullable.IsValueType );
+        Throw.DebugAssert( notNullable.IsValueType );
         // A basic value type is always initializable.
         // DateTime use, by default, CK.Core.Util.UtcMinValue: DateTime must be UTC.
         return notNullable == typeof( DateTime )
@@ -45,7 +46,7 @@ partial class PocoType
                                                          Type nullable,
                                                          string csharpName )
     {
-        Debug.Assert( notNullable.IsValueType );
+        Throw.DebugAssert( notNullable.IsValueType );
         // A basic value type is always initializable.
         // DateTime use, by default, CK.Core.Util.UtcMinValue: DateTime must be UTC.
         return new BasicValueTypeWithoutDefaultValue( s, notNullable, nullable, csharpName );

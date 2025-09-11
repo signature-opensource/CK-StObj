@@ -32,7 +32,7 @@ class ExtMemberInfoBase : IExtMemberInfo
         _name = fake.Name;
         _type = info.Type;
         _declaringType = fake.DeclaringType!;
-        Debug.Assert( info.IsHomogeneous );
+        Throw.DebugAssert( info.IsHomogeneous );
         _rNullabilityInfo = _wNullabilityInfo = info;
         _customAttributes = customAttributes ?? Array.Empty<object>();
         _customAttributesData = customAttributesData ?? Array.Empty<CustomAttributeData>();

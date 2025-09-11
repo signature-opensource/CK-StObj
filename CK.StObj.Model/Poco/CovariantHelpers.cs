@@ -36,7 +36,7 @@ public static partial class CovariantHelpers
         }
         // No set is a proper subset of an empty set.
         if( unique.Count == 0 ) return hasAlien;
-        Debug.Assert( set.Count > 0 );
+        Throw.DebugAssert( set.Count > 0 );
         return hasAlien
                 ? set.IsSubsetOf( unique )
                 : set.IsProperSubsetOf( unique );
@@ -186,7 +186,7 @@ public static partial class CovariantHelpers
         }
         // No set is a proper subset of an empty set.
         if( unique.Count == 0 ) return hasAlien;
-        Debug.Assert( set.Count > 0 );
+        Throw.DebugAssert( set.Count > 0 );
         return hasAlien
                 ? set.IsSubsetOf( unique )
                 : set.IsProperSubsetOf( unique );

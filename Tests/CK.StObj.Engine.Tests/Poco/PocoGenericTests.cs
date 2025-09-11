@@ -151,8 +151,7 @@ public class PocoGenericTests
 
         var ts = engineResult.FirstBinPath.PocoTypeSystemBuilder;
 
-        var cmdNullable = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
-        Throw.DebugAssert( cmdNullable != null );
+        var cmdNullable = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) ).ShouldNotBeNull();
         cmdNullable.IsNullable.ShouldBeTrue();
         cmdNullable.AllAbstractTypes.ShouldBe( cmdNullable.AbstractTypes );
         cmdNullable.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )

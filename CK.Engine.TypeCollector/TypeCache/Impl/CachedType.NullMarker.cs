@@ -1,4 +1,6 @@
+using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Text;
@@ -13,15 +15,11 @@ partial class CachedType
     {
         public Type Type => throw new NotImplementedException();
 
-        public bool IsGenericType => throw new NotImplementedException();
-
-        public bool IsTypeDefinition => throw new NotImplementedException();
-
         public string CSharpName => throw new NotImplementedException();
 
         public CachedAssembly Assembly => throw new NotImplementedException();
 
-        public bool IsNullable => throw new NotImplementedException();
+        public bool? IsNullable => throw new NotImplementedException();
 
         public ICachedType Nullable => throw new NotImplementedException();
 
@@ -29,7 +27,13 @@ partial class CachedType
 
         public ImmutableArray<ICachedType> Interfaces => throw new NotImplementedException();
 
+        public ImmutableArray<ICachedType> DirectInterfaces => throw new NotImplementedException();
+
         public ICachedType? BaseType => throw new NotImplementedException();
+
+        public ImmutableArray<ICachedType> AlsoRegisterTypes => throw new NotImplementedException();
+
+        public IReadOnlySet<ICachedType> ConcreteGeneralizations => throw new NotImplementedException();
 
         public int TypeDepth => throw new NotImplementedException();
 
@@ -39,22 +43,44 @@ partial class CachedType
 
         public ImmutableArray<ICachedType> GenericArguments => throw new NotImplementedException();
 
-        public ImmutableArray<ICachedMember> DeclaredMembers => throw new NotImplementedException();
+        public ImmutableArray<CachedMember> DeclaredMembers => throw new NotImplementedException();
+
+        public ImmutableArray<CachedMember> Members => throw new NotImplementedException();
 
         public GlobalTypeCache TypeCache => throw new NotImplementedException();
 
         public string Name => throw new NotImplementedException();
 
-        public ImmutableArray<CustomAttributeData> CustomAttributes => throw new NotImplementedException();
+        public ImmutableArray<CustomAttributeData> AttributesData => throw new NotImplementedException();
 
         public ICachedType? ElementType => throw new NotImplementedException();
 
         public EngineUnhandledType EngineUnhandledType => throw new NotImplementedException();
+
+        public ImmutableArray<object> RawAttributes => throw new NotImplementedException();
+
+        public bool IsGenericType => throw new NotImplementedException();
+
+        public bool IsTypeDefinition => throw new NotImplementedException();
+
+        public bool IsSuperTypeDefiner => throw new NotImplementedException();
+
+        public bool IsTypeDefiner => throw new NotImplementedException();
+
+        public bool IsClassOrInterface => throw new NotImplementedException();
+
+        public bool IsDelegate => throw new NotImplementedException();
 
         public StringBuilder Write( StringBuilder b ) => throw new NotImplementedException();
 
         public override string ToString() => throw new NotImplementedException();
 
         internal static ICachedType? Filter( ICachedType declaringType ) => declaringType == _nullMarker ? null : declaringType;
+
+        public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

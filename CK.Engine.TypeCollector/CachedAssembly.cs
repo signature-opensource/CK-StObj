@@ -10,6 +10,9 @@ using System.Security.Cryptography;
 
 namespace CK.Engine.TypeCollector;
 
+/// <summary>
+/// Cached assembly. Can be an initially discovered one or a cached instance obtained later.
+/// </summary>
 public sealed class CachedAssembly : IComparable<CachedAssembly>
 {
     readonly Assembly _assembly;
@@ -156,7 +159,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     /// Gets all the directly referenced assemblies, regardless of their <see cref="Kind"/> and
     /// any <see cref="ExcludePFeatureAttribute"/> that this assembly can define.
     /// <para>
-    /// This is always empty when <see cref="AssemblyKind.Excluded"/> or <see cref="AssemblyKind.Skipped"/>
+    /// This is always empty when <see cref="AssemblyKind.Excluded"/>, <see cref="AssemblyKind.AutoSkipped"/> or <see cref="AssemblyKind.SystemSkipped"/>
     /// or when <see cref="IsInitialAssembly"/> is false.
     /// </para>
     /// </summary>
@@ -165,7 +168,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     /// <summary>
     /// Gets all the <see cref="AssemblyKind.PFeature"/> that this PFeature references. 
     /// <para>
-    /// This is always empty when <see cref="AssemblyKind.Excluded"/> or <see cref="AssemblyKind.Skipped"/>
+    /// This is always empty when <see cref="AssemblyKind.Excluded"/>, <see cref="AssemblyKind.AutoSkipped"/> or <see cref="AssemblyKind.SystemSkipped"/>
     /// or when <see cref="IsInitialAssembly"/> is false.
     /// </para>
     /// </summary>
@@ -182,7 +185,7 @@ public sealed class CachedAssembly : IComparable<CachedAssembly>
     ///     <item>A parent assembly can always exclude any of its referenced assemblies, even assemblies that it doesn't reference directly.</item>
     /// </list>
     /// </para>
-    /// This is always empty when <see cref="AssemblyKind.Excluded"/> or <see cref="AssemblyKind.Skipped"/>
+    /// This is always empty when <see cref="AssemblyKind.Excluded"/>, <see cref="AssemblyKind.AutoSkipped"/> or <see cref="AssemblyKind.SystemSkipped"/>
     /// or when <see cref="IsInitialAssembly"/> is false.
     /// </summary>
     public IReadOnlySet<CachedAssembly> PFeatures => _pFeatures;

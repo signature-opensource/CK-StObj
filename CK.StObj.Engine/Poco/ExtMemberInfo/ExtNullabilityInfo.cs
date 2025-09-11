@@ -16,7 +16,7 @@ sealed class ExtNullabilityInfo : IExtNullabilityInfo
     readonly bool _useReadState;
     readonly bool _homogeneous;
 
-    internal ExtNullabilityInfo( TEMPNullabilityInfo nInfo, bool useReadState, bool singleState )
+    internal ExtNullabilityInfo( NullabilityInfo nInfo, bool useReadState, bool singleState )
     {
         if( (_type = nInfo.Type).IsByRef ) _type = _type.GetElementType()!;
         _useReadState = useReadState;
@@ -120,8 +120,8 @@ sealed class ExtNullabilityInfo : IExtNullabilityInfo
 
     ExtNullabilityInfo( Type t, object subTypes, bool isNullable, bool useReadState, bool homogeneous )
     {
-        Debug.Assert( t != null );
-        Debug.Assert( !t.IsValueType || isNullable == (Nullable.GetUnderlyingType( t ) != null) );
+        Throw.DebugAssert( t != null );
+        Throw.DebugAssert( !t.IsValueType || isNullable == (Nullable.GetUnderlyingType( t ) != null) );
         _type = t;
         _subTypes = subTypes;
         _isNullable = isNullable;
@@ -166,7 +166,7 @@ sealed class ExtNullabilityInfo : IExtNullabilityInfo
         if( t.IsValueType )
         {
             t = Nullable.GetUnderlyingType( t );
-            Debug.Assert( t != null );
+            Throw.DebugAssert( t != null );
         }
         return new ExtNullabilityInfo( t, _subTypes, false, _useReadState, _homogeneous );
     }

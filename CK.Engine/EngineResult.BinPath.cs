@@ -3,6 +3,9 @@ using CK.Engine.TypeCollector;
 
 namespace CK.Setup;
 
+// Not necessarily definitive adapter.
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 public sealed partial class EngineResult
 {
     /// <summary>

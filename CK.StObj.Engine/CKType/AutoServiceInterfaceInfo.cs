@@ -25,7 +25,7 @@ public sealed class AutoServiceInterfaceInfo
 
     /// <summary>
     /// Gets the initial type kind that is the result of the marker interfaces, attributes
-    /// on the type itself and of any setting done through <see cref="CKTypeKindDetector.SetAutoServiceKind(IActivityMonitor, Type, AutoServiceKind)"/>
+    /// on the type itself and of any setting done through <see cref="CKTypeKindDetector.SetAutoServiceKind(IActivityMonitor, Type, ConfigurableAutoServiceKind)"/>
     /// before types registration.
     /// This is always valid since otherwise the AutoServiceInterfaceInfo is not instantiated.
     /// </summary>

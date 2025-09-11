@@ -485,7 +485,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
         {
             tNull = nType.Type;
             tNotNull = Nullable.GetUnderlyingType( tNull )!;
-            Debug.Assert( tNotNull != null );
+            Throw.DebugAssert( tNotNull != null );
         }
         else
         {
@@ -499,8 +499,8 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
         // record we must handle the field names.
         if( _typeCache.TryGetValue( tNotNull, out var obliviousType ) )
         {
-            Debug.Assert( !obliviousType.IsNullable );
-            Debug.Assert( obliviousType.Type == tNotNull );
+            Throw.DebugAssert( !obliviousType.IsNullable );
+            Throw.DebugAssert( obliviousType.Type == tNotNull );
             Throw.DebugAssert( obliviousType.Kind == PocoTypeKind.Record || (obliviousType.IsOblivious && !obliviousType.IsNullable) );
             if( obliviousType.Kind == PocoTypeKind.Basic
                 || obliviousType.Kind == PocoTypeKind.Enum
@@ -544,8 +544,8 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
         // We first handle ValueTuple since we can easily detect them.
         if( tNotNull.IsValueTuple() )
         {
-            Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
-            Debug.Assert( obliviousType == null || obliviousType.Kind == PocoTypeKind.AnonymousRecord );
+            Throw.DebugAssert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
+            Throw.DebugAssert( obliviousType == null || obliviousType.Kind == PocoTypeKind.AnonymousRecord );
             // We may be on the oblivious type... But we have to check (and we may be on an already registered
             // anonymous record anyway: field names are the keys).
             tNull ??= obliviousType?.Nullable.Type ?? typeof( Nullable<> ).MakeGenericType( tNotNull );
@@ -556,7 +556,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
             // Other generic value types are not supported.
             if( tNotNull.IsGenericType )
             {
-                Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
+                Throw.DebugAssert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
                 monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
                 return null;
             }
@@ -729,7 +729,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
         // If this happens to be the oblivious type... 
         if( isOblivious )
         {
-            Debug.Assert( obliviousType == null || b.ToString() == obliviousType.CSharpName );
+            Throw.DebugAssert( obliviousType == null || b.ToString() == obliviousType.CSharpName );
             if( obliviousType == null )
             {
                 // We build it.
@@ -764,7 +764,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
             foreach( var f in fields )
             {
                 obliviousFields[f.Index] = new RecordAnonField( f, isOblivious: true );
-                Debug.Assert( obliviousFields[f.Index].IsUnnamed && obliviousFields[f.Index].Type.IsOblivious );
+                Throw.DebugAssert( obliviousFields[f.Index].IsUnnamed && obliviousFields[f.Index].Type.IsOblivious );
             }
             var tNotNullOblivious = CreateValueTuple( obliviousFields, 0 );
             if( _typeCache.TryGetValue( tNotNullOblivious, out var exist ) )
@@ -783,7 +783,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
                 b.Append( ')' );
                 var obliviousName = b.ToString();
                 var tNullOblivious = typeof( Nullable<> ).MakeGenericType( tNotNullOblivious );
-                Debug.Assert( obliviousName != typeName );
+                Throw.DebugAssert( obliviousName != typeName );
                 obliviousType = PocoType.CreateAnonymousRecord( this,
                                                                 tNotNullOblivious,
                                                                 tNullOblivious,
@@ -839,7 +839,7 @@ public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
 
         static IEnumerable<IExtNullabilityInfo> FlattenValueTuple( IExtNullabilityInfo nType )
         {
-            Debug.Assert( nType.Type.IsValueType && (nType.IsNullable || nType.Type.IsValueTuple()) );
+            Throw.DebugAssert( nType.Type.IsValueType && (nType.IsNullable || nType.Type.IsValueTuple()) );
             int idx = 0;
             foreach( var info in nType.GenericTypeArguments )
             {

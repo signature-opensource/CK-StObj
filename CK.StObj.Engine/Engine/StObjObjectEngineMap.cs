@@ -46,7 +46,7 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
                                    IReadOnlyList<MutableItem> allSpecializations,
                                    IReadOnlyDictionary<Assembly, bool> assemblies )
     {
-        Debug.Assert( names != null );
+        Throw.DebugAssert( names != null );
         Names = names;
         _map = new Dictionary<object, MutableItem>();
         _finaImplementations = allSpecializations;
@@ -63,14 +63,14 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
 
     internal void AddClassMapping( Type t, MutableItem m )
     {
-        Debug.Assert( t.IsClass );
+        Throw.DebugAssert( t.IsClass );
         _map.Add( t, m );
         if( t != m.RealObjectType.Type ) m.RealObjectType.AddUniqueMapping( t );
     }
 
     internal void AddInterfaceMapping( Type t, MutableItem m, MutableItem finalType )
     {
-        Debug.Assert( t.IsInterface );
+        Throw.DebugAssert( t.IsInterface );
         _map.Add( t, finalType );
         _map.Add( new RealObjectInterfaceKey( t ), m );
         finalType.RealObjectType.AddUniqueMapping( t );
@@ -187,8 +187,8 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
 
     static VFeature ToVFeature( Assembly a )
     {
-        Debug.Assert( a != null );
-        Debug.Assert( a.GetName().Name != null );
+        Throw.DebugAssert( a != null );
+        Throw.DebugAssert( a.GetName().Name != null );
         var v = InformationalVersion.ReadFromAssembly( a ).Version;
         return new VFeature( a.GetName().Name!, v != null && v.IsValid ? v : SVersion.ZeroVersion );
     }

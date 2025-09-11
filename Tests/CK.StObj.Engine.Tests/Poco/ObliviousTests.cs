@@ -153,7 +153,7 @@ public class ObliviousTests
         ICollectionPocoType List_Int( IPocoTypeSystemBuilder ts )
         {
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListV ) )! );
-            Debug.Assert( tRV != null );
+            Throw.DebugAssert( tRV != null );
             tRV.IsNullable.ShouldBeFalse();
             tRV.IsOblivious.ShouldBeFalse();
             tRV.Nullable.IsOblivious.ShouldBeTrue();

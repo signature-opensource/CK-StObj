@@ -59,7 +59,7 @@ public sealed class ResourceLocator : IResourceLocator, IMergeable
     }
 
     /// <summary>
-    /// Compute the resource full name from the namespace of the <see cref=Type"/> 
+    /// Compute the resource full name from the namespace of the <see cref="Type"/> 
     /// and the <see cref="Path"/> properties and combines it with the given name.
     /// </summary>
     /// <param name="name">Name of the resource. Usually a file name ('sProc.sql')</param>
@@ -75,7 +75,7 @@ public sealed class ResourceLocator : IResourceLocator, IMergeable
     /// <param name="namePrefix">Prefix for any strings.</param>
     /// <returns>
     /// Ordered lists of available resource names (with the <paramref name="namePrefix"/>). 
-    /// Resource content can then be obtained by <see cref="OpenStream"/> or <see cref="GetString"/>.
+    /// Resource content can then be obtained by <see cref="OpenStream(string?, bool)"/> or <see cref="GetString(string?, bool, string[])"/>.
     /// </returns>
     public IEnumerable<string> GetNames( string namePrefix )
     {
@@ -111,13 +111,8 @@ public sealed class ResourceLocator : IResourceLocator, IMergeable
     /// Obtains the content of a resource.
     /// </summary>
     /// <param name="name">Name of the resource to load.</param>
-    /// <param name="throwError">
-    /// When set to false, no exception will be thrown if the resource 
-    /// does not exist and null is returned.
-    /// </param>
     /// <returns>
     /// An opened <see cref="Stream"/> if the resource is found.
-    /// Null if the resource is not found and <paramref name="throwError"/> is false.
     /// </returns>
     public Stream? OpenRequiredStream( string? name ) => OpenStream( Type, _path, name, throwError: true );
 

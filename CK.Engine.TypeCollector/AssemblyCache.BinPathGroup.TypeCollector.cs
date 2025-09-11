@@ -61,9 +61,10 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                     success &= CollectTypes( monitor, typeCache, sub, out var subC );
                     c.Add( monitor, subC, assemblySourceName );
                 }
+                // Type selection for this assembly.
                 // Consider the visible classes, interfaces, value types and enums excluding any generic type definitions.
                 // These are the only kind of types that we need to start a CKomposable setup.
-                c.AddRange( assembly.Assembly.GetExportedTypes()
+                c.Add( assembly.Assembly.GetExportedTypes()
                                              .Where( t => (t.IsClass || t.IsInterface || t.IsValueType || t.IsEnum) && !t.IsGenericTypeDefinition )
                                              .Select( typeCache.Get ) );
                 // Don't merge the 2 loops here!
@@ -72,7 +73,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 List<ICachedType>? changed = null;
                 foreach( var a in assembly.CustomAttributes )
                 {
-                    if( a.AttributeType == typeof( Setup.RegisterCKTypeAttribute ) )
+                    if( a.AttributeType == typeof( AddTypeAttribute ) )
                     {
                         var ctorArgs = a.ConstructorArguments;
                         // Constructor (Type, Type[] others):
@@ -102,25 +103,39 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                 }
                 if( success && changed != null )
                 {
-                    monitor.Info( $"Assembly '{assembly.Name}' explicitly registers {changed.Count} types: '{changed.Select( t => t.CSharpName ).Concatenate( "', '" )}'." );
+                    monitor.Info( $"Assembly '{assembly.Name}' explicitly adds {changed.Count} types: '{changed.Select( t => t.CSharpName ).Concatenate( "', '" )}'." );
                     changed.Clear();
                 }
                 // 2 - Remove types.
                 foreach( var a in assembly.CustomAttributes )
                 {
-                    if( a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) )
+                    if( a.AttributeType == typeof( CK.Setup.RemoveTypeAttribute ) )
                     {
                         var ctorArgs = a.ConstructorArguments;
                         if( ctorArgs[0].Value is Type t )
                         {
-                            success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, t, ConfigurableAutoServiceKind.None );
+                            success &= HandleTypeConfiguration( monitor,
+                                                                typeCache,
+                                                                c,
+                                                                ref changed,
+                                                                add: false,
+                                                                assemblySourceName,
+                                                                t,
+                                                                ConfigurableAutoServiceKind.None );
                         }
                         if( ctorArgs[1].Value is Type?[] others && others.Length > 0 )
                         {
                             foreach( var o in others )
                             {
                                 if( o == null ) continue;
-                                success &= HandleTypeConfiguration( monitor, typeCache, c, ref changed, add: false, assemblySourceName, o, ConfigurableAutoServiceKind.None );
+                                success &= HandleTypeConfiguration( monitor,
+                                                                    typeCache,
+                                                                    c,
+                                                                    ref changed,
+                                                                    add: false,
+                                                                    assemblySourceName,
+                                                                    o,
+                                                                    ConfigurableAutoServiceKind.None );
                             }
                         }
                     }
@@ -146,7 +161,7 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
                     var error = GetConfiguredTypeErrorMessage( typeCache, cT, kind );
                     if( error != null )
                     {
-                        monitor.Error( $"Invalid [assembly:{(add ? "Register" : "Exclude")}CKTypeAttribute] in {sourceAssemblyName}: type '{t:N}' {error}." );
+                        monitor.Error( $"Invalid [assembly:{(add ? "Add" : "Remove")}TypeAttribute] in {sourceAssemblyName}: type '{t:N}' {error}." );
                         return false;
                     }
                     if( add ? c.Add( monitor, sourceAssemblyName, cT, kind ) : c.Remove( cT ) )
@@ -175,15 +190,15 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
             if( kind != ConfigurableAutoServiceKind.None )
             {
                 string? k = null;
-                if( type.Interfaces.Contains( typeCache.IAutoService ) )
+                if( type.Interfaces.Contains( typeCache.KnownTypes.IAutoService ) )
                 {
                     k = nameof( IAutoService );
                 }
-                else if( type is IRealObjectCachedType )
+                else if( type.Interfaces.Contains( typeCache.KnownTypes.IRealObject ) )
                 {
                     k = nameof( IRealObject );
                 }
-                else if( type is IPocoCachedType )
+                else if( type.Interfaces.Contains( typeCache.KnownTypes.IPoco ) )
                 {
                     k = nameof( IPoco );
                 }

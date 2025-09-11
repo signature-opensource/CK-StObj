@@ -143,7 +143,7 @@ partial class PocoType
                                      ICollectionPocoType? nonSecondaryConcreteCollection )
             : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
         {
-            Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
+            Throw.DebugAssert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
             if( obliviousType != null )
             {
                 Throw.DebugAssert( obliviousType.IsOblivious

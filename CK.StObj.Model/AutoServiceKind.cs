@@ -25,7 +25,7 @@ public enum AutoServiceKind
     ///     <item><term>Rejects</term><description><see cref="IsSingleton"/></description></item>
     /// </list>
     /// </summary>
-    IsScoped = Setup.ConfigurableAutoServiceKind.IsScoped,
+    IsScoped = ConfigurableAutoServiceKind.IsScoped,
 
     /// <summary>
     /// The service is known to be a singleton service: all Unit of Works (including concurrent ones) will use the exact same instance.
@@ -33,7 +33,7 @@ public enum AutoServiceKind
     ///     <item><term>Rejects</term><description><see cref="IsScoped"/></description></item>
     /// </list>
     /// </summary>
-    IsSingleton = Setup.ConfigurableAutoServiceKind.IsSingleton,
+    IsSingleton = ConfigurableAutoServiceKind.IsSingleton,
 
     /// <summary>
     /// A <see cref="IRealObject"/> is a true singleton.
@@ -51,7 +51,7 @@ public enum AutoServiceKind
     /// in its ConfigureContainerServices method.
     /// </para>
     /// </summary>
-    IsContainerConfiguredService = Setup.ConfigurableAutoServiceKind.IsContainerConfiguredService,
+    IsContainerConfiguredService = ConfigurableAutoServiceKind.IsContainerConfiguredService,
 
     /// <summary>
     /// The type is a DI scoped service necessarily available in all contexts that automatically flows from endpoints
@@ -60,7 +60,7 @@ public enum AutoServiceKind
     ///     <item><term>Implies</term><description><see cref="IsScoped"/> and <see cref="IsContainerConfiguredService"/></description></item>
     /// </list>
     /// </summary>
-    IsAmbientService = Setup.ConfigurableAutoServiceKind.IsAmbientService,
+    IsAmbientService = ConfigurableAutoServiceKind.IsAmbientService,
 
     /// <summary>
     /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
@@ -71,5 +71,5 @@ public enum AutoServiceKind
     /// <remarks>
     /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
     /// </remarks>
-    IsMultipleService = Setup.ConfigurableAutoServiceKind.IsMultipleService,
+    IsMultipleService = ConfigurableAutoServiceKind.IsMultipleService,
 }

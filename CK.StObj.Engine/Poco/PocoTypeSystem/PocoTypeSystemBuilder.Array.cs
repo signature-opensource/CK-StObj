@@ -8,7 +8,7 @@ public sealed partial class PocoTypeSystemBuilder
 {
     IPocoType? RegisterArray( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
     {
-        Debug.Assert( nType.ElementType != null );
+        Throw.DebugAssert( nType.ElementType != null );
 
         bool valid = ctx.EnterArray( monitor, nType );
 

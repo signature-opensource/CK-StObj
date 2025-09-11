@@ -153,7 +153,8 @@ public sealed class PocoDirectoryImpl : CSCodeGeneratorType
                     tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
                     if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
                     {
-                        Debug.Assert( f.FieldAccess == PocoFieldAccessKind.MutableReference || f.FieldAccess == PocoFieldAccessKind.AbstractReadOnly );
+                        Throw.DebugAssert( f.FieldAccess == PocoFieldAccessKind.MutableReference
+                                           || f.FieldAccess == PocoFieldAccessKind.AbstractReadOnly );
                         // Readonly and MutableCollection doesn't require the "get".
                         // This expose a public (read only) property that is required for MutableCollection but
                         // a little bit useless for pure ReadOnly. However we need an implementation of the property
@@ -177,7 +178,7 @@ public sealed class PocoDirectoryImpl : CSCodeGeneratorType
                         // UnionType: check against the allowed types.
                         if( f.Type is IUnionPocoType uT )
                         {
-                            Debug.Assert( f.Type.Kind == PocoTypeKind.UnionType );
+                            Throw.DebugAssert( f.Type.Kind == PocoTypeKind.UnionType );
                             // Generates the "static Type[] _vXXXAllowed" array.
                             fieldPart.Append( "static readonly Type[] " ).Append( f.PrivateFieldName ).Append( "Allowed = " )
                                      .AppendArray( uT.AllowedTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
@@ -310,9 +311,9 @@ public sealed class PocoDirectoryImpl : CSCodeGeneratorType
 
     static void GeneratePocoList( INamespaceScope ns, IPocoListOrHashSetRequiredSupport list )
     {
-        Debug.Assert( list.ItemType.ImplTypeName == list.ItemType.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
+        Throw.DebugAssert( "Because generated type is not nested.", list.ItemType.ImplTypeName == list.ItemType.FamilyInfo.PocoClass.FullName );
         var pocoClassName = list.ItemType.ImplTypeName;
-        Debug.Assert( pocoClassName != null );
+        Throw.DebugAssert( pocoClassName != null );
         var t = ns.CreateType( $"sealed class {list.TypeName} : List<{pocoClassName}>" );
         t.Append( "public bool IsReadOnly => false;" ).NewLine();
         foreach( var tI in list.ItemType.FamilyInfo.Interfaces )

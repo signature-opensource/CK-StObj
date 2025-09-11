@@ -36,7 +36,7 @@ internal abstract class MutableReferenceOptional : MutableReference
     {
         get
         {
-            Debug.Assert( _resolved != UnresolvedMarker, "ResolveToStObj must have been called before." );
+            Throw.DebugAssert( "ResolveToStObj must have been called before.", _resolved != UnresolvedMarker );
             return _resolved;
         }
     }
@@ -49,7 +49,7 @@ internal abstract class MutableReferenceOptional : MutableReference
             Error( monitor, $"Type can not be null since the {KindName} is not optional" );
             return _resolved = null;
         }
-        Debug.Assert( Type != null || IsOptional );
+        Throw.DebugAssert( Type != null || IsOptional );
         if( Type != null && !UnderlyingType.IsAssignableFrom( Type ) )
         {
             Error( monitor, $"Type '{Type.FullName}' is not compatible with the {KindName} type ('{UnderlyingType.FullName}')" );

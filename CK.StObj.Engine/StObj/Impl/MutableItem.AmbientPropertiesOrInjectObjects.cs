@@ -136,7 +136,7 @@ partial class MutableItem
         BuildValueCollector valueCollector,
         IStObjValueResolver? valueResolver )
     {
-        Debug.Assert( Specialization == null && _leafData.LeafSpecialization == this, "We are on the ultimate (leaf) Specialization." );
+        Throw.DebugAssert( "We are on the ultimate (leaf) Specialization.", Specialization == null && _leafData.LeafSpecialization == this );
         // Here we AddPreConstructProperty the current direct properties: they will be set on the final object before 
         // the call to StObjConstruct.
         // We flush the dictionary and the next calls to SetDirectProperty will be AddPostBuildProperty.
@@ -162,7 +162,7 @@ partial class MutableItem
         // correspond to the ones of this object (without the cached ones that may appear at the end of the list).
         foreach( var a in _ambientPropertiesEx )
         {
-            Debug.Assert( a.Type != null );
+            Throw.DebugAssert( a.Type != null );
             EnsureCachedAmbientProperty( monitor, a.Type, a.Name, a );
             if( a.Value == System.Type.Missing )
             {
@@ -187,7 +187,7 @@ partial class MutableItem
 
                     MutableItem? source = this;
                     AmbientPropertyInfo? sourceProp = a.AmbientPropertyInfo;
-                    Debug.Assert( sourceProp.Index < source.RealObjectType.AmbientProperties.Count, "This is the way to test if the property is defined at the source level or not." );
+                    Throw.DebugAssert( "This is the way to test if the property is defined at the source level or not.", sourceProp.Index < source.RealObjectType.AmbientProperties.Count );
 
                     // Walks up the chain to locate the most abstract compatible slice.
                     {
@@ -212,7 +212,7 @@ partial class MutableItem
                     while( (source = source.Generalization) != null && resolved._needsTrackedAmbientProperties )
                     {
                         bool sourcePropChanged = false;
-                        Debug.Assert( (source == null) == (sourceProp == null) );
+                        Throw.DebugAssert( (source == null) == (sourceProp == null) );
                         // If source does not define anymore sourceProp. Does it define the property with another type?
                         while( source != null && sourceProp!.Index >= source.RealObjectType.AmbientProperties.Count )
                         {
@@ -224,7 +224,7 @@ partial class MutableItem
                             }
                         }
                         if( source == null ) break;
-                        Debug.Assert( sourceProp != null );
+                        Throw.DebugAssert( sourceProp != null );
                         // Walks up the chain to locate the most abstract compatible slice.
                         if( sourcePropChanged )
                         {
@@ -248,7 +248,7 @@ partial class MutableItem
                     }
                     if( highestSetSource != null )
                     {
-                        Debug.Assert( highestSetResolved != null );
+                        Throw.DebugAssert( highestSetResolved != null );
                         highestSetSource.AddPreConstructProperty( a.AmbientPropertyInfo.SettablePropertyInfo, highestSetResolved, valueCollector );
                     }
                     else
@@ -267,9 +267,9 @@ partial class MutableItem
 
     MutableAmbientProperty? EnsureCachedAmbientProperty( IActivityMonitor monitor, Type propertyType, string name, MutableAmbientProperty? alreadySolved = null )
     {
-        Debug.Assert( Specialization == null );
-        Debug.Assert( _prepareState == PrepareState.PreparedDone || _prepareState == PrepareState.CachingAmbientProperty );
-        Debug.Assert( alreadySolved == null || (alreadySolved.Name == name && alreadySolved.Type == propertyType) );
+        Throw.DebugAssert( Specialization == null );
+        Throw.DebugAssert( _prepareState == PrepareState.PreparedDone || _prepareState == PrepareState.CachingAmbientProperty );
+        Throw.DebugAssert( alreadySolved == null || (alreadySolved.Name == name && alreadySolved.Type == propertyType) );
 
         // Reentrancy is handled by returning null. 
         // The path that lead to such null result is simply ignored. 
@@ -310,12 +310,12 @@ partial class MutableItem
                     a = new MutableAmbientProperty( this, name );
                 }
                 _leafData.AllAmbientProperties.Add( a );
-                Debug.Assert( a.IsFinalValue );
+                Throw.DebugAssert( a.IsFinalValue );
                 // We necessarily leave here...
             }
             if( a.IsFinalValue ) return a;
 
-            Debug.Assert( a.Value == System.Type.Missing || a.MaxSpecializationDepthSet > 0, "a Value exists => it has been set." );
+            Throw.DebugAssert( "a Value exists => it has been set.", a.Value == System.Type.Missing || a.MaxSpecializationDepthSet > 0 );
 
             MutableAmbientProperty? foundFromOther = null;
             // If the property has not been set to a value or not configured (a.MaxSpecializationDepthSet == 0), 

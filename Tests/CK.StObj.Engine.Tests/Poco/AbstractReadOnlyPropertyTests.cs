@@ -208,7 +208,7 @@ public class AbstractReadOnlyPropertyTests
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
-        Debug.Assert( f != null );
+        Throw.DebugAssert( f != null );
         f.ShouldBeSameAs( d.Find( tExtension ) );
         var o = (IHaveAutoProperty)f.Create();
         o.Auto.ShouldNotBeNull().ShouldBeOfType( tAutoProperty );
@@ -249,7 +249,7 @@ public class AbstractReadOnlyPropertyTests
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var f = d.Find( tPrimary );
-        Debug.Assert( f != null );
+        Throw.DebugAssert( f != null );
         var o = (IHaveNullableAutoProperty)f.Create();
         o.Auto.ShouldBeNull();
     }

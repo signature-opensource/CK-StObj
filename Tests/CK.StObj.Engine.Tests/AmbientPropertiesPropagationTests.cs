@@ -73,7 +73,7 @@ public partial class AmbientPropertiesPropagationTests
                 StObjCollector collector = new StObjCollector( container, configurator: new ConfiguratorOneStringValueSetToPouf() );
                 collector.RegisterType( TestHelper.Monitor, typeof( InheritedBaseObject ) );
                 var result = collector.GetResult( TestHelper.Monitor ).EngineMap;
-                Debug.Assert( result != null, "No initialization error." );
+                Throw.DebugAssert( "No initialization error.", result != null );
                 Assert.That( result.StObjs.Obtain<InheritedBaseObject>()!.OneStringValue, Is.EqualTo( "Pouf" ), "Since InheritedSimpleObject is a BaseObjectAmbient, it has been configured." );
             }
             {

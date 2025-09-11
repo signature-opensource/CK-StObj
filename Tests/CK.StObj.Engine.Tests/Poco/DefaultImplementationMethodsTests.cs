@@ -79,7 +79,7 @@ public class DefaultImplementationMethodsTests
 
         var d = auto.Services.GetRequiredService<PocoDirectory>();
         var fA = d.Find( "CK.StObj.Engine.Tests.Poco.DefaultImplementationMethodsTests.IActualRoot" );
-        Debug.Assert( fA != null );
+        Throw.DebugAssert( fA != null );
         var magic = (IActualRoot)fA.Create();
 
         magic.LineCount.ShouldBe( 0 );

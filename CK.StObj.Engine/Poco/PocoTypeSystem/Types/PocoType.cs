@@ -26,7 +26,7 @@ partial class PocoType : IPocoType
 
         public NullReferenceType( IPocoType notNullable )
         {
-            Debug.Assert( !notNullable.Type.IsValueType );
+            Throw.DebugAssert( !notNullable.Type.IsValueType );
             _nonNullable = notNullable;
             _csharpName = notNullable.CSharpName + '?';
         }
@@ -130,10 +130,10 @@ partial class PocoType : IPocoType
 
         public NullValueType( IPocoType notNullable, Type type )
         {
-            Debug.Assert( notNullable.Type.IsValueType
-                          && notNullable.Type != type
-                          && !notNullable.Type.IsAssignableFrom( type )
-                          && type.IsAssignableFrom( notNullable.Type ) );
+            Throw.DebugAssert( notNullable.Type.IsValueType
+                              && notNullable.Type != type
+                              && !notNullable.Type.IsAssignableFrom( type )
+                              && type.IsAssignableFrom( notNullable.Type ) );
 
             _nonNullable = notNullable;
             _type = type;
@@ -438,7 +438,7 @@ partial class PocoType : IPocoType
 
     internal IPocoType.ITypeRef? AddBackRef( IPocoType.ITypeRef r )
     {
-        Debug.Assert( r != null );
+        Throw.DebugAssert( r != null );
         var f = _firstRef;
         _firstRef = r;
         return f;

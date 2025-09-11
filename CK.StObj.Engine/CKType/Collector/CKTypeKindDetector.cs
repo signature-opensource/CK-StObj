@@ -151,8 +151,8 @@ public class CKTypeKindDetector
             }
         }
 
-        Debug.Assert( (updated & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
-        Debug.Assert( CKTypeKindExtension.GetCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
+        Throw.DebugAssert( (updated & (CKTypeKind.IsDefiner | CKTypeKind.IsSuperDefiner)) == 0 );
+        Throw.DebugAssert( CKTypeKindExtension.GetCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
         return updated & MaskPublicInfo;
     }
 
@@ -203,7 +203,7 @@ public class CKTypeKindDetector
             && t != typeof( object )
             && (t.IsClass || t.IsInterface) )
         {
-            Debug.Assert( k == CKTypeKind.None );
+            Throw.DebugAssert( k == CKTypeKind.None );
 
             // This would be the code to implement "Strong Exclusion".
             // But since, for the moment, exclusion is a weak concept, we process the type as if it was not excluded.
@@ -257,7 +257,7 @@ public class CKTypeKindDetector
                 if( k == CKTypeKind.None && !isInternalInterface )
                 {
                     Throw.DebugAssert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                    Throw.DebugAssert( typeof( Core.ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                    Throw.DebugAssert( typeof( ExcludedCKTypeAttribute ).Name == "ExcludedCKTypeAttribute" );
                     Throw.DebugAssert( typeof( ScopedContainerConfiguredServiceAttribute ).Name == "ScopedContainerConfiguredServiceAttribute" );
                     Throw.DebugAssert( typeof( SingletonContainerConfiguredServiceAttribute ).Name == "SingletonContainerConfiguredServiceAttribute" );
                     Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
@@ -290,7 +290,7 @@ public class CKTypeKindDetector
                         }
                         switch( n )
                         {
-                            case "ExcludeCKTypeAttribute":
+                            case "ExcludedCKTypeAttribute":
                                 isExcludedType = true;
                                 break;
                             case "ScopedContainerConfiguredServiceAttribute":
@@ -317,7 +317,7 @@ public class CKTypeKindDetector
                         }
                     }
 
-                    Debug.Assert( k == CKTypeKind.None || k == CKTypeKind.IsExcludedType );
+                    Throw.DebugAssert( k == CKTypeKind.None || k == CKTypeKind.IsExcludedType );
                     if( k == CKTypeKind.None )
                     {
                         // Normalizes SuperDefiner => Definer (and emits a warning).
@@ -388,7 +388,8 @@ public class CKTypeKindDetector
                             }
                             if( t.IsClass )
                             {
-                                Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleAttribute targets interface only and is not propagated." );
+                                Throw.DebugAssert( "IsMultipleAttribute targets interface only and is not propagated.",
+                                                   ( k & CKTypeKind.IsMultipleService) == 0 );
                                 // Always use the central GetCombinationError() method when possible: this method concentrates all the checks.
                                 var error = (k & MaskPublicInfo).GetCombinationError( true );
                                 if( error != null )
@@ -399,7 +400,7 @@ public class CKTypeKindDetector
                             }
                             else
                             {
-                                Debug.Assert( t.IsInterface );
+                                Throw.DebugAssert( t.IsInterface );
                                 var error = (k & MaskPublicInfo).GetCombinationError( false );
                                 if( error != null )
                                 {

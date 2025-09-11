@@ -9,14 +9,14 @@ namespace CK.Setup;
 /// </summary>
 public sealed class ExtMemberInfoFactory : IExtMemberInfoFactory
 {
-    readonly TEMPNullabilityInfoContext _nullabilityContext;
+    readonly NullabilityInfoContext _nullabilityContext;
 
     /// <summary>
     /// Initializes a new factory.
     /// </summary>
     public ExtMemberInfoFactory()
     {
-        _nullabilityContext = new TEMPNullabilityInfoContext();
+        _nullabilityContext = new NullabilityInfoContext();
     }
 
     /// <inheritdoc />

@@ -25,7 +25,7 @@ internal class CovariantPropertyInfo : INamedPropertyInfo
 
     internal CovariantPropertyInfo( PropertyInfo p, int definerSpecializationDepth, int index )
     {
-        Debug.Assert( p != null );
+        Throw.DebugAssert( p != null );
         _p = p;
         _definerSpecializationDepth = definerSpecializationDepth;
         _index = index;
@@ -99,7 +99,7 @@ internal class CovariantPropertyInfo : INamedPropertyInfo
                 }
                 else
                 {
-                    Debug.Assert( exists != null );
+                    Throw.DebugAssert( exists != null );
                     exists.SetGeneralizationInfo( monitor, a );
                     collector.RemoveAt( idxExists );
                     exists._index = nbFromAbove;

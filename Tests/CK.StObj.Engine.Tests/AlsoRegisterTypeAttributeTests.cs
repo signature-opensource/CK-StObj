@@ -1,7 +1,8 @@
 using CK.Core;
+using CK.Engine.TypeCollector;
 using CK.Setup;
-using Shouldly;
 using NUnit.Framework;
+using Shouldly;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
@@ -10,9 +11,10 @@ namespace CK.StObj.Engine.Tests;
 [TestFixture]
 public class AlsoRegisterTypeAttributeTests
 {
-    [AlsoRegisterType( typeof( INestedPoco ) )]
+    [AlsoRegisterType<INestedPoco>]
     public class StartingPoint : IRealObject
     {
+        [AlsoRegisterType<ARealObject, AnEnum>]
         public interface INestedPoco : IPoco
         {
         }
@@ -21,29 +23,32 @@ public class AlsoRegisterTypeAttributeTests
         {
         }
 
-        [AlsoRegisterType( typeof( IOtherNestedPoco ) )]
-        [AlsoRegisterType( typeof( ARealObject ) )]
-        public void JustForFun()
-        {
-        }
     }
 
     public class ARealObject : IRealObject
     {
     }
 
-    [Test]
-    public void AlsoRegisterTypeAttribute_works_recusively()
+    [AlsoRegisterType<StartingPoint.IOtherNestedPoco>]
+    public enum AnEnum
     {
-        var c = new StObjCollector();
-        c.RegisterType( TestHelper.Monitor, typeof( StartingPoint ) );
-        var r = c.GetResult( TestHelper.Monitor );
-        Throw.DebugAssert( !r.HasFatalError );
-        // The nested Poco is registered.
-        r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.INestedPoco )].PocoInterface.FullName.ShouldBe( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+INestedPoco" );
+    }
 
-        // The attribute can be on a method.
-        r.PocoTypeSystemBuilder.PocoDirectory.AllInterfaces[typeof( StartingPoint.IOtherNestedPoco )].PocoInterface.FullName.ShouldBe( "CK.StObj.Engine.Tests.AlsoRegisterTypeAttributeTests+StartingPoint+IOtherNestedPoco" );
-        r.CKTypeResult.RealObjects.ConcreteClasses.SelectMany( c => c ).Where( x => x.ClassType.Name == "ARealObject" ).ShouldHaveSingleItem();
+    [Test]
+    public void AlsoRegisterTypeAttribute_works_recursively()
+    {
+        var configuration = new EngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( StartingPoint ) );
+
+        var binPathResults = BinPathTypeGroup.Run( TestHelper.Monitor, configuration ).ShouldNotBeNull();
+        binPathResults.Success.ShouldBeTrue();
+        binPathResults.Groups.ShouldHaveSingleItem().ConfiguredTypes.AllTypes.Select( cT => cT.Type )
+            .ShouldBe( [
+                typeof(StartingPoint),
+                typeof(StartingPoint.INestedPoco),
+                typeof(ARealObject),
+                typeof(AnEnum),
+                typeof(StartingPoint.IOtherNestedPoco)
+                ], ignoreOrder: true );
     }
 }

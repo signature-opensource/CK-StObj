@@ -9,35 +9,48 @@ namespace CK.Engine.TypeCollector;
 /// <summary>
 /// Global type cache.
 /// <para>
-/// This currently doesn't handle Nullable Reference Type.
+/// This doesn't handle Nullable Reference Type.
+/// <see cref="ICachedType.Nullable"/> and <see cref="ICachedType.NonNullable"/> applies to value types only,
+/// for reference types both returns the unique <see cref="ICachedType"/> for their <see cref="Type"/> and
+/// for coherency <see cref="ICachedType.IsNullable"/> is null.
 /// </para>
 /// </summary>
 public sealed partial class GlobalTypeCache
 {
     readonly Dictionary<Type, ICachedType> _types;
     readonly AssemblyCache _assemblies;
-    readonly ICachedType _iRealObject;
-    readonly ICachedType _iPoco;
-    readonly ICachedType _iAutoService;
+    readonly WellKnownTypes _knownTypes;
 
     /// <summary>
-    /// Initializes a new cahe for types based on an assembly cache.
+    /// Initializes a new empty cache for types.
+    /// </summary>
+    public GlobalTypeCache()
+        : this( new AssemblyCache() )
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new cache for types bound to an existing assembly cache.
     /// </summary>
     /// <param name="assemblies">The assembly cache.</param>
     public GlobalTypeCache( AssemblyCache assemblies )
     {
         _types = new Dictionary<Type, ICachedType>();
         _assemblies = assemblies;
-        _iRealObject = Get( typeof( IRealObject ) );
-        _iPoco = Get( typeof( IPoco ) );
-        _iAutoService = Get( typeof( IAutoService ) );
+        var del = (CachedType)Get( typeof(Delegate) );
+        del._isDelegate = true;
+        _knownTypes = new WellKnownTypes( this, del );
     }
 
-    public ICachedType IRealObject => _iRealObject;
+    /// <summary>
+    /// Gets well-known types.
+    /// </summary>
+    public WellKnownTypes KnownTypes => _knownTypes;
 
-    public ICachedType IPoco => _iPoco;
-
-    public ICachedType IAutoService => _iAutoService;
+    /// <summary>
+    /// Gets the assembly cache.
+    /// </summary>
+    public AssemblyCache AssemblyCache => _assemblies;
 
     /// <summary>
     /// Gets a cached type.
@@ -115,27 +128,9 @@ public sealed partial class GlobalTypeCache
                     baseType = b;
                 }
             }
-            // Weird case checks.
-            var isRealObject = interfaces.Contains( _iRealObject );
-            var isPoco = interfaces.Contains( _iPoco );
-            if( isRealObject || isPoco )
-            {
-                if( isRealObject && isPoco )
-                {
-                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco and a IRealObject at the same time." );
-                }
-                if( !type.IsClass && !type.IsInterface )
-                {
-                    Throw.CKException( $"Invalid type '{type}': cannot be a IPoco or a IRealObject. It must be a class or an interface." );
-                }
-            }
-            c = isRealObject
-                    ? new RealObjectCachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType )
-                    : isPoco
-                        ? new PocoCachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType )
-                        : isValueType
-                            ? new CachedType( this, type, maxDepth + 1, nullableValueType, knownAssembly, interfaces )
-                            : new CachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType );
+            c = isValueType
+                    ? new CachedType( this, type, maxDepth + 1, nullableValueType, knownAssembly, interfaces )
+                    : new CachedType( this, type, maxDepth + 1, knownAssembly, interfaces, baseType );
             _types.Add( type, c );
             if( nullableValueType != null )
             {

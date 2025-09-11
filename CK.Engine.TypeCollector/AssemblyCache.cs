@@ -27,12 +27,44 @@ public sealed partial class AssemblyCache
     bool _registrationClosed;
 
     /// <summary>
+    /// Initializes a new empty <see cref="AssemblyCache"/>. <see cref="FindOrCreate(Assembly)"/> must
+    /// be used to register assemblies.
+    /// <para>
+    /// This should be rarely used as this doesn't handle types registration: <see cref="Run(IActivityMonitor, EngineConfiguration)"/>
+    /// encapsulates the regular use of an assembly cache.
+    /// </para>
+    /// </summary>
+    /// <param name="assemblyExcluder">Optional filter that can exclude an assembly when returning true.</param>
+    public AssemblyCache( Func<string, bool>? assemblyExcluder = null )
+        : this( assemblyExcluder, noPlannedRun: true )
+    {
+        _appContextPath = AppContext.BaseDirectory;
+        _assemblyExcluder = assemblyExcluder;
+        _assemblies = new Dictionary<object, CachedAssembly>();
+        _binPaths = new Dictionary<GroupKey, BinPathGroup>();
+    }
+
+    AssemblyCache( Func<string, bool>? assemblyExcluder, bool noPlannedRun )
+    {
+        _appContextPath = AppContext.BaseDirectory;
+        _assemblyExcluder = assemblyExcluder;
+        _assemblies = new Dictionary<object, CachedAssembly>();
+        _binPaths = new Dictionary<GroupKey, BinPathGroup>();
+        _registrationClosed = noPlannedRun;
+    }
+
+    /// <summary>
     /// Gets the cached assemblies. CachedAssembly are indexed by their Assembly and their simple name.
     /// </summary>
     public IReadOnlyDictionary<object, CachedAssembly> Assemblies => _assemblies;
 
     /// <summary>
     /// Registers an assembly that has not been discovered by the <see cref="Run(IActivityMonitor, EngineConfiguration)"/>.
+    /// <para>
+    /// Assemblies registered here are never "initial" ones (<see cref="CachedAssembly.IsInitialAssembly"/> is false if the
+    /// assembly was not discovered by the Run method). They can be <see cref="AssemblyKind.Excluded"/> if the configured
+    /// assembly excluder says so: we don't care, this blindly collects the assemblies.
+    /// </para>
     /// </summary>
     /// <param name="assembly">The assembly to find or register. Must not be <see cref="Assembly.IsDynamic"/>.</param>
     /// <returns>The cached assembly.</returns>
@@ -41,8 +73,6 @@ public sealed partial class AssemblyCache
         // This can be called only once registrations are closed, after the Run(IActivityMonitor, EngineConfiguration).
         Throw.CheckArgument( assembly is not null && assembly.IsDynamic is false );
         Throw.CheckState( _registrationClosed is true );
-        // Note that whatever the kind is (even a Exclude[Engine thats should be a warning), we
-        // don't care. The goal after the inital registration is just to collect the assemblies.
         return FindOrCreate( assembly, null, null, out var _ );
     }
 
@@ -55,7 +85,7 @@ public sealed partial class AssemblyCache
     public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
     {
         bool success = true;
-        var assemblyCache = new AssemblyCache( configuration.ExcludedAssemblies.Contains );
+        var assemblyCache = new AssemblyCache( configuration.ExcludedAssemblies.Contains, noPlannedRun: false );
 
         var collector = new List<BinPathGroup>();
         foreach( var b in configuration.BinPaths )
@@ -77,7 +107,7 @@ public sealed partial class AssemblyCache
         }
         // Dumps a summary.
         var sb = new StringBuilder( success ? "Successfully analyzed " : "Error while analyzing " );
-        sb.Append( assemblyCache._binPaths.Count ).AppendLine( " assembly configurations:" );
+        sb.Append( assemblyCache._binPaths.Count ).AppendLine( " BinPath configurations:" );
         foreach( var b in assemblyCache._binPaths.Values )
         {
             if( b.Success )
@@ -98,18 +128,6 @@ public sealed partial class AssemblyCache
     /// Gets the <see cref="AppContext.BaseDirectory"/> from which assemblies are loaded.
     /// </summary>
     NormalizedPath AppContextBaseDirectory => _appContextPath;
-
-    /// <summary>
-    /// Initializes a new <see cref="AssemblyCache"/>.
-    /// </summary>
-    /// <param name="assemblyExcluder">Optional filter that can exclude an assembly when returning true.</param>
-    AssemblyCache( Func<string, bool>? assemblyExcluder = null )
-    {
-        _appContextPath = AppContext.BaseDirectory;
-        _assemblyExcluder = assemblyExcluder;
-        _assemblies = new Dictionary<object, CachedAssembly>();
-        _binPaths = new Dictionary<GroupKey, BinPathGroup>();
-    }
 
     /// <summary>
     /// Registers a <see cref="BinPathAspectConfiguration"/>. Configurations are grouped

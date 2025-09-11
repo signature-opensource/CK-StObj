@@ -54,7 +54,7 @@ internal class StObjAttributesReader
                 }
                 else
                 {
-                    Debug.Assert( containerDefiner != null && containerDefiner.Container != null );
+                    Throw.DebugAssert( containerDefiner != null && containerDefiner.Container != null );
                     monitor.Log( multipleContainerLogLevel, $"Attribute {attr.GetType().Name} for type {objectType} specifies Container type '{attr.Container.Name}' but attribute {containerDefiner.GetType().Name} specifies Container type '{containerDefiner.Container.Name}'. Container remains '{containerDefiner.Container.Name}'." );
                 }
             }

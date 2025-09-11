@@ -100,7 +100,7 @@ public partial class StObjCollectorResult
                     }
                     else
                     {
-                        Debug.Assert( m.DeclaringType == t );
+                        Throw.DebugAssert( m.DeclaringType == t );
                         collector.Add( (r, m) );
                     }
                 }

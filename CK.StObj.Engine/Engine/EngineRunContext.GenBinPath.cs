@@ -17,7 +17,7 @@ sealed partial class EngineRunContext
                            StObjCollectorResult result,
                            RunningBinPathGroup group )
         {
-            Debug.Assert( !result.HasFatalError );
+            Throw.DebugAssert( !result.HasFatalError );
             _global = global;
             Result = result;
             ConfigurationGroup = group;

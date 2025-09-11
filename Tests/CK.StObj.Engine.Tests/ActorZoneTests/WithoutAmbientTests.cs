@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using CK.Core;
 using CK.Setup;
-using Shouldly;
 using NUnit.Framework;
 
 using static CK.Testing.MonitorTestHelper;
@@ -151,7 +150,7 @@ public class WithoutAmbientTests
         WithAmbientTests.CheckChildren<ZonePackage>( map.StObjs, "SecurityZone,ZoneGroup" );
         WithAmbientTests.CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
         var db = map.StObjs.Obtain<SqlDefaultDatabase>();
-        Debug.Assert( db != null );
+        Throw.DebugAssert( db != null );
         db.ConnectionString.ShouldBe( "The connection String" );
     }
 }

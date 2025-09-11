@@ -51,7 +51,7 @@ internal abstract class AmbientPropertyOrInjectObjectInfo : CovariantPropertyInf
         out IList<AmbientPropertyInfo>? apListResult,
         out IList<InjectObjectInfo>? injectedListResult )
     {
-        Debug.Assert( stObjProperties != null );
+        Throw.DebugAssert( stObjProperties != null );
 
         var properties = t.GetProperties( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly )
                           .Where( p => !p.Name.Contains( '.', StringComparison.Ordinal ) );
@@ -92,7 +92,7 @@ internal abstract class AmbientPropertyOrInjectObjectInfo : CovariantPropertyInf
                 }
                 if( attr.IsAmbientProperty )
                 {
-                    Debug.Assert( ap != null );
+                    Throw.DebugAssert( ap != null );
                     if( apListResult == null ) apListResult = new List<AmbientPropertyInfo>();
                     var amb = new AmbientPropertyInfo( p, attr.IsOptionalDefined, attr.IsOptional, ap.IsResolutionSourceDefined, ap.ResolutionSource, definerSpecializationDepth, apListResult.Count );
                     apListResult.Add( amb );

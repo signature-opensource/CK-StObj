@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -8,82 +9,51 @@ using System.Text;
 
 namespace CK.Engine.TypeCollector;
 
-partial class CachedType : CachedItem, ICachedType
+sealed partial class CachedType : CachedItem, ICachedType
 {
     readonly GlobalTypeCache _cache;
-    readonly int _typeDepth;
     readonly CachedAssembly _assembly;
     readonly ImmutableArray<ICachedType> _interfaces;
     readonly ICachedType? _baseType;
     [AllowNull]readonly ICachedType _nullable;
 
-    ICachedType? _genericTypeDefinition;
-    string? _csharpName;
+    ImmutableArray<ICachedType> _directInterfaces;
+    ImmutableArray<ICachedType> _alsoRegisterTypes;
+    IReadOnlySet<ICachedType>? _concreteGeneralizations;
     ICachedType? _declaringType;
     ICachedType? _elementType;
-    ImmutableArray<ICachedMember> _declaredMembers;
+    ImmutableArray<CachedMember> _members;
+    ImmutableArray<CachedMember> _declaredMembers;
+    ICachedType? _genericTypeDefinition;
     ImmutableArray<ICachedType> _genericArguments;
+    string? _csharpName;
+    readonly ushort _typeDepth;
 
     const EngineUnhandledType _uninitialized = (EngineUnhandledType)0xFF;
     EngineUnhandledType _unhandledType;
 
+    // These should be Flags.
+    // 32 flags may be enough but they should not be exposed. The following properties
+    // and combination of properties are often needed:
+    //
+    // IsClass, IsInterface, IsValueType, IsEnum, IsStruct, IsGenericType, IsGenericTypeDefinition, IsClassOrInterface,
+    // IsTypeDefiner, IsSuperTypeDefiner, IsCKMultiple, IsCKSingle
+    // IsPoco, IsAbstractPoco, IsVirtualPoco, IsPrimaryPoco, IsSecondaryPoco,
+    // IsAutoService, IsScopedAutoService, IsSingletonAutoService, IsContainerConfiguredScopedService, IsContainerConfiguredSingletonService,
+    // IsRealObject.
+    //
+    // This requires more thoughts.
+    // In a first time, we naïvely implement these properties when we actually need them with bool or bool?.
+    // A bool CheckValid( IActivityMonitor monitor ) should be implemented OR we may use the static logger
+    // to detect incoherencies.
+    // 
     readonly bool _isGenericType;
     readonly bool _isGenericTypeDefinition;
-
-    sealed class NullReferenceType : ICachedType
-    {
-        readonly CachedType _nonNullable;
-        string? _name;
-
-        public NullReferenceType( CachedType nonNullable )
-        {
-            _nonNullable = nonNullable;
-        }
-
-        public Type Type => _nonNullable.Type;
-
-        public bool IsTypeDefinition => _nonNullable.IsTypeDefinition;
-
-        public bool IsGenericType => _nonNullable.IsGenericType;
-
-        public int TypeDepth => _nonNullable.TypeDepth;
-
-        public CachedAssembly Assembly => _nonNullable.Assembly;
-
-        public bool IsNullable => true;
-
-        public ICachedType Nullable => this;
-
-        public ICachedType NonNullable => _nonNullable;
-
-        public string CSharpName => _name ??= _nonNullable.CSharpName + "?";
-
-        public string Name => _nonNullable.Name;
-
-        public ImmutableArray<ICachedType> Interfaces => _nonNullable.Interfaces;
-
-        public ICachedType? BaseType => _nonNullable.BaseType?.Nullable;
-
-        public ICachedType? DeclaringType => _nonNullable.DeclaringType;
-
-        public ICachedType? GenericTypeDefinition => _nonNullable.GenericTypeDefinition;
-
-        public ImmutableArray<ICachedType> GenericArguments => _nonNullable.GenericArguments;
-
-        public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
-
-        public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
-
-        public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
-
-        public ICachedType? ElementType => _nonNullable.ElementType;
-
-        public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
-
-        public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
-
-        public override string ToString() => CSharpName;
-    }
+    // Initialized by the cache for Delegate base class
+    // to avoid deferred resolution.
+    internal bool _isDelegate;
+    bool? _isSuperTypeDefiner;
+    bool? _isTypeDefiner;
 
     sealed class NullValueType : ICachedType
     {
@@ -104,11 +74,19 @@ partial class CachedType : CachedItem, ICachedType
 
         public bool IsGenericType => _nonNullable.IsGenericType;
 
+        public bool IsSuperTypeDefiner => false;
+
+        public bool IsTypeDefiner => false;
+
+        public bool IsDelegate => false;
+
+        public bool IsClassOrInterface => false;
+
         public int TypeDepth => _nonNullable.TypeDepth;
 
         public CachedAssembly Assembly => _nonNullable.Assembly;
 
-        public bool IsNullable => true;
+        public bool? IsNullable => true;
 
         public ICachedType Nullable => this;
 
@@ -120,7 +98,13 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedType> Interfaces => _nonNullable.Interfaces;
 
+        public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.Interfaces;
+
         public ICachedType? BaseType => null;
+
+        public ImmutableArray<ICachedType> AlsoRegisterTypes => _nonNullable.AlsoRegisterTypes;
+
+        public IReadOnlySet<ICachedType> ConcreteGeneralizations => _nonNullable.ConcreteGeneralizations;
 
         public ICachedType? DeclaringType => _nonNullable.DeclaringType;
 
@@ -128,9 +112,11 @@ partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedType> GenericArguments => _nonNullable.GenericArguments;
 
-        public ImmutableArray<CustomAttributeData> CustomAttributes => _nonNullable.CustomAttributes;
+        public ImmutableArray<CustomAttributeData> AttributesData => _nonNullable.AttributesData;
 
-        public ImmutableArray<ICachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
+        public ImmutableArray<CachedMember> DeclaredMembers => _nonNullable.DeclaredMembers;
+
+        public ImmutableArray<CachedMember> Members => _nonNullable.Members;
 
         public GlobalTypeCache TypeCache => _nonNullable.TypeCache;
 
@@ -138,9 +124,14 @@ partial class CachedType : CachedItem, ICachedType
 
         public EngineUnhandledType EngineUnhandledType => _nonNullable.EngineUnhandledType;
 
+        public ImmutableArray<object> RawAttributes => _nonNullable.RawAttributes;
+
         public StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 
         public override string ToString() => CSharpName;
+
+        public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+            => _nonNullable.TryGetAllAttributes( monitor, out attributes );
     }
 
     CachedType( GlobalTypeCache cache,
@@ -151,9 +142,10 @@ partial class CachedType : CachedItem, ICachedType
         : base( type )
     {
         _cache = cache;
-        _typeDepth = typeDepth;
+        _typeDepth = (ushort)typeDepth;
         _assembly = assembly;
         _interfaces = interfaces;
+        if( interfaces.IsEmpty ) _directInterfaces = interfaces;
         _isGenericTypeDefinition = type.IsGenericTypeDefinition;
         _isGenericType = type.IsGenericType;
         if( !_isGenericType ) _genericArguments = ImmutableArray<ICachedType>.Empty;
@@ -169,7 +161,8 @@ partial class CachedType : CachedItem, ICachedType
         : this( cache, type, typeDepth, assembly, interfaces )
     {
         _baseType = baseType;
-        _nullable = new NullReferenceType( this );
+        _nullable = this;
+        _isDelegate = baseType != null && baseType.IsDelegate;
     }
 
     // Value type.
@@ -184,13 +177,13 @@ partial class CachedType : CachedItem, ICachedType
         _nullable = nullableValueType != null
                     ? new NullValueType( this, nullableValueType )
                     : this;
+        _isSuperTypeDefiner = false;
+        _isTypeDefiner = false;
     }
 
+    public override sealed GlobalTypeCache TypeCache => _cache;
+
     public Type Type => Unsafe.As<Type>( _member );
-
-    public bool IsTypeDefinition => _isGenericTypeDefinition;
-
-    public bool IsGenericType => _isGenericType;
 
     public int TypeDepth => _typeDepth;
 
@@ -198,7 +191,84 @@ partial class CachedType : CachedItem, ICachedType
 
     public ImmutableArray<ICachedType> Interfaces => _interfaces;
 
+    public ImmutableArray<ICachedType> DirectInterfaces => _directInterfaces.IsDefault ? ComputeDirectInterfaces() : _directInterfaces;
+
+    ImmutableArray<ICachedType> ComputeDirectInterfaces()
+    {
+        Throw.DebugAssert( !_interfaces.IsEmpty );
+        var b = ImmutableArray.CreateBuilder<ICachedType>( _interfaces.Length );
+        foreach( var i in _interfaces )
+        {
+            if( _baseType != null && _baseType.Interfaces.Contains( i ) ) continue;
+            if( AppearAbove( i, _interfaces ) ) continue;
+            b.Add( i );
+        }
+        _directInterfaces = b.DrainToImmutable();
+        return _directInterfaces;
+
+        static bool AppearAbove( ICachedType candidate, ImmutableArray<ICachedType> interfaces  )
+        {
+            foreach( var i in interfaces )
+            {
+                if( candidate != i && i.Interfaces.Contains( candidate ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
     public ICachedType? BaseType => _baseType;
+
+    public ImmutableArray<ICachedType> AlsoRegisterTypes => _alsoRegisterTypes.IsDefault ? ComputeAlsoRegisterTypes() : _alsoRegisterTypes;
+
+    ImmutableArray<ICachedType> ComputeAlsoRegisterTypes()
+    {
+        ImmutableArray<ICachedType>.Builder? b = null;
+        foreach( var a in AttributesData )
+        {
+            var t = a.AttributeType;
+            if( t.Namespace == "CK.Core" )
+            {
+                Throw.DebugAssert( "AlsoRegisterTypeAttribute`".Length == 26 ); 
+                var sName = t.Name.AsSpan();
+                if( sName.StartsWith( "AlsoRegisterTypeAttribute`", StringComparison.Ordinal )
+                    && int.TryParse( sName.Slice( 26 ), System.Globalization.CultureInfo.InvariantCulture, out int count )
+                    && count is > 0 and < 9 )
+                {
+                    b ??= ImmutableArray.CreateBuilder<ICachedType>();
+                    foreach( var also in t.GetGenericArguments() )
+                    {
+                        b.Add( _cache.Get( also ) );
+                    }
+                }
+            }
+        }
+        _alsoRegisterTypes = b != null ? b.DrainToImmutable() : ImmutableArray<ICachedType>.Empty;
+        return _alsoRegisterTypes;
+    }
+
+    public IReadOnlySet<ICachedType> ConcreteGeneralizations => _concreteGeneralizations ??= ComputeConcreteGeneralizations();
+
+    IReadOnlySet<ICachedType> ComputeConcreteGeneralizations()
+    {
+        HashSet<ICachedType> set = new HashSet<ICachedType>();
+        foreach( var i in Interfaces )
+        {
+            if( !i.IsTypeDefiner )
+            {
+                set.Add( i );
+            }
+        }
+        var b = _baseType;
+        while( b != null )
+        {
+            if( !b.IsTypeDefiner ) set.Add( b );
+            b = b.BaseType;
+        }
+        return set.Count > 0 ? set : ImmutableHashSet<ICachedType>.Empty;
+    }
 
     public ICachedType? DeclaringType
     {
@@ -234,7 +304,7 @@ partial class CachedType : CachedItem, ICachedType
 
     public string CSharpName => _csharpName ??= Type.ToCSharpName();
 
-    public bool IsNullable => false;
+    public bool? IsNullable => _nullable == this ? null : false;
 
     public ICachedType Nullable => _nullable;
 
@@ -261,35 +331,54 @@ partial class CachedType : CachedItem, ICachedType
         }
     }
 
-    public ImmutableArray<ICachedMember> DeclaredMembers
+    public ImmutableArray<CachedMember> DeclaredMembers
     {
         get
         {
-            if( _declaredMembers.IsDefault )
-            {
-                var members = Type.GetMembers( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly );
-                var b = ImmutableArray.CreateBuilder<ICachedMember>( members.Length );
-                foreach( var m in members )
-                {
-                    var map = m switch
-                    {
-                        MethodInfo method => new CachedMethodInfo( this, method ),
-                        ConstructorInfo ctor => new CachedConstructorInfo( this, ctor ),
-                        PropertyInfo prop => new CachedPropertyInfo( this, prop ),
-                        EventInfo ev => new CachedEventInfo( this, ev ),
-                        FieldInfo f => new CachedFieldInfo( this, f ),
-                        Type nested => null,
-                        _ => Throw.NotSupportedException<ICachedMember>( m.ToString() )
-                    };
-                    if( map != null ) b.Add( map );
-                }
-                _declaredMembers = b.DrainToImmutable();
-            }
+            if( _declaredMembers.IsDefault ) ComputeMembers();
             return _declaredMembers;
         }
     }
 
-    public GlobalTypeCache TypeCache => _cache;
+    public ImmutableArray<CachedMember> Members
+    {
+        get
+        {
+            if( _members.IsDefault ) ComputeMembers();
+            return _members;
+        }
+    }
+
+    void ComputeMembers()
+    {
+        Throw.DebugAssert( _declaredMembers.IsDefault );
+        var members = Type.GetMembers( BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static );
+        var bD = ImmutableArray.CreateBuilder<CachedMember>( members.Length );
+        var bM = ImmutableArray.CreateBuilder<CachedMember>( members.Length );
+        foreach( var m in members )
+        {
+            var map = m switch
+            {
+                MethodInfo method => new CachedMethod( this, method ),
+                ConstructorInfo ctor => new CachedConstructor( this, ctor ),
+                PropertyInfo prop => new CachedProperty( this, prop ),
+                EventInfo ev => new CachedEvent( this, ev ),
+                FieldInfo f => new CachedField( this, f ),
+                Type nested => null,
+                _ => Throw.NotSupportedException<CachedMember>( m.ToString() )
+            };
+            if( map != null )
+            {
+                if( m.DeclaringType == _member )
+                {
+                    bD.Add( map );
+                }
+                bM.Add( map );
+            }
+        }
+        _declaredMembers = bD.DrainToImmutable();
+        _members = bM.DrainToImmutable();
+    }
 
     public override StringBuilder Write( StringBuilder b ) => b.Append( CSharpName );
 

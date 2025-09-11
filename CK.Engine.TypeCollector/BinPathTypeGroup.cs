@@ -1,9 +1,11 @@
 using CK.Core;
 using CK.Setup;
+using CommunityToolkit.HighPerformance;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 
@@ -17,6 +19,8 @@ public sealed partial class BinPathTypeGroup
     readonly IConfiguredTypeSet _configuredTypes;
     // Regular groups have a BinPathGroup.
     readonly AssemblyCache.BinPathGroup? _assemblyGroup;
+    readonly GlobalTypeCache _typeCache;
+
     // Unified has the AssemblyCache.
     readonly AssemblyCache? _assemblyCache;
     SHA1Value _signature;
@@ -25,23 +29,27 @@ public sealed partial class BinPathTypeGroup
     BinPathTypeGroup( ImmutableArray<BinPathConfiguration> configurations,
                       string groupName,
                       AssemblyCache.BinPathGroup assemblyGroup,
+                      GlobalTypeCache typeCache,
                       IConfiguredTypeSet configuredTypes,
                       SHA1Value signature )
     {
         _configurations = configurations;
         _groupName = groupName;
         _assemblyGroup = assemblyGroup;
+        _typeCache = typeCache;
         _configuredTypes = configuredTypes;
         _signature = signature;
     }
 
     // Unified group (Signature is Zero).
     BinPathTypeGroup( AssemblyCache assemblyCache,
+                      GlobalTypeCache typeCache,
                       HashSet<ICachedType> allTypes )
     {
         _configurations = ImmutableArray<BinPathConfiguration>.Empty;
         _groupName = "(Unified)";
         _assemblyCache = assemblyCache;
+        _typeCache = typeCache;
         _configuredTypes = new ImmutableConfiguredTypeSet( allTypes );
     }
 
@@ -64,6 +72,11 @@ public sealed partial class BinPathTypeGroup
     /// </para>
     /// </summary>
     public ImmutableArray<BinPathConfiguration> Configurations => _configurations;
+
+    /// <summary>
+    /// Gets the global type cache.
+    /// </summary>
+    public GlobalTypeCache TypeCache => _typeCache;
 
     /// <summary>
     /// Gets the types to consider in the group.
@@ -109,16 +122,25 @@ public sealed partial class BinPathTypeGroup
 
     /// <summary>
     /// Creates one or more <see cref="BinPathTypeGroup"/> from a configuration.
+    /// <list type="number">
+    ///     <item><see cref="EngineConfiguration.NormalizeConfiguration(IActivityMonitor)"/> is called. On failure, null is returned.</item>
+    ///     <item>Assemblies or types are discovered. This may fail: <see cref="Result.Success"/> can be false.</item>
+    /// </list>
     /// <para>
-    /// This step cannot fail: A false <see cref="Result.Success"/> comes from the assembly level.
     /// </para>
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <param name="configuration">The normalized configuration to handle.</param>
-    /// <returns>The result (<see cref="Result.Success"/> can be false).</returns>
-    public static Result Run( IActivityMonitor monitor, EngineConfiguration configuration )
+    /// <returns>The result (<see cref="Result.Success"/> can be false) or null on configuration error.</returns>
+    public static Result? Run( IActivityMonitor monitor, EngineConfiguration configuration )
     {
+        Throw.CheckNotNullArgument( monitor );
+        Throw.CheckNotNullArgument( configuration );
         using var _ = monitor.OpenInfo( $"Analyzing assemblies and configured types in {configuration.BinPaths.Count} BinPath configurations." );
+        if( !configuration.NormalizeConfiguration( monitor ) )
+        {
+            return null;
+        }
         var assemblyResult = AssemblyCache.Run( monitor, configuration );
 
         // Always produce the groups even if assemblyResult.Success is false.
@@ -188,23 +210,39 @@ public sealed partial class BinPathTypeGroup
             var includedByConfiguration = c.Types.Select( tc => (Type: assemblyResult.TypeCache.Get( tc.Type ), tc.Kind) )
                                                  .OrderBy( cT => cT.Type.CSharpName );
 
-            foreach( var tc in includedByConfiguration )
+            foreach( var (type, kind) in includedByConfiguration )
             {
-                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, tc.Type, tc.Kind );
+                var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, type, kind );
                 if( msg != null )
                 {
-                    monitor.Error( $"Invalid Type in configuration for: '{tc.Type.CSharpName}' {msg}." );
+                    monitor.Error( $"Invalid Type in configuration for: '{type.CSharpName}' {msg}." );
                     success = false;
                 }
                 else
                 {
-                    types.Add( monitor, sourceName, tc.Type, tc.Kind );
+                    types.Add( monitor, sourceName, type, kind );
                 }
-                hasher.Append( tc.Type.CSharpName ).Append( tc.Kind );
+                hasher.Append( type.CSharpName ).Append( kind );
+            }
+            // The set of types is ready. We finally extend the set with the [AlsoRegisterType] of the
+            // selected types: AlsoRegisterType is the last step that must be applied to any type selection,
+            // it ignores any potential exclusion.
+            Dictionary<ICachedType, ICachedType>? alsoTypes = types.AllTypes.GetRegisterAlsoTypesClosure();
+            if( alsoTypes != null )
+            {
+                foreach( var (also,source) in alsoTypes )
+                {
+                    if( !types.AllTypes.Contains( also ) )
+                    {
+                        types.Add( also );
+                        monitor.Debug( $"Type '{also}' will be considered because of [AlsoRegisterType<{also.Name}>] on '{source}'." );
+                    }
+                }
             }
             var g = new BinPathTypeGroup( configurations,
                                           groupName,
                                           assemblyGroup,
+                                          typeCache,
                                           types,
                                           new SHA1Value( hasher, resetHasher: true ) );
             groups.Add( g );
@@ -212,15 +250,15 @@ public sealed partial class BinPathTypeGroup
         // The groups list is ordered by GroupName. We may compute the signature here... 
         if( assemblyResult.Success )
         {
-            HandleUnifiedBinPath( monitor, groups );
-            // ...but why not waiting the unification and accounting the existenc of the UnifiedPure
+            HandleUnifiedBinPath( monitor, groups, typeCache );
+            // ...but why not waiting the unification and accounting the existence of the UnifiedPure
             // or the reordering of the groups (with the most covering one at the start)?
             foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
         }
         return new Result( assemblyResult, groups, new SHA1Value( hasher, resetHasher: false ), success );
     }
 
-    static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result )
+    static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result, GlobalTypeCache typeCache )
     {
         Throw.DebugAssert( result.Count != 0 );
         if( result.Count == 1 )
@@ -233,8 +271,10 @@ public sealed partial class BinPathTypeGroup
             // We have no choice here. We must compute the set of IRealObject and IPoco types only for each group
             // to be able to find the covering one (if it exists) and we cannot know if the covering one is needed
             // until we check that a unified group is required.
+
             var uSets = result.Select( g => new HashSet<ICachedType>( g.ConfiguredTypes.AllTypes
-                                                                        .Where( t => t is IPocoCachedType or IRealObjectCachedType ) ) )
+                                                                        .Where( t => t.Interfaces.Contains( typeCache.KnownTypes.IPoco )
+                                                                                     || t.Interfaces.Contains( typeCache.KnownTypes.IRealObject ) ) ) )
                               .ToArray();
             // The covering one is necessarily the biggest one if a unification is not required.
             // And an unification is required when the biggest set is still smaller than the union
@@ -265,11 +305,15 @@ public sealed partial class BinPathTypeGroup
             else
             {
                 monitor.Info( $"Unification is required for {uTypes.Count} IRealObject and IPoco." );
-                var unified = new BinPathTypeGroup( result[0].AssemblyCache, uTypes );
+                var unified = new BinPathTypeGroup( result[0].AssemblyCache, typeCache, uTypes );
                 result.Insert( 0, unified );
             }
         }
     }
 
+    /// <summary>
+    /// Overridden to return "BinTypePathGoup 'GroupName'".
+    /// </summary>
+    /// <returns>A readable string.</returns>
     public override string ToString() => $"BinTypePathGoup '{_groupName}'";
 }

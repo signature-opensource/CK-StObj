@@ -386,15 +386,14 @@ public sealed partial class AssemblyCache // BinPathGroup
             Throw.DebugAssert( cached._kind.IsNone() || cached._kind.IsEngine() || cached._kind.IsPFeature() );
             ProcessExcludePFeatures( monitor, cached, allPFeatures, pFeatures );
             // Types are handled later and only for PFeatures.
-            // Here we just warn if a non PFeature defines [RegisterCKType] or [ExcludeCKType] attributes.
+            // Here we just warn if a non PFeature defines [AddType] or [RemoveType] attributes.
             if( !cached._kind.IsPFeature() )
             {
-                // ExcludeCKTypeAttribute on Type is in CK.Core namespace, ExcludeCKTypeAttribute on Asssembly is in CK.Setup namespace.
-                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( CK.Setup.RegisterCKTypeAttribute ) || a.AttributeType == typeof( CK.Setup.ExcludeCKTypeAttribute ) ) )
+                if( cached.CustomAttributes.Any( a => a.AttributeType == typeof( AddTypeAttribute ) || a.AttributeType == typeof( RemoveTypeAttribute ) ) )
                 {
                     monitor.Warn( $"""
-                              Assembly '{cached.Name}' is '{cached.Kind}' and defines [RegisterCKType] or [ExcludeCKType] attributes, they are ignored.
-                              Only PFeature assemblies can register/exclude types.
+                              Assembly '{cached.Name}' is '{cached.Kind}' and defines [IncludeCKType] or [ExcludeCKType] attributes, they are ignored.
+                              Only PFeature assemblies can include/exclude types.
                               """ );
                 }
             }
@@ -412,8 +411,8 @@ public sealed partial class AssemblyCache // BinPathGroup
                                       HashSet<CachedAssembly>? allPFeatures,
                                       SortedSet<CachedAssembly>? pFeatures )
         {
-            // The excluded tuple keeps the "name" but can have a null (never seen) CachedAssembly.
-            var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( ExcludePFeatureAttribute ) )
+            // The removed tuple keeps the "name" but can have a null (never seen) CachedAssembly.
+            var excluded = cached.CustomAttributes.Where( a => a.AttributeType == typeof( RemovePFeatureAttribute ) )
                                  .Select( a => (string?)a.ConstructorArguments[0].Value )
                                  .Select( name => (N: name, A: name != null ? _assemblyCache.Find( name ) : null) );
             foreach( var (name, a) in excluded )
@@ -467,6 +466,10 @@ public sealed partial class AssemblyCache // BinPathGroup
             }
         }
 
+        /// <summary>
+        /// Overridden to return "AssemblyBinPathGoup 'GroupName'".
+        /// </summary>
+        /// <returns>A readable string.</returns>
         public override string ToString() => $"AssemblyBinPathGoup '{_groupName}'";
     }
 

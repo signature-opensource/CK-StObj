@@ -329,7 +329,7 @@ public sealed partial class PocoTypeSystemBuilder
 
     string EnsurePocoDictionaryOfAbstractOrBasicRefType( IPocoType tK, IPocoType tV )
     {
-        Debug.Assert( tV.IsNullable );
+        Throw.DebugAssert( tV.IsNullable );
         var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
         if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
         {

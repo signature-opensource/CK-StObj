@@ -32,9 +32,9 @@ internal class MutableReference : IStObjMutableReference
         }
         else
         {
-            Debug.Assert( (_kind & StObjMutableReferenceKind.ConstructParameter) != 0
-                            || _kind == StObjMutableReferenceKind.RequiredBy
-                            || _kind == StObjMutableReferenceKind.AmbientProperty );
+            Throw.DebugAssert( (_kind & StObjMutableReferenceKind.ConstructParameter) != 0
+                                || _kind == StObjMutableReferenceKind.RequiredBy
+                                || _kind == StObjMutableReferenceKind.AmbientProperty );
             StObjRequirementBehavior = StObjRequirementBehavior.None;
         }
     }
@@ -78,7 +78,7 @@ internal class MutableReference : IStObjMutableReference
         }
         else if( StObjRequirementBehavior == Setup.StObjRequirementBehavior.WarnIfNotStObj )
         {
-            Debug.Assert( Type != null );
+            Throw.DebugAssert( Type != null );
             if( !skipWarnOnValueType || !(Type.IsValueType || Type == typeof( string )) )
             {
                 Warn( monitor, text );

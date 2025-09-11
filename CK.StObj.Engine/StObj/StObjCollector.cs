@@ -176,7 +176,7 @@ public partial class StObjCollector
                            Action<IActivityMonitor, CKTypeCollector, Type> a,
                            bool defineExternalCall = true )
     {
-        Debug.Assert( types != null );
+        Throw.DebugAssert( types != null );
         if( defineExternalCall && _cc.RegisteredTypeCount > 0 )
         {
             monitor.Error( $"External definition lifetime, cardinality or Front services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
@@ -298,7 +298,8 @@ public partial class StObjCollector
                 }
                 if( !error && !typeResult.HasFatalError )
                 {
-                    Debug.Assert( _tempAssembly.GetPocoDirectory() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
+                    Throw.DebugAssert( "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded.",
+                                       _tempAssembly.GetPocoDirectory() != null );
                     using( monitor.OpenInfo( "Creating final objects and configuring items." ) )
                     {
                         int nbItems = ConfigureMutableItems( monitor, typeResult.RealObjects );
@@ -350,9 +351,10 @@ public partial class StObjCollector
                                                    HookOutput = _traceDepencySorterOutput ? i => i.Trace( monitor ) : null,
                                                    ReverseName = RevertOrderingNames
                                                } );
-                Debug.Assert( sortResult.HasRequiredMissing == false,
-                    "A missing requirement can not exist at this stage since we only inject existing Mutable items: missing unresolved dependencies are handled by PrepareDependentItems that logs Errors when needed." );
-                Debug.Assert( noCycleDetected || (sortResult.CycleDetected != null), "Cycle detected during item preparation => Cycle detected by the DependencySorter." );
+                Throw.DebugAssert( "A missing requirement can not exist at this stage since we only inject existing Mutable items: missing unresolved dependencies are handled by PrepareDependentItems that logs Errors when needed.",
+                                   sortResult.HasRequiredMissing == false );
+                Throw.DebugAssert( "Cycle detected during item preparation => Cycle detected by the DependencySorter.",
+                                   noCycleDetected || (sortResult.CycleDetected != null) );
                 if( !sortResult.IsComplete )
                 {
                     sortResult.LogError( monitor );
@@ -361,7 +363,7 @@ public partial class StObjCollector
                 }
             }
 
-            Debug.Assert( sortResult != null );
+            Throw.DebugAssert( sortResult != null );
             // We now can setup the final ordered list of MutableItems (i.e. of IStObjResult).
             List<MutableItem> ordered = new List<MutableItem>();
             List<MutableItem> orderedAfterContent = new List<MutableItem>();
@@ -414,7 +416,7 @@ public partial class StObjCollector
                 }
                 if( error ) return (typeResult, null, null, null);
             }
-            Debug.Assert( !error );
+            Throw.DebugAssert( !error );
             Throw.DebugAssert( ordered.Count == orderedAfterContent.Count );
             return (typeResult, ordered, orderedAfterContent, valueCollector);
         }
@@ -432,7 +434,7 @@ public partial class StObjCollector
         for( int i = concreteClasses.Count - 1; i >= 0; --i )
         {
             var pathTypes = (IReadOnlyList<MutableItem>)concreteClasses[i];
-            Debug.Assert( pathTypes.Count > 0, "At least the final concrete class exists." );
+            Throw.DebugAssert( "At least the final concrete class exists.", pathTypes.Count > 0 );
             nbItems += pathTypes.Count;
 
             MutableItem specialization = pathTypes[pathTypes.Count - 1];
@@ -451,7 +453,7 @@ public partial class StObjCollector
             // Note that this works because we do NOT offer any access to Specialization 
             // in IStObjMutableItem. We offer an access to the Generalization (it is configured) and can help
             // target the root of a specialization path (typically to set ConstructParametersAboveRoot).
-            Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Specialization" ) == null );
+            Throw.DebugAssert( typeof( IStObjMutableItem ).GetProperty( "Specialization" ) == null );
             MutableItem generalization = pathTypes[0];
             MutableItem? m = generalization;
             do

@@ -88,7 +88,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                                 AutoServiceClassInfo? cS,
                                 AutoServiceInterfaceInfo? iS )
         {
-            Debug.Assert( (cS != null) ^ (iS != null) );
+            Throw.DebugAssert( (cS != null) ^ (iS != null) );
             ParameterInfo = p;
             ParameterType = cS?.ClassType ?? iS!.Type;
             ServiceClass = cS;
@@ -100,7 +100,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
             ParameterInfo = p;
             IsEnumerable = isEnumerable;
             ParameterType = parameterType;
-            Debug.Assert( IsAutoService == false );
+            Throw.DebugAssert( IsAutoService == false );
         }
 
         /// <summary>
@@ -122,10 +122,11 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                                    RealObjectClassInfo? realObjectInfo,
                                    Action<Type> alsoRegister )
     {
-        Debug.Assert( realObjectInfo == null || realObjectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
+        Throw.DebugAssert( "If we are the associated Service, we must be the only one.",
+                           realObjectInfo == null || realObjectInfo.ServiceClass == null );
         if( realObjectInfo != null )
         {
-            Debug.Assert( realObjectInfo.Type == t );
+            Throw.DebugAssert( realObjectInfo.Type == t );
             TypeInfo = realObjectInfo;
             realObjectInfo.ServiceClass = this;
         }
@@ -133,7 +134,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
         {
             TypeInfo = new CKTypeInfo( m, parent?.TypeInfo, t, serviceProvider, isExcluded, this, alsoRegister );
         }
-        Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
+        Throw.DebugAssert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ) );
 
         if( parent != null ) SpecializationDepth = parent.SpecializationDepth + 1;
         MappingListIndex = -1;
@@ -268,9 +269,9 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                                   List<AutoServiceClassInfo> lastConcretes,
                                   ref List<Type>? abstractTails )
     {
-        Debug.Assert( tempAssembly != null );
-        Debug.Assert( !TypeInfo.IsExcluded );
-        Debug.Assert( Interfaces == null );
+        Throw.DebugAssert( tempAssembly != null );
+        Throw.DebugAssert( !TypeInfo.IsExcluded );
+        Throw.DebugAssert( Interfaces == null );
         // Don't try to reuse the potential RealObjectInfo here: even if the TypeInfo is
         // a RealObject, let the regular code be executed (any abstract Specializations
         // have already been removed anyway) so we'll correctly initialize the Interfaces for
@@ -278,7 +279,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
         bool isConcretePath = false;
         foreach( AutoServiceClassInfo c in Specializations )
         {
-            Debug.Assert( !c.TypeInfo.IsExcluded );
+            Throw.DebugAssert( !c.TypeInfo.IsExcluded );
             isConcretePath |= c.InitializePath( monitor, collector, tempAssembly, lastConcretes, ref abstractTails );
         }
         if( !isConcretePath )
@@ -317,7 +318,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
 
     internal void FinalizeMostSpecializedAndCollectSubGraphs( List<AutoServiceClassInfo> subGraphCollector )
     {
-        Debug.Assert( IsIncluded );
+        Throw.DebugAssert( IsIncluded );
         if( MostSpecialized == null ) MostSpecialized = this;
         foreach( var s in Specializations )
         {
@@ -338,10 +339,10 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                                       StObjObjectEngineMap engineMap,
                                       AutoServiceClassInfo mostSpecialized )
     {
-        Debug.Assert( IsIncluded );
-        Debug.Assert( MostSpecialized == null );
-        Debug.Assert( mostSpecialized != null && mostSpecialized.IsIncluded );
-        Debug.Assert( !mostSpecialized.TypeInfo.IsSpecialized );
+        Throw.DebugAssert( IsIncluded );
+        Throw.DebugAssert( MostSpecialized == null );
+        Throw.DebugAssert( mostSpecialized != null && mostSpecialized.IsIncluded );
+        Throw.DebugAssert( !mostSpecialized.TypeInfo.IsSpecialized );
 
         bool success = true;
 #if DEBUG
@@ -350,12 +351,12 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
         AutoServiceClassInfo? child = mostSpecialized;
         do
         {
-            Debug.Assert( child != null );
+            Throw.DebugAssert( child != null );
             if( child.MostSpecialized == null )
             {
                 // Child's most specialized class has not been assigned yet: its generalization
                 // has not been assigned yet.
-                Debug.Assert( child.Generalization?.MostSpecialized == null );
+                Throw.DebugAssert( child.Generalization?.MostSpecialized == null );
                 child.MostSpecialized = mostSpecialized;
 #if DEBUG
                 atLeastOneAssignment = true;
@@ -364,7 +365,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
         }
         while( (child = child.Generalization) != Generalization );
 #if DEBUG
-        Debug.Assert( atLeastOneAssignment );
+        Throw.DebugAssert( atLeastOneAssignment );
 #endif
         return success;
     }
@@ -377,7 +378,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
         get
         {
-            Debug.Assert( _ctorParmetersClosure != null && _ctorBinding == true );
+            Throw.DebugAssert( _ctorParmetersClosure != null && _ctorBinding == true );
             return _ctorParmetersClosure;
         }
     }
@@ -388,12 +389,12 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
 
     internal AutoServiceKind ComputeFinalTypeKind( IActivityMonitor m, IAutoServiceKindComputeFacade kindComputeFacade, Stack<AutoServiceClassInfo> path, ref bool success )
     {
-        Debug.Assert( !TypeInfo.IsSpecialized, "This is called only on leaf, most specialized, class." );
+        Throw.DebugAssert( "This is called only on leaf, most specialized, class.", !TypeInfo.IsSpecialized );
         if( !_serviceKind.HasValue )
         {
             var initial = kindComputeFacade.KindDetector.GetValidKind( m, ClassType ).ToAutoServiceKind();
             var final = initial;
-            Debug.Assert( ConstructorParameters != null );
+            Throw.DebugAssert( ConstructorParameters != null );
             using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
             {
                 if( path.Contains( this ) )
@@ -404,7 +405,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                 else
                 {
                     path.Push( this );
-                    Debug.Assert( ConstructorParameters != null );
+                    Throw.DebugAssert( ConstructorParameters != null );
                     foreach( var p in ConstructorParameters )
                     {
                         AutoServiceClassInfo? pC = null;
@@ -420,7 +421,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                         {
                             Throw.DebugAssert( "A [IsMultiple] interface cancels its IAutoService trait (if any).", !p.IsEnumerable );
                             pC = p.FinalServiceClass;
-                            Debug.Assert( pC != null );
+                            Throw.DebugAssert( pC != null );
                             kP = pC.ComputeFinalTypeKind( m, kindComputeFacade, path, ref success );
                             paramTypeName = p.ParameterType.Name;
                         }
@@ -451,7 +452,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                         if( success )
                         {
                             // Handling lifetime.
-                            Debug.Assert( (kP & (AutoServiceKind.IsSingleton | AutoServiceKind.IsScoped)) != 0 );
+                            Throw.DebugAssert( (kP & (AutoServiceKind.IsSingleton | AutoServiceKind.IsScoped)) != 0 );
                             if( (kP & AutoServiceKind.IsScoped) != 0 )
                             {
                                 if( (final & AutoServiceKind.IsSingleton) != 0 )
@@ -534,7 +535,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                 if( !(initializationError |= !EnsureCtorBinding( m, collector )) )
                 {
                     var replacedTargets = GetReplacedTargetsFromReplaceServiceAttribute( m, collector );
-                    Debug.Assert( ConstructorParameters != null );
+                    Throw.DebugAssert( ConstructorParameters != null );
                     initializationError |= AddCoveredParameters( ConstructorParameters.Select( p => p.ServiceClass )
                                                                    .Where( p => p != null )
                                                                    .Select( p => p! )
@@ -593,7 +594,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     // The initial call is on the service leaf.
     internal bool EnsureCtorBinding( IActivityMonitor m, CKTypeCollector collector )
     {
-        Debug.Assert( IsIncluded && !IsRealObject );
+        Throw.DebugAssert( IsIncluded && !IsRealObject );
         if( _ctorBinding.HasValue ) return _ctorBinding.Value;
         bool success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
         if( !AnalyzeSingleConstructor( m, collector ) ) success = false;
@@ -666,7 +667,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
                     CtorParameter ctorParameter;
                     if( param.Class != null || param.Interface != null )
                     {
-                        Debug.Assert( !param.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
+                        Throw.DebugAssert( "A [IsMultiple] interface cancels its IAutoService trait (if any).", !param.IsEnumerable );
                         ctorParameter = new CtorParameter( p, param.Class, param.Interface );
                     }
                     else ctorParameter = new CtorParameter( p, param.IsEnumerable, param.ParameterType );
@@ -765,7 +766,7 @@ public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
         {
             return new CtorParameterData( true, null, null, isEnumerable, kind, tParam );
         }
-        Debug.Assert( conflictMsg == null && (kind & CKTypeKind.IsAutoService) != 0 );
+        Throw.DebugAssert( conflictMsg == null && (kind & CKTypeKind.IsAutoService) != 0 );
         if( tParam.IsClass )
         {
             var sClass = collector.FindServiceClassInfo( monitor, tParam );
