@@ -90,7 +90,7 @@ class AnyWriter : JsonCodeWriter
                     if( !wCtx.Options.TypeLess )
                     {
                         w.WriteStartArray();
-                        int i = index == _userMessageTypeIndex && wCtx.Options.AlwaysExportSimpleUserMessage
+                        int i = index == _userMessageTypeIndex && wCtx.Options.UserMessageFormat != CK.Poco.Exc.Json.UserMessageSimplifiedFormat.None
                                             ? _simpleUserMessageTypeIndex
                                             : index;
                         w.WriteStringValue( _typeNames[i] );
