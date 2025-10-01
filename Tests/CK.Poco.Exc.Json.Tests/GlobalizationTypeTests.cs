@@ -79,7 +79,7 @@ public partial class GlobalizationTypeTests
             {"UserMessage":[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["UserMessage",[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
             """ );
         // Polymorphism considers the AlwaysExportSimpleUserMessage: OUserMessage has SimpleUserMessageType. 
-        var s2 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, AlwaysExportSimpleUserMessage = true } );
+        var s2 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, UserMessageFormat = UserMessageSimplifiedFormat.Simple } );
         s2.ShouldBe( """
             {"UserMessage":[4,"Hop some string!",5],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["SimpleUserMessage",[4,"Hop some string!",5]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
             """ );

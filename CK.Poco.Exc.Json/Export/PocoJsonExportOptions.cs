@@ -22,15 +22,15 @@ public sealed class PocoJsonExportOptions
     ///     <item>The <see cref="JsonWriterOptions.Encoder"/> is null (uses the <see cref="JavaScriptEncoder.Default"/>).</item>
     ///     <item><see cref="JsonWriterOptions.SkipValidation"/> is true.</item>
     ///     <item>The default type filter is "AllExchangeable".</item>
-    ///     <item><see cref="AlwaysExportSimpleUserMessage"/> is false.</item>
+    ///     <item><see cref="UserMessageFormat"/> is <see cref="UserMessageSimplifiedFormat.None"/> (full message).</item>
     /// </list>
     /// </summary>
     public static readonly PocoJsonExportOptions Default = new PocoJsonExportOptions();
 
     /// <summary>
     /// Gets a singleton default option that is used by IPoco ToString implementation.
-    /// Property names are written as-is (<see cref="UseCamelCase"/> is false), <see cref="TypeLess"/> is false,
-    /// <see cref="TypeFilterName"/> is "AllSerializable" and <see cref="JsonWriterOptions.Encoder"/>
+    /// Property names are written as-is (<see cref="UseCamelCase"/> is false), <see cref="UserMessage"/> are fully written,
+    /// <see cref="TypeLess"/> is false, <see cref="TypeFilterName"/> is "AllSerializable" and <see cref="JsonWriterOptions.Encoder"/>
     /// is <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/> and <see cref="JsonWriterOptions.SkipValidation"/> is true.
     /// </summary>
     public static readonly PocoJsonExportOptions ToStringDefault = new PocoJsonExportOptions()
@@ -62,7 +62,7 @@ public sealed class PocoJsonExportOptions
     {
         UseCamelCase = o.UseCamelCase;
         TypeLess = o.TypeLess;
-        AlwaysExportSimpleUserMessage = o.AlwaysExportSimpleUserMessage;
+        UserMessageFormat = o.UserMessageFormat;
         WriterOptions = o.WriterOptions;
         TypeFilterName = o.TypeFilterName;
     }
@@ -80,10 +80,9 @@ public sealed class PocoJsonExportOptions
     public bool TypeLess { get; init; }
 
     /// <summary>
-    /// Gets whether <see cref="UserMessage"/> should always be written as <see cref="SimpleUserMessage"/>.
-    /// Defaults to false. 
+    /// Gets how <see cref="UserMessage"/> must be exported.
     /// </summary>
-    public bool AlwaysExportSimpleUserMessage { get; init; }
+    public UserMessageSimplifiedFormat UserMessageFormat { get; init; }
 
     /// <summary>
     /// Get the writer options. See <see cref="Default"/>.
