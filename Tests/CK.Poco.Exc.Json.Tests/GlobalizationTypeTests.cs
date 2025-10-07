@@ -57,7 +57,7 @@ public partial class GlobalizationTypeTests
 
 
     [Test]
-    public async Task with_AlwaysExportSimpleUserMessage_Async()
+    public async Task with_UserMessageFormat_Simple_and_String_Async()
     {
         var current = new CurrentCultureInfo( new TranslationService(), NormalizedCultureInfo.CodeDefault );
 
@@ -69,19 +69,28 @@ public partial class GlobalizationTypeTests
         var someString = "some string";
 
         var n = auto.Services.GetRequiredService<IPocoFactory<IWithUserMessage>>().Create();
-        n.UserMessage = UserMessage.Info( current, $"Hop {someString}!", "Res.Hop" ).With( 5 );
+        n.UserMessage = UserMessage.Info( current, $"Hop {someString}!", "Res.Hop" ).With( 2 );
         n.SimpleUserMessage = new SimpleUserMessage( UserMessageLevel.Error, "Hop!", 5 );
         n.OUserMessage = n.UserMessage;
         n.OSimpleUserMessage = n.SimpleUserMessage;
 
+        // Default UserMessageSimplifiedFormat.None: full format message.
         var s1 = n.ToString();
         s1.ShouldBe( """
-            {"UserMessage":[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["UserMessage",[4,5,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
+            {"UserMessage":[4,2,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["UserMessage",[4,2,"Hop some string!","en","Res.Hop","Hop some string!","en",[4,11]]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
             """ );
-        // Polymorphism considers the AlwaysExportSimpleUserMessage: OUserMessage has SimpleUserMessageType. 
-        var s2 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, AlwaysExportSimpleUserMessage = true } );
+
+        // Polymorphism considers the UserMessageFormat: OUserMessage has SimpleUserMessage type.
+        // Simple: 3-cells array.
+        var s2 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, UserMessageFormat = UserMessageSimplifiedFormat.Simple } );
         s2.ShouldBe( """
-            {"UserMessage":[4,"Hop some string!",5],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["SimpleUserMessage",[4,"Hop some string!",5]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
+            {"UserMessage":[4,"Hop some string!",2],"SimpleUserMessage":[16,"Hop!",5],"OUserMessage":["SimpleUserMessage",[4,"Hop some string!",2]],"OSimpleUserMessage":["SimpleUserMessage",[16,"Hop!",5]]}
+            """ );
+
+        // String: the Simple/UserMessage.ToString().
+        var s3 = n.ToString( new PocoJsonExportOptions() { UseCamelCase = false, UserMessageFormat = UserMessageSimplifiedFormat.String } );
+        s3.ShouldBe( """
+            {"UserMessage":"Info -   Hop some string!","SimpleUserMessage":"Error -      Hop!","OUserMessage":["SimpleUserMessage","Info -   Hop some string!"],"OSimpleUserMessage":["SimpleUserMessage","Error -      Hop!"]}
             """ );
     }
 

@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using CK.Poco.Exc.Json;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -120,8 +121,11 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
         {
             return new BasicWriter( map, UserMessageWriter );
         }
-        else if( type.Type == typeof( SimpleUserMessage )
-                 || type.Type == typeof( FormattedString )
+        else if( type.Type == typeof( SimpleUserMessage ) )
+        {
+            return new BasicWriter( map, SimpleUserMessageWriter );
+        }
+        else if( type.Type == typeof( FormattedString )
                  || type.Type == typeof( MCString )
                  || type.Type == typeof( CodeString ) )
         {
@@ -158,9 +162,27 @@ sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
 
         static void UserMessageWriter( ICodeWriter write, string variableName )
         {
-            write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " )
-                                                            .Append( variableName )
-                                                            .Append( ", wCtx.Options.AlwaysExportSimpleUserMessage );" ).NewLine();
+            write.Append( """
+                    if( wCtx.Options.UserMessageFormat == CK.Poco.Exc.Json.UserMessageSimplifiedFormat.String )
+                        CK.Core.GlobalizationJsonHelper.WriteAsString( w, 
+                    """ ).Append( variableName ).Append( " );" ).NewLine()
+                 .Append( "else CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " )
+                            .Append( variableName )
+                            .Append( ", wCtx.Options.UserMessageFormat == CK.Poco.Exc.Json.UserMessageSimplifiedFormat.Simple );" )
+                            .NewLine();
+        }
+
+
+        static void SimpleUserMessageWriter( ICodeWriter write, string variableName )
+        {
+            write.Append( """
+                    if( wCtx.Options.UserMessageFormat == CK.Poco.Exc.Json.UserMessageSimplifiedFormat.String )
+                        CK.Core.GlobalizationJsonHelper.WriteAsString( w,  
+                    """ ).Append( variableName ).Append( " );" ).NewLine()
+                 .Append( "else CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " )
+                            .Append( variableName )
+                            .Append( " );" )
+                            .NewLine();
         }
 
         static void NumberAsStringWriter( ICodeWriter write, string variableName )
