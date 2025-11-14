@@ -15,9 +15,9 @@
   <ItemGroup>
     <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
     <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="14.0.2--0005-develop" />
-    <PackageReference Include="CK.Globalization" Version="4.0.3--0003-develop" />
-    <PackageReference Include="CK.Setup.Dependency" Version="22.0.2--0005-develop" />
+    <PackageReference Include="CK.CodeGen" Version="14.0.2--0006-develop" />
+    <PackageReference Include="CK.Globalization" Version="4.0.3--0004-develop" />
+    <PackageReference Include="CK.Setup.Dependency" Version="22.0.2--0006-develop" />
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
   </ItemGroup>
   <ItemGroup>
