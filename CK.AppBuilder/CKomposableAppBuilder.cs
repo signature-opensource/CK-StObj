@@ -157,12 +157,6 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             monitor.MonitorEnd();
             var d = GrandOutput.Default;
             if( d != null ) await d.DisposeAsync().ConfigureAwait( false );
-            NormalizedPath lastLog = Directory.EnumerateFiles( rootLogPath.AppendPart( "Text" ) ).OrderBy( f => File.GetLastWriteTimeUtc( f ) ).LastOrDefault();
-            if( !lastLog.IsEmptyPath )
-            {
-                NormalizedPath lastRun = lastLog.Combine( "../../../LastRun.log" );
-                File.Copy( lastLog, lastRun, overwrite: true );
-            }
         }
     }
 
