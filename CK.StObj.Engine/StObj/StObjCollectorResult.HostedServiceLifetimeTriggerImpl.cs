@@ -61,12 +61,41 @@ public partial class StObjCollectorResult
             foreach( var r in all )
             {
                 var t = r.ClassType;
+                // Hook to handle OnHostStart/Stop on abstract bases.
+                // This is hideous...
+                if( r.Generalization == null )
+                {
+                    var tBase = t.BaseType;
+                    if( typeof( IRealObject ).IsAssignableFrom( tBase ) )
+                    {
+                        var baseTypes = new List<Type> { tBase };
+                        while( typeof( IRealObject ).IsAssignableFrom( tBase = tBase.BaseType ) )
+                        {
+                            baseTypes.Add( tBase );
+                        }
+                        baseTypes.Reverse();
+                        foreach( var bT in baseTypes )
+                        {
+                            ProcessMethods( monitor, startMethods, stopMethods, ref success, r, bT );
+                        }
+                    }
+                }
+                ProcessMethods( monitor, startMethods, stopMethods, ref success, r, t );
+            }
+            return success;
+
+            static void ProcessMethods( IActivityMonitor monitor,
+                                        List<(IStObjResult, MethodInfo)> startMethods,
+                                        List<(IStObjResult, MethodInfo)> stopMethods,
+                                        ref bool success,
+                                        IStObjResult r,
+                                        Type t )
+            {
                 ProcessMethod( monitor, StObjContextRoot.StartMethodName, startMethods, ref success, r, t );
                 ProcessMethod( monitor, StObjContextRoot.StartMethodNameAsync, startMethods, ref success, r, t );
                 ProcessMethod( monitor, StObjContextRoot.StopMethodName, stopMethods, ref success, r, t );
                 ProcessMethod( monitor, StObjContextRoot.StopMethodNameAsync, stopMethods, ref success, r, t );
             }
-            return success;
 
             static void ProcessMethod( IActivityMonitor monitor, string methodName, List<(IStObjResult, MethodInfo)> collector, ref bool success, IStObjResult r, Type t )
             {
@@ -105,6 +134,7 @@ public partial class StObjCollectorResult
                     }
                 }
             }
+
         }
 
         public void GenerateHostedServiceLifetimeTrigger( IActivityMonitor monitor, IStObjEngineMap map, ITypeDefinerScope code )
@@ -165,16 +195,16 @@ public partial class StObjCollectorResult
             body.GeneratedByComment();
             foreach( var m in methods )
             {
-                monitor.Trace( $"Generating call to '{m.T.ClassType:C}.{m.M.Name}'." );
+                monitor.Trace( $"Generating call to '{m.M.DeclaringType:C}.{m.M.Name}'." );
                 bool isAsync = m.M.Name.EndsWith( "Async" );
                 if( isAsync )
                 {
                     asyncRequires = true;
                     body.Append( "await (" ).Append( m.M.ReturnType == typeof( ValueTask ) ? "(ValueTask)" : "(Task)" );
                 }
-                body.AppendTypeOf( m.T.ClassType ).Append( ".GetMethod( " ).AppendSourceString( m.M.Name ).Append( " , BindingFlags.Instance | BindingFlags.NonPublic )" )
-                                                  .Append( ".Invoke( CK.StObj.GeneratedRootContext.RealObjects[" ).Append( m.T.IndexOrdered ).Append( "].FinalImplementation.Implementation, " )
-                                                  .Append( requiredTypes.GetParametersArray( m.M.GetParameters() ) ).Append( " )" );
+                body.AppendTypeOf( m.M.DeclaringType ).Append( ".GetMethod( " ).AppendSourceString( m.M.Name ).Append( " , BindingFlags.Instance | BindingFlags.NonPublic )" )
+                                                      .Append( ".Invoke( CK.StObj.GeneratedRootContext.RealObjects[" ).Append( m.T.IndexOrdered ).Append( "].FinalImplementation.Implementation, " )
+                                                      .Append( requiredTypes.GetParametersArray( m.M.GetParameters() ) ).Append( " )" );
                 if( isAsync )
                 {
                     body.Append( ").ConfigureAwait( false )" );

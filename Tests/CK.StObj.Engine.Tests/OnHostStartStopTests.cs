@@ -134,7 +134,7 @@ public class OnHostStartStopTests
             return Task.CompletedTask;
         }
 
-        public void OnHostStop( IActivityMonitor m )
+        void OnHostStop( IActivityMonitor m )
         {
             m.Info( $"OAbstract is stopping." );
         }
