@@ -2,7 +2,6 @@ using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -164,18 +163,19 @@ public partial class StObjCollectorResult
 
         void GenerateMethod( IActivityMonitor monitor, IFunctionScope m, IStObjEngineMap map, List<(IStObjResult, MethodInfo)> methods )
         {
-            if( methods.Count == 0 )
-            {
-                m.Append( "return Task.CompletedTask;" );
-            }
-            else
+            bool asyncRequires = false;
+            if( methods.Count > 0 )
             {
                 var requiredTypes = new TypeRegistrar( map );
-                GenerateMethodCode( monitor, m, methods, requiredTypes, out var asyncRequires );
+                GenerateMethodCode( monitor, m, methods, requiredTypes, out asyncRequires );
                 if( asyncRequires )
                 {
                     m.Definition.Modifiers |= Modifiers.Async;
                 }
+            }
+            if( !asyncRequires )
+            {
+                m.Append( "return Task.CompletedTask;" );
             }
         }
 

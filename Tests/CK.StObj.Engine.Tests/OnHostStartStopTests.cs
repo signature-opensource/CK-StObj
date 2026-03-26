@@ -1,8 +1,8 @@
 using CK.Core;
 using CK.Testing;
-using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using Shouldly;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -155,7 +155,6 @@ public class OnHostStartStopTests
         }
     }
 
-
     [Test]
     public async Task abstract_OnHostStart_and_Stop_at_work_Async()
     {
@@ -179,5 +178,44 @@ public class OnHostStartStopTests
 
         }
     }
+
+    public class SingleSync : IRealObject
+    {
+        void OnHostStart( IActivityMonitor m )
+        {
+            m.Info( $"SingleSync is starting." );
+        }
+
+        void OnHostStop( IActivityMonitor m )
+        {
+            m.Info( $"SingleSync is stopping." );
+        }
+    }
+
+
+    [Test]
+    public async Task SingleSync_OnHostStart_and_Stop_at_work_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( SingleSync ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices( configureServices: services =>
+        {
+            services.AddScoped( sp => TestHelper.Monitor );
+            services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
+        } );
+        using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
+        {
+            var initializers = auto.Services.GetRequiredService<IEnumerable<Microsoft.Extensions.Hosting.IHostedService>>();
+            foreach( var i in initializers )
+            {
+                await i.StartAsync( default );
+                await i.StopAsync( default );
+            }
+            entries.Select( e => e.Text ).Where( t => !t.StartsWith( "Calling" ) ).Concatenate( "|" )
+                .ShouldBe( "SingleSync is starting.|SingleSync is stopping." );
+
+        }
+    }
+
 
 }
