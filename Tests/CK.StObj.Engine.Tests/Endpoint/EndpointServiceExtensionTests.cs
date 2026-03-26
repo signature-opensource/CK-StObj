@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Setup;
 using CK.Testing;
 using NUnit.Framework;
 using System.Diagnostics;

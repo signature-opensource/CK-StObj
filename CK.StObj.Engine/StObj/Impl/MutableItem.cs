@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using CK.Core;
 using System.Reflection;
-using System.Diagnostics;
 
 namespace CK.Setup;
 

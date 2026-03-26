@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using System.Reflection;
 using static CK.Testing.MonitorTestHelper;
-using System.Xml.Serialization;
 
 namespace CK.Engine.TypeCollector.Tests;
 

@@ -1,7 +1,6 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace CK.Engine.TypeCollector;
 

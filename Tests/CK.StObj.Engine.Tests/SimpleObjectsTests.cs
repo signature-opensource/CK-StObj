@@ -369,4 +369,6 @@ public class SimpleObjectsTests
         Debug.Assert( m != null );
         m.StObjs.FinalImplementations.ShouldNotContain( i => i.FinalImplementation.Implementation is MissingAutoImplementation );
     }
+
+
 }

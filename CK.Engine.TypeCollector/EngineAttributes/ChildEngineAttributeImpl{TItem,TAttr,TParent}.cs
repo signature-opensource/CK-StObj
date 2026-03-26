@@ -1,5 +1,4 @@
 using CK.Core;
-using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace CK.Engine.TypeCollector;

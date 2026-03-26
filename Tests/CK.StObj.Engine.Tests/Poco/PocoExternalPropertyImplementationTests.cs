@@ -4,7 +4,6 @@ using CK.Setup;
 using CK.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System.Text;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
 

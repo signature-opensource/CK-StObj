@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Poco.Exc.Json;
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;

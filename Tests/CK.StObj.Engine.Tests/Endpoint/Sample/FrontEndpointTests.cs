@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using CK.Testing;
 using static CK.Testing.MonitorTestHelper;
