@@ -1,0 +1,47 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="Mixed Platforms" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="NuGet.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <File Path="Tests/TestHelper.config" />
+    <Project Path="Tests/CK.Engine.TypeCollector.Tests/CK.Engine.TypeCollector.Tests.csproj" />
+    <Project Path="Tests/CK.Poco.Exc.Json.Tests/CK.Poco.Exc.Json.Tests.csproj" />
+    <Project Path="Tests/CK.StObj.Engine.Tests/CK.StObj.Engine.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/StObjEngineTesting/">
+    <Project Path="Tests/StObjEngineTesting/Sample.Engine/Sample.Engine.csproj" />
+    <Project Path="Tests/StObjEngineTesting/Sample.Model/Sample.Model.csproj" />
+  </Folder>
+  <Folder Name="/Tests/StObjEngineTesting/Tests/">
+    <Project Path="Tests/StObjEngineTesting/Tests/Sample.Engine.Tests/Sample.Engine.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/StObjSetupTesting/">
+    <Project Path="Tests/StObjSetupTesting/LibWithSampleModel/LibWithSampleModel.csproj" />
+  </Folder>
+  <Folder Name="/Tests/StObjSetupTesting/Tests/">
+    <File Path="Tests/StObjSetupTesting/Tests/TestHelper.config" />
+    <Project Path="Tests/StObjSetupTesting/Tests/LibWithSampleModel.Tests/LibWithSampleModel.Tests.csproj" />
+  </Folder>
+  <Project Path="CK.AppBuilder/CK.AppBuilder.csproj" />
+  <Project Path="CK.Engine.Configuration/CK.Engine.Configuration.csproj" />
+  <Project Path="CK.Engine.TypeCollector/CK.Engine.TypeCollector.csproj" />
+  <Project Path="CK.Engine/CK.Engine.csproj" />
+  <Project Path="CK.Poco.Exc.Json.Engine/CK.Poco.Exc.Json.Engine.csproj" />
+  <Project Path="CK.Poco.Exc.Json/CK.Poco.Exc.Json.csproj" />
+  <Project Path="CK.Poco.Exchange.Engine/CK.Poco.Exchange.Engine.csproj" />
+  <Project Path="CK.Poco.Exchange/CK.Poco.Exchange.csproj" />
+  <Project Path="CK.StObj.Engine/CK.StObj.Engine.csproj" />
+  <Project Path="CK.StObj.Model/CK.StObj.Model.csproj" />
+  <Project Path="CK.StObj.Runtime/CK.StObj.Runtime.csproj" />
+  <Project Path="CK.Testing.StObjEngine/CK.Testing.StObjEngine.csproj" />
+</Solution>
