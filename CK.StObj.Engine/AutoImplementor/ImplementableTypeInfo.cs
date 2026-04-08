@@ -6,7 +6,6 @@ using CK.CodeGen;
 using System.Reflection.Emit;
 using CK.Core;
 using CK.Setup;
-using System.Diagnostics;
 
 #nullable enable
 

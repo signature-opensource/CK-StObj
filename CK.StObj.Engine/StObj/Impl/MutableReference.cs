@@ -1,6 +1,5 @@
 using System;
 using CK.Core;
-using System.Diagnostics;
 
 namespace CK.Setup;
 

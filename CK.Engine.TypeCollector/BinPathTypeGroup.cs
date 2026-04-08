@@ -1,11 +1,9 @@
 using CK.Core;
 using CK.Setup;
-using CommunityToolkit.HighPerformance;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 
 namespace CK.Engine.TypeCollector;
 

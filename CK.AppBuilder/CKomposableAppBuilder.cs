@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Monitoring;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace CK.Setup;
