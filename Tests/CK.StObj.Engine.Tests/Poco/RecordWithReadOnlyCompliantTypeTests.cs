@@ -306,6 +306,32 @@ public class RecordWithReadOnlyCompliantTypeTests
         TestHelper.GetFailedCollectorResult( [typeof( IWithGenericRecordStruct )], "Generic value type cannot be a Poco type" );
     }
 
+    public enum SimpleEnum
+    {
+        None,
+        First,
+        Second
+    }
+
+    public interface IWithRecordStructWithEnum : IPoco
+    {
+        public record struct DetailWithEnum( int Power, SimpleEnum Level );
+
+        ref DetailWithEnum Thing { get; }
+    }
+
+    [Test]
+    public async Task enum_fields_in_record_struct_are_ReadOnlyCompliant_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( IWithRecordStructWithEnum ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+
+        var p = auto.Services.GetRequiredService<IPocoFactory<IWithRecordStructWithEnum>>().Create();
+        p.Thing.Power.ShouldBe( 0 );
+        p.Thing.Level.ShouldBe( SimpleEnum.None );
+    }
+
     // Error CS8170  Struct members cannot return 'this' or other instance members by reference.
     //public struct ThisMayBetterButImpossible
     //{
