@@ -145,6 +145,8 @@ partial class PocoType
 
         public override DefaultValueInfo DefaultValueInfo => _defInfo;
 
+        public override bool IsReadOnlyCompliant => true;
+
         public override IEnumPocoType ObliviousType => this;
 
         IEnumPocoType IEnumPocoType.Nullable => Nullable;
