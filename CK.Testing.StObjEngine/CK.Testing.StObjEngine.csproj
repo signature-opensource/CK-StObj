@@ -5,8 +5,8 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.AppIdentity" Version="0.14.3" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="15.0.3" />
+    <PackageReference Include="CK.AppIdentity" Version="0.14.4" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="15.0.4" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.14" />
     <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
   </ItemGroup>
