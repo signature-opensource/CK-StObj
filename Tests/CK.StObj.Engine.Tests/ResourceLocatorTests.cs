@@ -9,6 +9,7 @@ using System.Linq;
 using NUnit.Framework;
 using CK.Core;
 using CK.Setup;
+using Shouldly;
 
 namespace CK.StObj.Engine.Tests.SubNamespace
 {
@@ -55,11 +56,11 @@ namespace CK.StObj.Engine.Tests
         {
             {
                 ResourceLocator r = new ResourceLocator( typeof( Another.Namespace.OneTypeInAnotherNamespace ), null );
-                Assert.Throws<CKException>( () => r.GetString( "TextFile.txt", true ), "No way to get the resource without ~ root trick." );
+                Should.Throw<CKException>( () => r.GetString( "TextFile.txt", true ), "No way to get the resource without ~ root trick." );
             }
             {
                 ResourceLocator r = new ResourceLocator( typeof( Another.Namespace.OneTypeInAnotherNamespace ), "~CK.StObj.Engine.Tests.Another.Namespace" );
-                Assert.That( r.GetString( "TextFile.txt", true ), Is.EqualTo( "A content 3." ), "The compiler injects the Default namespace of the Assembly." );
+                r.GetString( "TextFile.txt", true ).ShouldBe( "A content 3.", "The compiler injects the Default namespace of the Assembly." );
             }
         }
 
@@ -75,20 +76,20 @@ namespace CK.StObj.Engine.Tests
                 Assert.That( r.GetNames( "SubNamespace.Sub.Multi." ).ToArray(), Is.EquivalentTo( new string[] { "SubNamespace.Sub.Multi.Multi.Text1.txt", "SubNamespace.Sub.Multi.Multi.Text2.txt" } ) );
                 Assert.That( r.GetNames( "SubNamespace.Sub.Res." ).ToArray(), Is.EquivalentTo( new string[] { "SubNamespace.Sub.Res.TextFile.txt" } ) );
 
-                Assert.DoesNotThrow( () => r.GetNames( "Res." ).Select( name => r.GetString( name, true ) ) );
-                Assert.DoesNotThrow( () => r.GetNames( "SubNamespace." ).Select( name => r.GetString( name, true ) ) );
-                Assert.DoesNotThrow( () => r.GetNames( "SubNamespace.Sub." ).Select( name => r.GetString( name, true ) ) );
-                Assert.DoesNotThrow( () => r.GetNames( "SubNamespace.Sub.Res." ).Select( name => r.GetString( name, true ) ) );
+                Should.NotThrow( () => r.GetNames( "Res." ).Select( name => r.GetString( name, true ) ) );
+                Should.NotThrow( () => r.GetNames( "SubNamespace." ).Select( name => r.GetString( name, true ) ) );
+                Should.NotThrow( () => r.GetNames( "SubNamespace.Sub." ).Select( name => r.GetString( name, true ) ) );
+                Should.NotThrow( () => r.GetNames( "SubNamespace.Sub.Res." ).Select( name => r.GetString( name, true ) ) );
             }
             {
                 ResourceLocator r = new ResourceLocator( typeof( ResourceLocatorTests ), "Res" );
-                Assert.That( r.GetNames( "" ).ToArray(), Is.EquivalentTo( new string[] { "TextFile.txt" } ) );
-                Assert.That( r.GetNames( "T" ).ToArray(), Is.EquivalentTo( new string[] { "TextFile.txt" } ) );
-                Assert.That( r.GetNames( "Tex" ).ToArray(), Is.EquivalentTo( new string[] { "TextFile.txt" } ) );
-                Assert.That( r.GetNames( "TextFile." ).ToArray(), Is.EquivalentTo( new string[] { "TextFile.txt" } ) );
-                Assert.That( r.GetNames( "Sub" ), Is.Empty );
+                r.GetNames( "" ).ToArray().ShouldBe( new string[] { "TextFile.txt" } );
+                r.GetNames( "T" ).ToArray().ShouldBe( new string[] { "TextFile.txt" } );
+                r.GetNames( "Tex" ).ToArray().ShouldBe( new string[] { "TextFile.txt" } );
+                r.GetNames( "TextFile." ).ToArray().ShouldBe( new string[] { "TextFile.txt" } );
+                r.GetNames( "Sub" ).ShouldBeEmpty();
 
-                Assert.DoesNotThrow( () => r.GetNames( "" ).Select( name => r.GetString( name, true ) ) );
+                Should.NotThrow( () => r.GetNames( "" ).Select( name => r.GetString( name, true ) ) );
             }
             {
                 ResourceLocator r = new ResourceLocator( typeof( ResourceLocatorTests ), "SubNamespace" );
@@ -98,7 +99,7 @@ namespace CK.StObj.Engine.Tests
                 Assert.That( r.GetNames( "Sub.Res." ).ToArray(), Is.EquivalentTo( new string[] { "Sub.Res.TextFile.txt" } ) );
                 Assert.That( r.GetNames( "Res" ), Is.Empty );
 
-                Assert.DoesNotThrow( () => r.GetNames( "" ).Select( name => r.GetString( name, true ) ) );
+                Should.NotThrow( () => r.GetNames( "" ).Select( name => r.GetString( name, true ) ) );
             }
         }
     }
