@@ -673,7 +673,7 @@ public class ConfigurationTests
                 </Types>
                 <ExcludedTypes>
                     <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
-                    <Type Name="CK.Testing.MonitorTestHelper, CK.Testing.Monitoring" />
+                    <Type Name="CK.Testing.MonitorTestHelper, CK.Testing" />
                 </ExcludedTypes>
                 <OutputPath>Another/Relative</OutputPath>
                 <CompileOption>Parse</CompileOption>
@@ -708,7 +708,7 @@ public class ConfigurationTests
           <RevertOrderingNames>True</RevertOrderingNames>
           <GlobalExcludedTypes>
             <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
-            <Type Name="CK.Testing.MonitorTestHelper, CK.Testing.Monitoring" />
+            <Type Name="CK.Testing.MonitorTestHelper, CK.Testing" />
           </GlobalExcludedTypes>
 
         </Setup>
