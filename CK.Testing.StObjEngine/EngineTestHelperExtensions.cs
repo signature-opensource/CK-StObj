@@ -13,7 +13,7 @@ namespace CK.Testing;
 /// Extends <see cref="EngineConfiguration"/> objects with configuration helper methods and run methods
 /// like <see cref="RunSuccessfullyAsync(EngineConfiguration, bool)"/>.
 /// </para>
-/// Extends the CKomposable <see cref="EngineResult"/> with <see cref="IStObjMap"/> load capabilites
+/// Extends the CKomposable <see cref="EngineResult"/> with <see cref="IStObjMap"/> load capabilities
 /// and <see cref="AutomaticServices"/> creation.
 /// </summary>
 public static partial class EngineTestHelperExtensions
@@ -27,7 +27,7 @@ public static partial class EngineTestHelperExtensions
     /// <param name="generateSourceFiles">False to not generate source file.</param>
     /// <param name="compileOption">See <see cref="BinPathConfiguration.CompileOption"/>.</param>
     /// <returns>A default configuration.</returns>
-    public static EngineConfiguration CreateDefaultEngineConfiguration( this IBasicTestHelper helper, bool generateSourceFiles = true, CompileOption compileOption = CompileOption.Compile )
+    public static EngineConfiguration CreateDefaultEngineConfiguration( this IMonitorTestHelper helper, bool generateSourceFiles = true, CompileOption compileOption = CompileOption.Compile )
     {
         var config = new EngineConfiguration();
         var sutFolder = helper.ClosestSUTProjectFolder;
