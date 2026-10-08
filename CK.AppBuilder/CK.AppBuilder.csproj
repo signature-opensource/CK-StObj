@@ -14,7 +14,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Monitoring" Version="27.1.1-0.nunit-5.0.ci.1" />
+    <PackageReference Include="CK.Monitoring" Version="27.1.1" />
     <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
   </ItemGroup>
 </Project>
