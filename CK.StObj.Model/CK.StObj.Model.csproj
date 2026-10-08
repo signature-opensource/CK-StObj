@@ -8,9 +8,9 @@
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CSemVer" Version="13.0.1--0001-develop" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-rc.1.26425.128" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="11.0.0-rc.1.26425.128" />
+    <PackageReference Include="CSemVer" Version="13.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Engine.Configuration\CK.Engine.Configuration.csproj" />
