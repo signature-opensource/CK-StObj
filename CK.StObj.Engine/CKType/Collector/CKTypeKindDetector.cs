@@ -310,7 +310,8 @@ public class CKTypeKindDetector
                             case "ScopedServiceAttribute":
                                 hasScopedService = true;
                                 break;
-                            case "IsMultipleAttribute" when t.IsInterface:
+                            // Not only on interfaces: on a class, this is a type kind conflict (not a silently ignored attribute).
+                            case "IsMultipleAttribute":
                                 isMultipleInterface = true;
                                 break;
                         }
@@ -387,8 +388,7 @@ public class CKTypeKindDetector
                             }
                             if( t.IsClass )
                             {
-                                Throw.DebugAssert( "IsMultipleAttribute targets interface only and is not propagated.",
-                                                   ( k & CKTypeKind.IsMultipleService) == 0 );
+                                // A [IsMultiple] class is a combination error (IsMultiple is not propagated to specializations).
                                 // Always use the central GetCombinationError() method when possible: this method concentrates all the checks.
                                 var error = (k & MaskPublicInfo).GetCombinationError( true );
                                 if( error != null )

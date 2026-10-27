@@ -146,6 +146,17 @@ public class MultipleServiceTests
     public class ThatIsNotPossible : IAmAMultipleRealObject { }
     public class ThatIsNotPossible2 : IAmAMultipleRealObject2 { }
 
+    [IsMultiple]
+    public abstract class AMultipleBaseClass : IScopedAutoService { }
+    public class AMultipleBaseClassImpl : AMultipleBaseClass { }
+
+    [Test]
+    public void IsMultiple_is_not_supported_on_classes()
+    {
+        // This is an error, not a silently ignored attribute.
+        TestHelper.GetFailedCollectorResult( [typeof( AMultipleBaseClassImpl )], "a class cannot be marked as a Multiple service" );
+    }
+
     [Test]
     public async Task real_objects_can_support_IsMultiple_interfaces_but_interfaces_cannot_be_IRealObjects_and_IsMultiple_Async()
     {
