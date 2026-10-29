@@ -20,6 +20,24 @@ public interface IPocoFactory
     IPoco Create();
 
     /// <summary>
+    /// Creates a new Poco instance of this type, initialized from any other Poco.
+    /// <list type="bullet">
+    ///   <item>When <paramref name="source"/> is of this type, this is a <see cref="IPocoGeneratedClass.Clone()"/>.</item>
+    ///   <item>
+    ///   Otherwise, the properties declared by the abstract Pocos (the <see cref="IPoco"/> parts) that both types implement are
+    ///   deeply copied (a nested Poco of another type is created from the source one). The other properties keep their default
+    ///   values.
+    ///   </item>
+    /// </list>
+    /// <para>
+    /// The <see cref="PocoExtension.Create{T}(IPoco)"/> extension method is easier to use.
+    /// </para>
+    /// </summary>
+    /// <param name="source">The source Poco.</param>
+    /// <returns>A new poco instance.</returns>
+    IPoco CreateFrom( IPoco source );
+
+    /// <summary>
     /// Gets the type of the final, unified, <see cref="IPocoGeneratedClass"/> class.
     /// </summary>
     Type PocoClassType { get; }

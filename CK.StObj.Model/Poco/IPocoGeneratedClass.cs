@@ -12,4 +12,14 @@ public interface IPocoGeneratedClass
     /// Gets the poco factory.
     /// </summary>
     IPocoFactory Factory { get; }
+
+    /// <summary>
+    /// Creates a deep copy of this Poco: nested Pocos, collections and records are copied, immutable values are shared.
+    /// The copy is a tree: references shared by this Poco are not shared in the copy and a cycle is not supported.
+    /// <para>
+    /// The <see cref="PocoExtension.Clone{T}(T)"/> extension method is easier to use.
+    /// </para>
+    /// </summary>
+    /// <returns>A new Poco of the same type.</returns>
+    IPoco Clone();
 }

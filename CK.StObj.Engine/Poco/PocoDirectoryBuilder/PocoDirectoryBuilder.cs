@@ -269,6 +269,12 @@ partial class PocoDirectoryBuilder
             g.Emit( OpCodes.Ldnull );
             g.Emit( OpCodes.Ret );
         }
+        {
+            MethodBuilder m = tBF.DefineMethod( "CreateFrom", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPoco ), new[] { typeof( IPoco ) } );
+            ILGenerator g = m.GetILGenerator();
+            g.Emit( OpCodes.Ldnull );
+            g.Emit( OpCodes.Ret );
+        }
 
         // The IPocoGeneratedClass implementation.
         var properties = new Dictionary<string, PocoPropertyInfo>();
@@ -308,6 +314,13 @@ partial class PocoDirectoryBuilder
                 g.Emit( OpCodes.Ret );
                 tBF.DefineMethodOverride( m, iCreate.GetMethod( nameof( IPocoFactory<IPoco>.Create ) )! );
             }
+            {
+                MethodBuilder m = tBF.DefineMethod( "CF" + expanded.Count.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, new[] { typeof( IPoco ) } );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                tBF.DefineMethodOverride( m, iCreate.GetMethod( nameof( IPocoFactory<IPoco>.CreateFrom ) )! );
+            }
         }
         Throw.DebugAssert( "Since there is at least one interface." , closure != null );
 
@@ -336,6 +349,13 @@ partial class PocoDirectoryBuilder
             g.Emit( OpCodes.Ret );
             var p = tB.DefineProperty( nameof( IPocoGeneratedClass.Factory ), PropertyAttributes.None, typeof( IPocoFactory ), null );
             p.SetGetMethod( m );
+        }
+        {
+            MethodBuilder m = tB.DefineMethod( "Clone", MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPoco ), Type.EmptyTypes );
+            ILGenerator g = m.GetILGenerator();
+            g.Emit( OpCodes.Ldnull );
+            g.Emit( OpCodes.Ret );
+            tB.DefineMethodOverride( m, typeof( IPocoGeneratedClass ).GetMethod( nameof( IPocoGeneratedClass.Clone ) )! );
         }
 
         // For each expanded interfaces (all of them: the Interfaces and the OtherInterfaces):

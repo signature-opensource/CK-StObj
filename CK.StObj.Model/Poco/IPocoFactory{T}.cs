@@ -11,4 +11,11 @@ public interface IPocoFactory<out T> : IPocoFactory, IRealObject where T : IPoco
     /// </summary>
     /// <returns>A new poco instance.</returns>
     new T Create();
+
+    /// <summary>
+    /// Creates a new Poco instance initialized from any other Poco. See <see cref="IPocoFactory.CreateFrom(IPoco)"/>.
+    /// </summary>
+    /// <param name="source">The source Poco.</param>
+    /// <returns>A new poco instance.</returns>
+    new T CreateFrom( IPoco source );
 }
