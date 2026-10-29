@@ -227,9 +227,8 @@ sealed class PocoCopyGenerator
     {
         if( IsImmutable( t ) )
         {
-            return t.IsNullable && t.Type.IsValueType
-                    ? $"(({t.ImplTypeName}?){expr})"
-                    : $"(({t.ImplTypeName}){expr})";
+            // The ImplTypeName of a nullable value type is the Nullable<T>.
+            return $"(({t.ImplTypeName}){expr})";
         }
         if( t.IsPolymorphic ) return $"(({t.ImplTypeName}){_copier}.CloneAny( {expr} ))";
         var n = Normalize( t );

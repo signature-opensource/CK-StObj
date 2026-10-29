@@ -151,6 +151,8 @@ public class PocoCloneAndCreateTests
     public interface IDocumentPart : IPoco
     {
         string Title { get; set; }
+        int? Rank { get; set; }
+        ref (int Version, string Tag)? OptionalInfo { get; }
         IList<string> Lines { get; }
         IOwnerPart Owner { get; }
         IReadOnlyList<IOwnerPart> Readers { get; }
@@ -185,6 +187,8 @@ public class PocoCloneAndCreateTests
         var a = d.Create<IDocumentA>( a =>
         {
             a.Title = "Title";
+            a.Rank = 3712;
+            a.OptionalInfo = (1, "One");
             a.Lines.Add( "Line" );
             a.Owner.Name = "Owner";
             a.Owner.A = 1;
@@ -197,6 +201,8 @@ public class PocoCloneAndCreateTests
 
         var b = a.Create<IDocumentB>();
         b.Title.ShouldBe( "Title" );
+        b.Rank.ShouldBe( 3712 );
+        b.OptionalInfo.ShouldBe( (1, "One") );
         b.Lines.ShouldBe( ["Line"] );
         b.Lines.ShouldNotBeSameAs( a.Lines );
         // The nested Pocos are created from the source ones.
@@ -212,6 +218,7 @@ public class PocoCloneAndCreateTests
         // Back to a IDocumentA: the A specific properties are lost.
         var back = b.Create<IDocumentA>( x => x.OnlyA = "Configured" );
         back.Title.ShouldBe( "Title" );
+        back.Rank.ShouldBe( 3712 );
         back.Owner.Name.ShouldBe( "Owner" );
         back.Owner.A.ShouldBe( 0 );
         back.Readers.Single().Name.ShouldBe( "Reader" );
