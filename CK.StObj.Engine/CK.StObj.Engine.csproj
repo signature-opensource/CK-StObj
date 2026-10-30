@@ -13,8 +13,8 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="18.0.0-0.cris-auth.0.ci.6" />
-    <PackageReference Include="CK.Core" Version="27.0.0-0.cris-auth.0.ci.4" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="18.0.0-0.cris-auth" />
+    <PackageReference Include="CK.Core" Version="27.0.0-0.cris-auth" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
