@@ -132,6 +132,9 @@ sealed partial class CachedType : CachedItem, ICachedType
 
         public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
             => _nonNullable.TryGetAllAttributes( monitor, out attributes );
+
+        public bool TryGetMapping( IActivityMonitor monitor, [NotNullWhen( true )] out CachedTypeMapping? mapping )
+            => _nonNullable.TryGetMapping( monitor, out mapping );
     }
 
     CachedType( GlobalTypeCache cache,

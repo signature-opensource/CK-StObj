@@ -57,3 +57,23 @@ For performance reasons, the initial type set of an assembly is built while the 
 discovered, we have 
 
 
+
+## Mappings
+`ICachedType.TryGetMapping( monitor, out CachedTypeMapping? mapping )` computes once, for every engine and every BinPath, how a type
+takes part in the mappings of abstractions to implementations. It reads the mapping contracts of
+[CK.Abstractions](https://github.com/signature-opensource/CK-Abstractions/blob/stable/CK.Abstractions/Core/README.md#mappings-isinglemappingattribute-imultiplemappingattribute-and-inotmappedattribute)
+(`ISingleMappingAttribute`, `IMultipleMappingAttribute` and `INotMappedAttribute`) on the type and inherits from its base type and interfaces:
+
+| `CachedTypeMapping` | |
+|---------------------|-|
+| `Cardinality` | `None`, `Single` or `Multiple`: declared, or inherited (`Single` when a base is single). A not mapped type carries it for its specializations. |
+| `IsNotMapped` | An `INotMappedAttribute` decorates the type itself (never inherited). |
+| `IsKey` | An interface or abstract class (not a generic type definition) with a cardinality that is not "not mapped": implementations are mapped to it. |
+| `SingleKeys`, `MultipleKeys` | For a concrete class that is not "not mapped": the keys it implements or derives from. |
+
+The first call logs the incoherent declarations and returns false (this is memorized): a type that declares both cardinalities, a
+multiple abstraction that specializes a single one, a cardinality declared on a type that is not an interface or an abstract class.
+Like the rest of the cache, only the visible types are considered: a non visible interface is not a base.
+
+`TryGetMapping` is the first of the structural traits that report their incoherencies: it is meant to replace the older ones
+like `IsTypeDefiner`.

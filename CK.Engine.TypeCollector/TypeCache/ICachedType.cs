@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -179,6 +180,24 @@ public interface ICachedType : ICachedItem
     /// Gets whether this type is not a regular visible type and should almost always be ignored.
     /// </summary>
     EngineUnhandledType EngineUnhandledType { get; }
+
+    /// <summary>
+    /// Gets the mapping information of this type: its <see cref="MappingCardinality"/> (declared or inherited), whether it is
+    /// revoked (<see cref="INotMappedAttribute"/>), whether it is an abstraction to map to and, for a concrete class, the
+    /// abstractions it is mapped to.
+    /// <para>
+    /// This is computed once. On the first call, an incoherent declaration (a type that declares both cardinalities, a multiple
+    /// abstraction that specializes a single one, a cardinality declared on a type that is not an interface or an abstract class)
+    /// is logged as an error and false is returned (by this call and the following ones).
+    /// </para>
+    /// <para>
+    /// This replaces the older structural properties like <see cref="IsTypeDefiner"/>.
+    /// </para>
+    /// </summary>
+    /// <param name="monitor">The monitor that logs the errors of the first call.</param>
+    /// <param name="mapping">The mapping information on success.</param>
+    /// <returns>True on success, false on error.</returns>
+    bool TryGetMapping( IActivityMonitor monitor, [NotNullWhen( true )] out CachedTypeMapping? mapping );
 
     /// <summary>
     /// Returns the <see cref="CSharpName"/>.

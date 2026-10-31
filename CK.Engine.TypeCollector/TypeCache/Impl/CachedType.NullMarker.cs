@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -78,6 +79,11 @@ partial class CachedType
         internal static ICachedType? Filter( ICachedType declaringType ) => declaringType == _nullMarker ? null : declaringType;
 
         public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryGetMapping( IActivityMonitor monitor, [NotNullWhen( true )] out CachedTypeMapping? mapping )
         {
             throw new NotImplementedException();
         }

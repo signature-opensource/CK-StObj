@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection;
@@ -98,6 +99,12 @@ sealed class CachedGenericParameter : ICachedType
     public bool TryGetAllAttributes( IActivityMonitor monitor, out ImmutableArray<object> attributes )
     {
         attributes = RawAttributes;
+        return true;
+    }
+
+    public bool TryGetMapping( IActivityMonitor monitor, [NotNullWhen( true )] out CachedTypeMapping? mapping )
+    {
+        mapping = CachedTypeMapping.Empty;
         return true;
     }
 
