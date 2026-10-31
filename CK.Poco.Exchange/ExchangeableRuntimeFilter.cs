@@ -42,13 +42,16 @@ public sealed class ExchangeableRuntimeFilter
 
     /// <summary>
     /// Gets whether a type can be exported or imported by this filter.
+    /// A <see cref="IPoco"/> interface is the type of its Poco family.
     /// </summary>
     /// <param name="t">The type to test.</param>
     /// <returns>True if this filter allows the type to be exported and imported. False otherwise.</returns>
     public bool Contains( Type t )
     {
+        if( t.IsInterface && _pocoDirectory.Find( t ) is IPocoFactory f ) t = f.PocoClassType;
         int idx = _pocoDirectory.GetNonNullableFinalTypeIndex( t );
-        return idx >= 0 ? Contains( idx ) : false;
+        // The filter flags are indexed by the type index without its nullability bit.
+        return idx >= 0 && Contains( idx >> 1 );
     }
 
     /// <summary>

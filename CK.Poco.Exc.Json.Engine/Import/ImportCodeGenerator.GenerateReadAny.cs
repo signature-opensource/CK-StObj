@@ -12,7 +12,7 @@ sealed partial class ImportCodeGenerator
         var ctor = _importerType.FindOrCreateFunction( "static Importer()" );
 
         ctor.GeneratedByComment().NewLine()
-            .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
+            .Append( "_anyReaders = new Dictionary<string, (ObjectReader, int)>();" ).NewLine();
 
         foreach( var t in _nameMap.SerializedObservableTypes )
         {
@@ -21,6 +21,8 @@ sealed partial class ImportCodeGenerator
 
             var typeName = _nameMap.GetName( t );
             var readFunction = functionMap.GetReadFunctionName( t );
+            // The RuntimeFilter uses the index of the non nullable type.
+            var filterIndex = t.Index >> 1;
             if( t.Type.IsValueType )
             {
                 // We cannot directly use the GetReadFunctionName for value types when the type is a value type: the ReaderFunction
@@ -29,22 +31,22 @@ sealed partial class ImportCodeGenerator
                     .Append( "// Type: " ).Append( t.ImplTypeName ).NewLine()
                     .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                     .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
-                    .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" );
+                    .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", (d, " ).Append( filterIndex ).Append( ") );" );
                 bool hasLegacyName = _legacyNameMap.GetName( t ) != typeName;
                 if( hasLegacyName )
                 {
                     ctor.Append( "// Legacy name." ).NewLine()
-                        .Append( "_anyReaders.Add( " ).AppendSourceString( _legacyNameMap.GetName( t ) ).Append( ", d );" );
+                        .Append( "_anyReaders.Add( " ).AppendSourceString( _legacyNameMap.GetName( t ) ).Append( ", (d, " ).Append( filterIndex ).Append( ") );" );
                 }
                 ctor.CloseBlock();
             }
             else
             {
-                ctor.Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( "," ).Append( readFunction ).Append( ");" ).NewLine();
+                ctor.Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", (" ).Append( readFunction ).Append( ", " ).Append( filterIndex ).Append( ") );" ).NewLine();
                 string legacyName = _legacyNameMap.GetName( t );
                 if( legacyName != typeName )
                 {
-                    ctor.Append( "_anyReaders.Add( " ).AppendSourceString( legacyName ).Append( "," ).Append( readFunction ).Append( "); // Legacy name." ).NewLine();
+                    ctor.Append( "_anyReaders.Add( " ).AppendSourceString( legacyName ).Append( ", (" ).Append( readFunction ).Append( ", " ).Append( filterIndex ).Append( ") ); // Legacy name." ).NewLine();
                 }
             }
         }
@@ -76,6 +78,11 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
             {
                 r.ThrowJsonException( $""Unregistered type name '{n}'."" );
             }
+            // The runtime filter applies to the typed values (like the root of a document).
+            if( !rCtx.RuntimeFilter.Contains( reader.Index ) )
+            {
+                r.ThrowJsonException( $""Type '{n}' is not allowed by the '{rCtx.RuntimeFilter.Name}' type filter."" );
+            }
             if( r.TokenType == System.Text.Json.JsonTokenType.Null )
             {
                 o = null;
@@ -83,7 +90,7 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
             }
             else
             {
-                o = reader( ref r, rCtx );
+                o = reader.Reader( ref r, rCtx );
             }
             if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) r.ThrowJsonException( ""Expected end of 2-cells array."" );
             break;

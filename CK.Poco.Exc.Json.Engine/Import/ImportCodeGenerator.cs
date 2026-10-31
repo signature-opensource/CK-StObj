@@ -165,7 +165,8 @@ internal static char ReadChar( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Ex
 }
 
 delegate object ObjectReader( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx );
-static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<string, ObjectReader>();
+// The reader of a typed value and the type index (checked against the RuntimeFilter).
+static readonly Dictionary<string, (ObjectReader Reader, int Index)> _anyReaders;
 
 " ).Append( "#region Read functions." ).NewLine()
                     .CreatePart( out _readerFunctionsPart ).NewLine()

@@ -86,6 +86,11 @@ public static class PocoJsonImportSupport
         string? name = reader.GetString();
         IPocoFactory? f = name != null ? @this.Find( name ) : null;
         if( f == null ) reader.ThrowJsonException( $"Poco type '{name}' not found." );
+        // The runtime filter applies to the type chosen by the payload.
+        if( !context.RuntimeFilter.Contains( f.PrimaryInterface ) )
+        {
+            reader.ThrowJsonException( $"Type '{name}' is not allowed by the '{context.RuntimeFilter.Name}' type filter." );
+        }
         if( !reader.Read() ) context.ReadMoreData( ref reader );
         var p = ((IFactoryReader)f).ReadTyped( ref reader, context );
         if( reader.TokenType != JsonTokenType.EndArray ) reader.ThrowJsonException( "Expecting Json Poco end array." );
