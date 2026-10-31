@@ -49,6 +49,25 @@ public class DirectInterfacesTests
         }
     }
 
+    public struct ValueWithI2 : I2 { }
+
+    [Test]
+    public void nullable_value_type_has_the_DirectInterfaces_of_its_value_type()
+    {
+        var typeCache = new GlobalTypeCache();
+        var v = typeCache.Get( typeof( ValueWithI2 ) );
+        var nV = typeCache.Get( typeof( ValueWithI2? ) );
+        nV.ShouldNotBeSameAs( v );
+        nV.NonNullable.ShouldBeSameAs( v );
+        var i1 = typeCache.Get( typeof( I1 ) );
+        var i2 = typeCache.Get( typeof( I2 ) );
+
+        v.Interfaces.ShouldBe( [i1, i2], ignoreOrder: true );
+        v.DirectInterfaces.ShouldBe( [i2] );
+        nV.Interfaces.ShouldBe( v.Interfaces );
+        nV.DirectInterfaces.ShouldBe( [i2] );
+    }
+
     public interface J2 { }
     public interface I2 : I1 { }
     public interface I3 : I2, J2 { }

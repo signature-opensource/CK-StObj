@@ -98,7 +98,7 @@ sealed partial class CachedType : CachedItem, ICachedType
 
         public ImmutableArray<ICachedType> Interfaces => _nonNullable.Interfaces;
 
-        public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.Interfaces;
+        public ImmutableArray<ICachedType> DirectInterfaces => _nonNullable.DirectInterfaces;
 
         public ICachedType? BaseType => null;
 
