@@ -16,7 +16,7 @@
     <!-- Temporary adaptation until CK.Engine fully replaces this package. -->
     <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
     <PackageReference Include="CK.CodeGen" Version="18.0.0-0.cris-auth" />
-    <PackageReference Include="CK.Globalization" Version="8.0.0-0.cris-auth.0.ci.10" />
+    <PackageReference Include="CK.Globalization" Version="8.0.0-0.cris-auth.0.ci.11" />
     <PackageReference Include="CK.Setup.Dependency" Version="26.0.0-0.cris-auth" />
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
   </ItemGroup>
