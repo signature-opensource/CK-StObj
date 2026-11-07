@@ -277,6 +277,63 @@ public class SimpleObjectsTests
         defined.ConfigureServicesCallCount.ShouldBe( 3 );
     }
 
+    public interface IRealObjectParam : IRealObject { }
+
+    public class RealObjectParam : IRealObjectParam { }
+
+    public class SpecializedRealObjectParam : RealObjectParam { }
+
+    public sealed class StartupServiceParam { }
+
+    public sealed class MissingStartupServiceParam { }
+
+    public class ConfigureServicesWithRealObjects : IRealObject
+    {
+        public object? Self;
+        public RealObjectParam? ByClass;
+        public IRealObjectParam? ByInterface;
+        public StartupServiceParam? StartupService;
+        public MissingStartupServiceParam? Missing;
+        public bool Called;
+
+        void RegisterStartupServices( IActivityMonitor m, SimpleServiceContainer startupServices )
+        {
+            startupServices.Add( new StartupServiceParam() );
+        }
+
+        void ConfigureServices( in StObjContextRoot.ServiceRegister register,
+                                ConfigureServicesWithRealObjects self,
+                                RealObjectParam byClass,
+                                IRealObjectParam byInterface,
+                                StartupServiceParam startupService,
+                                MissingStartupServiceParam? missing = null )
+        {
+            Self = self;
+            ByClass = byClass;
+            ByInterface = byInterface;
+            StartupService = startupService;
+            Missing = missing;
+            Called = true;
+        }
+    }
+
+    [Test]
+    public async Task ConfigureServices_parameters_that_are_real_objects_are_the_map_instances_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( SpecializedRealObjectParam ), typeof( ConfigureServicesWithRealObjects ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+
+        var o = auto.Services.GetRequiredService<ConfigureServicesWithRealObjects>();
+        var param = auto.Services.GetRequiredService<SpecializedRealObjectParam>();
+        o.Called.ShouldBeTrue();
+        o.Self.ShouldBeSameAs( o );
+        o.ByClass.ShouldBeSameAs( param );
+        o.ByInterface.ShouldBeSameAs( param );
+        o.StartupService.ShouldNotBeNull();
+        o.Missing.ShouldBeNull();
+    }
+
 
     #region Buggy & Valid Model
 

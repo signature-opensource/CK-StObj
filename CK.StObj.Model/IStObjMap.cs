@@ -76,6 +76,8 @@ public interface IStObjMap
     ///         Once all the <c>RegisterStartupServices</c> methods have ran, then all the <c>ConfigureServices</c> StObj methods are called:
     ///         <para>
     ///         <c>void ConfigureServices( in StObjContextRoot.ServiceRegister, ... any services previously registered in the ISimpleServiceContainer ... );</c>
+    ///         Parameters that are real objects are the instances of this map; the others are resolved from the StartupServices
+    ///         (an optional parameter - with a default value - that cannot be resolved is null).
     ///         </para>
     ///         </item>
     ///     </list>

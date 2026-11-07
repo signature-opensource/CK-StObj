@@ -160,7 +160,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
         }
     }
 
-    public void CreateRealObjectConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs )
+    public void CreateRealObjectConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs, IStObjObjectEngineMap realObjects )
     {
         using var region = _rootType.Region();
         var configure = _rootType.CreateFunction( "void RealObjectConfigureServices( in StObjContextRoot.ServiceRegister register )" );
@@ -205,7 +205,12 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                          .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly );" )
                          .NewLine();
 
-                if( parameters.Length > 1 )
+                // Parameters that are real objects are bound at generation time to the instances of the StObjMap:
+                // only the other ones are resolved from the StartupServices.
+                var realObjectParameters = parameters.Skip( 1 )
+                                                     .Select( p => realObjects.ToLeaf( p.ParameterType ) as MutableItem )
+                                                     .ToArray();
+                if( realObjectParameters.Any( r => r == null ) )
                 {
                     configure.AppendOnce( @"
             var services = register.StartupServices;
@@ -223,9 +228,18 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             }" );
                 }
                 configure.Append( "m.Invoke( s.FinalImplementation.Implementation, new object[]{ register" );
-                foreach( var p in parameters.Skip( 1 ) )
+                for( int i = 1; i < parameters.Length; ++i )
                 {
-                    configure.Append( $", Resolve<" ).AppendCSharpName( p.ParameterType, true, false, true ).Append( ">(" ).Append( p.HasDefaultValue ).Append( ')' );
+                    var realObject = realObjectParameters[i - 1];
+                    if( realObject != null )
+                    {
+                        configure.Append( $", _stObjs[{realObject.IndexOrdered}].FinalImplementation.Implementation" );
+                    }
+                    else
+                    {
+                        var p = parameters[i];
+                        configure.Append( $", Resolve<" ).AppendCSharpName( p.ParameterType, true, false, true ).Append( ">(" ).Append( p.HasDefaultValue ).Append( ')' );
+                    }
                 }
                 configure.Append( " } );" ).NewLine();
             }

@@ -443,7 +443,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
 
         var serviceGen = new ServiceSupportCodeGenerator( rootType, rootStaticCtor );
         serviceGen.CreateServiceSupportCode( EngineMap );
-        serviceGen.CreateRealObjectConfigureServiceMethod( orderedStObjs );
+        serviceGen.CreateRealObjectConfigureServiceMethod( orderedStObjs, EngineMap.StObjs );
         serviceGen.CreateConfigureServiceMethod( monitor, EngineMap );
 
         GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );
