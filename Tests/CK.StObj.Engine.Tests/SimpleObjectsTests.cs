@@ -3,7 +3,9 @@ using CK.Setup;
 using CK.StObj.Engine.Tests.SimpleObjects;
 using CK.Testing;
 using Shouldly;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -332,6 +334,44 @@ public class SimpleObjectsTests
         o.ByInterface.ShouldBeSameAs( param );
         o.StartupService.ShouldNotBeNull();
         o.Missing.ShouldBeNull();
+    }
+
+    public class ConfigureServicesWithConfiguration : IRealObject
+    {
+        public string? Value;
+
+        void ConfigureServices( in StObjContextRoot.ServiceRegister register, IConfiguration? configuration = null )
+        {
+            Value = configuration?["Test:Value"];
+        }
+    }
+
+    [Test]
+    public async Task ConfigureServices_can_use_the_IConfiguration_of_the_host_builder_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( ConfigureServicesWithConfiguration ) );
+        var map = (await configuration.RunSuccessfullyAsync().ConfigureAwait( false )).FirstBinPath.LoadMap( TestHelper.Monitor );
+        var o = (ConfigureServicesWithConfiguration)map.StObjs.Obtain( typeof( ConfigureServicesWithConfiguration ) ).ShouldNotBeNull();
+
+        // Without builder: no IConfiguration.
+        new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection() ).AddStObjMap( map ).ShouldBeTrue();
+        o.Value.ShouldBeNull();
+
+        // The builder's Configuration (values set after the builder creation are visible).
+        var builder = Host.CreateEmptyApplicationBuilder( new HostApplicationBuilderSettings { DisableDefaults = true } );
+        builder.Configuration["Test:Value"] = "From the builder";
+        builder.Services.AddStObjMap( TestHelper.Monitor, map );
+        o.Value.ShouldBe( "From the builder" );
+
+        // An IConfiguration in the StartupServices wins.
+        var explicitConfiguration = new ConfigurationBuilder().AddInMemoryCollection( [new( "Test:Value", "Explicit" )] ).Build();
+        var startupServices = new SimpleServiceContainer();
+        startupServices.Add<IConfiguration>( explicitConfiguration );
+        builder = Host.CreateEmptyApplicationBuilder( new HostApplicationBuilderSettings { DisableDefaults = true } );
+        builder.Configuration["Test:Value"] = "From the builder";
+        builder.Services.AddStObjMap( TestHelper.Monitor, map, startupServices );
+        o.Value.ShouldBe( "Explicit" );
     }
 
 

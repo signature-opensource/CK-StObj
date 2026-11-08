@@ -1,5 +1,8 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
+using System.Linq;
 
 namespace CK.Core;
 
@@ -44,6 +47,10 @@ public abstract partial class StObjContextRoot
         /// Gets the startup services container.
         /// These services is not used to build IRealObject (they must be independent of any "dynamic" services). These registered services
         /// become available to any <see cref="ConfigureServicesMethodName"/> methods through parameter injection.
+        /// <para>
+        /// When no <see cref="Microsoft.Extensions.Configuration.IConfiguration"/> is registered and the <see cref="Services"/>
+        /// come from a host builder, <see cref="AddStObjMap(IStObjMap)"/> registers the builder's configuration.
+        /// </para>
         /// </summary>
         public SimpleServiceContainer StartupServices { get; }
 
@@ -65,6 +72,7 @@ public abstract partial class StObjContextRoot
                 try
                 {
                     Throw.CheckNotNullArgument( map );
+                    EnsureHostConfiguration();
                     if( !map.ConfigureServices( this ) ) result = false;
                 }
                 catch( Exception ex )
@@ -73,6 +81,21 @@ public abstract partial class StObjContextRoot
                 }
             }
             return result;
+        }
+
+        // Temporary workaround, waiting for the Unified Configuration: the ConfigureServices methods can use the
+        // IConfiguration of the host builder. When no IConfiguration is in the StartupServices, the one of the
+        // HostBuilderContext (registered as an instance by the HostApplicationBuilder, unlike the IConfiguration
+        // that is a factory) is used: it is the builder's Configuration.
+        void EnsureHostConfiguration()
+        {
+            if( StartupServices.GetService( typeof( IConfiguration ) ) == null
+                && Services.LastOrDefault( d => d.ServiceType == typeof( HostBuilderContext ) )?.ImplementationInstance is HostBuilderContext ctx
+                && ctx.Configuration != null )
+            {
+                StartupServices.Add( typeof( IConfiguration ), ctx.Configuration );
+                Monitor.Trace( "Using the IConfiguration of the HostBuilderContext as a startup service." );
+            }
         }
     }
 }
