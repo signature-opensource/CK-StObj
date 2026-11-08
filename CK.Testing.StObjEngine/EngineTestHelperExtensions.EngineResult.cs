@@ -1,4 +1,3 @@
-using CK.AppIdentity;
 using CK.Core;
 using CK.Setup;
 using Shouldly;
@@ -81,13 +80,7 @@ public static partial class EngineTestHelperExtensions
     }
 
     /// <summary>
-    /// Creates a <see cref="ServicedApplication"/> or a <see cref="AppIdentityApplication"/> if <see cref="ApplicationIdentityService"/>
-    /// is available in the services.
-    /// <para>
-    /// If the <see cref="HostApplicationBuilderSettings.Configuration"/> contains a "CK-AppIdentity" section, a <see cref="ApplicationIdentityServiceConfiguration"/>
-    /// is built from it and registered in the services. Thanks to this, if the <see cref="ApplicationIdentityService"/> is registered (either in this <paramref name="map"/>
-    /// or by <paramref name="configureServices"/>), it can be configured and a <see cref="AppIdentityApplication"/> is returned.
-    /// </para>
+    /// Creates a <see cref="ServicedApplication"/>.
     /// <para>
     /// The application must be be disposed once done with it.
     /// </para>
@@ -95,35 +88,14 @@ public static partial class EngineTestHelperExtensions
     /// <param name="map">This CKomposable map.</param>
     /// <param name="hostBuilderSettings">Optional host settings. <see cref="HostApplicationBuilderSettings.DisableDefaults"/> is set to true by default.</param>
     /// <param name="configureServices">The configure services call back.</param>
-    /// <param name="useTestAppIdentityStore">
-    /// By default if a "CK-AppIdentity" section exists with an empty or missing "StoreRootPath" key, it is set
-    /// to "<see cref="IBasicTestHelper.TestProjectFolder"/>/CK-AppIdentity-Store".
-    /// </param>
     /// <param name="startupServices">Optional startup services.</param>
     /// <returns>A ready to be started application.</returns>
     public static ServicedApplication CreateServicedApplication( this IStObjMap map,
                                                                  HostApplicationBuilderSettings? hostBuilderSettings = null,
                                                                  Action<IServiceCollection>? configureServices = null,
-                                                                 bool useTestAppIdentityStore = true,
                                                                  SimpleServiceContainer? startupServices = null )
     {
         var builder = Host.CreateEmptyApplicationBuilder( hostBuilderSettings ?? new HostApplicationBuilderSettings { DisableDefaults = true } );
-        var appIdentitySection = builder.Configuration.GetSection( "CK-AppIdentity" );
-        if( appIdentitySection.Exists() )
-        {
-            Throw.DebugAssert( nameof( ApplicationIdentityServiceConfiguration.StoreRootPath ) == "StoreRootPath" );
-            if( useTestAppIdentityStore && string.IsNullOrWhiteSpace( appIdentitySection["StoreRootPath"] ) )
-            {
-                appIdentitySection["StoreRootPath"] = TestHelper.TestProjectFolder.AppendPart( "CK-AppIdentity-Store" );
-            }
-            var defaultDomain = new NormalizedPath( "Test" ).AppendPart( TestHelper.SolutionName );
-            var c = ApplicationIdentityServiceConfiguration.Create( TestHelper.Monitor, appIdentitySection, defaultDomain, TestHelper.TestProjectName );
-            if( c == null )
-            {
-                Throw.ArgumentException( $"Invalid \"CK-AppIdentity\" section." );
-            }
-            builder.Services.AddSingleton( c );
-        }
         var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, builder.Services, startupServices );
         configureServices?.Invoke( builder.Services );
         reg.AddStObjMap( map ).ShouldBeTrue( "Service configuration succeed." );
@@ -132,44 +104,7 @@ public static partial class EngineTestHelperExtensions
         // Getting the IHostedService is enough to initialize the DI containers.
         // Even if IHost.StartAsync() is not called, the DI containers are correctly initialized.
         host.Services.GetServices<IHostedService>();
-        var appIdentity = host.Services.GetService<ApplicationIdentityService>();
-        return appIdentity == null ? new ServicedApplication( host ) : new AppIdentityApplication( host, appIdentity );
-    }
-
-    /// <summary>
-    /// Creates a <see cref="AppIdentityApplication"/>. The <see cref="ApplicationIdentityService"/> must be registered (either in this <paramref name="map"/>
-    /// or by <paramref name="configureServices"/>) and the <paramref name="appIdentityConfiguration"/> must produce a valid CK-AppIdentity configuration
-    /// otherwise an <see cref="ArgumentException"/> is trown.
-    /// <para>
-    /// The application must be be disposed once done with it.
-    /// </para>
-    /// </summary>
-    /// <param name="map">This CKomposable map.</param>
-    /// <param name="appIdentityConfiguration">Optional host settings. <see cref="HostApplicationBuilderSettings.DisableDefaults"/> is set to true by default.</param>
-    /// <param name="configureServices">The configure services call back.</param>
-    /// <param name="useTestAppIdentityStore">
-    /// By default if a "CK-AppIdentity" section exists with an empty or missing "StoreRootPath" key, sets it to
-    /// "<see cref="IBasicTestHelper.TestProjectFolder"/>/CK-AppIdentity-Store".
-    /// </param>
-    /// <param name="disableHostDefaults">See <see cref="HostApplicationBuilderSettings.DisableDefaults"/>.</param>
-    /// <param name="startupServices">Optional startup services.</param>
-    /// <returns>A ready to be started application.</returns>
-    public static AppIdentityApplication CreateAppIdentityApplication( this IStObjMap map,
-                                                                       Action<MutableConfigurationSection> appIdentityConfiguration,
-                                                                       Action<IServiceCollection>? configureServices = null,
-                                                                       bool useTestAppIdentityStore = true,
-                                                                       bool disableHostDefaults = true,
-                                                                       SimpleServiceContainer? startupServices = null )
-    {
-        var config = new MutableConfigurationSection( "CK-AppIdentity" );
-        appIdentityConfiguration( config );
-        var hostBuilderSettings = new HostApplicationBuilderSettings
-        {
-            DisableDefaults = disableHostDefaults,
-            Configuration = new ConfigurationManager()
-        };
-        hostBuilderSettings.Configuration.Sources.Add( new ChainedConfigurationSource() { Configuration = config } );
-        return (AppIdentityApplication)CreateServicedApplication( map, hostBuilderSettings, configureServices, useTestAppIdentityStore, startupServices );
+        return new ServicedApplication( host );
     }
 
 }
