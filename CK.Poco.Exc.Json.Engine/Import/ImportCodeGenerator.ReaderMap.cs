@@ -45,6 +45,11 @@ sealed partial class ImportCodeGenerator
             }
             else
             {
+                // A null is refused for a non nullable type: without this, a string would be read as a C# null and a
+                // value type would throw an InvalidOperationException instead of a JsonException.
+                writer.Append( "if(r.TokenType==System.Text.Json.JsonTokenType.Null) r.ThrowJsonException( " )
+                      .AppendSourceString( $"Unexpected null value for non nullable '{t.CSharpName}'." )
+                      .Append( " );" ).NewLine();
                 DoGenerateRead( _readers, writer, t, variableName, requiresInit );
             }
 
@@ -141,8 +146,9 @@ sealed partial class ImportCodeGenerator
                         var tE = (IEnumPocoType)type;
                         r = ( w, v ) =>
                         {
+                            // The variable is declared apart: GenerateRead can emit more than one statement.
                             w.OpenBlock()
-                             .Append( "var " );
+                             .Append( tE.UnderlyingType.CSharpName ).Append( " u;" ).NewLine();
                             GenerateRead( w, tE.UnderlyingType, "u", false );
                             w.NewLine().Append( v ).Append( "=(" ).Append( tE.CSharpName ).Append( ")u;" )
                              .CloseBlock();

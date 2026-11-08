@@ -551,6 +551,20 @@ public partial class CollectionTests
         var oL2 = JsonTestHelper.Roundtrip( directory, oL );
         CheckToString( oL2 );
 
+        // TypeLess: no type at all, the items of the lists of abstract Pocos included.
+        oL.ToString( new PocoJsonExportOptions { TypeLess = true, UseCamelCase = false, TypeFilterName = "AllSerializable" } )
+          .ShouldBe( """
+            {
+                "ListOfAbstract":[{"Name":"c"},{"Name":"s"}],
+                "ListOfConcrete":[{"Name":"c"},{"Name":"s"}],
+                "ListOfSecondary":[{"Name":"s"}],
+                "ListOfNullableAbstract":[null],
+                "ListOfNullableConcrete":[null],
+                "ListOfNullableSecondary":[null],
+                "Result":[[{"Name":"c"},{"Name":"s"}],[{"Name":"c"},{"Name":"s"}],[{"Name":"s"}],[null],[null],[null]]
+            }
+            """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
+
         static void CheckToString( IWithListsA oL )
         {
             oL.ToString().ShouldBe( """

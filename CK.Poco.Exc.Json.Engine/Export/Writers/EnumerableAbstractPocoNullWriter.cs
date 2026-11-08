@@ -29,7 +29,7 @@ sealed class EnumerableAbstractPocoNullWriter : JsonCodeWriter
                foreach( var e in v )
                {
                   if( e == null ) w.WriteNullValue();
-                  else System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( e ).WriteJson( w, wCtx, true );
+                  else System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( e ).WriteJson( w, wCtx, !wCtx.Options.TypeLess );
                }
                w.WriteEndArray();
             }

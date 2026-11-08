@@ -44,7 +44,8 @@ sealed partial class ImportCodeGenerator
                 writer.CloseBlock()
                       .Append( "else" )
                       .OpenBlock()
-                      .Append( "if( !r.TrySkip() ) rCtx.SkipMoreData( ref r );" )
+                      .Append( "if( !r.TrySkip() ) rCtx.SkipMoreData( ref r );" ).NewLine()
+                      .Append( "if( !r.Read() ) rCtx.ReadMoreData( ref r );" )
                       .CloseBlock();
             }
         }

@@ -5,6 +5,7 @@ using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
 using static CK.Testing.MonitorTestHelper;
@@ -170,5 +171,29 @@ public partial class BasicTypeTests
 
         var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (min) serialization: " + t ) );
         nMin2.ShouldBeEquivalentTo( nMin );
+    }
+
+    public interface IWithNonNullables : IPoco
+    {
+        string Name { get; set; }
+        int Count { get; set; }
+        IList<string> Names { get; }
+    }
+
+    [TestCase( "Name" )]
+    [TestCase( "Count" )]
+    [TestCase( "Names" )]
+    public async Task null_for_a_non_nullable_field_is_a_JsonException_Async( string field )
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithNonNullables ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        var factory = auto.Services.GetRequiredService<IPocoFactory<IWithNonNullables>>();
+
+        factory.ReadJson( """{"Name":"n","Count":1,"Names":["a"]}""" )!.Name.ShouldBe( "n" );
+        var json = $$"""{"{{field}}":null}""";
+        Util.Invokable( () => factory.ReadJson( json ) ).ShouldThrow<System.Text.Json.JsonException>();
+        // A null item in a list of non nullable strings too.
+        Util.Invokable( () => factory.ReadJson( """{"Names":["a",null]}""" ) ).ShouldThrow<System.Text.Json.JsonException>();
     }
 }

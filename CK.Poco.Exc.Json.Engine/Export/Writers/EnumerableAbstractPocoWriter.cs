@@ -28,7 +28,7 @@ sealed class EnumerableAbstractPocoWriter : JsonCodeWriter
                w.WriteStartArray();
                foreach( var e in v )
                {
-                  System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( e ).WriteJson( w, wCtx, true );
+                  System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( e ).WriteJson( w, wCtx, !wCtx.Options.TypeLess );
                }
                w.WriteEndArray();
             }

@@ -221,4 +221,37 @@ public class ExchangeableSetTests
         r2.SafeData.Local.LocalName.ShouldBe( "" );
         r2.More.Count.ShouldBe( 0, "The List itself is excluded from the type set!" );
     }
+
+    public interface IMixedAnonymousRecords : IPoco
+    {
+        ref (string Name, LocalOnlyData Local) Mixed { get; }
+    }
+
+    [Test]
+    public async Task runtime_filtered_cells_of_anonymous_records_are_written_as_null_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IMixedAnonymousRecords ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+
+        var directory = auto.Services.GetRequiredService<PocoDirectory>();
+        var poco = directory.Create<IMixedAnonymousRecords>();
+        poco.Mixed.Name = "n";
+        poco.Mixed.Local = new LocalOnlyData( LocalName: "LOCAL-ONLY" );
+
+        // AllSerializable: the [NotExchangeable] data is serialized.
+        poco.ToString( new PocoJsonExportOptions { TypeFilterName = "AllSerializable" } )
+            .ShouldBe( """{"mixed":["n",{"localName":"LOCAL-ONLY"}]}""" );
+
+        // AllExchangeable: the [NotExchangeable] data must not leak. The cells keep their positions (null).
+        var exchanged = poco.ToString( new PocoJsonExportOptions { TypeFilterName = "AllExchangeable" } );
+        exchanged.ShouldBe( """{"mixed":["n",null]}""" );
+
+        // And it can be read back with the same filter.
+        var factory = directory.Find<IMixedAnonymousRecords>();
+        Throw.DebugAssert( factory != null );
+        var back = factory.ReadJson( exchanged, new PocoJsonImportOptions { TypeFilterName = "AllExchangeable" } )!;
+        back.Mixed.Name.ShouldBe( "n" );
+        back.Mixed.Local.LocalName.ShouldBe( "" );
+    }
 }

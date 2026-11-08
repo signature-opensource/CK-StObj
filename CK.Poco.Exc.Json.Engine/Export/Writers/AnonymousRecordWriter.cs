@@ -31,11 +31,26 @@ sealed class AnonymousRecordWriter : JsonCodeWriter
                     .Append( _record.ImplTypeName ).Append( " v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
                     .OpenBlock()
                     .Append( "w.WriteStartArray();" ).NewLine();
+        // The cells are positional: a cell whose type is excluded by the runtime filter keeps its position and
+        // is written as null (the reader skips it), its value never leaves.
         foreach( var f in _record.Fields )
         {
             if( writers.NameMap.TypeSet.Contains( f.Type ) )
             {
-                writers.GetWriter( f.Type ).GenerateWrite( exporterType, f.Type, $"v.Item{f.Index + 1}" );
+                var cell = $"v.Item{f.Index + 1}";
+                if( f.Type.IsPolymorphic )
+                {
+                    // The runtime type is filtered by WriteAny that writes nothing when it is excluded.
+                    exporterType.Append( "if( !CK.Poco.Exc.JsonGen.Exporter.WriteAny( w, " ).Append( cell ).Append( ", wCtx ) ) w.WriteNullValue();" ).NewLine();
+                }
+                else
+                {
+                    exporterType.Append( "if( wCtx.RuntimeFilter.Contains( " ).Append( f.Type.Index >> 1 ).Append( " ) )" )
+                                .OpenBlock();
+                    writers.GetWriter( f.Type ).GenerateWrite( exporterType, f.Type, cell );
+                    exporterType.CloseBlock()
+                                .Append( "else w.WriteNullValue();" ).NewLine();
+                }
             }
         }
         exporterType.Append( "w.WriteEndArray();" ).NewLine()

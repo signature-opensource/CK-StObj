@@ -53,6 +53,12 @@ public static class PocoJsonImportSupport
     /// comes first (otherwise an exception is thrown).
     /// If the reader starts with a '{', then it must be the Poco's value.
     /// </para>
+    /// <para>
+    /// The type of the root is chosen by the caller (this factory), not by the payload: the runtime filter
+    /// (<see cref="PocoJsonImportOptions.TypeFilterName"/>) is not applied to it, only to its content. To read a Poco whose
+    /// type is chosen by the payload, use <see cref="ReadJson(PocoDirectory, ref Utf8JsonReader, PocoJsonReadContext)"/>
+    /// that applies the filter to the root.
+    /// </para>
     /// </summary>
     /// <typeparam name="T">The poco type.</typeparam>
     /// <param name="this">This poco factory.</param>
