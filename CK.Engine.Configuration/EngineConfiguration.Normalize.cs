@@ -51,7 +51,7 @@ public sealed partial class EngineConfiguration
     ///             Empty <see cref="BinPathConfiguration.OutputPath"/> defaults to its <see cref="BinPathConfiguration.Path"/> or is made absolute.
     ///             </item>
     ///             <item>
-    ///             Empty <see cref="BinPathConfiguration.ProjectPath"/> defaults to the OutputPath or is made absolute. Ensures that it ends with "/$StObjGen".
+    ///             Empty <see cref="BinPathConfiguration.ProjectPath"/> defaults to the OutputPath or is made absolute. A trailing "/$StObjGen" is removed: it is the project folder (the "$StObjGen" folder is appended when the source files are generated).
     ///             </item>
     ///             <item>
     ///             Applies the '{BasePath}', '{OutputPath}' and '{ProjectPath}' prefix placeholders in every <see cref="BinPathAspectConfiguration"/>
