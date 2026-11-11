@@ -5,7 +5,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Testing" Version="18.0.0-0.cris-auth.0.ci.6" />
+    <PackageReference Include="CK.Testing" Version="18.0.0-0.cris-auth.0.ci.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <ProjectReference Include="..\CK.Engine\CK.Engine.csproj" />
   </ItemGroup>
