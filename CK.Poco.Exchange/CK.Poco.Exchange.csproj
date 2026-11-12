@@ -6,7 +6,7 @@
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Globalization" Version="8.0.0-0.cris-auth.1.ci.17" />
+    <PackageReference Include="CK.Globalization" Version="8.0.0-0.cris-auth.1.ci.18" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
