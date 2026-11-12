@@ -185,7 +185,7 @@ sealed partial class ImportCodeGenerator
         {
             if( type.Type == typeof( int ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=r.GetInt32();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadInt32(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( bool ) )
             {
@@ -205,11 +205,11 @@ sealed partial class ImportCodeGenerator
             }
             if( type.Type == typeof( byte ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=r.GetByte();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadByte(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( sbyte ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=r.GetSByte();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadSByte(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( DateTime ) )
             {
@@ -225,15 +225,15 @@ sealed partial class ImportCodeGenerator
             }
             if( type.Type == typeof( TimeSpan ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64()); if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):CK.Poco.Exc.JsonGen.Importer.ReadInt64(ref r)); if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( short ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=r.GetInt16();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadInt16(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( ushort ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=r.GetUInt16();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadUInt16(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( BigInteger ) )
             {
@@ -244,14 +244,14 @@ sealed partial class ImportCodeGenerator
                 // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                 // WHY is the Utf8JsonReader has a perfect GetInt64WithQuotes() that is internal?
                 // Because Microsoft guys don't want you to be able to do the same as them... :(
-                return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):CK.Poco.Exc.JsonGen.Importer.ReadInt64(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( ulong ) )
             {
                 // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                 // WHY is the Utf8JsonReader has a perfect GetUInt64WithQuotes() that is internal?
                 // Because Microsoft guys don't want you to be able to do the same as them... :(
-                return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?UInt64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetUInt64();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?UInt64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):CK.Poco.Exc.JsonGen.Importer.ReadUInt64(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( Guid ) )
             {
@@ -259,7 +259,7 @@ sealed partial class ImportCodeGenerator
             }
             if( type.Type == typeof( uint ) )
             {
-                return ( w, v ) => w.Append( v ).Append( "=r.GetUInt32();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                return ( w, v ) => w.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadUInt32(ref r);if(!r.Read())rCtx.ReadMoreData(ref r);" );
             }
             if( type.Type == typeof( decimal ) )
             {

@@ -164,6 +164,27 @@ internal static char ReadChar( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Ex
     return buffer[0];
 }
 
+// JSON has a single number type: 1, 1.0 and 1e0 are the same value (and a JSON Schema ""integer"" accepts them all).
+// The integral types read the plain integer token directly (the fast path); any other number is accepted when its
+// value is integral and in the range of the type (1.5, or 300 for a byte, are refused).
+internal static int ReadInt32( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetInt32( out var v ) ? v : (int)ReadIntegral( ref r, int.MinValue, int.MaxValue );
+internal static uint ReadUInt32( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetUInt32( out var v ) ? v : (uint)ReadIntegral( ref r, uint.MinValue, uint.MaxValue );
+internal static short ReadInt16( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetInt16( out var v ) ? v : (short)ReadIntegral( ref r, short.MinValue, short.MaxValue );
+internal static ushort ReadUInt16( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetUInt16( out var v ) ? v : (ushort)ReadIntegral( ref r, ushort.MinValue, ushort.MaxValue );
+internal static byte ReadByte( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetByte( out var v ) ? v : (byte)ReadIntegral( ref r, byte.MinValue, byte.MaxValue );
+internal static sbyte ReadSByte( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetSByte( out var v ) ? v : (sbyte)ReadIntegral( ref r, sbyte.MinValue, sbyte.MaxValue );
+internal static long ReadInt64( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetInt64( out var v ) ? v : (long)ReadIntegral( ref r, long.MinValue, long.MaxValue );
+internal static ulong ReadUInt64( ref System.Text.Json.Utf8JsonReader r ) => r.TryGetUInt64( out var v ) ? v : (ulong)ReadIntegral( ref r, ulong.MinValue, ulong.MaxValue );
+
+static decimal ReadIntegral( ref System.Text.Json.Utf8JsonReader r, decimal min, decimal max )
+{
+    if( !r.TryGetDecimal( out var d ) || d != decimal.Truncate( d ) || d < min || d > max )
+    {
+        r.ThrowJsonException( $""Expected an integral number between {min} and {max}."" );
+    }
+    return d;
+}
+
 delegate object ObjectReader( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx );
 // The reader of a typed value and the type index (checked against the RuntimeFilter).
 static readonly Dictionary<string, (ObjectReader Reader, int Index)> _anyReaders;

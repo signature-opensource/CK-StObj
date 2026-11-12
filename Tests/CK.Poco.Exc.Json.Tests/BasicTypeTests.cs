@@ -196,4 +196,49 @@ public partial class BasicTypeTests
         // A null item in a list of non nullable strings too.
         Util.Invokable( () => factory.ReadJson( """{"Names":["a",null]}""" ) ).ShouldThrow<System.Text.Json.JsonException>();
     }
+
+    public enum ByteCode : byte { Zero, One, Two }
+
+    public interface IWithIntegers : IPoco
+    {
+        int Count { get; set; }
+        byte Small { get; set; }
+        ulong Big { get; set; }
+        TimeSpan Delay { get; set; }
+        ByteCode Code { get; set; }
+    }
+
+    [Test]
+    public async Task the_integral_types_accept_any_integral_JSON_number_Async()
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithIntegers ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        var factory = auto.Services.GetRequiredService<IPocoFactory<IWithIntegers>>();
+
+        // JSON has a single number type: 1, 1.0 and 1e0 are the same value (a JSON Schema "integer" accepts them all).
+        var o = factory.ReadJson( """{"Count":3712.0,"Small":2.55e2,"Big":1e19,"Delay":10.000,"Code":2.0}""" )!;
+        o.Count.ShouldBe( 3712 );
+        o.Small.ShouldBe( (byte)255 );
+        o.Big.ShouldBe( 10_000_000_000_000_000_000UL );
+        o.Delay.ShouldBe( TimeSpan.FromTicks( 10 ) );
+        o.Code.ShouldBe( ByteCode.Two );
+    }
+
+    [TestCase( """{"Count":1.5}""" )]
+    [TestCase( """{"Count":2147483648}""" )]
+    [TestCase( """{"Small":256}""" )]
+    [TestCase( """{"Small":-1.0}""" )]
+    [TestCase( """{"Big":-1}""" )]
+    [TestCase( """{"Big":1e20}""" )]
+    [TestCase( """{"Code":0.5}""" )]
+    public async Task a_non_integral_or_out_of_range_number_is_a_JsonException_Async( string json )
+    {
+        var configuration = TestHelper.CreateDefaultEngineConfiguration();
+        configuration.FirstBinPath.Types.Add( typeof( CommonPocoJsonSupport ), typeof( IWithIntegers ) );
+        await using var auto = (await configuration.RunAsync().ConfigureAwait( false )).CreateAutomaticServices();
+        var factory = auto.Services.GetRequiredService<IPocoFactory<IWithIntegers>>();
+
+        Util.Invokable( () => factory.ReadJson( json ) ).ShouldThrow<System.Text.Json.JsonException>();
+    }
 }
