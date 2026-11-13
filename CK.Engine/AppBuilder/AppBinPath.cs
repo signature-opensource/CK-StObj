@@ -13,7 +13,15 @@ public sealed class AppBinPath
 {
     readonly HashSet<string> _compileKeys;
 
-    internal AppBinPath( string name,
+    /// <summary>
+    /// Initializes a new BinPath. The builder creates them from "ckonf.json"; this is public for the tests of the contributors.
+    /// </summary>
+    /// <param name="name">The BinPath name.</param>
+    /// <param name="appProjectPath">The ".App" project folder.</param>
+    /// <param name="hostProjectPath">The ".Host" project folder.</param>
+    /// <param name="configuration">The configuration of this BinPath.</param>
+    /// <param name="binPathConfiguration">The engine configuration of this BinPath.</param>
+    public AppBinPath( string name,
                          NormalizedPath appProjectPath,
                          NormalizedPath hostProjectPath,
                          ImmutableConfigurationSection configuration,
@@ -64,7 +72,10 @@ public sealed class AppBinPath
         _compileKeys.Add( path );
     }
 
-    internal IReadOnlyCollection<string> CompileKeys => _compileKeys;
+    /// <summary>
+    /// Gets the compile time keys declared by <see cref="AddCompileKey(string)"/>.
+    /// </summary>
+    public IReadOnlyCollection<string> CompileKeys => _compileKeys;
 
     /// <inheritdoc />
     public override string ToString() => $"BinPath '{Name}'";

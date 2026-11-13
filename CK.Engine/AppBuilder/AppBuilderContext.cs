@@ -1,3 +1,4 @@
+using CK.Core;
 using System.Collections.Generic;
 
 namespace CK.Setup;
@@ -8,8 +9,15 @@ namespace CK.Setup;
 /// </summary>
 public sealed class AppBuilderContext
 {
-    internal AppBuilderContext( EngineConfiguration engineConfiguration, IReadOnlyList<AppBinPath> binPaths )
+    /// <summary>
+    /// Initializes a new context. The builder creates it; this is public for the tests of the contributors.
+    /// </summary>
+    /// <param name="engineConfiguration">The engine configuration.</param>
+    /// <param name="binPaths">The BinPaths of the App, sorted by name.</param>
+    public AppBuilderContext( EngineConfiguration engineConfiguration, IReadOnlyList<AppBinPath> binPaths )
     {
+        Throw.CheckNotNullArgument( engineConfiguration );
+        Throw.CheckNotNullArgument( binPaths );
         EngineConfiguration = engineConfiguration;
         BinPaths = binPaths;
     }
