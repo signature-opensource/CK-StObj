@@ -14,6 +14,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <File Path="Tests/TestHelper.config" />
+    <Project Path="Tests/CK.AppBuilder.Tests/CK.AppBuilder.Tests.csproj" />
     <Project Path="Tests/CK.Engine.TypeCollector.Tests/CK.Engine.TypeCollector.Tests.csproj" />
     <Project Path="Tests/CK.Poco.Exc.Json.Tests/CK.Poco.Exc.Json.Tests.csproj" />
     <Project Path="Tests/CK.StObj.Engine.Tests/CK.StObj.Engine.Tests.csproj" />

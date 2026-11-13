@@ -21,7 +21,13 @@ namespace CK.Setup;
 ///     </item>
 ///     <item>The application to setup is a project named "XXX.Host".</item>
 /// </list>
-/// If a <c>CKSetup.xml</c> exists in the "XXX.Builder" project, it automatically configures the <see cref="ICKomposableAppBuilder.EngineConfiguration"/>.
+/// If a <c>ckonf.json</c> exists in the "XXX.Builder" project, it is the configuration of the App: its BinPaths (keyed by
+/// their name: "X" is the "X.App" and "X.Host" projects), the configuration of their hosts (their "appsettings.json" are
+/// projections of it), and what the <see cref="IAppBuilderContributor"/> of the referenced engines deduce from it. An
+/// optional <c>CKSetup.xml</c> brings the aspects that are not deduced yet.
+/// <para>
+/// Otherwise, if a <c>CKSetup.xml</c> exists in the "XXX.Builder" project, it automatically configures the <see cref="ICKomposableAppBuilder.EngineConfiguration"/>.
+/// </para>
 /// </para>
 /// </summary>
 public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
@@ -123,9 +129,26 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             var applicationName = builderFolder.LastPart;
             if( applicationName.EndsWith( ".Builder" ) ) applicationName = applicationName.Substring( 0, applicationName.Length - 8 );
 
-            EngineConfiguration configuration;
+            EngineConfiguration? configuration;
+            AppConfiguration? app = null;
             NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
-            if( File.Exists( ckSetupFile ) )
+            if( File.Exists( builderFolder.AppendPart( AppConfiguration.FileName ) ) )
+            {
+                // The App's configuration is the source: the BinPaths and their hosts' "appsettings.json". An optional
+                // "CKSetup.xml" brings the aspects that are not deduced yet.
+                app = AppConfiguration.Load( monitor,
+                                             builderFolder,
+                                             msBuildOutputPath,
+                                             File.Exists( ckSetupFile ) ? System.Xml.Linq.XElement.Load( ckSetupFile ) : null,
+                                             out configuration );
+                if( app == null ) return 1;
+                Throw.DebugAssert( configuration != null );
+                if( !AppBuilderContributors.Run( monitor, new AppBuilderContext( configuration, app.BinPaths ), AppContext.BaseDirectory ) )
+                {
+                    return 1;
+                }
+            }
+            else if( File.Exists( ckSetupFile ) )
             {
                 monitor.Info( "Loading EngineConfiguration from CKSetup.xml file." );
                 configuration = EngineConfiguration.Load( ckSetupFile );
@@ -143,6 +166,8 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             {
                 s.Invoke( monitor, b );
             }
+            // The hosts' "appsettings.json" are projections of the App's configuration.
+            if( app != null && !app.WriteProjections( monitor ) ) return 1;
             var engineResult = await b.EngineConfiguration.RunAsync( monitor ).ConfigureAwait( false );
             return engineResult != null && engineResult.Status != RunStatus.Failed ? 0 : 1;
         }
