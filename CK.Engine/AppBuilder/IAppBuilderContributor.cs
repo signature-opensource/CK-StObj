@@ -3,7 +3,7 @@ using CK.Core;
 namespace CK.Setup;
 
 /// <summary>
-/// A contributor of the <see cref="CKomposableAppBuilder"/>, declared by <see cref="AppBuilderContributorAttribute"/>:
+/// A contributor of the CKomposableAppBuilder (CK.AppBuilder), declared by <see cref="AppBuilderContributorAttribute"/>:
 /// it reads the "ckonf.json" of the App (its <see cref="AppBuilderContext.BinPaths"/>) and completes the
 /// <see cref="AppBuilderContext.EngineConfiguration"/> (the aspects it deduces from the parties).
 /// <para>

@@ -47,7 +47,8 @@ Without `ckonf.json`, the `CKSetup.xml` of the builder configures the engine, as
 ## The contributors
 
 The engines that the builder references can deduce the engine configuration from the App's configuration: they declare
-an `IAppBuilderContributor` with `[assembly: AppBuilderContributor( typeof( MyContributor ) )]`. The builder finds them
+an `IAppBuilderContributor` (CK.Engine, next to `ICKomposableAppBuilder`) with
+`[assembly: AppBuilderContributor( typeof( MyContributor ) )]`. The builder finds them
 in its own folder (nothing to write in the "XXX.Builder" project) and runs them before the engine:
 
 - `Contribute( monitor, context )` reads the `context.BinPaths` (an `AppBinPath`: its name, its projects, its

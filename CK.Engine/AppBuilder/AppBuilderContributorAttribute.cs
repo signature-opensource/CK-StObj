@@ -4,7 +4,7 @@ using System;
 namespace CK.Setup;
 
 /// <summary>
-/// Declares a contributor of the <see cref="CKomposableAppBuilder"/> (an <see cref="IAppBuilderContributor"/>) in an
+/// Declares a contributor of the CKomposableAppBuilder (CK.AppBuilder) (an <see cref="IAppBuilderContributor"/>) in an
 /// assembly that the builder references (typically an engine). The builder finds it in its own folder: nothing has to be
 /// written in the "XXX.Builder" project.
 /// </summary>
