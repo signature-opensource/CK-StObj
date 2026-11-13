@@ -4,8 +4,9 @@ namespace CK.Setup;
 
 /// <summary>
 /// A contributor of the CKomposableAppBuilder (CK.AppBuilder), declared by <see cref="AppBuilderContributorAttribute"/>:
-/// it reads the "ckonf.json" of the App (its <see cref="AppBuilderContext.BinPaths"/>) and completes the
-/// <see cref="AppBuilderContext.EngineConfiguration"/> (the aspects it deduces from the parties).
+/// it reads the "ckonf.json" of the builder (its <see cref="AppBuilderContext.Apps"/> and the Builder
+/// <see cref="AppBuilderContext.Aspects"/>) and completes the <see cref="AppBuilderContext.EngineConfiguration"/> (the
+/// aspects it deduces from the parties, the ones it reads).
 /// <para>
 /// A contributor has one public constructor whose parameters are other contributors: a constructor parameter is a
 /// requirement (the required contributor is created and runs before). A cycle is an error.

@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Engine.TypeCollector\CK.Engine.TypeCollector.csproj" />
-    <!-- The App builder contract: the configuration sections of the App ("ckonf.json"). -->
+    <!-- The App builder contract: the configuration sections of the builder ("ckonf.json"). -->
     <PackageReference Include="CK.Configuration" Version="3.0.0-0.cris-auth.1.ci.13" />
     <InternalsVisibleTo Include="CK.AppBuilder" />
     <InternalsVisibleTo Include="CK.AppBuilder.Tests" />

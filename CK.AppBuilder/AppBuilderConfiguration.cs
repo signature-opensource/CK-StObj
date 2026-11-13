@@ -11,29 +11,32 @@ using System.Xml.Linq;
 namespace CK.Setup;
 
 /// <summary>
-/// The configuration of the App, read from the "ckonf.json" of its "XXX.Builder" project: its BinPaths (its parties)
-/// keyed by their name. It is the future root of the engine: the engine still receives an <see cref="EngineConfiguration"/>,
-/// that this projects (its BinPaths, the root of an optional "CKSetup.xml" for the aspects that are not deduced yet).
+/// The configuration of a builder, read from the "ckonf.json" of its "XXX.Builder" project: its Apps keyed by their name,
+/// and its Builder aspects (the ones that apply to the whole engine run). It is the future root of the engine: the engine
+/// still receives an <see cref="EngineConfiguration"/>, that this projects (a BinPath per App, the root of an optional
+/// "CKSetup.xml" for the aspects that are not deduced yet).
 /// <para>
-/// The paths are taken in control, top-down: everything is relative to the "ckonf.json" folder; a BinPath "X" is the
+/// The paths are taken in control, top-down: everything is relative to the "ckonf.json" folder; an App "X" is the
 /// "../X.App" project (its bin folder is the one of the builder: "bin/{Configuration}/{TargetFramework}") and the
 /// "../X.Host" project ("AppProject" and "HostProject" depart from this convention). A path that leaves the solution's
 /// folder is an error.
 /// </para>
 /// <para>
-/// The "appsettings.json" of each host is a projection of its BinPath: its content without its compile time keys.
+/// The "appsettings.json" of each host is a projection of its App: its content without its compile time keys, the keys
+/// that the contributors project in a section (<see cref="AppConfiguration.ProjectInSection(string, string)"/>) moved
+/// in it.
 /// </para>
 /// </summary>
-sealed class AppConfiguration
+sealed class AppBuilderConfiguration
 {
     /// <summary>
     /// The configuration file name, in the "XXX.Builder" project.
     /// </summary>
     public const string FileName = "ckonf.json";
 
-    // The compile time keys of a BinPath (not projected).
-    static readonly string[] _binPathKeys = ["AppProject", "HostProject", "Types", "ExcludedTypes", "Assemblies",
-                                             "DiscoverAssembliesFromPath", "CompileOption", "GenerateSourceFiles"];
+    // The compile time keys of an App (not projected).
+    static readonly string[] _appKeys = ["AppProject", "HostProject", "Types", "ExcludedTypes", "Assemblies",
+                                         "DiscoverAssembliesFromPath", "CompileOption", "GenerateSourceFiles", "Aspects"];
 
     static readonly JsonSerializerOptions _writeOptions = new JsonSerializerOptions
     {
@@ -42,22 +45,33 @@ sealed class AppConfiguration
     };
 
     readonly NormalizedPath _builderFolder;
-    readonly JsonObject _binPathsNode;
+    readonly JsonObject _appsNode;
     readonly bool _projectCompileKeys;
-    readonly IReadOnlyList<AppBinPath> _binPaths;
+    readonly IReadOnlyList<AppConfiguration> _apps;
+    readonly AppAspects _aspects;
 
-    AppConfiguration( NormalizedPath builderFolder, JsonObject binPathsNode, bool projectCompileKeys, IReadOnlyList<AppBinPath> binPaths )
+    AppBuilderConfiguration( NormalizedPath builderFolder,
+                             JsonObject appsNode,
+                             bool projectCompileKeys,
+                             IReadOnlyList<AppConfiguration> apps,
+                             AppAspects aspects )
     {
         _builderFolder = builderFolder;
-        _binPathsNode = binPathsNode;
+        _appsNode = appsNode;
         _projectCompileKeys = projectCompileKeys;
-        _binPaths = binPaths;
+        _apps = apps;
+        _aspects = aspects;
     }
 
     /// <summary>
-    /// Gets the BinPaths, sorted by name.
+    /// Gets the Apps, sorted by name.
     /// </summary>
-    public IReadOnlyList<AppBinPath> BinPaths => _binPaths;
+    public IReadOnlyList<AppConfiguration> Apps => _apps;
+
+    /// <summary>
+    /// Gets the Builder aspects (the "Aspects" at the root).
+    /// </summary>
+    public AppAspects Aspects => _aspects;
 
     /// <summary>
     /// Reads the "ckonf.json" of a builder and creates the engine configuration.
@@ -67,12 +81,12 @@ sealed class AppConfiguration
     /// <param name="msBuildOutputPath">The output path of the builder ("bin/Debug/net10.0"): the one of the ".App" projects.</param>
     /// <param name="ckSetup">The optional "CKSetup.xml" root: its aspects and its global options. It must not define BinPaths.</param>
     /// <param name="engineConfiguration">The engine configuration on success.</param>
-    /// <returns>The App configuration, or null on error (errors are logged).</returns>
-    public static AppConfiguration? Load( IActivityMonitor monitor,
-                                          NormalizedPath builderFolder,
-                                          NormalizedPath msBuildOutputPath,
-                                          XElement? ckSetup,
-                                          out EngineConfiguration? engineConfiguration )
+    /// <returns>The builder configuration, or null on error (errors are logged).</returns>
+    public static AppBuilderConfiguration? Load( IActivityMonitor monitor,
+                                                 NormalizedPath builderFolder,
+                                                 NormalizedPath msBuildOutputPath,
+                                                 XElement? ckSetup,
+                                                 out EngineConfiguration? engineConfiguration )
     {
         engineConfiguration = null;
         var file = builderFolder.AppendPart( FileName );
@@ -105,73 +119,76 @@ sealed class AppConfiguration
         bool success = true;
         foreach( var c in section.GetChildren() )
         {
-            if( c.Key is not ("App" or "$schema") )
+            if( c.Key is not ("Apps" or "Aspects" or "ProjectCompileKeys" or "$schema") )
             {
-                monitor.Error( $"Unknown key '{c.Key}' in '{file}': the root has only \"App\"." );
+                monitor.Error( $"Unknown key '{c.Key}' in '{file}': the root has Apps, Aspects and ProjectCompileKeys." );
                 success = false;
             }
         }
-        var app = section.TryGetSection( "App" );
-        var binPathsSection = app?.TryGetSection( "BinPaths" );
-        if( app == null || binPathsSection == null || binPathsSection.GetChildren().Count == 0 )
+        var appsSection = section.TryGetSection( "Apps" );
+        if( appsSection == null || appsSection.GetChildren().Count == 0 )
         {
-            monitor.Error( $"'{file}' must define \"App\": {{ \"BinPaths\": {{ \"Name\": {{ ... }} }} }} (at least one BinPath, keyed by its name)." );
+            monitor.Error( $"'{file}' must define \"Apps\": {{ \"Name\": {{ ... }} }} (at least one App, keyed by its name)." );
             return null;
-        }
-        foreach( var c in app.GetChildren() )
-        {
-            if( c.Key is not ("BinPaths" or "ProjectCompileKeys") )
-            {
-                monitor.Error( $"Unknown key 'App:{c.Key}' in '{file}': the keys of \"App\" are BinPaths and ProjectCompileKeys." );
-                success = false;
-            }
         }
         bool projectCompileKeys = false;
-        var p = app["ProjectCompileKeys"];
+        var p = section["ProjectCompileKeys"];
         if( p != null && !bool.TryParse( p, out projectCompileKeys ) )
         {
-            monitor.Error( $"Invalid \"App:ProjectCompileKeys\": '{p}' (true or false is expected)." );
+            monitor.Error( $"Invalid \"ProjectCompileKeys\": '{p}' (true or false is expected)." );
             success = false;
         }
-        var binPathsNode = root["App"]?["BinPaths"] as JsonObject;
-        if( binPathsNode == null )
+        var appsNode = root["Apps"] as JsonObject;
+        if( appsNode == null )
         {
-            monitor.Error( $"\"App:BinPaths\" in '{file}' must be an object: the BinPaths are keyed by their name." );
+            monitor.Error( $"\"Apps\" in '{file}' must be an object: the Apps are keyed by their name." );
             return null;
+        }
+        var aspectsSection = section.TryGetSection( "Aspects" );
+        if( section["Aspects"] != null )
+        {
+            monitor.Error( $"\"Aspects\" in '{file}' must be an object: the aspects are keyed by their name." );
+            success = false;
         }
         if( ckSetup != null && ckSetup.Elements( EngineConfiguration.xBinPaths ).Elements().Any() )
         {
-            monitor.Error( $"The \"CKSetup.xml\" of '{builderFolder}' defines BinPaths: with a '{FileName}', the BinPaths are its \"App:BinPaths\" (the \"CKSetup.xml\" may only define the aspects that are not deduced yet)." );
+            monitor.Error( $"The \"CKSetup.xml\" of '{builderFolder}' defines BinPaths: with a '{FileName}', the BinPaths are its \"Apps\" (the \"CKSetup.xml\" may only define the aspects that are not deduced yet)." );
             success = false;
         }
         if( !success ) return null;
 
-        // The BinPaths, sorted by name (their order means nothing: the engine's FirstBinPath is the first name).
-        var binPaths = new List<(string Name, NormalizedPath App, NormalizedPath Host, ImmutableConfigurationSection Section)>();
+        // The Apps, sorted by name (their order means nothing: the engine's FirstBinPath is the first name).
+        var apps = new List<(string Name, NormalizedPath App, NormalizedPath Host, ImmutableConfigurationSection Section)>();
         var xBinPaths = new XElement( EngineConfiguration.xBinPaths );
-        foreach( var b in binPathsSection.GetChildren().OrderBy( b => b.Key, StringComparer.OrdinalIgnoreCase ) )
+        foreach( var a in appsSection.GetChildren().OrderBy( a => a.Key, StringComparer.OrdinalIgnoreCase ) )
         {
-            if( b.Value != null )
+            if( a.Value != null )
             {
-                monitor.Error( $"\"{b.Path}\" must be an object." );
+                monitor.Error( $"\"{a.Path}\" must be an object." );
                 success = false;
                 continue;
             }
-            var appProject = ResolveProject( monitor, builderFolder, solutionFolder, b, "AppProject", $"{b.Key}.App" );
-            var hostProject = ResolveProject( monitor, builderFolder, solutionFolder, b, "HostProject", $"{b.Key}.Host" );
+            if( a["Aspects"] != null )
+            {
+                monitor.Error( $"\"{a.Path}:Aspects\" must be an object: the aspects are keyed by their name." );
+                success = false;
+                continue;
+            }
+            var appProject = ResolveProject( monitor, builderFolder, solutionFolder, a, "AppProject", $"{a.Key}.App" );
+            var hostProject = ResolveProject( monitor, builderFolder, solutionFolder, a, "HostProject", $"{a.Key}.Host" );
             if( appProject.IsEmptyPath || hostProject.IsEmptyPath )
             {
                 success = false;
                 continue;
             }
-            var x = CreateBinPathXml( monitor, b, appProject.Combine( msBuildOutputPath ), hostProject );
+            var x = CreateBinPathXml( monitor, a, appProject.Combine( msBuildOutputPath ), hostProject );
             if( x == null )
             {
                 success = false;
                 continue;
             }
             xBinPaths.Add( x );
-            binPaths.Add( (b.Key, appProject, hostProject, b) );
+            apps.Add( (a.Key, appProject, hostProject, a) );
         }
         if( !success ) return null;
 
@@ -189,9 +206,25 @@ sealed class AppConfiguration
             return null;
         }
         var e = engineConfiguration;
-        var appBinPaths = binPaths.Select( b => new AppBinPath( b.Name, b.App, b.Host, b.Section, e.FindRequiredBinPath( b.Name ) ) )
-                                  .ToArray();
-        return new AppConfiguration( builderFolder, binPathsNode, projectCompileKeys, appBinPaths );
+        var appConfigurations = apps.Select( a => new AppConfiguration( a.Name, a.App, a.Host, a.Section, e.FindRequiredBinPath( a.Name ) ) )
+                                    .ToArray();
+        return new AppBuilderConfiguration( builderFolder, appsNode, projectCompileKeys, appConfigurations, new AppAspects( aspectsSection ) );
+    }
+
+    /// <summary>
+    /// Checks that every aspect (of the builder and of each App) has been handled by a contributor.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <returns>True on success, false on error.</returns>
+    public bool CheckAspectsHandled( IActivityMonitor monitor )
+    {
+        bool success = true;
+        foreach( var a in _aspects.UnhandledAspects.Concat( _apps.SelectMany( a => a.Aspects.UnhandledAspects ) ) )
+        {
+            monitor.Error( $"No package handles the aspect \"{a.Path}\" (a missing package reference in the builder?)." );
+            success = false;
+        }
+        return success;
     }
 
     static bool CheckDuplicateKeys( IActivityMonitor monitor, NormalizedPath file, JsonElement e, string path )
@@ -238,40 +271,40 @@ sealed class AppConfiguration
     static NormalizedPath ResolveProject( IActivityMonitor monitor,
                                           NormalizedPath builderFolder,
                                           NormalizedPath solutionFolder,
-                                          ImmutableConfigurationSection binPath,
+                                          ImmutableConfigurationSection app,
                                           string key,
                                           string conventionName )
     {
-        var relative = binPath[key] ?? $"../{conventionName}";
+        var relative = app[key] ?? $"../{conventionName}";
         NormalizedPath full = Path.GetFullPath( Path.Combine( builderFolder, relative ) );
         if( !full.StartsWith( solutionFolder, strict: true ) )
         {
-            monitor.Error( $"The path '{relative}' of \"{binPath.Path}:{key}\" ('{full}') leaves the solution's folder '{solutionFolder}'." );
+            monitor.Error( $"The path '{relative}' of \"{app.Path}:{key}\" ('{full}') leaves the solution's folder '{solutionFolder}'." );
             return default;
         }
         if( !Directory.Exists( full ) )
         {
-            monitor.Error( $"The project folder '{full}' of {binPath.Key} doesn't exist{(binPath[key] == null ? $" (by convention: '{conventionName}'; \"{key}\" departs from it)" : "")}." );
+            monitor.Error( $"The project folder '{full}' of the App '{app.Key}' doesn't exist{(app[key] == null ? $" (by convention: '{conventionName}'; \"{key}\" departs from it)" : "")}." );
             return default;
         }
         return full;
     }
 
     // The engine's BinPath: the same XML as a "CKSetup.xml" BinPath, so that the engine receives what it always received.
-    static XElement? CreateBinPathXml( IActivityMonitor monitor, ImmutableConfigurationSection b, NormalizedPath binFolder, NormalizedPath hostProject )
+    static XElement? CreateBinPathXml( IActivityMonitor monitor, ImmutableConfigurationSection a, NormalizedPath binFolder, NormalizedPath hostProject )
     {
         var x = new XElement( EngineConfiguration.xBinPath,
-                              new XAttribute( EngineConfiguration.xName, b.Key ),
+                              new XAttribute( EngineConfiguration.xName, a.Key ),
                               new XAttribute( EngineConfiguration.xPath, binFolder ),
                               new XElement( EngineConfiguration.xProjectPath, hostProject.Path ) );
-        if( b["DiscoverAssembliesFromPath"] is string discover ) x.Add( new XAttribute( EngineConfiguration.xDiscoverAssembliesFromPath, discover ) );
-        if( b["CompileOption"] is string compile ) x.Add( new XElement( EngineConfiguration.xCompileOption, compile ) );
-        if( b["GenerateSourceFiles"] is string generate ) x.Add( new XElement( EngineConfiguration.xGenerateSourceFiles, generate ) );
-        var assemblies = ReadList( b, "Assemblies" );
+        if( a["DiscoverAssembliesFromPath"] is string discover ) x.Add( new XAttribute( EngineConfiguration.xDiscoverAssembliesFromPath, discover ) );
+        if( a["CompileOption"] is string compile ) x.Add( new XElement( EngineConfiguration.xCompileOption, compile ) );
+        if( a["GenerateSourceFiles"] is string generate ) x.Add( new XElement( EngineConfiguration.xGenerateSourceFiles, generate ) );
+        var assemblies = ReadList( a, "Assemblies" );
         if( assemblies.Count > 0 ) x.Add( new XElement( EngineConfiguration.xAssemblies, assemblies.Select( a => new XElement( EngineConfiguration.xAssembly, a ) ) ) );
-        var excluded = ReadList( b, "ExcludedTypes" );
+        var excluded = ReadList( a, "ExcludedTypes" );
         if( excluded.Count > 0 ) x.Add( new XElement( EngineConfiguration.xExcludedTypes, excluded.Select( t => new XElement( EngineConfiguration.xType, t ) ) ) );
-        var types = b.TryGetSection( "Types" );
+        var types = a.TryGetSection( "Types" );
         if( types != null )
         {
             var xTypes = new XElement( EngineConfiguration.xTypes );
@@ -306,24 +339,29 @@ sealed class AppConfiguration
     }
 
     /// <summary>
-    /// Writes the "appsettings.json" of each host: the content of its BinPath without its compile time keys (the ones of
-    /// the BinPath, and the ones the contributors declared unless "App:ProjectCompileKeys" is true). A file is written only
-    /// when it changes.
+    /// Writes the "appsettings.json" of each host: the content of its App without its compile time keys (the ones of
+    /// the App, and the ones the contributors declared unless "ProjectCompileKeys" is true), the keys projected in a
+    /// section moved in it. A file is written only when it changes.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
     /// <returns>True on success, false on error.</returns>
     public bool WriteProjections( IActivityMonitor monitor )
     {
         bool success = true;
-        foreach( var b in _binPaths )
+        foreach( var a in _apps )
         {
-            var node = (JsonObject)_binPathsNode.First( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, b.Name ) ).Value!.DeepClone();
-            foreach( var k in _binPathKeys ) node.Remove( k );
+            var node = (JsonObject)_appsNode.First( kv => StringComparer.OrdinalIgnoreCase.Equals( kv.Key, a.Name ) ).Value!.DeepClone();
+            foreach( var k in _appKeys ) node.Remove( k );
             if( !_projectCompileKeys )
             {
-                foreach( var path in b.CompileKeys ) Remove( node, path.Split( ':' ) );
+                foreach( var path in a.CompileKeys ) Remove( node, path.Split( ':' ) );
             }
-            var file = b.HostProjectPath.AppendPart( "appsettings.json" );
+            if( !MoveInSections( monitor, a, node ) )
+            {
+                success = false;
+                continue;
+            }
+            var file = a.HostProjectPath.AppendPart( "appsettings.json" );
             var text = $"// Generated from {_builderFolder.LastPart}/{FileName}: do not edit.{Environment.NewLine}"
                        + node.ToJsonString( _writeOptions )
                        + Environment.NewLine;
@@ -349,6 +387,42 @@ sealed class AppConfiguration
                 o = child;
             }
             o.Remove( path[^1] );
+        }
+
+        // The keys projected in a section are moved in it, in their order in the App. The section can't be a key of the
+        // App itself.
+        static bool MoveInSections( IActivityMonitor monitor, AppConfiguration a, JsonObject node )
+        {
+            bool success = true;
+            foreach( var sectionName in a.ProjectedSections.Values.Distinct( StringComparer.OrdinalIgnoreCase ) )
+            {
+                if( node.ContainsKey( sectionName ) )
+                {
+                    monitor.Error( $"The key '{sectionName}' of {a} is the section in which keys are projected: it can't be a key of the App." );
+                    success = false;
+                }
+            }
+            if( !success ) return false;
+            var moved = node.Where( kv => a.ProjectedSections.ContainsKey( kv.Key ) ).Select( kv => kv.Key ).ToList();
+            var sections = new Dictionary<string, JsonObject>( StringComparer.OrdinalIgnoreCase );
+            foreach( var key in moved )
+            {
+                var sectionName = a.ProjectedSections[key];
+                var value = node[key];
+                node.Remove( key );
+                if( !sections.TryGetValue( sectionName, out var s ) )
+                {
+                    s = new JsonObject();
+                    sections.Add( sectionName, s );
+                }
+                s[key] = value;
+            }
+            // The sections come first: the identity of the App before its other sections.
+            var rest = node.ToList();
+            node.Clear();
+            foreach( var (name, s) in sections ) node[name] = s;
+            foreach( var (key, value) in rest ) node[key] = value;
+            return true;
         }
     }
 }

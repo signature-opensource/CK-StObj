@@ -21,10 +21,10 @@ namespace CK.Setup;
 ///     </item>
 ///     <item>The application to setup is a project named "XXX.Host".</item>
 /// </list>
-/// If a <c>ckonf.json</c> exists in the "XXX.Builder" project, it is the configuration of the App: its BinPaths (keyed by
-/// their name: "X" is the "X.App" and "X.Host" projects), the configuration of their hosts (their "appsettings.json" are
-/// projections of it), and what the <see cref="IAppBuilderContributor"/> of the referenced engines deduce from it. An
-/// optional <c>CKSetup.xml</c> brings the aspects that are not deduced yet.
+/// If a <c>ckonf.json</c> exists in the "XXX.Builder" project, it is the configuration of the builder: its Apps (keyed by
+/// their name: "X" is the "X.App" and "X.Host" projects) with the configuration of their hosts (their "appsettings.json"
+/// are projections of it), the aspects, and what the <see cref="IAppBuilderContributor"/> of the referenced engines deduce
+/// from them. An optional <c>CKSetup.xml</c> brings the aspects that are not deduced yet.
 /// <para>
 /// Otherwise, if a <c>CKSetup.xml</c> exists in the "XXX.Builder" project, it automatically configures the <see cref="ICKomposableAppBuilder.EngineConfiguration"/>.
 /// </para>
@@ -130,20 +130,21 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             if( applicationName.EndsWith( ".Builder" ) ) applicationName = applicationName.Substring( 0, applicationName.Length - 8 );
 
             EngineConfiguration? configuration;
-            AppConfiguration? app = null;
+            AppBuilderConfiguration? app = null;
             NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
-            if( File.Exists( builderFolder.AppendPart( AppConfiguration.FileName ) ) )
+            if( File.Exists( builderFolder.AppendPart( AppBuilderConfiguration.FileName ) ) )
             {
-                // The App's configuration is the source: the BinPaths and their hosts' "appsettings.json". An optional
-                // "CKSetup.xml" brings the aspects that are not deduced yet.
-                app = AppConfiguration.Load( monitor,
-                                             builderFolder,
-                                             msBuildOutputPath,
-                                             File.Exists( ckSetupFile ) ? System.Xml.Linq.XElement.Load( ckSetupFile ) : null,
-                                             out configuration );
+                // The builder's configuration is the source: the Apps, their hosts' "appsettings.json" and the aspects.
+                // An optional "CKSetup.xml" brings the aspects that are not deduced yet.
+                app = AppBuilderConfiguration.Load( monitor,
+                                                    builderFolder,
+                                                    msBuildOutputPath,
+                                                    File.Exists( ckSetupFile ) ? System.Xml.Linq.XElement.Load( ckSetupFile ) : null,
+                                                    out configuration );
                 if( app == null ) return 1;
                 Throw.DebugAssert( configuration != null );
-                if( !AppBuilderContributors.Run( monitor, new AppBuilderContext( configuration, app.BinPaths ), AppContext.BaseDirectory ) )
+                if( !AppBuilderContributors.Run( monitor, new AppBuilderContext( configuration, app.Apps, app.Aspects ), AppContext.BaseDirectory )
+                    || !app.CheckAspectsHandled( monitor ) )
                 {
                     return 1;
                 }
