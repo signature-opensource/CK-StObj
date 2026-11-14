@@ -44,6 +44,12 @@ Basically, by using the [IAutoService](https://github.com/Invenietis/CK-Core/blo
 marker interface (along with `ISingletonAutoService` and `IScopedAutoService`), and the [IsMultiple](https://github.com/Invenietis/CK-Core/blob/develop/CK.Core/AutomaticDI/IsMultipleAttribute.cs)
 attribute, the DI container can be automatically optimally configured (every service that CAN be singleton will be registered as singleton). 
 
+## Binary serialization of the Poco
+
+[CK.BinarySerialization.IPoco](CK.BinarySerialization.IPoco/README.md) makes every `IPoco` serializable by
+[CK.BinarySerialization](https://github.com/signature-opensource/CK-BinarySerialization), as a length-prefixed JSON
+payload. The serializer finds it by name: referencing the package is enough.
+
 
 
 

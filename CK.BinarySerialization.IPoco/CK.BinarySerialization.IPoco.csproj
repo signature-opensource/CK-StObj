@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.BinarySerialization" Version="16.0.0-0.uc.0.ci.41" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Poco.Exc.Json\CK.Poco.Exc.Json.csproj" />
+    <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
+  </ItemGroup>
+</Project>
