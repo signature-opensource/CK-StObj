@@ -63,6 +63,10 @@ write in the "XXX.Builder" project) and runs them before the engine:
   completes the `context.EngineConfiguration` (the aspects it deduces or reads).
   - `AppAspects.TryGetAspect( name )` reads an aspect and marks it as handled.
   - `AppConfiguration.AddCompileKey( path )` keeps a key out of the projection.
+  - `AppConfiguration.AddDeclarationKey( path )` keeps a declaration: a section (a feature of a client) that the
+    projection empties (all its keys are compile time keys) is written as `true`.
+  - `BinPathConfiguration.AddTypeSet( set )` adds a named type set to the BinPath of the App (a party's, a client's:
+    see `TypeSetConfiguration`): a subset of its types, computed at the start of the build.
   - `AppConfiguration.ProjectInSection( key, sectionName )` moves a key in a section of the projection.
 - `OnContributed( monitor, context )` is called once all of them have contributed: a contributor can check what the
   others did.

@@ -13,6 +13,7 @@ namespace CK.Setup;
 public sealed class AppConfiguration
 {
     readonly HashSet<string> _compileKeys;
+    readonly HashSet<string> _declarationKeys;
     readonly Dictionary<string, string> _projectedSections;
 
     /// <summary>
@@ -36,6 +37,7 @@ public sealed class AppConfiguration
         BinPathConfiguration = binPathConfiguration;
         Aspects = new AppAspects( configuration.TryGetSection( "Aspects" ) );
         _compileKeys = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
+        _declarationKeys = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
         _projectedSections = new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase );
     }
 
@@ -80,6 +82,23 @@ public sealed class AppConfiguration
         Throw.CheckNotNullOrWhiteSpaceArgument( path );
         _compileKeys.Add( path );
     }
+
+    /// <summary>
+    /// Declares a declaration key: a section whose presence declares something (a feature of a client for instance). When
+    /// the projection empties it (all its keys are compile time keys), it is written as <c>true</c>: the declaration
+    /// stays.
+    /// </summary>
+    /// <param name="path">The path of the section, relative to <see cref="Configuration"/> (with ':' separators).</param>
+    public void AddDeclarationKey( string path )
+    {
+        Throw.CheckNotNullOrWhiteSpaceArgument( path );
+        _declarationKeys.Add( path );
+    }
+
+    /// <summary>
+    /// Gets the declaration keys (see <see cref="AddDeclarationKey(string)"/>).
+    /// </summary>
+    public IReadOnlySet<string> DeclarationKeys => _declarationKeys;
 
     /// <summary>
     /// Gets the compile time keys declared by <see cref="AddCompileKey(string)"/>.

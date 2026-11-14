@@ -355,6 +355,8 @@ sealed class AppBuilderConfiguration
             if( !_projectCompileKeys )
             {
                 foreach( var path in a.CompileKeys ) Remove( node, path.Split( ':' ) );
+                // A declaration that the removal emptied stays: it is written as true.
+                foreach( var path in a.DeclarationKeys ) KeepDeclaration( node, path.Split( ':' ) );
             }
             if( !MoveInSections( monitor, a, node ) )
             {
@@ -387,6 +389,16 @@ sealed class AppBuilderConfiguration
                 o = child;
             }
             o.Remove( path[^1] );
+        }
+
+        static void KeepDeclaration( JsonObject o, string[] path )
+        {
+            for( int i = 0; i < path.Length - 1; ++i )
+            {
+                if( o[path[i]] is not JsonObject child ) return;
+                o = child;
+            }
+            if( o[path[^1]] is JsonObject { Count: 0 } ) o[path[^1]] = true;
         }
 
         // The keys projected in a section are moved in it, in their order in the App. The section can't be a key of the

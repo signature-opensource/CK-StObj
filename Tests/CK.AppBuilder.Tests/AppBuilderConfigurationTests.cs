@@ -148,6 +148,33 @@ public class AppBuilderConfigurationTests
     }
 
     [Test]
+    public void a_declaration_emptied_by_the_projection_is_written_true()
+    {
+        var builder = CreateSolution( """
+            {
+              "Apps": {
+                "Back": {
+                  "Local": { "PartyClient": { "App": { "NgApp": { "Barrels": [ "a" ] }, "Hosting": { "DevServerPort": 4200, "UseDist": true }, "Other": { "Port": 1 } } } }
+                }
+              }
+            }
+            """, "Back" );
+        var app = Load( builder, out _ ).ShouldNotBeNull();
+        var back = app.Apps.Single();
+        back.AddCompileKey( "Local:PartyClient:App:NgApp:Barrels" );
+        back.AddCompileKey( "Local:PartyClient:App:Hosting:DevServerPort" );
+        back.AddCompileKey( "Local:PartyClient:App:Other:Port" );
+        back.AddDeclarationKey( "Local:PartyClient:App:NgApp" );
+        back.AddDeclarationKey( "Local:PartyClient:App:Hosting" );
+        app.WriteProjections( TestHelper.Monitor ).ShouldBeTrue();
+
+        var projected = ImmutableConfigurationSection.CreateFromJson( "appsettings", File.ReadAllText( back.HostProjectPath.AppendPart( "appsettings.json" ) ) );
+        projected["Local:PartyClient:App:NgApp"].ShouldBe( "True", "Emptied: the declaration stays." );
+        projected["Local:PartyClient:App:Hosting:UseDist"].ShouldBe( "True", "Not emptied: the section stays." );
+        projected["Local:PartyClient:App:Other"].ShouldBeNull( "Not a declaration: an emptied section disappears." );
+    }
+
+    [Test]
     public void a_section_in_which_keys_are_projected_cannot_be_a_key_of_the_App()
     {
         var builder = CreateSolution( """{ "Apps": { "Back": { "FullName": "Sample/$Back", "CK-AppIdentity": {} } } }""", "Back" );
