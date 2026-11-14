@@ -4,6 +4,6 @@
     <Description>The types of the BinPaths: their groups, their named type sets.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Engine.TypeCollector" Version="36.0.2" />
+    <PackageReference Include="CK.Engine.TypeCollector" Version="36.0.2-0.uc.0.ci.2" />
   </ItemGroup>
 </Project>
