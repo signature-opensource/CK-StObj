@@ -6,7 +6,7 @@ using Shouldly;
 using System.Linq;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.StObj.Engine.Tests;
+namespace CK.Engine.TypeSet.Tests;
 
 [TestFixture]
 public class AlsoRegisterTypeAttributeTests

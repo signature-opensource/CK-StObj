@@ -7,7 +7,7 @@ using System.Linq;
 using System.Xml.Linq;
 using static CK.Testing.MonitorTestHelper;
 
-namespace CK.StObj.Engine.Tests;
+namespace CK.Engine.TypeSet.Tests;
 
 [TestFixture]
 public class TypeSetTests
