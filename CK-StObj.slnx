@@ -16,8 +16,6 @@
     <File Path="Tests/TestHelper.config" />
     <Project Path="Tests/CK.AppBuilder.Tests/CK.AppBuilder.Tests.csproj" />
     <Project Path="Tests/CK.BinarySerialization.IPoco.Tests/CK.BinarySerialization.IPoco.Tests.csproj" />
-    <Project Path="Tests/CK.Engine.Configuration.Tests/CK.Engine.Configuration.Tests.csproj" />
-    <Project Path="Tests/CK.Engine.TypeCollector.Tests/CK.Engine.TypeCollector.Tests.csproj" />
     <Project Path="Tests/CK.Poco.Exc.Json.Tests/CK.Poco.Exc.Json.Tests.csproj" />
     <Project Path="Tests/CK.StObj.Engine.Tests/CK.StObj.Engine.Tests.csproj" />
   </Folder>
@@ -37,8 +35,6 @@
   </Folder>
   <Project Path="CK.AppBuilder/CK.AppBuilder.csproj" />
   <Project Path="CK.BinarySerialization.IPoco/CK.BinarySerialization.IPoco.csproj" />
-  <Project Path="CK.Engine.Configuration/CK.Engine.Configuration.csproj" />
-  <Project Path="CK.Engine.TypeCollector/CK.Engine.TypeCollector.csproj" />
   <Project Path="CK.Engine.TypeSet/CK.Engine.TypeSet.csproj" />
   <Project Path="CK.Engine/CK.Engine.csproj" />
   <Project Path="CK.Poco.Exc.Json.Engine/CK.Poco.Exc.Json.Engine.csproj" />

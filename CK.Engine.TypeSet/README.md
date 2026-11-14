@@ -1,9 +1,9 @@
-﻿# CK.Engine.TypeSet
+# CK.Engine.TypeSet
 
 The types that the engine considers for each BinPath: the BinPaths are grouped by the types they end up with, and
 each group computes its named type sets.
 
-[CK.Engine.TypeCollector](../CK.Engine.TypeCollector/README.md) gives the assemblies and the types they provide (the
+[CK.Engine.TypeCollector](https://github.com/signature-opensource/CK-ResourceSpace/blob/stable/CK.Engine.TypeCollector/README.md) gives the assemblies and the types they provide (the
 `AssemblyCache` and the `GlobalTypeCache`). This project applies the type configuration of the BinPaths on top of it.
 
 ## BinPathTypeGroup

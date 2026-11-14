@@ -8,7 +8,7 @@ return await CK.Setup.CKomposableAppBuilder.RunAsync();
 
 The builder reads its `ckonf.json` (its Apps and their aspects), runs the contributors of the engines it references,
 then the engine, and writes the `appsettings.json` of the hosts: the `ckonf.json`, its projections and the
-contributors' contract are described in [the App builder model](../CK.Engine.Configuration/AppBuilder/README.md)
+contributors' contract are described in [the App builder model](https://github.com/signature-opensource/CK-ResourceSpace/blob/stable/CK.Engine.Configuration/AppBuilder/README.md)
 (CK.Engine.Configuration). Without `ckonf.json`, the `CKSetup.xml` of the builder configures the engine.
 
 ## The contributors
