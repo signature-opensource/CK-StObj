@@ -16,6 +16,7 @@ public sealed partial class BinPathConfiguration
     readonly HashSet<string> _assemblies;
     readonly TypeConfigurationSet _types;
     readonly HashSet<Type> _excludedTypes;
+    readonly Dictionary<string, TypeSetConfiguration> _typeSets;
     EngineConfiguration? _owner;
     string _name;
     NormalizedPath _path;
@@ -37,6 +38,7 @@ public sealed partial class BinPathConfiguration
         _aspects = new Dictionary<string, BinPathAspectConfiguration>();
         _name = EngineConfiguration.DefaultBinPathName;
         _types = new TypeConfigurationSet();
+        _typeSets = new Dictionary<string, TypeSetConfiguration>( StringComparer.OrdinalIgnoreCase );
     }
 
     /// <summary>
@@ -129,6 +131,38 @@ public sealed partial class BinPathConfiguration
     /// </para>
     /// </summary>
     public HashSet<Type> ExcludedTypes => _excludedTypes;
+
+    /// <summary>
+    /// Gets the named sets of types of this BinPath: subsets of its types (see <see cref="TypeSetConfiguration"/>).
+    /// </summary>
+    public IReadOnlyCollection<TypeSetConfiguration> TypeSets => _typeSets.Values;
+
+    /// <summary>
+    /// Finds a named set of types.
+    /// </summary>
+    /// <param name="name">The name of the set (case insensitive).</param>
+    /// <returns>The set or null.</returns>
+    public TypeSetConfiguration? FindTypeSet( string name ) => _typeSets.GetValueOrDefault( name );
+
+    /// <summary>
+    /// Adds a named set of types. Its name must be unique (case insensitive) among the <see cref="TypeSets"/>.
+    /// </summary>
+    /// <param name="typeSet">The set to add.</param>
+    public void AddTypeSet( TypeSetConfiguration typeSet )
+    {
+        Throw.CheckNotNullArgument( typeSet );
+        if( !_typeSets.TryAdd( typeSet.Name, typeSet ) )
+        {
+            Throw.ArgumentException( nameof( typeSet ), $"The TypeSet '{typeSet.Name}' already exists in BinPath '{_name}'." );
+        }
+    }
+
+    /// <summary>
+    /// Removes a named set of types.
+    /// </summary>
+    /// <param name="name">The name of the set to remove.</param>
+    /// <returns>True if it has been removed, false if it was not found.</returns>
+    public bool RemoveTypeSet( string name ) => _typeSets.Remove( name );
 
     #region Aspects
 

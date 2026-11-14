@@ -37,11 +37,18 @@ public sealed partial class BinPathConfiguration
         _excludedTypes = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
 
         _types = new TypeConfigurationSet( e.Elements( EngineConfiguration.xTypes ) );
+        _typeSets = new Dictionary<string, TypeSetConfiguration>( StringComparer.OrdinalIgnoreCase );
+        foreach( var s in e.Elements( EngineConfiguration.xTypeSets ).Elements( EngineConfiguration.xTypeSet ) )
+        {
+            var set = new TypeSetConfiguration( s );
+            if( !_typeSets.TryAdd( set.Name, set ) ) Throw.InvalidDataException( $"Duplicated TypeSet '{set.Name}' in BinPath '{_name}'." );
+        }
 
         var allowedNames = new List<string>()
         {
             EngineConfiguration.xTypes.ToString(),
             EngineConfiguration.xExcludedTypes.ToString(),
+            EngineConfiguration.xTypeSets.ToString(),
             EngineConfiguration.xAssemblies.ToString(),
             EngineConfiguration.xGenerateSourceFiles.ToString(),
             EngineConfiguration.xCompileOption.ToString(),
@@ -101,6 +108,9 @@ public sealed partial class BinPathConfiguration
                                 EngineConfiguration.ToXml( EngineConfiguration.xAssemblies, EngineConfiguration.xAssembly, Assemblies ),
                                 EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, ExcludedTypes ),
                                 _types.ToXml( EngineConfiguration.xTypes ),
+                                _typeSets.Count > 0
+                                    ? new XElement( EngineConfiguration.xTypeSets, _typeSets.Values.Select( s => s.ToXml() ) )
+                                    : null,
                                 _aspects.Values.Select( a => a.ToXml() ) );
     }
 }

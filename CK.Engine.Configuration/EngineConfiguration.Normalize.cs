@@ -517,6 +517,23 @@ public sealed partial class EngineConfiguration
                 CheckTypeConfigurationSet( monitor, b.Types, b.ExcludedTypes, b, ref success );
                 // Adds the GlobalTypes.
                 b.Types.ApplyMerge( c.GlobalTypes );
+                // The named sets: the exclusions apply downward, a set can't add what the BinPath excludes.
+                foreach( var s in b.TypeSets )
+                {
+                    foreach( var t in s.Types )
+                    {
+                        if( s.ExcludedTypes.Contains( t ) )
+                        {
+                            monitor.Error( $"{s} of BinPath '{b.Name}' both adds and excludes the type '{t:N}'." );
+                            success = false;
+                        }
+                        else if( b.ExcludedTypes.Contains( t ) )
+                        {
+                            monitor.Error( $"{s} of BinPath '{b.Name}' adds the type '{t:N}' that the BinPath excludes: the exclusions apply downward." );
+                            success = false;
+                        }
+                    }
+                }
             }
 
             static void EvalKnownPaths( IActivityMonitor monitor,

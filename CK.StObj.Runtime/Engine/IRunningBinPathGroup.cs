@@ -57,6 +57,12 @@ public interface IRunningBinPathGroup
     IReadOnlySet<ICachedType> TypeSet { get; }
 
     /// <summary>
+    /// Gets the named sets of types (see <see cref="BinPathConfiguration.TypeSets"/>) by their name (case insensitive):
+    /// subsets of the <see cref="TypeSet"/> (a local party, a client of a party...). Empty for the unified group.
+    /// </summary>
+    IReadOnlyDictionary<string, IReadOnlySet<ICachedType>> TypeSets { get; }
+
+    /// <summary>
     /// Gets the SHA1 for this BinPath. All <see cref="SimilarConfigurations"/> share the same SHA1.
     /// <para>
     /// If <see cref="IsUnifiedPure"/> is true, this is always <see cref="SHA1Value.IsZero"/>.

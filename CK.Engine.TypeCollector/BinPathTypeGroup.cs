@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -15,6 +16,7 @@ public sealed partial class BinPathTypeGroup
     readonly ImmutableArray<BinPathConfiguration> _configurations;
     readonly string _groupName;
     readonly IConfiguredTypeSet _configuredTypes;
+    readonly IReadOnlyDictionary<string, IReadOnlySet<ICachedType>> _typeSets;
     // Regular groups have a BinPathGroup.
     readonly AssemblyCache.BinPathGroup? _assemblyGroup;
     readonly GlobalTypeCache _typeCache;
@@ -29,8 +31,10 @@ public sealed partial class BinPathTypeGroup
                       AssemblyCache.BinPathGroup assemblyGroup,
                       GlobalTypeCache typeCache,
                       IConfiguredTypeSet configuredTypes,
+                      IReadOnlyDictionary<string, IReadOnlySet<ICachedType>> typeSets,
                       SHA1Value signature )
     {
+        _typeSets = typeSets;
         _configurations = configurations;
         _groupName = groupName;
         _assemblyGroup = assemblyGroup;
@@ -49,6 +53,7 @@ public sealed partial class BinPathTypeGroup
         _assemblyCache = assemblyCache;
         _typeCache = typeCache;
         _configuredTypes = new ImmutableConfiguredTypeSet( allTypes );
+        _typeSets = ImmutableDictionary<string, IReadOnlySet<ICachedType>>.Empty;
     }
 
     /// <summary>
@@ -80,6 +85,12 @@ public sealed partial class BinPathTypeGroup
     /// Gets the types to consider in the group.
     /// </summary>
     public IConfiguredTypeSet ConfiguredTypes => _configuredTypes;
+
+    /// <summary>
+    /// Gets the named sets of types of the group (see <see cref="BinPathConfiguration.TypeSets"/>), by their name (case
+    /// insensitive): subsets of the <see cref="ConfiguredTypes"/>. Empty for the unified group.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlySet<ICachedType>> TypeSets => _typeSets;
 
     /// <summary>
     /// Gets whether this group is the purely unified one.
@@ -222,6 +233,23 @@ public sealed partial class BinPathTypeGroup
                 }
                 hasher.Append( type.CSharpName ).Append( kind );
             }
+            // The inclusion of the named sets propagates upward: their Types are types of the group.
+            foreach( var s in c.TypeSets.OrderBy( s => s.Name, StringComparer.OrdinalIgnoreCase ) )
+            {
+                foreach( var type in s.Types.Select( typeCache.Get ).OrderBy( cT => cT.CSharpName ) )
+                {
+                    var msg = AssemblyCache.BinPathGroup.GetConfiguredTypeErrorMessage( typeCache, type, ConfigurableAutoServiceKind.None );
+                    if( msg != null )
+                    {
+                        monitor.Error( $"Invalid Type in {s}: '{type.CSharpName}' {msg}." );
+                        success = false;
+                    }
+                    else if( !types.AllTypes.Contains( type ) )
+                    {
+                        types.Add( monitor, $"{sourceName}, {s}", type, ConfigurableAutoServiceKind.None );
+                    }
+                }
+            }
             // The set of types is ready. We finally extend the set with the [AlsoRegisterType] of the
             // selected types: AlsoRegisterType is the last step that must be applied to any type selection,
             // it ignores any potential exclusion.
@@ -237,12 +265,13 @@ public sealed partial class BinPathTypeGroup
                     }
                 }
             }
+            var typeSets = ComputeTypeSets( monitor, typeCache, c, types.AllTypes, hasher );
             var g = new BinPathTypeGroup( configurations,
                                           groupName,
                                           assemblyGroup,
                                           typeCache,
                                           types,
-                                          new SHA1Value( hasher, resetHasher: true ) );
+                                          typeSets,                                          new SHA1Value( hasher, resetHasher: true ) );
             groups.Add( g );
         }
         // The groups list is ordered by GroupName. We may compute the signature here... 
@@ -254,6 +283,38 @@ public sealed partial class BinPathTypeGroup
             foreach( var group in groups ) hasher.AppendData( group.Signature.GetBytes().Span );
         }
         return new Result( assemblyResult, groups, new SHA1Value( hasher, resetHasher: false ), success );
+    }
+
+    // A named set: the types of the group minus its excluded types, then the [AlsoRegisterType] of its members (that
+    // ignores any exclusion, as for the group). Its Types are already types of the group.
+    static IReadOnlyDictionary<string, IReadOnlySet<ICachedType>> ComputeTypeSets( IActivityMonitor monitor,
+                                                                                  GlobalTypeCache typeCache,
+                                                                                  BinPathConfiguration c,
+                                                                                  IReadOnlySet<ICachedType> groupTypes,
+                                                                                  IncrementalHash hasher )
+    {
+        if( c.TypeSets.Count == 0 ) return ImmutableDictionary<string, IReadOnlySet<ICachedType>>.Empty;
+        var result = new Dictionary<string, IReadOnlySet<ICachedType>>( StringComparer.OrdinalIgnoreCase );
+        foreach( var s in c.TypeSets.OrderBy( s => s.Name, StringComparer.OrdinalIgnoreCase ) )
+        {
+            hasher.Append( "TypeSet:" ).Append( s.Name );
+            var members = new HashSet<ICachedType>( groupTypes );
+            foreach( var cT in s.ExcludedTypes.Select( typeCache.Find ).Where( cT => cT != null ).OrderBy( cT => cT!.CSharpName ) )
+            {
+                Throw.DebugAssert( cT != null );
+                members.Remove( cT );
+                hasher.Append( "-" ).Append( cT.CSharpName );
+            }
+            foreach( var cT in s.Types.Select( typeCache.Get ).OrderBy( cT => cT.CSharpName ) )
+            {
+                hasher.Append( "+" ).Append( cT.CSharpName );
+            }
+            var alsoTypes = members.GetRegisterAlsoTypesClosure();
+            if( alsoTypes != null ) members.AddRange( alsoTypes.Keys );
+            monitor.Info( $"{s}: {members.Count} of the {groupTypes.Count} types of the group." );
+            result.Add( s.Name, members );
+        }
+        return result;
     }
 
     static void HandleUnifiedBinPath( IActivityMonitor monitor, List<BinPathTypeGroup> result, GlobalTypeCache typeCache )

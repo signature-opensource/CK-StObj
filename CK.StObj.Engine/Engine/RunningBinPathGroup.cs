@@ -160,6 +160,9 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
     public IReadOnlySet<ICachedType> TypeSet => _typeGroup.ConfiguredTypes.AllTypes;
 
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, IReadOnlySet<ICachedType>> TypeSets => _typeGroup.TypeSets;
+
+    /// <inheritdoc />
     public SHA1Value RunSignature { get => _runSignature; internal set => _runSignature = value; }
 
     /// <inheritdoc />
