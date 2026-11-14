@@ -4,7 +4,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CK.Engine.TypeSet\CK.Engine.TypeSet.csproj" />
+    <PackageReference Include="CK.Engine.TypeSet" Version="36.0.2" />
   </ItemGroup>
   <!-- Hopefully temporary... -->
   <ItemGroup>
