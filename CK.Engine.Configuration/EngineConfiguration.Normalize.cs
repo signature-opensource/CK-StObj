@@ -520,6 +520,11 @@ public sealed partial class EngineConfiguration
                 // The named sets: the exclusions apply downward, a set can't add what the BinPath excludes.
                 foreach( var s in b.TypeSets )
                 {
+                    if( s.Parent != null && b.FindTypeSet( s.Parent ) == null )
+                    {
+                        monitor.Error( $"The parent '{s.Parent}' of {s} of BinPath '{b.Name}' is not a TypeSet of the BinPath." );
+                        success = false;
+                    }
                     foreach( var t in s.Types )
                     {
                         if( s.ExcludedTypes.Contains( t ) )

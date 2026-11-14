@@ -111,4 +111,23 @@ public class TypeSetTests
         set.ExcludedTypes.ShouldBe( [typeof( OtherObject )] );
         XElement.DeepEquals( back.ToXml(), xml ).ShouldBeTrue();
     }
+
+    [Test]
+    public void a_set_can_have_a_parent()
+    {
+        var c = new EngineConfiguration();
+        c.FirstBinPath.Types.Add( typeof( RootObject ) );
+        c.FirstBinPath.AddTypeSet( new TypeSetConfiguration( "$Party" ) );
+        c.FirstBinPath.AddTypeSet( new TypeSetConfiguration( "App" ) { Parent = "$Party" } );
+        var back = new EngineConfiguration( c.ToXml() );
+        back.FirstBinPath.FindTypeSet( "App" ).ShouldNotBeNull().Parent.ShouldBe( "$Party" );
+        BinPathTypeGroup.Run( TestHelper.Monitor, back ).ShouldNotBeNull().Success.ShouldBeTrue();
+
+        c.FirstBinPath.AddTypeSet( new TypeSetConfiguration( "Orphan" ) { Parent = "$Nobody" } );
+        using( TestHelper.Monitor.CollectTexts( out var texts ) )
+        {
+            BinPathTypeGroup.Run( TestHelper.Monitor, c ).ShouldBeNull();
+            texts.ShouldContain( t => t.Contains( "The parent '$Nobody' of TypeSet 'Orphan'" ) );
+        }
+    }
 }

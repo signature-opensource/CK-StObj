@@ -37,6 +37,7 @@ public sealed class TypeSetConfiguration
     internal TypeSetConfiguration( XElement e )
     {
         _name = (string)e.AttributeRequired( EngineConfiguration.xName );
+        Parent = (string?)e.Attribute( EngineConfiguration.xParent );
         _types = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xTypes, EngineConfiguration.xType ) );
         _excludedTypes = new HashSet<Type>( EngineConfiguration.TypesFromXml( e, EngineConfiguration.xExcludedTypes, EngineConfiguration.xType ) );
     }
@@ -47,7 +48,14 @@ public sealed class TypeSetConfiguration
     public string Name => _name;
 
     /// <summary>
-    /// Gets the types that this set adds: they are members of this set and of the BinPath.
+    /// Gets or sets the name of the parent set of this one (the party of a client): this set is computed inside it (its
+    /// closure is resolved among its members). Null when the parent is the BinPath.
+    /// </summary>
+    public string? Parent { get; set; }
+
+    /// <summary>
+    /// Gets the types that this set adds: they are members of this set and of the BinPath. They are also the roots of the set:
+    /// the closure of a set that has roots is computed from them (see the engines that use the sets).
     /// </summary>
     public HashSet<Type> Types => _types;
 
@@ -64,6 +72,7 @@ public sealed class TypeSetConfiguration
     {
         return new XElement( EngineConfiguration.xTypeSet,
                              new XAttribute( EngineConfiguration.xName, _name ),
+                             Parent != null ? new XAttribute( EngineConfiguration.xParent, Parent ) : null,
                              _types.Count > 0 ? EngineConfiguration.ToXml( EngineConfiguration.xTypes, EngineConfiguration.xType, _types ) : null,
                              _excludedTypes.Count > 0 ? EngineConfiguration.ToXml( EngineConfiguration.xExcludedTypes, EngineConfiguration.xType, _excludedTypes ) : null );
     }
@@ -74,6 +83,7 @@ public sealed class TypeSetConfiguration
     /// <param name="other">The other set.</param>
     /// <returns>True when they are equal.</returns>
     public bool SetEquals( TypeSetConfiguration other ) => _name == other._name
+                                                           && Parent == other.Parent
                                                              && _types.SetEquals( other._types )
                                                              && _excludedTypes.SetEquals( other._excludedTypes );
 
@@ -83,7 +93,7 @@ public sealed class TypeSetConfiguration
     /// <returns>The hash code.</returns>
     public int GetContentHashCode()
     {
-        int h = _name.GetHashCode();
+        int h = HashCode.Combine( _name, Parent );
         foreach( var t in _types ) h ^= t.GetHashCode();
         foreach( var t in _excludedTypes ) h ^= ~t.GetHashCode();
         return h;

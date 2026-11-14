@@ -163,6 +163,11 @@ public sealed partial class EngineConfiguration
     static public readonly XName xTypeSet = XNamespace.None + "TypeSet";
 
     /// <summary>
+    /// The Parent attribute name.
+    /// </summary>
+    static public readonly XName xParent = XNamespace.None + "Parent";
+
+    /// <summary>
     /// The GlobalExcludedTypes element name.
     /// </summary>
     static public readonly XName xGlobalExcludedTypes = XNamespace.None + "GlobalExcludedTypes";

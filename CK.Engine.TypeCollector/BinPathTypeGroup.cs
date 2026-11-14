@@ -297,7 +297,7 @@ public sealed partial class BinPathTypeGroup
         var result = new Dictionary<string, IReadOnlySet<ICachedType>>( StringComparer.OrdinalIgnoreCase );
         foreach( var s in c.TypeSets.OrderBy( s => s.Name, StringComparer.OrdinalIgnoreCase ) )
         {
-            hasher.Append( "TypeSet:" ).Append( s.Name );
+            hasher.Append( "TypeSet:" ).Append( s.Name ).Append( "/" ).Append( s.Parent ?? "" );
             var members = new HashSet<ICachedType>( groupTypes );
             foreach( var cT in s.ExcludedTypes.Select( typeCache.Find ).Where( cT => cT != null ).OrderBy( cT => cT!.CSharpName ) )
             {
