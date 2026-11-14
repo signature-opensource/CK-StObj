@@ -27,7 +27,7 @@ namespace CK.Setup;
 /// in it.
 /// </para>
 /// </summary>
-sealed class AppBuilderConfiguration
+public sealed class AppBuilderConfiguration
 {
     /// <summary>
     /// The configuration file name, in the "XXX.Builder" project.
