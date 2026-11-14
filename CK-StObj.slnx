@@ -38,6 +38,7 @@
   <Project Path="CK.BinarySerialization.IPoco/CK.BinarySerialization.IPoco.csproj" />
   <Project Path="CK.Engine.Configuration/CK.Engine.Configuration.csproj" />
   <Project Path="CK.Engine.TypeCollector/CK.Engine.TypeCollector.csproj" />
+  <Project Path="CK.Engine.TypeSet/CK.Engine.TypeSet.csproj" />
   <Project Path="CK.Engine/CK.Engine.csproj" />
   <Project Path="CK.Poco.Exc.Json.Engine/CK.Poco.Exc.Json.Engine.csproj" />
   <Project Path="CK.Poco.Exc.Json/CK.Poco.Exc.Json.csproj" />

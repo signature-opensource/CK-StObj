@@ -21,9 +21,8 @@ public class DirectInterfacesTests
     public void from_BaseType()
     {
         {
-            var config = new EngineConfiguration();
-            config.FirstBinPath.Types.Add( typeof( SpecializedObject1 ) );
-            var typeCache = BinPathTypeGroup.Run( TestHelper.Monitor, config ).ShouldNotBeNull().TypeCache;
+            var typeCache = new GlobalTypeCache();
+            typeCache.Get( typeof( SpecializedObject1 ) );
             var o1 = typeCache.Find( typeof( SpecializedObject1 ) ).ShouldNotBeNull();
             var i1 = typeCache.Find( typeof( I1 ) ).ShouldNotBeNull();
 
@@ -31,9 +30,8 @@ public class DirectInterfacesTests
             o1.DirectInterfaces.ShouldNotContain( i1 );
         }
         {
-            var config = new EngineConfiguration();
-            config.FirstBinPath.Types.Add( typeof( SpecializedObject2 ) );
-            var typeCache = BinPathTypeGroup.Run( TestHelper.Monitor, config ).ShouldNotBeNull().TypeCache;
+            var typeCache = new GlobalTypeCache();
+            typeCache.Get( typeof( SpecializedObject2 ) );
 
 
             var o2 = typeCache.Find( typeof( SpecializedObject2 ) ).ShouldNotBeNull();
@@ -78,9 +76,8 @@ public class DirectInterfacesTests
     [Test]
     public void from_Interfaces()
     {
-        var config = new EngineConfiguration();
-        config.FirstBinPath.Types.Add( typeof( I5 ) );
-        var typeCache = BinPathTypeGroup.Run( TestHelper.Monitor, config ).ShouldNotBeNull().TypeCache;
+        var typeCache = new GlobalTypeCache();
+        typeCache.Get( typeof( I5 ) );
 
         var i1 = typeCache.Find( typeof( I1 ) ).ShouldNotBeNull();
         var j2 = typeCache.Find( typeof( J2 ) ).ShouldNotBeNull();

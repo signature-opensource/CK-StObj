@@ -174,7 +174,14 @@ public sealed partial class AssemblyCache // BinPathGroup.TypeCollector
             }
         }
 
-        internal static string? GetConfiguredTypeErrorMessage( GlobalTypeCache typeCache, ICachedType type, ConfigurableAutoServiceKind kind )
+        /// <summary>
+        /// Checks that a type can be configured with a kind.
+        /// </summary>
+        /// <param name="typeCache">The type cache.</param>
+        /// <param name="type">The configured type.</param>
+        /// <param name="kind">Its configured kind.</param>
+        /// <returns>Null if it can be, otherwise the end of an error message.</returns>
+        public static string? GetConfiguredTypeErrorMessage( GlobalTypeCache typeCache, ICachedType type, ConfigurableAutoServiceKind kind )
         {
             if( type.EngineUnhandledType != EngineUnhandledType.None )
             {
