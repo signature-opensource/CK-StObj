@@ -89,7 +89,9 @@ public class ServiceSimpleMappingTests
     // - Using it on base types make very little sense: leaf types are primarily concerned.
     // - Whether exclusion is "weak" or "strong" doesn't really matter: they really differ when a base type is excluded.
     //
-    // Current exclusion semantics is what it is, not perfect and used rarely and quite always on leaf types, so let it be.
+    // The exclusion now follows the Liskov substitution principle (TypeExclusion, CK.Engine.Configuration): excluding a
+    // type excludes everything that is it. Excluding ISBase excludes ServiceS1Impl and ServiceS2Impl: what this test wants
+    // ("ISBase is no more considered") is a mapping setting, not an exclusion.
     [Test]
     [Ignore( "Exclusion needs rework." )]
     public async Task service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous_Async()
