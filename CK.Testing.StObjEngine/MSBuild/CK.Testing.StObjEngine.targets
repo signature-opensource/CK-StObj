@@ -1,0 +1,6 @@
+<Project>
+  <Target Name="CK_Testing_StObjEngine_IsDeprecated" BeforeTargets="ResolveAssemblyReferences">
+    <Error Code="CKDEPRECATED"
+           Text="Package 'CK.Testing.StObjEngine' is deprecated and must be replaced by 'CK.Testing.Engine': see https://github.com/signature-opensource/CK-StObj/blob/stable/CK.Testing.Engine/README.md." />
+  </Target>
+</Project>

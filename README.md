@@ -54,3 +54,6 @@ payload. The serializer finds it by name: referencing the package is enough.
 
 
 
+
+## Deprecated packages
+- [CK.Testing.StObjEngine](CK.Testing.StObjEngine/README.md): **Deprecated**: replaced by [CK.Testing.Engine](CK.Testing.Engine/README.md).

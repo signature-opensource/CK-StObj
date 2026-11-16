@@ -44,4 +44,5 @@
   <Project Path="CK.StObj.Model/CK.StObj.Model.csproj" />
   <Project Path="CK.StObj.Runtime/CK.StObj.Runtime.csproj" />
   <Project Path="CK.Testing.Engine/CK.Testing.Engine.csproj" />
+  <Project Path="CK.Testing.StObjEngine/CK.Testing.StObjEngine.csproj" />
 </Solution>
