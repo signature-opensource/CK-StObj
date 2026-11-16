@@ -1,6 +1,7 @@
 
 using CK.Core;
-using CK.Engine.TypeCollector;
+using CK.TypeCache;
+using CK.TypeSet;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;

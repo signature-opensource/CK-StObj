@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CK.Core;
-using CK.Engine.TypeCollector;
+using CK.TypeCache;
+using CK.TypeSet;
 
 #nullable enable
 

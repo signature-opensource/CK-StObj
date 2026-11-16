@@ -4,7 +4,7 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
+    <ProjectReference Include="..\..\..\..\CK.Testing.Engine\CK.Testing.Engine.csproj" />
     <ProjectReference Include="..\..\..\StObjEngineTesting\Sample.Engine\Sample.Engine.csproj" />
     <ProjectReference Include="..\..\LibWithSampleModel\LibWithSampleModel.csproj" />
     <PackageReference Include="CK.Testing.Nunit" Version="18.0.0-0.cris-auth.0.ci.8" />
