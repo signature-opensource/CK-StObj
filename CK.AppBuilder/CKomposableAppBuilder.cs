@@ -150,9 +150,10 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                 appSets = BinPathTypeGroup.Run( monitor, configuration );
                 if( appSets == null || !appSets.Success ) return 1;
                 var context = new AppBuilderContext( configuration, app.Apps, app.Aspects );
+                // An aspect key that names no aspect of the Apps is an error before the contributors run.
                 if( !AppBuilderAspects.Run( monitor, context, appSets )
-                    || !AppBuilderContributors.Run( monitor, context, AppContext.BaseDirectory )
-                    || !app.CheckAspectsHandled( monitor ) )
+                    || !app.CheckAspectsHandled( monitor )
+                    || !AppBuilderContributors.Run( monitor, context, AppContext.BaseDirectory ) )
                 {
                     return 1;
                 }
