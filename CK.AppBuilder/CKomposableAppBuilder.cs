@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Monitoring;
+using CK.TypeSet;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -131,6 +132,7 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
 
             EngineConfiguration? configuration;
             AppBuilderConfiguration? app = null;
+            BinPathTypeGroup.Result? appSets = null;
             NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
             if( File.Exists( builderFolder.AppendPart( AppBuilderConfiguration.FileName ) ) )
             {
@@ -143,7 +145,13 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                                                     out configuration );
                 if( app == null ) return 1;
                 Throw.DebugAssert( configuration != null );
-                if( !AppBuilderContributors.Run( monitor, new AppBuilderContext( configuration, app.Apps, app.Aspects ), AppContext.BaseDirectory )
+                // The type sets of the Apps: their aspects are found in them. The analysis of the assemblies is done once:
+                // the engine run reuses it.
+                appSets = BinPathTypeGroup.Run( monitor, configuration );
+                if( appSets == null || !appSets.Success ) return 1;
+                var context = new AppBuilderContext( configuration, app.Apps, app.Aspects );
+                if( !AppBuilderAspects.Run( monitor, context, appSets )
+                    || !AppBuilderContributors.Run( monitor, context, AppContext.BaseDirectory )
                     || !app.CheckAspectsHandled( monitor ) )
                 {
                     return 1;
@@ -169,7 +177,7 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             }
             // The hosts' "appsettings.json" are projections of the App's configuration.
             if( app != null && !app.WriteProjections( monitor ) ) return 1;
-            var engineResult = await b.EngineConfiguration.RunAsync( monitor ).ConfigureAwait( false );
+            var engineResult = await b.EngineConfiguration.RunAsync( monitor, appSets?.AssemblyResult ).ConfigureAwait( false );
             return engineResult != null && engineResult.Status != RunStatus.Failed ? 0 : 1;
         }
         catch( Exception ex )
