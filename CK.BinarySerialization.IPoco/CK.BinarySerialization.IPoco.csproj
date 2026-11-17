@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.BinarySerialization" Version="16.0.0-0.uc.0.ci.42" />
+    <PackageReference Include="CK.BinarySerialization" Version="16.0.0-0.uc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Poco.Exc.Json\CK.Poco.Exc.Json.csproj" />
