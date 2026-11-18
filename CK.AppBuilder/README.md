@@ -12,6 +12,10 @@ of the assemblies), and writes the `appsettings.json` of the hosts: the `ckonf.j
 contributors' contract are described in [the App builder model](https://github.com/signature-opensource/CK-ResourceSpace/blob/stable/CK.Engine.Configuration/AppBuilder/README.md)
 (CK.Engine.Configuration). Without `ckonf.json`, the `CKSetup.xml` of the builder configures the engine.
 
+When the repository has a central configuration (a `ckonf.json` at its git root), the builder first writes its own
+`ckonf.json` from its entry in it (with the contributors' `IAppBuilderContributor.ProjectFromCentral`): a builder that is
+not in its `"Builders"` is an error.
+
 ## The contributors
 
 The builder finds the contributors (`[assembly: AppBuilderContributor( typeof( MyContributor ) )]`) in its own folder:

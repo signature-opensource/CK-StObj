@@ -49,7 +49,8 @@ public class AppBuilderContributorsTests
     {
         FirstContributor.Calls.Clear();
         var context = new AppBuilderContext( new EngineConfiguration(), [] );
-        AppBuilderContributors.Run( TestHelper.Monitor, context, TestHelper.BinFolder ).ShouldBeTrue();
+        var contributors = AppBuilderContributors.Create( TestHelper.Monitor, TestHelper.BinFolder ).ShouldNotBeNull();
+        AppBuilderContributors.Run( TestHelper.Monitor, context, contributors ).ShouldBeTrue();
         // Declared Second first: the requirement orders them.
         FirstContributor.Calls.ShouldBe( ["First.Contribute", "Second.Contribute", "First.OnContributed"] );
     }

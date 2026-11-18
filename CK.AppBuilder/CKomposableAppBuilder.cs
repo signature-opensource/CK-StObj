@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Monitoring;
 using CK.TypeSet;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -22,10 +23,14 @@ namespace CK.Setup;
 ///     </item>
 ///     <item>The application to setup is a project named "XXX.Host".</item>
 /// </list>
-/// If a <c>ckonf.json</c> exists in the "XXX.Builder" project, it is the configuration of the builder: its Apps (keyed by
-/// their name: "X" is the "X.App" and "X.Host" projects) with the configuration of their hosts (their "appsettings.json"
-/// are projections of it), the aspects, and what the <see cref="IAppBuilderContributor"/> of the referenced engines deduce
+/// If a <c>ckonf.json</c> exists in the "XXX.Builder" project, it is the configuration of the builder: its App (or Apps:
+/// "X" is the "X.App" and "X.Host" projects) with the configuration of their hosts (their "appsettings.json" are
+/// projections of it), the aspects, and what the <see cref="IAppBuilderContributor"/> of the referenced engines deduce
 /// from them. An optional <c>CKSetup.xml</c> brings the aspects that are not deduced yet.
+/// <para>
+/// When the repository has a central configuration (a <c>ckonf.json</c> at its root: <see cref="CentralConfiguration"/>),
+/// the <c>ckonf.json</c> of the builder is first written from it: the builder must be one of its "Builders".
+/// </para>
 /// <para>
 /// Otherwise, if a <c>CKSetup.xml</c> exists in the "XXX.Builder" project, it automatically configures the <see cref="ICKomposableAppBuilder.EngineConfiguration"/>.
 /// </para>
@@ -133,7 +138,22 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             EngineConfiguration? configuration;
             AppBuilderConfiguration? app = null;
             BinPathTypeGroup.Result? appSets = null;
+            IReadOnlyList<IAppBuilderContributor>? contributors = null;
             NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
+            // The central configuration of the repository, if any, is the source of the builder's "ckonf.json".
+            if( !CentralConfiguration.TryLoad( monitor, builderFolder, out var central ) ) return 1;
+            if( central != null )
+            {
+                var centralBuilder = central.FindBuilder( builderFolder );
+                if( centralBuilder == null )
+                {
+                    var relative = builderFolder.RemovePrefix( central.RootFolder );
+                    monitor.Error( $"The builder '{builderFolder}' is not in the central configuration '{central.File}': add it to its \"Builders\" (\"{relative}\": {{ \"App\": {{ ... }} }})." );
+                    return 1;
+                }
+                contributors = AppBuilderContributors.Create( monitor, AppContext.BaseDirectory );
+                if( contributors == null || !central.WriteProjection( monitor, centralBuilder, contributors ) ) return 1;
+            }
             if( File.Exists( builderFolder.AppendPart( AppBuilderConfiguration.FileName ) ) )
             {
                 // The builder's configuration is the source: the Apps, their hosts' "appsettings.json" and the aspects.
@@ -153,7 +173,8 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                 // An aspect key that names no aspect of the Apps is an error before the contributors run.
                 if( !AppBuilderAspects.Run( monitor, context, appSets )
                     || !app.CheckAspectsHandled( monitor )
-                    || !AppBuilderContributors.Run( monitor, context, AppContext.BaseDirectory ) )
+                    || (contributors ??= AppBuilderContributors.Create( monitor, AppContext.BaseDirectory )) == null
+                    || !AppBuilderContributors.Run( monitor, context, contributors ) )
                 {
                     return 1;
                 }

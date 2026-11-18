@@ -15,21 +15,33 @@ namespace CK.Setup;
 /// </summary>
 static class AppBuilderContributors
 {
-    public static bool Run( IActivityMonitor monitor, AppBuilderContext context, string folder )
+    /// <summary>
+    /// Finds and creates the contributors of a folder, in the order of their requirements.
+    /// </summary>
+    public static IReadOnlyList<IAppBuilderContributor>? Create( IActivityMonitor monitor, string folder )
     {
-        using var _ = monitor.OpenInfo( "Running the App builder contributors." );
+        using var _ = monitor.OpenInfo( "Creating the App builder contributors." );
         var types = Discover( monitor, folder );
-        if( types == null ) return false;
+        if( types == null ) return null;
         var ordered = new List<IAppBuilderContributor>();
         var created = new Dictionary<Type, IAppBuilderContributor>();
         var visiting = new Stack<Type>();
         foreach( var t in types )
         {
-            if( Create( monitor, t, types, created, visiting, ordered ) == null ) return false;
+            if( Create( monitor, t, types, created, visiting, ordered ) == null ) return null;
         }
         monitor.Info( ordered.Count == 0
                         ? "No contributor."
                         : $"{ordered.Count} contributor(s): '{ordered.Select( c => c.GetType().ToCSharpName() ).Concatenate( "', '" )}'." );
+        return ordered;
+    }
+
+    /// <summary>
+    /// Runs the contributors (created by <see cref="Create(IActivityMonitor, string)"/>).
+    /// </summary>
+    public static bool Run( IActivityMonitor monitor, AppBuilderContext context, IReadOnlyList<IAppBuilderContributor> ordered )
+    {
+        using var _ = monitor.OpenInfo( "Running the App builder contributors." );
         bool success = true;
         foreach( var c in ordered )
         {
