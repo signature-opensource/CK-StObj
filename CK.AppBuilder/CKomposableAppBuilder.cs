@@ -176,7 +176,7 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                     || (contributors ??= AppBuilderContributors.Create( monitor, AppContext.BaseDirectory )) == null
                     || !AppBuilderContributors.Run( monitor, context, contributors )
                     // The restrictions ("$LOCK" and the packages' ones) once the contributors declared what they read.
-                    || !AppBuilderLocks.Run( monitor, app, appSets ) )
+                    || !AppBuilderLocks.Run( monitor, app, appSets, contributors ) )
                 {
                     return 1;
                 }

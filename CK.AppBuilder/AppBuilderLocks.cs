@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.TypeSet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,11 +10,15 @@ namespace CK.Setup;
 /// <summary>
 /// Applies the restrictions of the configuration (see <see cref="AppBuilderConfiguration.ApplyLocks"/>) once the
 /// contributors have contributed: the <c>"$LOCK"</c> of the "ckonf.json" and the <see cref="ConfigurationLockAttribute"/>
-/// of the configurable types of each App.
+/// of the configurable types of each App, in the sections of the type (its configurable name, unless a contributor
+/// resolves them: <see cref="IAppBuilderContributor.ResolveSections"/>).
 /// </summary>
 static class AppBuilderLocks
 {
-    public static bool Run( IActivityMonitor monitor, AppBuilderConfiguration configuration, BinPathTypeGroup.Result sets )
+    public static bool Run( IActivityMonitor monitor,
+                            AppBuilderConfiguration configuration,
+                            BinPathTypeGroup.Result sets,
+                            IReadOnlyList<IAppBuilderContributor> contributors )
     {
         using var _ = monitor.OpenInfo( "Applying the configuration restrictions." );
         var byApp = new Dictionary<AppConfiguration, List<PackageConfigurationLock>>();
@@ -21,14 +26,23 @@ static class AppBuilderLocks
         {
             if( g.IsUnifiedPure ) continue;
             var apps = configuration.Apps.Where( a => g.Configurations.Contains( a.BinPathConfiguration ) ).ToList();
+            IReadOnlyCollection<Type>? appTypes = null;
             foreach( var t in g.ConfigurableTypes )
             {
                 var locks = t.Type.GetCustomAttributes<ConfigurationLockAttribute>( inherit: false ).ToList();
                 if( locks.Count == 0 || !t.TryGetConfigurableType( monitor, out var attr ) || attr == null ) continue;
+                appTypes ??= g.ConfigurableTypes.Select( c => c.Type ).ToArray();
+                var sections = contributors.Select( c => c.ResolveSections( t.Type, appTypes ) ).FirstOrDefault( s => s != null )?.ToArray()
+                               ?? [attr.Name];
+                if( sections.Length == 0 )
+                {
+                    monitor.Warn( $"The [ConfigurationLock] of '{t.CSharpName}' apply to no section: the type has no owner in the App." );
+                    continue;
+                }
                 foreach( var a in apps )
                 {
                     if( !byApp.TryGetValue( a, out var list ) ) byApp.Add( a, list = new List<PackageConfigurationLock>() );
-                    list.AddRange( locks.Select( l => new PackageConfigurationLock( t.CSharpName, attr.Name, l ) ) );
+                    list.AddRange( locks.Select( l => new PackageConfigurationLock( t.CSharpName, sections, l ) ) );
                 }
             }
         }
