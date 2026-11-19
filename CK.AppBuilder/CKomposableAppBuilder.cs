@@ -169,7 +169,9 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                 // the engine run reuses it.
                 appSets = BinPathTypeGroup.Run( monitor, configuration );
                 if( appSets == null || !appSets.Success ) return 1;
-                var context = new AppBuilderContext( configuration, app.Apps, app.Aspects );
+                // The secrets of the development: for the engines that need a value at build time (a database setup).
+                if( !app.TryLoadDevSecrets( monitor, out var devSecrets ) ) return 1;
+                var context = new AppBuilderContext( configuration, app.Apps, app.Aspects, devSecrets );
                 // An aspect key that names no aspect of the Apps is an error before the contributors run.
                 if( !AppBuilderAspects.Run( monitor, context, appSets )
                     || !app.CheckAspectsHandled( monitor )
