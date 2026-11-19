@@ -26,6 +26,23 @@ static class AppBuilderLocks
         {
             if( g.IsUnifiedPure ) continue;
             var apps = configuration.Apps.Where( a => g.Configurations.Contains( a.BinPathConfiguration ) ).ToList();
+            // The sections of the App singletons and their run values ([ConfigurationSection], [ConfigurationLevel( Run )]).
+            bool success = true;
+            foreach( var t in g.ConfiguredTypes.AllTypes )
+            {
+                if( ConfigurationRunProperty.GetSection( t.Type ) is not string section ) continue;
+                if( !ConfigurationRunProperty.TryCollect( monitor, t.Type, out var runProperties ) )
+                {
+                    success = false;
+                    continue;
+                }
+                foreach( var a in apps )
+                {
+                    a.DeclareInitSection( section );
+                    foreach( var p in runProperties ) a.DeclareRunValue( p.Path );
+                }
+            }
+            if( !success ) return false;
             IReadOnlyCollection<Type>? appTypes = null;
             foreach( var t in g.ConfigurableTypes )
             {
