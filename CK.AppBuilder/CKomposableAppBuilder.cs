@@ -139,6 +139,7 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             AppBuilderConfiguration? app = null;
             BinPathTypeGroup.Result? appSets = null;
             IReadOnlyList<IAppBuilderContributor>? contributors = null;
+            IReadOnlyList<CentralDeployment> deployments = [];
             NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
             // The central configuration of the repository, if any, is the source of the builder's "ckonf.json".
             if( !CentralConfiguration.TryLoad( monitor, builderFolder, out var central ) ) return 1;
@@ -153,6 +154,12 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                 }
                 contributors = AppBuilderContributors.Create( monitor, AppContext.BaseDirectory );
                 if( contributors == null || !central.WriteProjection( monitor, centralBuilder, contributors ) ) return 1;
+                // The deployments: their merged configuration is written by every builder run (checked below).
+                if( !CentralDeployment.TryLoad( monitor, central, out deployments ) ) return 1;
+                foreach( var d in deployments )
+                {
+                    if( !d.WriteMergedFile( monitor, central ) ) return 1;
+                }
             }
             if( File.Exists( builderFolder.AppendPart( AppBuilderConfiguration.FileName ) ) )
             {
@@ -178,7 +185,7 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                     || (contributors ??= AppBuilderContributors.Create( monitor, AppContext.BaseDirectory )) == null
                     || !AppBuilderContributors.Run( monitor, context, contributors )
                     // The restrictions ("$LOCK" and the packages' ones) once the contributors declared what they read.
-                    || !AppBuilderLocks.Run( monitor, app, appSets, contributors ) )
+                    || !AppBuilderLocks.Run( monitor, app, appSets, contributors, central, builderFolder, deployments ) )
                 {
                     return 1;
                 }

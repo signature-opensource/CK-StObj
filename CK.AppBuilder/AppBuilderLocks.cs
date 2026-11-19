@@ -13,18 +13,23 @@ namespace CK.Setup;
 /// of the configurable types of each App, in the sections of the type (its configurable name, unless a contributor
 /// resolves them: <see cref="IAppBuilderContributor.ResolveSections"/>). Then checks the secrets
 /// (<see cref="AppBuilderConfiguration.CheckSecrets"/>) with the <see cref="ConfigurationSecretAttribute"/> of the same
-/// types.
+/// types, and the values per deployment of the deployments of the solution (<see cref="CentralDeployment.CheckPerDeployment"/>)
+/// with their <see cref="ConfigurationPerDeploymentAttribute"/>.
 /// </summary>
 static class AppBuilderLocks
 {
     public static bool Run( IActivityMonitor monitor,
                             AppBuilderConfiguration configuration,
                             BinPathTypeGroup.Result sets,
-                            IReadOnlyList<IAppBuilderContributor> contributors )
+                            IReadOnlyList<IAppBuilderContributor> contributors,
+                            CentralConfiguration? central = null,
+                            NormalizedPath builderFolder = default,
+                            IReadOnlyList<CentralDeployment>? deployments = null )
     {
         using var _ = monitor.OpenInfo( "Applying the configuration restrictions." );
         var byApp = new Dictionary<AppConfiguration, List<PackageConfigurationLock>>();
         var secretsByApp = new Dictionary<AppConfiguration, List<PackageConfigurationSecret>>();
+        var perDeploymentByApp = new Dictionary<AppConfiguration, List<PackageConfigurationPerDeployment>>();
         foreach( var g in sets.Groups )
         {
             if( g.IsUnifiedPure ) continue;
@@ -51,13 +56,14 @@ static class AppBuilderLocks
             {
                 var locks = t.Type.GetCustomAttributes<ConfigurationLockAttribute>( inherit: false ).ToList();
                 var secrets = t.Type.GetCustomAttributes<ConfigurationSecretAttribute>( inherit: false ).ToList();
-                if( (locks.Count == 0 && secrets.Count == 0) || !t.TryGetConfigurableType( monitor, out var attr ) || attr == null ) continue;
+                var perDeployment = t.Type.GetCustomAttributes<ConfigurationPerDeploymentAttribute>( inherit: false ).ToList();
+                if( (locks.Count == 0 && secrets.Count == 0 && perDeployment.Count == 0) || !t.TryGetConfigurableType( monitor, out var attr ) || attr == null ) continue;
                 appTypes ??= g.ConfigurableTypes.Select( c => c.Type ).ToArray();
                 var sections = contributors.Select( c => c.ResolveSections( t.Type, appTypes ) ).FirstOrDefault( s => s != null )?.ToArray()
                                ?? [attr.Name];
                 if( sections.Length == 0 )
                 {
-                    monitor.Warn( $"The [ConfigurationLock] and [ConfigurationSecret] of '{t.CSharpName}' apply to no section: the type has no owner in the App." );
+                    monitor.Warn( $"The [ConfigurationLock], [ConfigurationSecret] and [ConfigurationPerDeployment] of '{t.CSharpName}' apply to no section: the type has no owner in the App." );
                     continue;
                 }
                 foreach( var a in apps )
@@ -66,10 +72,33 @@ static class AppBuilderLocks
                     list.AddRange( locks.Select( l => new PackageConfigurationLock( t.CSharpName, sections, l ) ) );
                     if( !secretsByApp.TryGetValue( a, out var sList ) ) secretsByApp.Add( a, sList = new List<PackageConfigurationSecret>() );
                     sList.AddRange( secrets.Select( s => new PackageConfigurationSecret( t.CSharpName, sections, s ) ) );
+                    if( !perDeploymentByApp.TryGetValue( a, out var pList ) ) perDeploymentByApp.Add( a, pList = new List<PackageConfigurationPerDeployment>() );
+                    pList.AddRange( perDeployment.Select( p => new PackageConfigurationPerDeployment( t.CSharpName, sections, p.Path ) ) );
                 }
             }
         }
-        return configuration.ApplyLocks( monitor, a => byApp.GetValueOrDefault( a ) ?? [] )
-               && configuration.CheckSecrets( monitor, a => secretsByApp.GetValueOrDefault( a ) ?? [] );
+        if( !configuration.ApplyLocks( monitor, a => byApp.GetValueOrDefault( a ) ?? [] )
+            || !configuration.CheckSecrets( monitor, a => secretsByApp.GetValueOrDefault( a ) ?? [] ) )
+        {
+            return false;
+        }
+        if( central == null || deployments == null || deployments.Count == 0 ) return true;
+        // The values per deployment of the Apps of this builder, in every deployment.
+        bool ok = true;
+        var appKeys = new Dictionary<string, IReadOnlyList<(string Pattern, string Source)>>( StringComparer.OrdinalIgnoreCase );
+        foreach( var a in configuration.Apps )
+        {
+            ok &= AppBuilderConfiguration.CollectPerDeploymentKeys( monitor, a, perDeploymentByApp.GetValueOrDefault( a ) ?? [], out var keys );
+            appKeys[a.Name] = keys;
+        }
+        if( !ok ) return false;
+        using( monitor.OpenInfo( $"Checking the values per deployment of {deployments.Count} deployment(s)." ) )
+        {
+            foreach( var d in deployments )
+            {
+                ok &= d.CheckPerDeployment( monitor, central, builderFolder, appKeys );
+            }
+        }
+        return ok;
     }
 }
