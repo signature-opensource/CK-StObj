@@ -190,9 +190,13 @@ public static partial class AppDeployment
                                                    "-p:CKAppIdentityDevFolder=false" };
                 if( deployment.Settings.RuntimeIdentifier != null ) arguments.AddRange( ["-r", deployment.Settings.RuntimeIdentifier] );
                 arguments.Add( deployment.Settings.SelfContained ? "--self-contained" : "--no-self-contained" );
-                if( await RunProcessAsync( monitor, "dotnet", arguments, project.RemoveLastPart() ).ConfigureAwait( false ) != 0 )
+                var lines = new List<string>();
+                if( await RunProcessAsync( monitor, "dotnet", arguments, project.RemoveLastPart(), lines ).ConfigureAwait( false ) != 0 )
                 {
-                    monitor.Error( $"The publication of '{name}' for the deployment '{deployment.Name}' failed: the generated projects are in '{project.RemoveLastPart( 2 )}'." );
+                    // The errors of MSBuild (a failing builder: see its Logs folder), or the end of the output.
+                    var errors = lines.Where( l => l.Contains( ": error " ) ).Distinct().ToList();
+                    foreach( var l in errors.Count > 0 ? errors : lines.TakeLast( 30 ) ) monitor.Error( l );
+                    monitor.Error( $"The publication of '{name}' for the deployment '{deployment.Name}' failed: the generated projects are in '{project.RemoveLastPart( 2 )}' (the logs of a builder are in its Logs folder)." );
                     return false;
                 }
                 // The manifest written by the builder, with the version.
