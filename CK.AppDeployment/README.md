@@ -31,9 +31,10 @@ For each deployment and each builder that it deploys (`"Deployment": { "Builders
    The outputs of a previous run (`bin`, `obj`, `node_modules`, the installed packages of the client applications: their
    yarn cache and Plug'n'Play files) are kept: the builds are incremental. A failing
    deployment is a triplet that can be opened and built by hand.
-2. **It publishes each host** (`dotnet publish -c Release` with the version) in `Deployment/Assets/{AssetName}/{Host}`:
-   the build of the host runs its generated builder. CKli zips each folder of `Assets`: one release asset per
-   deployment. The MSBuild properties of the publication (the `"Publish"` of the deployment's settings and of its App:
+2. **It publishes each host** (`dotnet publish -c Release` with the version) in `Deployment/Assets/{AssetName}-{App}`
+   (`Production-Auth3.Front`): the build of the host runs its generated builder. CKli zips each folder of `Assets`: one
+   release asset per App (`Production-Auth3.Front.zip`). With `"SingleZipAsset": true`, the hosts are in
+   `Deployment/Assets/{AssetName}/{App}`: one asset per deployment (`Production.zip`). The MSBuild properties of the publication (the `"Publish"` of the deployment's settings and of its App:
    `RuntimeIdentifier`, `SelfContained`, `PublishSingleFile`... applied as-is) are written in a `<PropertyGroup>` of the
    copied host project, not on the command line: a global property would reach the generated builder, that runs on the
    build machine during the build.

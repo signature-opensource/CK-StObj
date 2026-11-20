@@ -23,8 +23,9 @@ namespace CK.Setup;
 /// builder (<see cref="CentralDeploymentSettings.Builders"/>), it generates in "Deployment/.build/{AssetName}" (ignored by
 /// git) a copy of the builder and of the hosts of its Apps (the files git tracks, the project references re-targeted: the
 /// ".App" projects are the original ones), with a <see cref="CentralDeployment.BuilderFileName"/> that makes the builder
-/// project the deployment, then publishes each host in "Deployment/Assets/{AssetName}/{Host}" (CKli zips each folder of
-/// "Assets": one asset per deployment). The MSBuild properties of the publication of a host (the "Publish" settings of
+/// project the deployment, then publishes each host in "Deployment/Assets/{AssetName}-{App}" (CKli zips each folder of
+/// "Assets": one asset per App, "Production-Auth3.Front.zip"), or "Deployment/Assets/{AssetName}/{App}" with the
+/// <see cref="CentralDeploymentSettings.SingleZipAsset"/> setting (one asset per deployment, "Production.zip"). The MSBuild properties of the publication of a host (the "Publish" settings of
 /// the deployment and of its App: <see cref="CentralDeploymentSettings.GetPublishProperties"/>) are written in the copied
 /// host project, not on the command line: a global property would reach the generated builder too (it runs on the build
 /// machine). The manifest written by the builder, with the version, is added to the "CK.AppHost.Published.json" of the
@@ -128,7 +129,7 @@ public static partial class AppDeployment
         {
             using( monitor.OpenInfo( $"Building the deployment '{d.Name}' (asset '{d.AssetName}')." ) )
             {
-                if( !await BuildAsync( monitor, central, d, version, work.AppendPart( d.AssetName ), deploymentFolder.AppendPart( AssetsFolderName ).AppendPart( d.AssetName ), tracked ).ConfigureAwait( false ) )
+                if( !await BuildAsync( monitor, central, d, version, work.AppendPart( d.AssetName ), deploymentFolder.AppendPart( AssetsFolderName ), tracked ).ConfigureAwait( false ) )
                 {
                     return false;
                 }
@@ -187,7 +188,8 @@ public static partial class AppDeployment
                 if( !CopyProject( monitor, central.RootFolder, o, copy, tracked, copies, isHost: true ) ) return false;
                 var appName = copy.LastPart[..^5];
                 WritePublishProperties( project, deployment, appName );
-                hosts.Add( (project, copy.LastPart) );
+                // The App name: an asset is a host, ".Host" says nothing.
+                hosts.Add( (project, appName) );
             }
         }
         if( hosts.Count == 0 )
@@ -197,7 +199,7 @@ public static partial class AppDeployment
         }
         foreach( var (project, name) in hosts )
         {
-            var output = assets.AppendPart( name );
+            var output = assets.Combine( deployment.GetAssetFolder( name ) );
             using( monitor.OpenInfo( $"Publishing '{name}' in '{output}'." ) )
             {
                 var arguments = new List<string> { "publish", project, "-c", "Release", "-o", output, $"-p:Version={version}",
