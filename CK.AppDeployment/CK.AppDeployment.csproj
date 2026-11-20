@@ -8,5 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CK.Engine.Configuration" Version="36.0.2-0.uc.0.ci.47" />
+    <PackageReference Include="CSemVer" Version="13.0.0" />
   </ItemGroup>
 </Project>

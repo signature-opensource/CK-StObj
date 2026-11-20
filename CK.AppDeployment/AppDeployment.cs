@@ -125,11 +125,13 @@ public static partial class AppDeployment
         File.WriteAllText( work.AppendPart( ".gitignore" ), "*" + Environment.NewLine );
         var tracked = await GetTrackedFilesAsync( monitor, central.RootFolder ).ConfigureAwait( false );
         if( tracked == null ) return false;
+        var informationalVersion = await GetInformationalVersionAsync( monitor, central.RootFolder, version ).ConfigureAwait( false );
+        if( informationalVersion == null ) return false;
         foreach( var d in deployments )
         {
             using( monitor.OpenInfo( $"Building the deployment '{d.Name}' (asset '{d.AssetName}')." ) )
             {
-                if( !await BuildAsync( monitor, central, d, version, work.AppendPart( d.AssetName ), deploymentFolder.AppendPart( AssetsFolderName ), tracked ).ConfigureAwait( false ) )
+                if( !await BuildAsync( monitor, central, d, version, informationalVersion, work.AppendPart( d.AssetName ), deploymentFolder.AppendPart( AssetsFolderName ), tracked ).ConfigureAwait( false ) )
                 {
                     return false;
                 }
@@ -142,6 +144,7 @@ public static partial class AppDeployment
                                         CentralConfiguration central,
                                         CentralDeployment deployment,
                                         string version,
+                                        string informationalVersion,
                                         NormalizedPath work,
                                         NormalizedPath assets,
                                         IReadOnlyList<string> tracked )
@@ -203,6 +206,9 @@ public static partial class AppDeployment
             using( monitor.OpenInfo( $"Publishing '{name}' in '{output}'." ) )
             {
                 var arguments = new List<string> { "publish", project, "-c", "Release", "-o", output, $"-p:Version={version}",
+                                                   // As CKli builds: the version, its commit and its date.
+                                                   $"-p:InformationalVersion={informationalVersion}",
+                                                   "-p:ContinuousIntegrationBuild=true",
                                                    // The "#Dev" folder is the development's: a deployment never writes in it.
                                                    "-p:CKAppIdentityDevFolder=false" };
                 var lines = new List<string>();
@@ -328,6 +334,28 @@ public static partial class AppDeployment
 
     [GeneratedRegex( """(<ProjectReference\s+Include=")([^"]+)(")""" )]
     private static partial Regex ProjectReference();
+
+    // The CSemVer informational version of the build ("{version}/{sha}/{date}"): the commit being built is the HEAD of the
+    // repository (CKli runs the script on the checked out build commit).
+    static async Task<string?> GetInformationalVersionAsync( IActivityMonitor monitor, NormalizedPath root, string version )
+    {
+        var v = CSemVer.SVersion.TryParse( version );
+        if( !v.IsValid )
+        {
+            monitor.Error( $"Invalid version '{version}': {v.ErrorMessage}" );
+            return null;
+        }
+        var lines = new List<string>();
+        if( await RunProcessAsync( monitor, "git", ["log", "-1", "--format=%H %ct"], root, output: lines ).ConfigureAwait( false ) != 0
+            || lines.Count == 0 )
+        {
+            monitor.Error( $"'git log' failed in '{root}': the commit of the build is unknown." );
+            return null;
+        }
+        var parts = lines[0].Split( ' ' );
+        var date = DateTimeOffset.FromUnixTimeSeconds( long.Parse( parts[1], System.Globalization.CultureInfo.InvariantCulture ) ).UtcDateTime;
+        return CSemVer.InformationalVersion.BuildInformationalVersion( v, parts[0], date );
+    }
 
     // The files tracked by git, relative to the root ('/' separated).
     static async Task<IReadOnlyList<string>?> GetTrackedFilesAsync( IActivityMonitor monitor, NormalizedPath root )
