@@ -34,6 +34,7 @@
     <Project Path="Tests/StObjSetupTesting/Tests/LibWithSampleModel.Tests/LibWithSampleModel.Tests.csproj" />
   </Folder>
   <Project Path="CK.AppBuilder/CK.AppBuilder.csproj" />
+  <Project Path="CK.AppDeployment/CK.AppDeployment.csproj" />
   <Project Path="CK.BinarySerialization.IPoco/CK.BinarySerialization.IPoco.csproj" />
   <Project Path="CK.Engine/CK.Engine.csproj" />
   <Project Path="CK.Poco.Exc.Json.Engine/CK.Poco.Exc.Json.Engine.csproj" />

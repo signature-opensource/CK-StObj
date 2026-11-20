@@ -4,6 +4,7 @@ using CK.TypeSet;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace CK.Setup;
@@ -143,6 +144,32 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
             NormalizedPath ckSetupFile = builderFolder.AppendPart( "CKSetup.xml" );
             // The central configuration of the repository, if any, is the source of the builder's "ckonf.json".
             if( !CentralConfiguration.TryLoad( monitor, builderFolder, out var central ) ) return 1;
+            // A builder generated for a deployment (CK.AppDeployment) projects the deployment, not the central configuration.
+            if( !CentralDeployment.TryReadBuilderFile( monitor, builderFolder, out var deploymentName, out var deployedBuilder ) ) return 1;
+            CentralDeployment? deployment = null;
+            if( deploymentName != null )
+            {
+                Throw.DebugAssert( deployedBuilder != null );
+                if( central == null )
+                {
+                    monitor.Error( $"The builder '{builderFolder}' of the deployment '{deploymentName}' is not in a repository with a central configuration." );
+                    return 1;
+                }
+                contributors = AppBuilderContributors.Create( monitor, AppContext.BaseDirectory );
+                if( contributors == null || !CentralDeployment.TryLoad( monitor, central, out var all ) ) return 1;
+                deployment = all.FirstOrDefault( d => d.Name.Equals( deploymentName, StringComparison.OrdinalIgnoreCase ) );
+                if( deployment == null )
+                {
+                    monitor.Error( $"The deployment '{deploymentName}' of the builder '{builderFolder}' doesn't exist: the deployments are '{all.Select( d => d.Name ).Concatenate( "', '" )}'." );
+                    return 1;
+                }
+                using( monitor.OpenInfo( $"Building '{deployedBuilder}' for the deployment '{deployment.Name}'." ) )
+                {
+                    if( !deployment.WriteBuilderProjection( monitor, central, deployedBuilder, builderFolder, contributors ) ) return 1;
+                }
+                // The values per deployment have been checked by the development build: the central projection is skipped.
+                central = null;
+            }
             if( central != null )
             {
                 var centralBuilder = central.FindBuilder( builderFolder );
@@ -176,16 +203,18 @@ public sealed class CKomposableAppBuilder : ICKomposableAppBuilder
                 // the engine run reuses it.
                 appSets = BinPathTypeGroup.Run( monitor, configuration );
                 if( appSets == null || !appSets.Success ) return 1;
-                // The secrets of the development: for the engines that need a value at build time (a database setup).
-                if( !app.TryLoadDevSecrets( monitor, out var devSecrets ) ) return 1;
-                var context = new AppBuilderContext( configuration, app.Apps, app.Aspects, devSecrets );
+                // The secrets of the development: for the engines that need a value at build time (a database setup). The
+                // build of a deployment never reads a secret.
+                IReadOnlyDictionary<string, string>? devSecrets = null;
+                if( deployment == null && !app.TryLoadDevSecrets( monitor, out devSecrets ) ) return 1;
+                var context = new AppBuilderContext( configuration, app.Apps, app.Aspects, devSecrets, deployment );
                 // An aspect key that names no aspect of the Apps is an error before the contributors run.
                 if( !AppBuilderAspects.Run( monitor, context, appSets )
                     || !app.CheckAspectsHandled( monitor )
                     || (contributors ??= AppBuilderContributors.Create( monitor, AppContext.BaseDirectory )) == null
                     || !AppBuilderContributors.Run( monitor, context, contributors )
                     // The restrictions ("$LOCK" and the packages' ones) once the contributors declared what they read.
-                    || !AppBuilderLocks.Run( monitor, app, appSets, contributors, central, builderFolder, deployments ) )
+                    || !AppBuilderLocks.Run( monitor, app, appSets, contributors, central, builderFolder, deployments, deployment ) )
                 {
                     return 1;
                 }

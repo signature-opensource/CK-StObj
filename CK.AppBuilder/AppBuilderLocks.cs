@@ -14,7 +14,8 @@ namespace CK.Setup;
 /// resolves them: <see cref="IAppBuilderContributor.ResolveSections"/>). Then checks the secrets
 /// (<see cref="AppBuilderConfiguration.CheckSecrets"/>) with the <see cref="ConfigurationSecretAttribute"/> of the same
 /// types, and the values per deployment of the deployments of the solution (<see cref="CentralDeployment.CheckPerDeployment"/>)
-/// with their <see cref="ConfigurationPerDeploymentAttribute"/>.
+/// with their <see cref="ConfigurationPerDeploymentAttribute"/>. The build of a deployment writes the manifests of its
+/// hosts instead (<see cref="AppBuilderConfiguration.WriteDeploymentManifests"/>).
 /// </summary>
 static class AppBuilderLocks
 {
@@ -24,7 +25,8 @@ static class AppBuilderLocks
                             IReadOnlyList<IAppBuilderContributor> contributors,
                             CentralConfiguration? central = null,
                             NormalizedPath builderFolder = default,
-                            IReadOnlyList<CentralDeployment>? deployments = null )
+                            IReadOnlyList<CentralDeployment>? deployments = null,
+                            CentralDeployment? deployment = null )
     {
         using var _ = monitor.OpenInfo( "Applying the configuration restrictions." );
         var byApp = new Dictionary<AppConfiguration, List<PackageConfigurationLock>>();
@@ -82,8 +84,8 @@ static class AppBuilderLocks
         {
             return false;
         }
-        if( central == null || deployments == null || deployments.Count == 0 ) return true;
-        // The values per deployment of the Apps of this builder, in every deployment.
+        if( deployment == null && (central == null || deployments == null || deployments.Count == 0) ) return true;
+        // The values per deployment of the Apps of this builder.
         bool ok = true;
         var appKeys = new Dictionary<string, IReadOnlyList<(string Pattern, string Source)>>( StringComparer.OrdinalIgnoreCase );
         foreach( var a in configuration.Apps )
@@ -92,6 +94,9 @@ static class AppBuilderLocks
             appKeys[a.Name] = keys;
         }
         if( !ok ) return false;
+        // The build of a deployment: the manifests of its hosts.
+        if( deployment != null ) return configuration.WriteDeploymentManifests( monitor, deployment, appKeys );
+        Throw.DebugAssert( central != null && deployments != null );
         using( monitor.OpenInfo( $"Checking the values per deployment of {deployments.Count} deployment(s)." ) )
         {
             foreach( var d in deployments )

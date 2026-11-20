@@ -16,6 +16,10 @@ When the repository has a central configuration (a `ckonf.json` at its git root)
 `ckonf.json` from its entry in it (with the contributors' `IAppBuilderContributor.ProjectFromCentral`): a builder that is
 not in its `"Builders"` is an error.
 
+A builder generated for a deployment (by [CK.AppDeployment](../CK.AppDeployment/README.md): its folder has a
+`ckonf.deployment.json`) writes its `ckonf.json` from the merged configuration of the deployment instead, never reads a
+secret (`AppBuilderContext.Deployment` is set), and writes the `Deployment.json` manifest of each of its hosts.
+
 ## The contributors
 
 The builder finds the contributors (`[assembly: AppBuilderContributor( typeof( MyContributor ) )]`) in its own folder:
