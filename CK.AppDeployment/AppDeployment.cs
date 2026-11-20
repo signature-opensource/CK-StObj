@@ -24,7 +24,11 @@ namespace CK.Setup;
 /// git) a copy of the builder and of the hosts of its Apps (the files git tracks, the project references re-targeted: the
 /// ".App" projects are the original ones), with a <see cref="CentralDeployment.BuilderFileName"/> that makes the builder
 /// project the deployment, then publishes each host in "Deployment/Assets/{AssetName}/{Host}" (CKli zips each folder of
-/// "Assets": one asset per deployment) with its "Deployment.json" manifest (and the version).
+/// "Assets": one asset per deployment). The MSBuild properties of the publication of a host (the "Publish" settings of
+/// the deployment and of its App: <see cref="CentralDeploymentSettings.GetPublishProperties"/>) are written in the copied
+/// host project, not on the command line: a global property would reach the generated builder too (it runs on the build
+/// machine). The manifest written by the builder, with the version, is added to the "CK.AppHost.Published.json" of the
+/// published host ("Deployment").
 /// </summary>
 public static partial class AppDeployment
 {
@@ -37,6 +41,12 @@ public static partial class AppDeployment
     /// The folder of the assets, in the "Deployment" folder (CKli's: emptied before the run, its folders are zipped).
     /// </summary>
     public const string AssetsFolderName = "Assets";
+
+    /// <summary>
+    /// The file that the publication of a host writes next to its executable (CK.AppHost): the manifest of the deployment
+    /// is added to it.
+    /// </summary>
+    public const string PublishedFileName = "CK.AppHost.Published.json";
 
     // The folders and files of a generated project that are kept from one run to another (the incremental builds, the
     // installed packages of the client applications: their yarn cache and Plug'n'Play files).
@@ -175,6 +185,8 @@ public static partial class AppDeployment
             foreach( var (o, copy, project) in appHosts )
             {
                 if( !CopyProject( monitor, central.RootFolder, o, copy, tracked, copies, isHost: true ) ) return false;
+                var appName = copy.LastPart[..^5];
+                WritePublishProperties( project, deployment, appName );
                 hosts.Add( (project, copy.LastPart) );
             }
         }
@@ -191,8 +203,6 @@ public static partial class AppDeployment
                 var arguments = new List<string> { "publish", project, "-c", "Release", "-o", output, $"-p:Version={version}",
                                                    // The "#Dev" folder is the development's: a deployment never writes in it.
                                                    "-p:CKAppIdentityDevFolder=false" };
-                if( deployment.Settings.RuntimeIdentifier != null ) arguments.AddRange( ["-r", deployment.Settings.RuntimeIdentifier] );
-                arguments.Add( deployment.Settings.SelfContained ? "--self-contained" : "--no-self-contained" );
                 var lines = new List<string>();
                 if( await RunProcessAsync( monitor, "dotnet", arguments, project.RemoveLastPart(), lines ).ConfigureAwait( false ) != 0 )
                 {
@@ -202,20 +212,44 @@ public static partial class AppDeployment
                     monitor.Error( $"The publication of '{name}' for the deployment '{deployment.Name}' failed: the generated projects are in '{project.RemoveLastPart( 2 )}' (the logs of a builder are in its Logs folder)." );
                     return false;
                 }
-                // The manifest written by the builder, with the version.
-                var manifest = project.RemoveLastPart().AppendPart( AppBuilderConfiguration.DeploymentManifestFileName );
-                if( !File.Exists( manifest ) )
+                // The manifest written by the builder, with the version, in the file of the published host.
+                var manifest = project.RemoveLastPart().Combine( AppBuilderConfiguration.DeploymentManifestFileName );
+                var published = output.AppendPart( PublishedFileName );
+                if( !File.Exists( manifest ) || !File.Exists( published ) )
                 {
-                    monitor.Error( $"The builder of '{name}' didn't write its manifest '{manifest}'." );
+                    monitor.Error( $"The publication of '{name}' has no '{(File.Exists( manifest ) ? published : manifest)}': its builder writes the manifest, the build targets of CK.AppHost the published file." );
                     return false;
                 }
-                var json = (JsonObject)JsonNode.Parse( File.ReadAllText( manifest ) )!;
-                json.Insert( 1, "Version", version );
-                File.WriteAllText( output.AppendPart( AppBuilderConfiguration.DeploymentManifestFileName ),
-                                   json.ToJsonString( new JsonSerializerOptions { WriteIndented = true } ) + Environment.NewLine );
+                var deploymentNode = (JsonObject)JsonNode.Parse( File.ReadAllText( manifest ) )!;
+                deploymentNode.Insert( 1, "Version", version );
+                var publishedNode = (JsonObject)JsonNode.Parse( File.ReadAllText( published ) )!;
+                publishedNode["Deployment"] = deploymentNode;
+                File.WriteAllText( published, publishedNode.ToJsonString( new JsonSerializerOptions { WriteIndented = true } ) + Environment.NewLine );
             }
         }
         return true;
+    }
+
+    // The publication properties of an App, in a PropertyGroup at the end of its copied host project: they apply to the
+    // host only (a global property would reach the generated builder that runs during its build).
+    static void WritePublishProperties( NormalizedPath project, CentralDeployment deployment, string appName )
+    {
+        var properties = deployment.Settings.GetPublishProperties( appName );
+        if( properties.Count == 0 ) return;
+        var text = File.ReadAllText( project );
+        var end = text.LastIndexOf( "</Project>", StringComparison.Ordinal );
+        if( end < 0 ) return;
+        var nl = Environment.NewLine;
+        var group = new System.Text.StringBuilder();
+        group.Append( "  <!-- The publication properties of the deployment '" ).Append( System.Security.SecurityElement.Escape( deployment.Name ) )
+             .Append( "' (CK.AppDeployment). -->" ).Append( nl ).Append( "  <PropertyGroup>" ).Append( nl );
+        foreach( var (name, value) in properties )
+        {
+            group.Append( "    <" ).Append( name ).Append( '>' ).Append( System.Security.SecurityElement.Escape( value ) )
+                 .Append( "</" ).Append( name ).Append( '>' ).Append( nl );
+        }
+        group.Append( "  </PropertyGroup>" ).Append( nl );
+        File.WriteAllText( project, text.Substring( 0, end ) + group + text.Substring( end ) );
     }
 
     // The single ".csproj" of a project folder.
