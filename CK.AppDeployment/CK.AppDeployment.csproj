@@ -7,6 +7,6 @@
     <InternalsVisibleTo Include="CK.AppBuilder.Tests" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Engine.Configuration" Version="36.0.2-0.uc.0.ci.45" />
+    <PackageReference Include="CK.Engine.Configuration" Version="36.0.2-0.uc.0.ci.46" />
   </ItemGroup>
 </Project>
