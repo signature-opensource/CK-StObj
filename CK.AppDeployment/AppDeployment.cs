@@ -38,8 +38,11 @@ public static partial class AppDeployment
     /// </summary>
     public const string AssetsFolderName = "Assets";
 
-    // The folders of a generated project that are kept from one run to another (the incremental builds).
+    // The folders and files of a generated project that are kept from one run to another (the incremental builds, the
+    // installed packages of the client applications: their yarn cache and Plug'n'Play files).
     static readonly string[] _keptFolders = ["bin", "obj", "node_modules", ".angular"];
+    static readonly string[] _keptYarnFolders = ["cache", "unplugged"];
+    static readonly string[] _keptFiles = [".pnp.cjs", ".pnp.loader.mjs", "install-state.gz"];
 
     /// <summary>
     /// Builds the deployments: the arguments are the version, then the names of the deployments to build (all of them
@@ -269,10 +272,19 @@ public static partial class AppDeployment
         static void Clean( NormalizedPath folder )
         {
             if( !Directory.Exists( folder ) ) return;
-            foreach( var f in Directory.GetFiles( folder ) ) File.Delete( f );
+            foreach( var f in Directory.GetFiles( folder ) )
+            {
+                if( !_keptFiles.Contains( Path.GetFileName( f ), StringComparer.OrdinalIgnoreCase ) ) File.Delete( f );
+            }
+            bool isYarn = folder.LastPart.Equals( ".yarn", StringComparison.OrdinalIgnoreCase );
             foreach( var d in Directory.GetDirectories( folder ) )
             {
-                if( _keptFolders.Contains( Path.GetFileName( d ), StringComparer.OrdinalIgnoreCase ) ) continue;
+                var name = Path.GetFileName( d );
+                if( _keptFolders.Contains( name, StringComparer.OrdinalIgnoreCase )
+                    || (isYarn && _keptYarnFolders.Contains( name, StringComparer.OrdinalIgnoreCase )) )
+                {
+                    continue;
+                }
                 Clean( d );
             }
         }

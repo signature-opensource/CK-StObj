@@ -28,7 +28,8 @@ For each deployment and each builder that it deploys (`"Deployment": { "Builders
    - the `.App` projects are not copied: the project references of the copies are re-targeted on the originals (and on
      the copied builder for a host).
 
-   The outputs of a previous run (`bin`, `obj`, `node_modules`) are kept: the builds are incremental. A failing
+   The outputs of a previous run (`bin`, `obj`, `node_modules`, the installed packages of the client applications: their
+   yarn cache and Plug'n'Play files) are kept: the builds are incremental. A failing
    deployment is a triplet that can be opened and built by hand.
 2. **It publishes each host** (`dotnet publish -c Release`, the version, `"SelfContained"` and `"RuntimeIdentifier"` of
    the deployment's settings) in `Deployment/Assets/{AssetName}/{Host}`: the build of the host runs its generated
@@ -39,4 +40,5 @@ For each deployment and each builder that it deploys (`"Deployment": { "Builders
 
 The build of a deployment never writes in the `#Dev` folder, never reads a secret and never sets up a database: a
 builder whose engine sets up a database at build time (the SqlServer aspect) fails, it must be left out of the
-deployment. The client applications of the hosts are not built yet.
+deployment. The client applications of a host are built by its publication (CK.TS.AspNet.Clients) and published with
+it; a published host uses its own folder as its content root (CK.AppHost).
