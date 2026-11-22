@@ -90,7 +90,7 @@ static class AppBuilderLocks
         var appKeys = new Dictionary<string, IReadOnlyList<(string Pattern, string Source)>>( StringComparer.OrdinalIgnoreCase );
         foreach( var a in configuration.Apps )
         {
-            ok &= AppBuilderConfiguration.CollectPerDeploymentKeys( monitor, a, perDeploymentByApp.GetValueOrDefault( a ) ?? [], out var keys );
+            ok &= AppBuilderConfiguration.CollectPerDeploymentKeys( monitor, a, perDeploymentByApp.GetValueOrDefault( a ) ?? [], contributors, out var keys );
             appKeys[a.Name] = keys;
         }
         if( !ok ) return false;
