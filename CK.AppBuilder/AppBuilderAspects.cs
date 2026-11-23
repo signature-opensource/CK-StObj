@@ -183,10 +183,9 @@ static class AppBuilderAspects
         object? model = null;
         if( modelType != null )
         {
-            var description = modelType.GetProperty( "ModelDescription", BindingFlags.Public | BindingFlags.Static )?.GetValue( null ) as ConfigurationModelDescription;
-            if( description == null )
+            if( !ConfigurationModelDescription.TryGet( modelType, out var description, out var error ) )
             {
-                monitor.Error( $"The model '{modelType.ToCSharpName()}' of the {kind} '{name}' has no ModelDescription: it must be a [ConfigurationModel] partial class." );
+                monitor.Error( $"Unable to read the configuration of the {kind} '{name}'. {error}" );
                 return false;
             }
             var collector = new UserMessageCollector( new CurrentCultureInfo( new TranslationService(), NormalizedCultureInfo.CodeDefault ) );
