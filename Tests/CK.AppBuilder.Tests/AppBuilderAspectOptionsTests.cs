@@ -55,7 +55,7 @@ public class AppBuilderAspectOptionsTests
     static AppBuilderContext? Run( string aspects )
     {
         var engine = new EngineConfiguration();
-        engine.FirstBinPath.Types.Add( typeof( TestAppAspect ), typeof( HeaderAspectOption ), typeof( MainAspectOption ) );
+        foreach( var t in new[] { typeof( TestAppAspect ), typeof( HeaderAspectOption ), typeof( MainAspectOption ) } ) engine.FirstBinPath.Types.Add( t );
         var sets = BinPathTypeGroup.Run( TestHelper.Monitor, engine ).ShouldNotBeNull();
         sets.Success.ShouldBeTrue();
         var section = ImmutableConfigurationSection.CreateFromJson( "ckonf:Apps", "Sample", $$"""{ "Aspects": {{aspects}} }""" );
