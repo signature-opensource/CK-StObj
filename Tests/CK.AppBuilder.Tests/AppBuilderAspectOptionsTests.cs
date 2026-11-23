@@ -53,7 +53,7 @@ public sealed class MainAspectOption : IAppAspectOption<TestAppAspect>
 /// The model of the "Modeled" aspect.
 /// </summary>
 [ConfigurationModel]
-public sealed partial class ModeledAspectConfiguration
+public sealed class ModeledAspectConfiguration
 {
     public required int Level { get; init; }
 
