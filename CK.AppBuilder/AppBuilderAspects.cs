@@ -143,7 +143,12 @@ static class AppBuilderAspects
             monitor.Error( $"The {kind} '{name}' ('{type.CSharpName}') must be a {typeof( T ).Name}." );
             return false;
         }
-        // The constructor: its optional section and its optional options.
+        // The model of the aspect ([Configuration<TModel>]), if any.
+        var modelType = type.Type.GetCustomAttributes( inherit: false )
+                                 .Select( a => a.GetType() )
+                                 .FirstOrDefault( t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof( ConfigurationAttribute<> ) )
+                                 ?.GetGenericArguments()[0];
+        // The constructor: its optional section (or its model) and its optional options.
         var ctors = type.Type.GetConstructors();
         var parameters = ctors.Length == 1 ? ctors[0].GetParameters() : null;
         Type? optionsItemType = null;
@@ -151,7 +156,7 @@ static class AppBuilderAspects
         {
             foreach( var p in parameters )
             {
-                if( p.ParameterType == typeof( IConfiguration ) ) continue;
+                if( p.ParameterType == typeof( IConfiguration ) || (modelType != null && p.ParameterType == modelType) ) continue;
                 var item = GetOptionListItemType( p.ParameterType, type.Type );
                 if( item == null || optionsItemType != null )
                 {
@@ -160,15 +165,40 @@ static class AppBuilderAspects
                 }
                 optionsItemType = item;
             }
-            if( parameters != null && parameters.Count( p => p.ParameterType == typeof( IConfiguration ) ) > 1 ) parameters = null;
+            if( parameters != null
+                && (parameters.Count( p => p.ParameterType == typeof( IConfiguration ) ) > 1
+                    || (modelType != null && parameters.Count( p => p.ParameterType == modelType ) > 1)) )
+            {
+                parameters = null;
+            }
         }
         if( parameters == null )
         {
-            monitor.Error( $"The {kind} '{name}' ('{type.CSharpName}') must have one public constructor whose optional parameters are its IConfiguration section and its options (an IReadOnlyList of its option interface)." );
+            monitor.Error( $"The {kind} '{name}' ('{type.CSharpName}') must have one public constructor whose optional parameters are its IConfiguration section (or its model), and its options (an IReadOnlyList of its option interface)." );
             return false;
         }
         // A bare "true" has no section.
         var aspectSection = section != null && section.Value == null ? section : null;
+        // The model is read (and validated) for the aspect: its options are reserved keys of its section.
+        object? model = null;
+        if( modelType != null )
+        {
+            var description = modelType.GetProperty( "ModelDescription", BindingFlags.Public | BindingFlags.Static )?.GetValue( null ) as ConfigurationModelDescription;
+            if( description == null )
+            {
+                monitor.Error( $"The model '{modelType.ToCSharpName()}' of the {kind} '{name}' has no ModelDescription: it must be a [ConfigurationModel] partial class." );
+                return false;
+            }
+            var collector = new UserMessageCollector( new CurrentCultureInfo( new TranslationService(), NormalizedCultureInfo.CodeDefault ) );
+            var path = section?.Path ?? $"Aspects:{name}";
+            model = ConfigurationModelReader.TryRead( description,
+                                                      [aspectSection],
+                                                      path,
+                                                      collector,
+                                                      options.Where( o => o.Owner.IsAssignableFrom( type.Type ) ).Select( o => o.Name ) );
+            collector.DumpLogs( monitor );
+            if( model == null ) return false;
+        }
         // The options of the aspect: the ones of an owner type assignable from it, ordered, selected and created.
         Array? createdOptions = null;
         var applicable = options.Where( o => o.Owner.IsAssignableFrom( type.Type ) ).ToList();
@@ -200,7 +230,9 @@ static class AppBuilderAspects
             }
         }
         if( optionsItemType != null ) createdOptions ??= Array.CreateInstance( optionsItemType, 0 );
-        var args = parameters.Select( p => p.ParameterType == typeof( IConfiguration ) ? (object?)aspectSection : createdOptions ).ToArray();
+        var args = parameters.Select( p => p.ParameterType == typeof( IConfiguration )
+                                            ? (object?)aspectSection
+                                            : modelType != null && p.ParameterType == modelType ? model : createdOptions ).ToArray();
         try
         {
             aspect = (T)ctors[0].Invoke( args );
