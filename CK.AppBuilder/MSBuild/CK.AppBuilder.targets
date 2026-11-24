@@ -1,8 +1,13 @@
 <Project>
 
   <Target Name="RunMeAfterBuild" AfterTargets="PostBuildEvent">
+    <PropertyGroup>
+      <!-- The executable of the project has no extension outside Windows. -->
+      <_CKAppBuilderExecutable>$(MSBuildProjectDirectory)/$(OutputPath)$(AssemblyName)</_CKAppBuilderExecutable>
+      <_CKAppBuilderExecutable Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_CKAppBuilderExecutable).exe</_CKAppBuilderExecutable>
+    </PropertyGroup>
     <Delete Files="LastRun.log" />
-    <Exec Command="&quot;$(MSBuildProjectDirectory)\$(OutputPath)$(AssemblyName).exe&quot;" />
+    <Exec Command="&quot;$(_CKAppBuilderExecutable)&quot;" />
   </Target>
 
 </Project>
