@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>CKomposable application builder from a ".App" project to its ".Host".</Description>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="MSBuild\CK.AppBuilder.props">

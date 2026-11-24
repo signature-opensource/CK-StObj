@@ -2,9 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>11</LangVersion>
-    <Description>
-      Implements Poco Json exporter/importer.
-    </Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Poco.Exchange\CK.Poco.Exchange.csproj" />

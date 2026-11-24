@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Description>Builds the deployments of a CKomposable solution (the "Deployment" folder next to its central "ckonf.json"): one generated builder and host per deployed App, published in the assets of the release. Called by "Deployment/GenerateAssets.cs".</Description>
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="CK.AppBuilder.Tests" />
