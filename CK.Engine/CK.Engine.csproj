@@ -4,7 +4,7 @@
     <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.TypeSet" Version="36.0.2-0.uc.3.ci.64" />
+    <PackageReference Include="CK.TypeSet" Version="36.0.2-0.uc.4" />
   </ItemGroup>
   <!-- Hopefully temporary... -->
   <ItemGroup>
