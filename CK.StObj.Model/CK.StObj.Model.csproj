@@ -9,7 +9,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Engine.Configuration" Version="36.0.2-0.uc.3.ci.69" />
+    <PackageReference Include="CK.Engine.Configuration" Version="36.0.2-0.uc.3.ci.70" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="MSBuild/CK.StObj.Model.props">
