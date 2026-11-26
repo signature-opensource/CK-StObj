@@ -6,7 +6,7 @@
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Globalization" Version="8.0.0-0.linux.0.ci.22" />
+    <PackageReference Include="CK.Globalization" Version="8.0.0-0.linux.0.ci.24" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
