@@ -16,10 +16,9 @@ static class CKomposableMapGenerator
     internal static bool Generate( IActivityMonitor monitor, BinPathTypeGroup group, ICodeWorkspace workspace )
     {
         Throw.DebugAssert( !group.IsUnifiedPure );
-        var root = workspace.Global.FindOrCreateNamespace( "CK.StObj" ).FindType( StObjContextRoot.RootContextTypeName );
+        var root = workspace.Global.FindOrCreateNamespace( "CK.StObj" ).FindRequiredType( StObjContextRoot.RootContextTypeName );
         if( root == null )
         {
-            monitor.Error( $"Unable to find the generated '{StObjContextRoot.RootContextTypeFullName}'." );
             return false;
         }
         // The values burnt in the code are part of the key of a group: its BinPaths have the same ones.
