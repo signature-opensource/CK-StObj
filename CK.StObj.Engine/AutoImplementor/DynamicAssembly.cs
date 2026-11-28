@@ -20,14 +20,15 @@ public class DynamicAssembly : IDynamicAssembly
     /// <summary>
     /// Initializes a new <see cref="DynamicAssembly"/>.
     /// </summary>
-    public DynamicAssembly()
+    /// <param name="code">Optional code workspace (a new one by default).</param>
+    public DynamicAssembly( ICodeWorkspace? code = null )
     {
         var name = Guid.NewGuid().ToString();
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly( new AssemblyName( name ), AssemblyBuilderAccess.Run );
         StubModuleBuilder = assemblyBuilder.DefineDynamicModule( name );
 
         _memory = new Dictionary<object, object?>();
-        Code = CodeWorkspace.Create();
+        Code = code ?? CodeWorkspace.Create();
         Throw.DebugAssert( typeof( StObjGenAttribute ).FullName == "CK.Core.StObjGenAttribute" );
         Code.TypeCreated += t => t.Definition.Attributes.Ensure( CodeAttributeTarget.Type ).Attributes.Add( new AttributeDefinition( "CK.Core.StObjGen" ) );
     }

@@ -1,4 +1,5 @@
 
+using CK.CodeGen;
 using CK.Core;
 using CK.TypeCache;
 using CK.TypeSet;
@@ -16,7 +17,7 @@ namespace CK.Setup;
 /// <summary>
 /// The CKomposable engine entry point.
 /// </summary>
-public static class CKEngine
+public static partial class CKEngine
 {
     /// <summary>
     /// Runs this <see cref="EngineConfiguration"/>.
@@ -38,20 +39,39 @@ public static class CKEngine
             return Task.FromResult<EngineResult?>( null );
         }
         var groups = typeGroups.Groups.Select( tG => new BinPathGroup( tG ) ).ToImmutableArray();
-        if( typeGroups.Success && CheckRequiredEngines( monitor, typeGroups.AssemblyCache ) )
+        bool success = typeGroups.Success
+                       && CheckRequiredEngines( monitor, typeGroups.AssemblyCache )
+                       && Run( monitor, configuration, typeGroups.Groups, groups );
+        return Task.FromResult<EngineResult?>( new EngineResult( success ? RunStatus.Succeed : RunStatus.Failed, configuration, groups ) );
+    }
+
+    static bool Run( IActivityMonitor monitor,
+                     EngineConfiguration configuration,
+                     IReadOnlyList<BinPathTypeGroup> typeGroups,
+                     ImmutableArray<BinPathGroup> groups )
+    {
+        // One App context per group. The first group is the unified one: its memory is the unified memory of the others.
+        var apps = new AppGenContext[typeGroups.Count];
+        for( int i = 0; i < apps.Length; ++i )
         {
-            // Temporary use of the good old StObjEngine: its code is completed by the code generation of this engine.
-            var engine = new StObjEngine( monitor, configuration, typeGroups.TypeCache, typeGroups.Groups, CKomposableMapGenerator.Generate );
-            var r = engine.NewRun();
-            for( int i = 0; i < r.Groups.Count; i++ )
-            {
-                groups[i]._runningGroup = r.Groups[i];
-            }
-            return Task.FromResult<EngineResult?>( new EngineResult( r.Success ? RunStatus.Succeed : RunStatus.Failed, configuration, groups ) );
+            apps[i] = new AppGenContext( apps.Length, typeGroups[i], CodeWorkspace.Create(), i == 0 ? null : apps[0].Memory );
         }
-        else
+        // Temporary use of the good old StObjEngine: this engine runs its phases and completes its code.
+        using var engine = new StObjEngine( monitor, configuration, typeGroups, apps.Select( a => a.Code ).ToArray() );
+        for( int i = 0; i < groups.Length; i++ )
         {
-            return Task.FromResult<EngineResult?>( new EngineResult( RunStatus.Failed, configuration, groups ) );
+            groups[i]._runningGroup = engine.Groups[i];
+        }
+        using( monitor.OpenInfo( "Running Engine." ) )
+        {
+            if( !engine.Initialize( out bool canSkipRun ) ) return false;
+            if( canSkipRun ) return engine.RunSkipped();
+            bool success = engine.Collect()
+                           && engine.RunAspects()
+                           && GenerateCode( monitor, engine, apps );
+            success &= engine.UpdateGeneratedArtifacts();
+            if( success ) success = engine.RunPostCodeAspects();
+            return engine.Terminate( success );
         }
     }
 

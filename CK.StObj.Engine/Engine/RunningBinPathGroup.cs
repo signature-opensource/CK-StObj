@@ -109,7 +109,7 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
             if( _saveSource == SaveSourceLevel.None )
             {
                 monitor.Info( $"Source code for '{Names}' will be generated to compute the SHA1 but will not be saved." );
-                // This level doesn't need to be exposed since the GenerateSourceCodeSecondPass
+                // This level doesn't need to be exposed since CK.Engine
                 // will generate the source code even if SaveSource is false: this level is here to avoid setting
                 // SaveSource to true here so that CopyArtifactsFromHead will not update any files.
                 _saveSource = SaveSourceLevel.RequiredForSHA1;

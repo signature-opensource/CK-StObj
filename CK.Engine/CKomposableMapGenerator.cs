@@ -1,29 +1,18 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.TypeSet;
 using System;
 using System.Linq;
 
 namespace CK.Setup;
 
 /// <summary>
-/// The code generation of this engine: it completes the generated code of each App group, once the StObj engine's code
-/// generation is done, before its signature, its save (<c>$StObjGen/G0.cs</c>) and its compilation. The generated
-/// <c>CK.StObj.GeneratedRootContext</c> (an <see cref="IStObjMap"/>) gets its <see cref="ICKomposableMap"/> members.
+/// The <see cref="ICKomposableMap"/> members of the generated <c>CK.StObj.GeneratedRootContext</c> (an <see cref="IStObjMap"/>).
 /// </summary>
 static class CKomposableMapGenerator
 {
-    internal static bool Generate( IActivityMonitor monitor, BinPathTypeGroup group, ICodeWorkspace workspace )
+    internal static void Generate( IActivityMonitor monitor, AppGenContext app )
     {
-        Throw.DebugAssert( !group.IsUnifiedPure );
-        var root = workspace.Global.FindOrCreateNamespace( "CK.StObj" ).FindRequiredType( monitor, StObjContextRoot.RootContextTypeName );
-        if( root == null )
-        {
-            return false;
-        }
-        // The values burnt in the code are part of the key of a group: its BinPaths have the same ones.
-        GenerateCompiledConfiguration( monitor, group.Configurations[0], root );
-        return true;
+        GenerateCompiledConfiguration( monitor, app );
     }
 
     /// <summary>
@@ -31,8 +20,14 @@ static class CKomposableMapGenerator
     /// (<see cref="BinPathConfiguration.CompiledValues"/> and <see cref="BinPathConfiguration.CompiledLocks"/>), as
     /// literals.
     /// </summary>
-    static void GenerateCompiledConfiguration( IActivityMonitor monitor, BinPathConfiguration configuration, ITypeScope root )
+    static void GenerateCompiledConfiguration( IActivityMonitor monitor, AppGenContext app )
     {
+        // The purely unified group is not an App: it has no map.
+        if( app.IsUnifiedPure ) return;
+        var root = app.Code.Global.FindOrCreateNamespace( "CK.StObj" ).FindRequiredType( monitor, StObjContextRoot.RootContextTypeName );
+        if( root == null ) return;
+        // The values burnt in the code are part of the key of a group: its BinPaths have the same ones.
+        var configuration = app.Group.Configurations[0];
         root.NewLine()
             .Append( "static readonly global::CK.Core.CompiledConfiguration _compiledConfiguration = " );
         if( configuration.CompiledValues.Count == 0 && configuration.CompiledLocks.Count == 0 )

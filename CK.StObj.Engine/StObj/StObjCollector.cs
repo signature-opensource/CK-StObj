@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CK.CodeGen;
 using CK.Core;
 
 namespace CK.Setup;
@@ -42,16 +43,17 @@ public partial class StObjCollector
     /// See <see cref="IStObjValueResolver"/>.
     /// </param>
     /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
-    /// 
+    /// <param name="code">Optional code workspace in which the source code is generated (a new one by default).</param>
     public StObjCollector( IServiceProvider serviceProvider,
                            bool traceDependencySorterInput = false,
                            bool traceDependencySorterOutput = false,
                            IStObjStructuralConfigurator? configurator = null,
                            IStObjValueResolver? valueResolver = null,
-                           IEnumerable<string>? names = null )
+                           IEnumerable<string>? names = null,
+                           ICodeWorkspace? code = null )
     {
         _errorEntries = new List<string>();
-        _tempAssembly = new DynamicAssembly();
+        _tempAssembly = new DynamicAssembly( code );
         _cc = new CKTypeCollector( serviceProvider, _tempAssembly, names );
         _configurator = configurator;
         _valueResolver = valueResolver;
