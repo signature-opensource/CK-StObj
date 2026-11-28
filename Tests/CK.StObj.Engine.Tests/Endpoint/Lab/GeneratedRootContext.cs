@@ -67,6 +67,8 @@ sealed class GeneratedRootContext : IStObjMap, IStObjObjectMap, IStObjServiceMap
 
     public IStObjServiceMap Services => this;
 
+    public CompiledConfiguration CompiledConfiguration => CompiledConfiguration.Empty;
+
     public IReadOnlyList<string> Names => throw new NotImplementedException();
 
     public IReadOnlyCollection<VFeature> Features => throw new NotImplementedException();

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CK.CodeGen;
 using CK.Core;
 using CK.TypeCache;
 using CK.TypeSet;
@@ -17,6 +18,7 @@ public sealed class StObjEngine
     readonly IActivityMonitor _monitor;
     readonly GlobalTypeCache _typeCache;
     readonly RunningEngineConfiguration _config;
+    readonly Func<IActivityMonitor, BinPathTypeGroup, ICodeWorkspace, bool> _appCodeGenerator;
     Status? _status;
     EngineConfigureContext? _startContext;
 
@@ -51,15 +53,31 @@ public sealed class StObjEngine
 
     readonly IReadOnlyList<BinPathTypeGroup> _groups;
 
+    /// <summary>
+    /// Initializes a new engine.
+    /// </summary>
+    /// <param name="monitor">The monitor to use.</param>
+    /// <param name="config">The configuration.</param>
+    /// <param name="typeCache">The type cache.</param>
+    /// <param name="groups">The groups of the BinPaths.</param>
+    /// <param name="appCodeGenerator">
+    /// The code generation of CK.Engine, called for each group that generates source code (not the purely unified one)
+    /// once this engine's code generation is done, before the signature, the save and the compilation of the source code:
+    /// it completes the code (the generated <c>CK.StObj.GeneratedRootContext</c> implements <see cref="ICKomposableMap"/>
+    /// through it). On failure, it returns false and logs the error.
+    /// </param>
     public StObjEngine( IActivityMonitor monitor,
                         EngineConfiguration config,
                         GlobalTypeCache typeCache,
-                        IReadOnlyList<BinPathTypeGroup> groups )
+                        IReadOnlyList<BinPathTypeGroup> groups,
+                        Func<IActivityMonitor, BinPathTypeGroup, ICodeWorkspace, bool> appCodeGenerator )
     {
+        Throw.CheckNotNullArgument( appCodeGenerator );
         _monitor = monitor;
         _typeCache = typeCache;
         _groups = groups;
         _config = new RunningEngineConfiguration( config, groups );
+        _appCodeGenerator = appCodeGenerator;
     }
 
     public StObjEngineResult NewRun()
@@ -122,10 +140,12 @@ public sealed class StObjEngine
                     {
                         foreach( var g in runCtx.AllBinPaths )
                         {
+                            var typeGroup = g.ConfigurationGroup.TypeGroup;
                             if( !g.Result.GenerateSourceCode( _monitor,
                                                               g,
                                                               _config.Configuration.InformationalVersion,
-                                                              runCtx.Aspects.OfType<ICSCodeGenerator>() ) )
+                                                              runCtx.Aspects.OfType<ICSCodeGenerator>(),
+                                                              ( m, ws ) => _appCodeGenerator( m, typeGroup, ws ) ) )
                             {
                                 _status.Success = false;
                                 break;

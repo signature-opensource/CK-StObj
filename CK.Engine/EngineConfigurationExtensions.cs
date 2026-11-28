@@ -40,8 +40,8 @@ public static class CKEngine
         var groups = typeGroups.Groups.Select( tG => new BinPathGroup( tG ) ).ToImmutableArray();
         if( typeGroups.Success && CheckRequiredEngines( monitor, typeGroups.AssemblyCache ) )
         {
-            // Temporary use of the good old StObjEngine.
-            var engine = new StObjEngine( monitor, configuration, typeGroups.TypeCache, typeGroups.Groups );
+            // Temporary use of the good old StObjEngine: its code is completed by the code generation of this engine.
+            var engine = new StObjEngine( monitor, configuration, typeGroups.TypeCache, typeGroups.Groups, CKomposableMapGenerator.Generate );
             var r = engine.NewRun();
             for( int i = 0; i < r.Groups.Count; i++ )
             {

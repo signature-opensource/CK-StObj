@@ -37,6 +37,8 @@ sealed class RunningBinPathGroup : IRunningBinPathGroup
 
     internal IConfiguredTypeSet ConfiguredTypes => _typeGroup.ConfiguredTypes;
 
+    internal BinPathTypeGroup TypeGroup => _typeGroup;
+
     internal RunningBinPathGroup( EngineConfiguration engineConfiguration, BinPathTypeGroup typeGroup )
     {
         _typeGroup = typeGroup;

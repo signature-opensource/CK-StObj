@@ -20,6 +20,11 @@ public class EmptyCKomposableMap : IStObjMap, IStObjObjectMap, IStObjServiceMap
     public IStObjServiceMap Services => this;
 
     /// <summary>
+    /// Gets <see cref="CompiledConfiguration.Empty"/>.
+    /// </summary>
+    public CompiledConfiguration CompiledConfiguration => CompiledConfiguration.Empty;
+
+    /// <summary>
     /// Gets an empty list of names.
     /// </summary>
     public IReadOnlyList<string> Names => ImmutableArray<string>.Empty;

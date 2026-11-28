@@ -18,7 +18,8 @@ public partial class StObjCollectorResult
     internal bool GenerateSourceCode( IActivityMonitor monitor,
                                       EngineRunContext.GenBinPath g,
                                       string? informationalVersion,
-                                      IEnumerable<ICSCodeGenerator> aspectsGenerators )
+                                      IEnumerable<ICSCodeGenerator> aspectsGenerators,
+                                      Func<IActivityMonitor, ICodeWorkspace, bool> appCodeGenerator )
     {
         var secondPasses = new List<MultiPassCodeGeneration>();
         var allGenerators = new List<ICSCodeGeneratorWithFinalization>();
@@ -26,7 +27,7 @@ public partial class StObjCollectorResult
         {
             return false;
         }
-        var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses, allGenerators );
+        var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses, allGenerators, appCodeGenerator );
         if( success )
         {
             Throw.DebugAssert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
@@ -180,7 +181,8 @@ public partial class StObjCollectorResult
     (bool Success, SHA1Value RunSignature) GenerateSourceCodeSecondPass( IActivityMonitor monitor,
                                                                          ICSCodeGenerationContext codeGenContext,
                                                                          List<MultiPassCodeGeneration> secondPass,
-                                                                         List<ICSCodeGeneratorWithFinalization> finalGen )
+                                                                         List<ICSCodeGeneratorWithFinalization> finalGen,
+                                                                         Func<IActivityMonitor, ICodeWorkspace, bool> appCodeGenerator )
     {
         Throw.DebugAssert( EngineMap != null );
         Throw.DebugAssert( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
@@ -229,6 +231,16 @@ public partial class StObjCollectorResult
                 Throw.DebugAssert( runSignature.IsZero );
                 monitor.Info( "Purely unified group: source code generation skipped." );
                 return (true, runSignature);
+            }
+            // The code generation of CK.Engine completes the code: it is part of the signature.
+            using( monitor.OpenInfo( "Generating the App's code (CK.Engine)." ) )
+            using( monitor.CollectEntries( out var appEntries ) )
+            {
+                if( !appCodeGenerator( monitor, codeGenContext.Assembly.Code ) || appEntries.Count != 0 )
+                {
+                    if( appEntries.Count == 0 ) monitor.Error( "The App's code generation failed but no errors have been logged." );
+                    return (false, runSignature);
+                }
             }
             if( !codeGenContext.SaveSource
                 && codeGenContext.CompileOption == CompileOption.None

@@ -1,1 +1,1 @@
-The CKomposable engine entry point: CKEngine.RunAsync runs an EngineConfiguration and returns an EngineResult (its RunStatus and the result of each BinPath).
+The CKomposable engine entry point: CKEngine.RunAsync runs an EngineConfiguration and returns an EngineResult (its RunStatus and the result of each BinPath). The generated map of each App is an ICKomposableMap: its CompiledConfiguration holds the values burnt by the build.
