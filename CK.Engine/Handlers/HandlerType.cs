@@ -82,7 +82,7 @@ sealed class HandlerType
             return a;
         }
 
-        public override string ToString() => $"{Info.DeclaringType?.ToCSharpName( false )}.{Info.Name}";
+        public override string ToString() => $"{Info.DeclaringType?.ToCSharpName()}.{Info.Name}";
     }
 
     readonly Method[][] _slots;
@@ -187,7 +187,7 @@ sealed class HandlerType
         }
         if( error != null )
         {
-            monitor.Error( $"Invalid engine handler method '{t:C}.{m.Name}': {error}." );
+            monitor.Error( $"Invalid engine handler method '{t.ToCSharpName()}.{m.Name}': {error}." );
             return false;
         }
         return true;
