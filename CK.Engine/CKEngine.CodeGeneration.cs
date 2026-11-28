@@ -9,17 +9,39 @@ namespace CK.Setup;
 public static partial class CKEngine
 {
     /// <summary>
-    /// The code generation phase: for each App (the unified one first), the StObj engine generates its code, this engine
-    /// completes it, then signs, saves and compiles it.
+    /// Calls the handlers: the <see cref="GenContext"/> slots and, between its main slot and its end, the slots of each App.
+    /// After its <see cref="Ending{T}"/>, the source code of an App is signed, saved and compiled.
+    /// On error, the <see cref="OnError{T}"/> of the failed context is called instead of its <see cref="Ending{T}"/>,
+    /// and the error propagates to the <see cref="GenContext"/>.
     /// </summary>
-    static bool GenerateCode( IActivityMonitor monitor, StObjEngine engine, AppGenContext[] apps )
+    static bool RunHandlers( IActivityMonitor monitor, EngineHandlers handlers, GenContext gen, StObjEngine engine )
     {
-        using( monitor.OpenInfo( "Code Generation." ) )
+        bool success = handlers.Call( monitor, HandlerSlot.StartingGen, gen, null )
+                       && handlers.Call( monitor, HandlerSlot.Gen, gen, null )
+                       && RunApps( monitor, handlers, gen, engine );
+        if( success )
         {
-            for( int i = 0; i < apps.Length; i++ )
+            return handlers.Call( monitor, HandlerSlot.EndingGen, gen, null );
+        }
+        handlers.Call( monitor, HandlerSlot.OnErrorGen, gen, null );
+        return false;
+    }
+
+    static bool RunApps( IActivityMonitor monitor, EngineHandlers handlers, GenContext gen, StObjEngine engine )
+    {
+        for( int i = 0; i < gen.Apps.Length; i++ )
+        {
+            var app = gen.Apps[i];
+            using( monitor.OpenInfo( $"Generating the {app}." ) )
             {
-                var app = apps[i];
-                if( !engine.GenerateCode( i ) || !GenerateAppCode( monitor, app ) )
+                if( !handlers.Call( monitor, HandlerSlot.StartingApp, gen, app )
+                    || !handlers.Call( monitor, HandlerSlot.App, gen, app ) )
+                {
+                    handlers.Call( monitor, HandlerSlot.OnErrorApp, gen, app );
+                    return false;
+                }
+                // A failed Ending is not followed by the OnError of the App: the GenContext fails.
+                if( !handlers.Call( monitor, HandlerSlot.EndingApp, gen, app ) )
                 {
                     return false;
                 }
@@ -36,27 +58,6 @@ public static partial class CKEngine
             }
         }
         return true;
-    }
-
-    /// <summary>
-    /// The code generation of this engine: the participants receive the <see cref="AppGenContext"/>. They log their
-    /// errors.
-    /// </summary>
-    static bool GenerateAppCode( IActivityMonitor monitor, AppGenContext app )
-    {
-        using( monitor.OpenInfo( $"Generating the code of the {app} (CK.Engine)." ) )
-        using( monitor.CollectEntries( out var entries ) )
-        {
-            try
-            {
-                CKomposableMapGenerator.Generate( monitor, app );
-            }
-            catch( Exception ex )
-            {
-                monitor.Error( $"While generating the code of the {app}.", ex );
-            }
-            return entries.Count == 0;
-        }
     }
 
     /// <summary>

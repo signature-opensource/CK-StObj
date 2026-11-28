@@ -1,7 +1,10 @@
 using CK.CodeGen;
+using CK.TypeCache;
 using CK.TypeSet;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace CK.Setup;
 

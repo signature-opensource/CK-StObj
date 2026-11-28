@@ -6,21 +6,17 @@ using System.Linq;
 namespace CK.Setup;
 
 /// <summary>
-/// The <see cref="ICKomposableMap"/> members of the generated <c>CK.StObj.GeneratedRootContext</c> (an <see cref="IStObjMap"/>).
+/// A core engine handler: the <see cref="ICKomposableMap"/> members of the generated <c>CK.StObj.GeneratedRootContext</c>
+/// (an <see cref="IStObjMap"/>, created by the <see cref="LegacyBridge"/> in the <see cref="Starting{T}"/> of the App).
 /// </summary>
-static class CKomposableMapGenerator
+sealed class CKomposableMapGenerator
 {
-    internal static void Generate( IActivityMonitor monitor, AppGenContext app )
-    {
-        GenerateCompiledConfiguration( monitor, app );
-    }
-
     /// <summary>
     /// The <see cref="ICKomposableMap.CompiledConfiguration"/>: the values burnt by the App builder in the BinPath
     /// (<see cref="BinPathConfiguration.CompiledValues"/> and <see cref="BinPathConfiguration.CompiledLocks"/>), as
     /// literals.
     /// </summary>
-    static void GenerateCompiledConfiguration( IActivityMonitor monitor, AppGenContext app )
+    public void GenerateCompiledConfiguration( IActivityMonitor monitor, AppGenContext app )
     {
         // The purely unified group is not an App: it has no map.
         if( app.IsUnifiedPure ) return;

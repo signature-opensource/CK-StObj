@@ -1,5 +1,4 @@
 
-using CK.CodeGen;
 using CK.Core;
 using CK.TypeCache;
 using CK.TypeSet;
@@ -50,28 +49,21 @@ public static partial class CKEngine
                      IReadOnlyList<BinPathTypeGroup> typeGroups,
                      ImmutableArray<BinPathGroup> groups )
     {
-        // One App context per group. The first group is the unified one: its memory is the unified memory of the others.
-        var apps = new AppGenContext[typeGroups.Count];
-        for( int i = 0; i < apps.Length; ++i )
-        {
-            apps[i] = new AppGenContext( apps.Length, typeGroups[i], CodeWorkspace.Create(), i == 0 ? null : apps[0].Memory );
-        }
-        // Temporary use of the good old StObjEngine: this engine runs its phases and completes its code.
-        using var engine = new StObjEngine( monitor, configuration, typeGroups, apps.Select( a => a.Code ).ToArray() );
+        // One App context per group: the first group is the unified one.
+        var gen = new GenContext( typeGroups );
+        // Temporary use of the good old StObjEngine: the first handler.
+        using var bridge = new LegacyBridge( monitor, configuration, gen );
         for( int i = 0; i < groups.Length; i++ )
         {
-            groups[i]._runningGroup = engine.Groups[i];
+            groups[i]._runningGroup = bridge.Engine.Groups[i];
         }
         using( monitor.OpenInfo( "Running Engine." ) )
         {
-            if( !engine.Initialize( out bool canSkipRun ) ) return false;
-            if( canSkipRun ) return engine.RunSkipped();
-            bool success = engine.Collect()
-                           && engine.RunAspects()
-                           && GenerateCode( monitor, engine, apps );
-            success &= engine.UpdateGeneratedArtifacts();
-            if( success ) success = engine.RunPostCodeAspects();
-            return engine.Terminate( success );
+            // The legacy engine decides whether the generated artifacts are up to date: then no handler is called.
+            if( !bridge.Engine.Initialize( out bool canSkipRun ) ) return false;
+            if( canSkipRun ) return bridge.Engine.RunSkipped();
+            var handlers = EngineHandlers.Create( monitor, gen, new object[] { bridge, new CKomposableMapGenerator() } );
+            return handlers != null && RunHandlers( monitor, handlers, gen, bridge.Engine );
         }
     }
 
