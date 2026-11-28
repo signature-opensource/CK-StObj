@@ -175,6 +175,9 @@ sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineM
         throw new NotSupportedException( "ConfigureServices is not supported at build time." );
     }
 
+    CompiledConfiguration ICKomposableMap.CompiledConfiguration
+        => throw new NotSupportedException( "The CompiledConfiguration is generated: at build time, the burnt values are the CompiledValues and the CompiledLocks of the BinPathConfiguration." );
+
     /// <summary>
     /// Dynamically projects <see cref="CKTypeCollectorResult.Assemblies"/> to their <see cref="VFeature"/>
     /// (ordered by <see cref="VFeature.Name"/> since by design there cannot be multiple versions by feature).
